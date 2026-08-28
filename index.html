@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.17.5 PC</title>
+  <title>AtelierAI iPad 1.17.6 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.17.5 PC</div>
+    <div class="title">AtelierAI · iPad 1.17.6 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1159,55 +1159,6 @@
     return out;
   }
 
-
-  function watercolorOnPaper(pigmentRgb,strength){
-    // Aquarell wird heller durch Wasser/Papier, nicht durch komplementäres "Vermatschen".
-    // Neutralweißes Aquarellpapier als visuelle Arbeitsnäherung.
-    const paper=[248,247,243];
-    const a=Math.max(.02,Math.min(1,strength/100));
-    return [0,1,2].map(i=>Math.round(paper[i]*(1-a)+pigmentRgb[i]*a));
-  }
-
-  function hueAngleDiff(a,b){
-    let d=Math.abs(a-b)%360;
-    return d>180?360-d:d;
-  }
-
-  function watercolorVisualCost(target,shownRgb,items){
-    const labD=deltaE76FromLab(rgbToLabFast(target),rgbToLabFast(shownRgb));
-    const [th,ts,tv]=rgbToHsv(target), [mh,ms,mv]=rgbToHsv(shownRgb);
-    let p=0;
-    // Farbton muss sichtbar plausibel bleiben; bei fast grauen Farben nur sanft gewichten.
-    if(ts>.08 && ms>.08){
-      const hd=hueAngleDiff(th,mh);
-      if(hd>18) p+=(hd-18)*0.16;
-      if(hd>45) p+=(hd-45)*0.28;
-    }
-    p+=Math.abs(ts-ms)*16;
-    p+=Math.abs(tv-mv)*10;
-
-    const rosy=(th>=325||th<=32) && ts>=.08;
-    if(rosy){
-      const earth=items.filter(x=>/ocker|siena|umbra|neapel|gold|gelb|orange/i.test(x.name)).length;
-      const rose=items.filter(x=>/rosa|pink|karmin|krap|magenta|rot|rubin|purpur|alizarin|potters/i.test(x.name)).length;
-      const cyanGreen=items.filter(x=>/cyan|türkis|grün|phthalo.*grün/i.test(x.name)).length;
-      if(earth && !rose) p+=20;
-      if(cyanGreen && earth>=rose) p+=9*cyanGreen;
-    }
-    if(items.length>2)p+=(items.length-2)*4;
-    return labD+p;
-  }
-
-  function bestWatercolorDilution(target,pigmentRgb,items){
-    let best=null;
-    for(let strength=5;strength<=100;strength+=5){
-      const shown=watercolorOnPaper(pigmentRgb,strength);
-      const cost=watercolorVisualCost(target,shown,items);
-      if(!best||cost<best.cost)best={strength,shown,cost};
-    }
-    return best;
-  }
-
   function perceptualMixScore(target,rgb,items,paletteKey){
     const d=deltaE76FromLab(rgbToLabFast(target),rgbToLabFast(rgb));
     let penalty=0;
@@ -1251,119 +1202,103 @@
   function chooseMixes(target, paletteKey){
     const pal=selectedPaletteColors(paletteKey);
     if(pal.length<2)return[];
-    const isWater=paletteKey==='watercolor'||paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie';
+    const isWater=paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie';
     const candidates=pal.map(([name,rgb,series])=>({name,rgb,series}));
 
-    if(isWater){
-      // Aquarell wird als Pigmentmischung + Verdünnung auf weißem Papier gesucht.
-      // Das verhindert, dass helle Hauttöne durch Cyan/Grün/Ocker "grau gemischt" werden.
-      const nearest=[...candidates].sort((a,b)=>{
-        const ar=paletteMixRgb(a.name,a.rgb,paletteKey), br=paletteMixRgb(b.name,b.rgb,paletteKey);
-        const aa=bestWatercolorDilution(target,ar,[a]);
-        const bb=bestWatercolorDilution(target,br,[b]);
-        return aa.cost-bb.cost;
-      }).slice(0,Math.min(24,candidates.length));
-
-      const pool=[];
-
-      // Einzelfarben zuerst – bei Aquarell oft die sauberste Lösung.
-      for(const c of nearest){
-        const pigment=paletteMixRgb(c.name,c.rgb,paletteKey);
-        const d=bestWatercolorDilution(target,pigment,[c]);
-        pool.push({items:[c],parts:[10],rgb:d.shown,pigmentRgb:pigment,strength:d.strength,cost:d.cost});
-      }
-
-      // Zwei Pigmente, gut malbare 10%-Schritte.
-      for(let i=0;i<nearest.length;i++){
-        for(let j=i+1;j<nearest.length;j++){
-          for(let a=10;a<=90;a+=10){
-            const items=[nearest[i],nearest[j]], parts=[a,100-a];
-            const pigment=opticalDensityMix(items,parts,paletteKey);
-            const d=bestWatercolorDilution(target,pigment,items);
-            pool.push({items,parts,rgb:d.shown,pigmentRgb:pigment,strength:d.strength,cost:d.cost});
-          }
-        }
-      }
-
-      pool.sort((a,b)=>a.cost-b.cost);
-      const bestTwoCost=pool.find(x=>x.items.length<=2)?.cost ?? 999;
-
-      // Drittes Pigment nur prüfen, wenn die Zweierlösung noch deutlich danebenliegt.
-      if(bestTwoCost>8){
-        const bestPairs=pool.filter(x=>x.items.length===2).slice(0,10);
-        for(const pair of bestPairs){
-          for(const c of nearest.slice(0,10)){
-            if(pair.items.some(x=>x.name===c.name))continue;
-            for(const add of [10,20]){
-              const p1=Math.round(pair.parts[0]*(100-add)/100);
-              const p2=100-add-p1;
-              const items=[pair.items[0],pair.items[1],c],parts=[p1,p2,add];
-              const pigment=opticalDensityMix(items,parts,paletteKey);
-              const d=bestWatercolorDilution(target,pigment,items);
-              // Komplexität muss sich sichtbar lohnen.
-              if(d.cost+2.5<bestTwoCost)
-                pool.push({items,parts,rgb:d.shown,pigmentRgb:pigment,strength:d.strength,cost:d.cost});
-            }
-          }
-        }
-      }
-
-      pool.sort((a,b)=>a.cost-b.cost);
-      const chosen=[], seen=new Set();
-      for(const x of pool){
-        const sig=x.items.map(i=>i.name).sort().join('|');
-        if(seen.has(sig))continue;
-        // Keine fast identischen Alternativen.
-        if(chosen.some(y=>Math.abs(y.cost-x.cost)<.35 && y.items.length===x.items.length))continue;
-        seen.add(sig);
-        chosen.push({
-          sig,
-          names:x.items.map(i=>(paletteKey==='watercolor'&&i.series)?`${i.name} (${i.series})`:i.name),
-          parts:x.parts.map(v=>x.items.length===1?1:Math.max(1,Math.round(v/10))),
-          rgb:x.rgb,
-          score:Math.max(0,Math.min(100,Math.round(100-x.cost*2.2))),
-          strength:x.strength,
-          watercolor:true,
-          cost:x.cost
-        });
-        if(chosen.length===3)break;
-      }
-      return chosen;
+    function candidateRgb(c){
+      return isWater ? paletteMixRgb(c.name,c.rgb,paletteKey) : c.rgb;
     }
+    function mixFor(items,parts){
+      if(isWater) return opticalDensityMix(items,parts,paletteKey);
+      const total=parts.reduce((a,b)=>a+b,0)||1;
+      return [0,1,2].map(ch=>Math.round(items.reduce((sum,c,i)=>sum+candidateRgb(c)[ch]*parts[i],0)/total));
+    }
+    function studioCost(rgb,items){
+      const lab=deltaE76FromLab(rgbToLabFast(target),rgbToLabFast(rgb));
+      if(!isWater)return lab;
+      const [th,ts]=rgbToHsv(target),[mh,ms]=rgbToHsv(rgb);
+      let cost=lab;
+      if(ts>.08&&ms>.08){
+        let hd=Math.abs(th-mh)%360;if(hd>180)hd=360-hd;
+        if(hd>25)cost+=(hd-25)*.10;
+      }
+      // Malerische Plausibilität bei rosigen/hautfarbenen Zielen.
+      const rosy=(th>=325||th<=35)&&ts>=.07;
+      if(rosy){
+        const earth=items.filter(x=>/ocker|siena|umbra|neapel|gold|gelb|orange/i.test(x.name)).length;
+        const rose=items.filter(x=>/rosa|pink|karmin|krap|magenta|rot|rubin|purpur|alizarin|potters/i.test(x.name)).length;
+        const cg=items.filter(x=>/cyan|türkis|grün/i.test(x.name)).length;
+        if(earth&&!rose)cost+=10;
+        if(cg&&earth>=rose)cost+=5*cg;
+      }
+      // Mehr Farben nur leicht bestrafen; Studio darf bis 5 suchen.
+      cost+=Math.max(0,items.length-3)*.6;
+      return cost;
+    }
+    function pct(cost){return Math.max(0,Math.min(100,Math.round(100-cost*1.55)));}
 
-    // Öl: bisherige PC-nahe iPad-Suche unverändert lassen.
-    const nearest=[...candidates].sort((a,b)=>colorDistance(a.rgb,target)-colorDistance(b.rgb,target))
-      .slice(0,Math.min(16,candidates.length));
-    let beam=nearest.map(c=>({items:[c],parts:[20],rgb:c.rgb,score:similarityPct(target,c.rgb)}))
-      .sort((a,b)=>b.score-a.score).slice(0,24);
+    // PC-Prinzip: Studio, maximale Genauigkeit bis 5 Farben, force_best.
+    const nearest=[...candidates].sort((a,b)=>
+      studioCost(candidateRgb(a),[a])-studioCost(candidateRgb(b),[b])
+    ).slice(0,Math.min(18,candidates.length));
+
+    let beam=nearest.map(c=>{
+      const items=[c],parts=[10],rgb=candidateRgb(c);
+      const cost=studioCost(rgb,items);
+      return {items,parts,rgb,cost};
+    }).sort((a,b)=>a.cost-b.cost).slice(0,30);
+
+    const allBest=[...beam.slice(0,8)];
     const alternatives=[];
+
     for(let count=2;count<=5;count++){
       const next=[];
       for(const state of beam){
-        const used=new Set(state.items.map(x=>x.name));
+        const used=new Set(state.items.map(x=>x.name+'|'+(x.series||'')));
         for(const c of nearest){
-          if(used.has(c.name))continue;
-          for(const add of [1,2,3,4,5,6]){
-            const totalOld=state.parts.reduce((a,b)=>a+b,0);
-            const rgb=[0,1,2].map(ch=>Math.round((state.rgb[ch]*totalOld+c.rgb[ch]*add)/(totalOld+add)));
-            next.push({items:state.items.concat([c]),parts:state.parts.concat([add]),rgb,score:similarityPct(target,rgb)});
+          if(used.has(c.name+'|'+(c.series||'')))continue;
+          // Praxisnahe Anteile, aber genügend fein für Studio.
+          for(const add of [1,2,3,4,5,6,8,10]){
+            const items=state.items.concat([c]);
+            const parts=state.parts.concat([add]);
+            const rgb=mixFor(items,parts);
+            const cost=studioCost(rgb,items);
+            next.push({items,parts,rgb,cost});
           }
         }
       }
-      next.sort((a,b)=>b.score-a.score);
+      next.sort((a,b)=>a.cost-b.cost);
       const seen=new Set(),trim=[];
       for(const x of next){
-        const key=x.rgb.map(v=>Math.round(v/4)).join(',')+'|'+x.items.map(i=>i.name).sort().join('/');
-        if(seen.has(key))continue;seen.add(key);trim.push(x);if(trim.length>=36)break;
+        const key=x.rgb.map(v=>Math.round(v/3)).join(',')+'|'+x.items.map(i=>i.name+'@'+(i.series||'')).sort().join('/');
+        if(seen.has(key))continue;
+        seen.add(key);trim.push(x);
+        if(trim.length>=48)break;
       }
+      if(!trim.length)break;
       beam=trim;
-      if(beam[0])alternatives.push({color_count:count,match_percent:beam[0].score});
+      allBest.push(...beam.slice(0,10));
+      alternatives.push({color_count:count,match_percent:pct(beam[0].cost)});
     }
-    const chosen=[];
-    for(const x of beam.sort((a,b)=>b.score-a.score)){
-      const sig=x.items.map(i=>i.name).sort().join('|');
-      if(chosen.some(y=>y.sig===sig))continue;
-      chosen.push({sig,names:x.items.map(i=>(paletteKey==='watercolor'&&i.series)?`${i.name} (${i.series})`:i.name),parts:x.parts,rgb:x.rgb,score:x.score,alternatives});
+
+    allBest.sort((a,b)=>a.cost-b.cost);
+    const chosen=[],seenRecipes=new Set();
+    for(const x of allBest){
+      const sig=x.items.map(i=>i.name+'@'+(i.series||'')).sort().join('|');
+      if(seenRecipes.has(sig))continue;
+      seenRecipes.add(sig);
+      const total=x.parts.reduce((a,b)=>a+b,0)||1;
+      // auf gut lesbare Teile 1..10 normalisieren
+      const scaled=x.parts.map(v=>Math.max(1,Math.round(v/total*10)));
+      chosen.push({
+        sig,
+        names:x.items.map(i=>(isWater&&i.series)?`${i.name} (${i.series})`:i.name),
+        parts:scaled,
+        rgb:x.rgb,
+        score:pct(x.cost),
+        alternatives,
+        watercolor:isWater
+      });
       if(chosen.length===3)break;
     }
     return chosen;
@@ -1393,7 +1328,7 @@
           <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${targetHex}"></div></div>
           <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex}"></div></div>
         </div>
-        <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i]} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}${m.watercolor?`<br><b>Verdünnung: ca. ${m.strength}% Farbwirkung</b>`:''}<br><span class="tiny">${m.watercolor?'Aquarell: Pigmentmischung + Wasser/Papier · max. 3 Pigmente':'Mischqualität: Studio · bis 5 Farben'}</span></div>
+        <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i]} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · Studio-Mischung · bis 5 Farben':'Mischqualität: Studio · bis 5 Farben'}</span></div>
       `;
       mixResults.appendChild(card);
     });
