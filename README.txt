@@ -1,14 +1,9 @@
-AtelierAI iPad 1.20.1 PC
+AtelierAI iPad 1.20.2 PC
 
-Großformen zweite grundlegende Überarbeitung:
-- bisherige blockige RGB-Quantisierung entfernt
-- deutlich höhere Arbeitsauflösung (ca. 900–980 Pixel lange Seite)
-- kantenschonende Glättung
-- natürliche Farbcluster direkt aus dem Bild statt starrem RGB-Raster
-- Stufen 1–5: ca. 28 / 23 / 18 / 14 / 11 Farbbereiche
-- Nachbarschafts-Mehrheitsfilter gegen Sprenkel und gezackte Pixelmuster
-- kleine Farbinseln werden zusammengeführt
-- starke Kontrastkanten bleiben geschützt
-- weiches Hochskalieren
-- Ziel: ruhige, malbare Flächen ähnlich einer guten fotografischen Vereinfachung
-- Mischung und Lasuren aus 1.19 unverändert
+Sicherheits-Rückkehr der Großformen-Funktion:
+- NUR die Großformen-Berechnung wurde auf den stabilen Stand aus 1.19 zurückgesetzt.
+- Alle anderen Funktionen aus 1.20.1 bleiben unverändert.
+- Mischfunktion bleibt unverändert.
+- Lasurenvergleich mit Mehrfachlasuren bleibt unverändert.
+- Auto-Ausrichtung, mehrere Messpunkte, synchrones Zoom/Pan bleiben unverändert.
+- Die experimentelle Großformen-Flächenbildung aus 1.20/1.20.1 ist entfernt.
