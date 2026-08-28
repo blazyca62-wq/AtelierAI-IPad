@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.10.3 PC</title>
+  <title>AtelierAI iPad 1.10.4 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.10.3 PC</div>
+    <div class="title">AtelierAI · iPad 1.10.4 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1624,6 +1624,14 @@
     pointPickDown=null;
     if(d<=12 && dt<=700){
       pickColor(e.clientX,e.clientY);
+      if(typeof window.activateToolPage==='function'){
+        window.activateToolPage('paintMixPanel');
+      }
+      setTimeout(()=>{
+        if(typeof mixResults!=='undefined' && mixResults && typeof mixResults.scrollIntoView==='function'){
+          mixResults.scrollIntoView({behavior:'smooth',block:'nearest'});
+        }
+      },30);
       e.preventDefault();
     }
   });

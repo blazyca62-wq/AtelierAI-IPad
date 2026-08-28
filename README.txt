@@ -1,9 +1,9 @@
 AtelierAI iPad 1.10.4 PC
 
-Änderung:
-- Punkt-Pipette springt nach der Farbauswahl automatisch direkt zum Bereich „Mischen“.
-- Die aufgenommene Farbe bleibt Zielfarbe für die Studio-Mischung.
-- Mischvorschläge werden sofort sichtbar.
-- Foto öffnen, Flächenberater, Navigation und alle Funktionen aus 1.10.3 bleiben unverändert.
+Korrigierte Ausgabe:
+- index.html trägt intern und sichtbar wirklich Version 1.10.4 PC.
+- Punkt-Pipette springt nach der Farbauswahl direkt zum Bereich Mischen.
+- Foto öffnen und die stabile Basis von 1.10.3 bleiben unverändert.
+- Flächenberater und Studio-Mischung bleiben erhalten.
 
 Orientierung: PC AtelierAI 2.6.96.
