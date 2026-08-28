@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.18 PC</title>
+  <title>AtelierAI iPad 1.19 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.18 PC</div>
+    <div class="title">AtelierAI · iPad 1.19 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -434,7 +434,7 @@
 
         <button id="glazeCalcBtn" style="width:100%;">Lasur für aktiven Punkt berechnen</button>
         <button id="glazeCalcAllBtn" class="secondary" style="width:100%;margin-top:7px;">Lasuren für alle Messpunkte berechnen</button>
-        <div class="tiny" style="margin-top:6px;">Eine Lasur wird bevorzugt. Zwei Lasuren nur bei deutlicher Verbesserung.</div>
+        <div class="tiny" style="margin-top:6px;">Einfach vor komplex: 1, 2 oder 3 aufeinanderfolgende Lasuren. Mehrere Farben werden gewählt, wenn sie sichtbar besser treffen.</div>
 
         <div id="glazeResults" class="pc-card" style="margin-top:8px;">
           <span class="tiny">Noch kein Messpunkt ausgewählt.</span>
@@ -1931,12 +1931,12 @@
   }
 
   function bestDoubleGlazes(colors,maxStrength,singleBest){
-    // iPad-schonend: nur die farblich plausibelsten Einzelkandidaten
-    // werden für die zweite Lasur kombiniert.
-    const pool=singleBest.slice(0,Math.min(18,singleBest.length));
+    // Nur die stärksten Einzelkandidaten kombinieren, damit es auf dem iPad flüssig bleibt.
+    const pool=singleBest.slice(0,Math.min(16,singleBest.length));
     const out=[];
     const strengths=[];
     for(let v=4;v<=maxStrength;v+=4) strengths.push(v);
+
     for(let i=0;i<pool.length;i++){
       for(let j=0;j<pool.length;j++){
         if(i===j) continue;
@@ -1948,11 +1948,55 @@
             const result=glazeApply(first,b.rgb1,s2,glazeMedium);
             const d=glazeDistance(result,glazeTarget);
             if(!best||d<best.d){
-              best={type:2,name1:a.name1,rgb1:a.rgb1,s1,name2:b.name1,rgb2:b.rgb1,s2,first,result,d};
+              best={
+                type:2,
+                name1:a.name1,rgb1:a.rgb1,s1,
+                name2:b.name1,rgb2:b.rgb1,s2,
+                first,result,d
+              };
             }
           }
         }
-        if(best) out.push(best);
+        if(best)out.push(best);
+      }
+    }
+    return out.sort((a,b)=>a.d-b.d);
+  }
+
+  function bestTripleGlazes(colors,maxStrength,singleBest,doubleBest){
+    // Drei Lasuren nur aus den überzeugendsten bisherigen Kandidaten aufbauen.
+    // Dadurch bleibt die Suche trotz großer persönlicher Palette praktikabel.
+    const singles=singleBest.slice(0,Math.min(12,singleBest.length));
+    const doubles=doubleBest.slice(0,Math.min(14,doubleBest.length));
+    const strengths=[];
+    for(let v=4;v<=maxStrength;v+=4) strengths.push(v);
+
+    const out=[];
+    for(const d2 of doubles){
+      for(const c of singles){
+        // Nicht dreimal dieselbe Farbe; gleiche Farbe als zweite Verstärkung ist okay,
+        // aber drei identische Schritte bringen keinen praktischen Mehrwert.
+        const sameCount=[d2.name1,d2.name2].filter(n=>n===c.name1).length;
+        if(sameCount>=2)continue;
+
+        let best=null;
+        for(const s3 of strengths){
+          const result=glazeApply(d2.result,c.rgb1,s3,glazeMedium);
+          const dist=glazeDistance(result,glazeTarget);
+          if(!best||dist<best.d){
+            best={
+              type:3,
+              name1:d2.name1,rgb1:d2.rgb1,s1:d2.s1,
+              name2:d2.name2,rgb2:d2.rgb2,s2:d2.s2,
+              name3:c.name1,rgb3:c.rgb1,s3,
+              first:d2.first,
+              second:d2.result,
+              result,
+              d:dist
+            };
+          }
+        }
+        if(best)out.push(best);
       }
     }
     return out.sort((a,b)=>a.d-b.d);
@@ -1973,16 +2017,17 @@
     const title=isBest?'Beste Lösung':`Alternative ${rank+1}`;
     let recipe='';
     let progress='';
+
     if(item.type===1){
       recipe=`<b>Eine Lasur</b><br>${item.name1} · ${item.s1}% Farbwirkung (${glazeStrengthText(item.s1)})`;
       const mid=glazeApply(glazeBase,item.rgb1,item.s1,glazeMedium);
       progress=`
         <div class="mix-swatches" style="margin-top:7px;">
           <div><div class="tiny">Grundfarbe</div><div class="mix-swatch" style="background:${rgbHex(glazeBase)}"></div></div>
-          <div><div class="tiny">${item.s1}% ${item.name1}</div><div class="mix-swatch" style="background:${rgbHex(mid)}"></div></div>
-          <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${rgbHex(glazeTarget)}"></div></div>
+          <div><div class="tiny">1. Lasur</div><div class="mix-swatch" style="background:${rgbHex(mid)}"></div></div>
+          <div><div class="tiny">Ziel</div><div class="mix-swatch" style="background:${rgbHex(glazeTarget)}"></div></div>
         </div>`;
-    }else{
+    }else if(item.type===2){
       recipe=`<b>Zwei Lasuren</b><br>1. ${item.name1} · ${item.s1}%<br>2. ${item.name2} · ${item.s2}%`;
       progress=`
         <div class="mix-swatches" style="margin-top:7px;">
@@ -1991,7 +2036,18 @@
           <div><div class="tiny">2. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.result)}"></div></div>
           <div><div class="tiny">Ziel</div><div class="mix-swatch" style="background:${rgbHex(glazeTarget)}"></div></div>
         </div>`;
+    }else{
+      recipe=`<b>Drei Lasuren</b><br>1. ${item.name1} · ${item.s1}%<br>2. ${item.name2} · ${item.s2}%<br>3. ${item.name3} · ${item.s3}%`;
+      progress=`
+        <div class="mix-swatches" style="margin-top:7px;">
+          <div><div class="tiny">Grundfarbe</div><div class="mix-swatch" style="background:${rgbHex(glazeBase)}"></div></div>
+          <div><div class="tiny">1. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.first)}"></div></div>
+          <div><div class="tiny">2. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.second)}"></div></div>
+          <div><div class="tiny">3. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.result)}"></div></div>
+          <div><div class="tiny">Ziel</div><div class="mix-swatch" style="background:${rgbHex(glazeTarget)}"></div></div>
+        </div>`;
     }
+
     card.innerHTML=`
       <div class="mix-head"><b>${title}</b><span>${match}% Annäherung</span></div>
       <div style="margin-top:6px;">${recipe}</div>
@@ -2010,15 +2066,27 @@
       const maxStrength=Number(glazeMaxStrength.value);
       const singles=bestSingleGlazes(colors,maxStrength);
       if(!singles.length)return null;
-      const bestSingle=singles[0];
       const doubles=bestDoubleGlazes(colors,maxStrength,singles);
+      const triples=bestTripleGlazes(colors,maxStrength,singles,doubles);
+
+      const bestSingle=singles[0];
       const bestDouble=doubles[0];
+      const bestTriple=triples[0];
+
+      // Einfach vor komplex, aber keine künstliche Begrenzung auf eine Farbe:
+      // 2 Lasuren dürfen gewinnen, wenn sie ~10% besser sind.
+      // 3 Lasuren dürfen gewinnen, wenn sie gegenüber der besten 2er-Lösung
+      // noch einmal einen klaren sichtbaren Gewinn bringen.
       let best=bestSingle;
-      if(bestDouble&&bestDouble.d<bestSingle.d*.82)best=bestDouble;
+      if(bestDouble && bestDouble.d < best.d*.90) best=bestDouble;
+      if(bestTriple && bestTriple.d < best.d*.90) best=bestTriple;
+
       const match=glazeMatchPercent(best.result,target);
       const recipe=best.type===1
         ? `${best.name1} ${best.s1}%`
-        : `${best.name1} ${best.s1}% → ${best.name2} ${best.s2}%`;
+        : best.type===2
+          ? `${best.name1} ${best.s1}% → ${best.name2} ${best.s2}%`
+          : `${best.name1} ${best.s1}% → ${best.name2} ${best.s2}% → ${best.name3} ${best.s3}%`;
       return {best,match,recipe};
     }finally{
       glazeBase=saveBase;glazeTarget=saveTarget;
@@ -2064,45 +2132,76 @@
       glazeResults.innerHTML='<b>In dieser Palette ist noch keine vorhandene Farbe ausgewählt. Bitte zuerst deine Farben in der Palettenverwaltung aktivieren.</b>';
       return;
     }
-    const maxStrength=Number(glazeMaxStrength.value);
-    glazeResults.innerHTML='<span class="tiny">Lasuren werden berechnet…</span>';
 
-    // Kurzer Yield, damit Safari die Statusanzeige zeichnen kann.
+    const maxStrength=Number(glazeMaxStrength.value);
+    glazeResults.innerHTML='<span class="tiny">1-, 2- und 3-Lasuren-Folgen werden berechnet…</span>';
+
     setTimeout(()=>{
       const singles=bestSingleGlazes(colors,maxStrength);
       if(!singles.length){
         glazeResults.innerHTML='<b>Keine passende Lasur gefunden.</b>';
         return;
       }
-      const bestSingle=singles[0];
+
       const doubles=bestDoubleGlazes(colors,maxStrength,singles);
+      const triples=bestTripleGlazes(colors,maxStrength,singles,doubles);
+
+      const bestSingle=singles[0];
       const bestDouble=doubles[0];
+      const bestTriple=triples[0];
 
-      // PC-Prinzip „einfach vor komplex“:
-      // Zwei Lasuren nur dann nach vorne nehmen, wenn die Verbesserung
-      // deutlich genug ist. Sonst bleibt die Einzellasur die Empfehlung.
-      let chosen=[bestSingle];
-      if(bestDouble && bestDouble.d < bestSingle.d*0.82){
-        chosen.push(bestDouble);
+      // Kandidaten nach praktischer Güte auswählen.
+      // Komplexere Folgen müssen sichtbar besser sein, werden aber nicht ausgeschlossen.
+      let best=bestSingle;
+      if(bestDouble && bestDouble.d < best.d*.90)best=bestDouble;
+      if(bestTriple && bestTriple.d < best.d*.90)best=bestTriple;
+
+      const chosen=[best];
+
+      // Je eine sinnvolle Alternative aus den anderen Komplexitätsstufen.
+      const candidates=[bestSingle,bestDouble,bestTriple].filter(Boolean)
+        .sort((a,b)=>a.d-b.d);
+
+      for(const c of candidates){
+        if(chosen.length>=3)break;
+        const sig=c.type===1
+          ? `1:${c.name1}`
+          : c.type===2
+            ? `2:${c.name1}|${c.name2}`
+            : `3:${c.name1}|${c.name2}|${c.name3}`;
+        const exists=chosen.some(x=>{
+          const xs=x.type===1?`1:${x.name1}`:x.type===2?`2:${x.name1}|${x.name2}`:`3:${x.name1}|${x.name2}|${x.name3}`;
+          return xs===sig;
+        });
+        if(!exists)chosen.push(c);
       }
 
-      // Weitere echte Alternativen ohne unnötige Wiederholungen.
-      for(const x of singles.slice(1)){
-        if(chosen.length>=3) break;
-        if(!chosen.some(c=>c.type===1 && c.name1===x.name1)) chosen.push(x);
+      // Falls noch Platz: nächstbeste andere Farbrezepte.
+      for(const arr of [singles,doubles,triples]){
+        for(const c of arr.slice(1,5)){
+          if(chosen.length>=3)break;
+          const names=c.type===1?[c.name1]:c.type===2?[c.name1,c.name2]:[c.name1,c.name2,c.name3];
+          if(!chosen.some(x=>{
+            const xn=x.type===1?[x.name1]:x.type===2?[x.name1,x.name2]:[x.name1,x.name2,x.name3];
+            return JSON.stringify(xn)===JSON.stringify(names);
+          }))chosen.push(c);
+        }
+        if(chosen.length>=3)break;
       }
-      if(chosen.length<3 && bestDouble && !chosen.includes(bestDouble)) chosen.push(bestDouble);
 
       glazeResults.innerHTML='';
       chosen.slice(0,3).forEach((item,i)=>glazeResults.appendChild(renderGlazeCard(item,i,bestSingle.d)));
+
       if(glazeActivePoint>=0&&glazePoints[glazeActivePoint]){
-        const best=chosen[0];
+        const b=chosen[0];
         glazePoints[glazeActivePoint].glazeResult={
-          best,
-          match:glazeMatchPercent(best.result,glazeTarget),
-          recipe:best.type===1
-            ? `${best.name1} ${best.s1}%`
-            : `${best.name1} ${best.s1}% → ${best.name2} ${best.s2}%`
+          best:b,
+          match:glazeMatchPercent(b.result,glazeTarget),
+          recipe:b.type===1
+            ? `${b.name1} ${b.s1}%`
+            : b.type===2
+              ? `${b.name1} ${b.s1}% → ${b.name2} ${b.s2}%`
+              : `${b.name1} ${b.s1}% → ${b.name2} ${b.s2}% → ${b.name3} ${b.s3}%`
         };
         renderGlazePoints();
       }
@@ -2111,8 +2210,8 @@
       note.className='tiny';
       note.style.marginTop='8px';
       note.innerHTML=glazeMedium==='water'
-        ? 'Aquarell: Lasurstärken sind bewusst sanft angesetzt. Papier, Wasser und Pigmenttransparenz verändern das reale Ergebnis.'
-        : 'Öl: als transparente Abschlusslasur gedacht. Deckende Pigmente und Malmittel können das reale Ergebnis verändern.';
+        ? 'Aquarell: bis zu drei nacheinander aufgetragene, transparente Lasuren. Jede Schicht trocknen lassen. Die einfachere Folge bleibt vorne, wenn zusätzliche Lasuren kaum verbessern.'
+        : 'Öl: bis zu drei transparente Lasuren. Zwischen den Schichten ausreichend trocknen lassen; Deckkraft und Malmittel verändern das reale Ergebnis.';
       glazeResults.appendChild(note);
     },30);
   }

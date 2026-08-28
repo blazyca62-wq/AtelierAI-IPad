@@ -1,13 +1,15 @@
-AtelierAI iPad 1.18 PC
+AtelierAI iPad 1.19 PC
 
-Lasurenvergleich ausgebaut:
-- automatische Ausrichtung korrigiert jetzt Größe, Verschiebung UND leichte Drehung (ca. ±8° Grobsuche, fein bis 0,5°)
-- Drehung wird in der Qualitätsanzeige sichtbar angegeben
-- Original und Gemälde können im großen Vergleich auf BEIDEN Seiten mit einem Finger verschoben werden
-- Zwei-Finger-Zoom funktioniert auf beiden Seiten; die Ansicht bleibt synchron
-- neuer Knopf „Lasuren für alle Messpunkte berechnen“
-- jeder Messpunkt speichert seine beste Lasurempfehlung und Annäherung
-- Punktliste zeigt die gespeicherte Empfehlung direkt an
-- aktiver Punkt behält weiterhin die ausführliche 1-/2-Lasuren-Ansicht
-- kleine Fadenkreuze und persönliche Palette bleiben erhalten
-- Mischfunktion aus 1.17.6 unverändert
+Lasuren – mehrere Farben / Schichten:
+- berechnet jetzt 1, 2 UND 3 aufeinanderfolgende Lasuren
+- unterschiedliche Lasurfarben können nacheinander kombiniert werden
+- einfache Lösung bleibt bevorzugt, wenn sie praktisch gleich gut ist
+- zwei Lasuren dürfen gewinnen, wenn sie sichtbar besser treffen
+- drei Lasuren dürfen gewinnen, wenn sie gegenüber der besten kürzeren Folge nochmals klar verbessern
+- Ergebnisse zeigen jede Lasurfarbe, Reihenfolge und Stärke einzeln
+- Fortschrittsfelder zeigen Grundfarbe -> 1. Lasur -> 2. Lasur -> 3. Lasur -> Ziel
+- Berechnung für alle Messpunkte nutzt dieselbe 1-/2-/3-Lasuren-Logik
+- Aquarell und Öl unterstützt
+- persönliche aktive Palette bleibt Grundlage
+- Auto-Ausrichtung, Rotation, synchrones Zoom/Pan aus 1.18 bleiben erhalten
+- Mischfunktion aus 1.17.6 bleibt unverändert
