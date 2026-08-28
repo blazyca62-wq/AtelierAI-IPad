@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.17.1 PC</title>
+  <title>AtelierAI iPad 1.17.2 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.17.1 PC</div>
+    <div class="title">AtelierAI · iPad 1.17.2 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -370,6 +370,7 @@
           <option value="akademie">Schmincke Akademie</option>
           <option value="artisan">Winsor & Newton Artisan</option>
         </select>
+        <div id="glazePaletteStatus" class="tiny" style="margin-top:5px;font-weight:600;">Palette wird geprüft…</div>
 
         <div class="pc-card" style="margin-top:9px;">
           <div class="grid2">
@@ -617,6 +618,7 @@
   const glazeWaterBtn=document.getElementById('glazeWaterBtn');
   const glazeOilBtn=document.getElementById('glazeOilBtn');
   const glazePalette=document.getElementById('glazePalette');
+  const glazePaletteStatus=document.getElementById('glazePaletteStatus');
   const glazeOriginalInput=document.getElementById('glazeOriginalInput');
   const glazePaintingInput=document.getElementById('glazePaintingInput');
   const glazeOriginalCanvas=document.getElementById('glazeOriginalCanvas');
@@ -1203,12 +1205,15 @@
   }
 
   function glazeActiveColors(){
+    return selectedPaletteColors(glazePalette.value);
+  }
+
+  function refreshGlazePaletteStatus(){
     const key=glazePalette.value;
-    let colors=selectedPaletteColors(key);
-    // Falls noch keine persönliche Auswahl gesetzt wurde, die Herstellerpalette
-    // als Arbeitsgrundlage verwenden, damit der Lasur-Assistent direkt nutzbar ist.
-    if(!colors.length) colors=(PALETTES[key]||[]).map(([n,rgb])=>[n,rgb]);
-    return colors;
+    const total=(PALETTES[key]||[]).length;
+    const active=selectedPaletteColors(key).length;
+    const names={horadam:'Schmincke Horadam',akademie:'Schmincke Akademie',artisan:'Winsor & Newton Artisan'};
+    glazePaletteStatus.textContent=`${names[key]||key} – ${active} von ${total} Farben aktiv`;
   }
 
   function refreshGlazeColors(){
@@ -1674,7 +1679,7 @@
     }
     const colors=glazeActiveColors();
     if(!colors.length){
-      glazeResults.innerHTML='<b>Keine Farben in der gewählten Palette verfügbar.</b>';
+      glazeResults.innerHTML='<b>In dieser Palette ist noch keine vorhandene Farbe ausgewählt. Bitte zuerst deine Farben in der Palettenverwaltung aktivieren.</b>';
       return;
     }
     const maxStrength=Number(glazeMaxStrength.value);
@@ -2433,7 +2438,7 @@
   updateStandardPaletteInfo();
 
   managePaletteBtn.addEventListener('click',()=>{paletteManager.style.display='block';paletteSearch.value='';renderPaletteChecklist();});
-  closePaletteBtn.addEventListener('click',()=>{paletteManager.style.display='none';updateOwnedSummary();mixResults.innerHTML='';});
+  closePaletteBtn.addEventListener('click',()=>{paletteManager.style.display='none';updateOwnedSummary();mixResults.innerHTML='';refreshGlazePaletteStatus();});
   paletteSearch.addEventListener('input',renderPaletteChecklist);
   selectAllColors.addEventListener('click',()=>{
     const key=currentCatalogueKey(),o=loadOwned();
@@ -2660,11 +2665,13 @@
   glazeMaxStrength.addEventListener('input',()=>{glazeMaxStrengthVal.textContent=glazeMaxStrength.value+' %';});
   glazeCalcBtn.addEventListener('click',calculateGlazes);
   glazePalette.addEventListener('change',()=>{
-    glazeResults.innerHTML='<span class="tiny">Palette geändert. Vorschläge neu berechnen.</span>';
+    refreshGlazePaletteStatus();
+    glazeResults.innerHTML='<span class="tiny">Palette geändert. Es werden nur deine aktiv ausgewählten Farben verwendet.</span>';
   });
   window.addEventListener('resize',redrawGlazePreviews);
   renderGlazePoints();
   refreshGlazeColors();
+  refreshGlazePaletteStatus();
   setGlazeMedium('water');
 
   [corrLight,corrWarm,corrSat].forEach(x=>x.addEventListener('input',refreshCorrection));
