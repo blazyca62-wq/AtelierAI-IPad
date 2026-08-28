@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.8h REGLER FLÜSSIG</title>
+  <title>AtelierAI iPad 1.20.8i RASTER QUADRATISCH</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -150,7 +150,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.8h REGLER FLÜSSIG</div>
+    <div class="title">AtelierAI · iPad 1.20.8i RASTER QUADRATISCH</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1511,26 +1511,35 @@
     const n=Math.max(2,Number(density)||8);
     targetCtx.save();
 
-    // Lokal adaptive Rasterfarbe:
-    // Canvas-"difference" invertiert die Bildfarbe direkt unter der Linie.
-    // Dadurch ist dieselbe Rasterlinie auf hellen Stellen dunkel
-    // und auf dunklen Stellen hell – auch innerhalb EIN und desselben Fotos.
+    // Quadratisches, exakt zentriertes Raster:
+    // Die Kästchen haben immer dieselbe Breite und Höhe.
+    // Das Raster ist auf die Bildmitte ausgerichtet, sodass an den
+    // gegenüberliegenden Bildrändern jeweils gleich viel Kästchenanteil
+    // abgeschnitten wird.
+    const cell=Math.min(w,h)/n;
+    const cx=w/2, cy=h/2;
+
     targetCtx.globalCompositeOperation='difference';
     targetCtx.strokeStyle='rgba(255,255,255,.88)';
     targetCtx.lineWidth=Math.max(1, Math.min(w,h)/1200);
 
-    for(let i=1;i<n;i++){
-      const x=Math.round(w*i/n)+0.5;
-      const y=Math.round(h*i/n)+0.5;
-
+    const firstX=cx-Math.ceil(cx/cell)*cell;
+    for(let x=firstX; x<=w+0.001; x+=cell){
+      const px=Math.round(x)+0.5;
+      if(px<=0.5 || px>=w+0.5) continue;
       targetCtx.beginPath();
-      targetCtx.moveTo(x,0);
-      targetCtx.lineTo(x,h);
+      targetCtx.moveTo(px,0);
+      targetCtx.lineTo(px,h);
       targetCtx.stroke();
+    }
 
+    const firstY=cy-Math.ceil(cy/cell)*cell;
+    for(let y=firstY; y<=h+0.001; y+=cell){
+      const py=Math.round(y)+0.5;
+      if(py<=0.5 || py>=h+0.5) continue;
       targetCtx.beginPath();
-      targetCtx.moveTo(0,y);
-      targetCtx.lineTo(w,y);
+      targetCtx.moveTo(0,py);
+      targetCtx.lineTo(w,py);
       targetCtx.stroke();
     }
     targetCtx.restore();
