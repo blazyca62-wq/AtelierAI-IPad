@@ -21,3 +21,6 @@ Korrekturen in 1.20.4:
 
 Wichtig:
 Die Farb-, Grossformen-, Tonwert-, Misch- und Lasurberechnungen wurden in diesem Stabilitaetsschritt nicht veraendert.
+
+Start:
+- START.html oeffnen. Diese Datei startet AtelierAI direkt.
