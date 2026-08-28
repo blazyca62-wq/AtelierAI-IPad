@@ -1,22 +1,18 @@
-AtelierAI iPad 1.16 PC
+AtelierAI iPad 1.17 PC
 
-Lasurenvergleich verbessert
-
-- Vergleichsbilder deutlich größer: 300 px hoch.
-- Zusätzlicher Schalter auf 470 px für genaue Arbeit.
-- Mehrere Messpunkte: Jeder Tipp im Gemälde erzeugt einen neuen Punkt.
-- Alle Messpunkte bleiben in einer Liste erhalten und können erneut ausgewählt werden.
-- Alle Punkte werden nummeriert in beiden Vergleichsbildern angezeigt.
-- Messpunkte können gemeinsam gelöscht werden.
-- Automatische Ausrichtung des Gemäldefotos auf das Original.
-- Automatische Ausrichtung korrigiert Verschiebung und Größenunterschied.
-- Qualitätsanzeige für die automatische Ausrichtung.
-- Nach der Ausrichtung wird beim Tippen automatisch die entsprechende
-  Stelle des Originalfotos mit der Gemäldefarbe verglichen.
-- Messradius bleibt einstellbar.
-- Lasuren Aquarell/Öl und alle Funktionen aus 1.15 bleiben erhalten.
-
-Hinweis:
-Die automatische Ausrichtung arbeitet bewusst schnell und iPad-tauglich.
-Sie korrigiert Verschiebung und Maßstab. Eine starke perspektivische Verzerrung
-oder deutliche Drehung des Fotos wird noch nicht vollständig korrigiert.
+Lasurenvergleich neu als großes Arbeitsfenster:
+- „Großen Lasurenvergleich öffnen“ im Lasurenbereich.
+- Das Vergleichsfenster nutzt fast den ganzen iPad-Bildschirm.
+- Original und Gemälde liegen groß nebeneinander.
+- Automatische Ausrichtung ist oben im großen Fenster deutlich sichtbar.
+- Einpassen, Messpunkte löschen und Schließen ebenfalls oben.
+- Messpunkte sind jetzt sehr kleine Fadenkreuze statt großer nummerierter Kreise.
+- Die Farbe unter dem Punkt bleibt sichtbar.
+- Beliebig viele Messpunkte.
+- Tippen setzt einen Punkt.
+- Ein-Finger-Ziehen verschiebt die Vergleichsansicht.
+- Zwei-Finger-Zoom vergrößert/verkleinert die Vergleichsansicht.
+- Beide Bilder werden gemeinsam bewegt/gezoomt.
+- Messradius im großen Fenster einstellbar und mit dem Lasurenmodul synchronisiert.
+- Die kleinen Bilder im Seitenbereich dienen nur noch als Übersicht.
+- Automatische Ausrichtung korrigiert Größe und Verschiebung des Gemäldefotos.
