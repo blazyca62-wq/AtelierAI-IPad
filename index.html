@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.8b SAUBER</title>
+  <title>AtelierAI iPad 1.20.8c CSS-FARBFELDER</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -134,27 +134,16 @@
       .toolnav button{min-height:46px;font-size:15px}
     }
 
-</style>
 
-<script>
-(async()=>{
-  try{
-    if('serviceWorker' in navigator){
-      const regs=await navigator.serviceWorker.getRegistrations();
-      for(const r of regs) await r.unregister();
-    }
-    if('caches' in window){
-      const keys=await caches.keys();
-      for(const k of keys) await caches.delete(k);
-    }
-  }catch(e){}
-})();
-</script>
+  /* 1.20.8c: reine Anzeige-Korrektur. Keine RGB-Werte, Pipetten oder Mischberechnungen verändert. */
+  #colorBox, #avgTargetBox, #smartTargetBox { filter: brightness(1.35); }
+
+</style>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.8b SAUBER</div>
+    <div class="title">AtelierAI · iPad 1.20.8c CSS-FARBFELDER</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1378,11 +1367,11 @@
     mixes.forEach((m,idx)=>{
       const card=document.createElement('div');
       card.className='mix-card';
-      const targetHex=rgbHex(displaySwatchColor(target)), mixHex=rgbHex(m.rgb);
+      const targetHex=rgbHex(target), mixHex=rgbHex(m.rgb);
       card.innerHTML=`
         <div class="mix-head"><b>Vorschlag ${idx+1}</b><span>${m.score}% Annäherung</span></div>
         <div class="mix-swatches">
-          <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${targetHex}"></div></div>
+          <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${targetHex};filter:brightness(1.35)"></div></div>
           <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex}"></div></div>
         </div>
         <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i]} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · Studio-Mischung · bis 5 Farben':'Mischqualität: Studio · bis 5 Farben'}</span></div>
@@ -1446,7 +1435,7 @@
     const robust=robustSmartColor(samples);
     lastAverageColor=avg;
     lastSmartColor=robust ? robust.smart : avg;
-    avgTargetBox.style.background=rgbHex(displaySwatchColor(avg));
+    avgTargetBox.style.background=rgbHex(avg);
     smartTargetBox.style.background=rgbHex(lastSmartColor);
     targetInfo.innerHTML=`Durchschnitt ${rgbHex(avg)} · RGB ${avg.join(', ')}<br>`+
       `Smart ${rgbHex(lastSmartColor)} · RGB ${lastSmartColor.join(', ')}<br>`+
@@ -1481,9 +1470,8 @@
     lastAverageColor=[...rgb];
     lastSmartColor=[...rgb];
     const hx=rgbHex(rgb);
-    const displayHx=rgbHex(displaySwatchColor(rgb));
-    avgTargetBox.style.background=displayHx;
-    smartTargetBox.style.background=displayHx;
+    avgTargetBox.style.background=hx;
+    smartTargetBox.style.background=hx;
     targetInfo.innerHTML=`${label} ${hx} · RGB ${rgb.join(', ')}`;
   }
 
@@ -2951,7 +2939,7 @@
     surfaceSelectedIndex=null;
     surfaceMarkCanvas=null;
     const hex=rgbHex(rgb);
-    colorBox.style.background=rgbHex(displaySwatchColor(rgb));
+    colorBox.style.background=hex;
     colorText.innerHTML=`RGB: ${rgb.join(', ')}<br>HEX: ${hex}`;
     setMixTarget(rgb,'Pipette');
     correctionBase=[...rgb]; refreshCorrection(); ideasBase=[...rgb]; refreshIdea();
@@ -3485,7 +3473,9 @@
   if('ResizeObserver' in window) new ResizeObserver(resizeCanvas).observe(viewer);
   resizeCanvas();
 
-
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+  }
 })();
 
 
