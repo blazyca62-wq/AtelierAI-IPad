@@ -1,10 +1,21 @@
-AtelierAI iPad 1.17.4 PC
+AtelierAI iPad 1.17.5 PC
 
-Gemeinsame persönliche Aquarellpalette:
-- Neue Auswahl „Meine Aquarellfarben · Horadam + Akademie“ im Aquarell-/Lasurenbereich.
-- Die vom Nutzer als vorhanden markierten Horadam- UND Akademie-Farben werden gemeinsam durchsucht.
-- Ein Misch- oder Lasurvorschlag darf Farben aus beiden Serien kombinieren.
-- Bei kombinierten Mischvorschlägen wird hinter der Farbe „Horadam“ bzw. „Akademie“ angezeigt.
-- Die bisherige Besitz-Auswahl bleibt erhalten; sie wird nicht neu angelegt oder überschrieben.
-- Einzelansicht „Nur Horadam“ und „Nur Akademie“ bleibt möglich.
-- Die verbesserte Aquarell-Mischlogik aus 1.17.3 bleibt erhalten.
+Wichtige Korrektur der Aquarell-Mischvorschläge.
+
+Gefundener Grundfehler:
+Helle Aquarell-Zielfarben wurden bisher nur durch Pigmentmischungen angenähert.
+Dadurch versuchte der Algorithmus z.B. einen hellen rosig-beigen Hautton durch
+viel Neapelgelb plus Cyan/Türkis und Magenta zu entsättigen. Mathematisch konnte
+das einen mittelmäßigen Treffer ergeben, malerisch war es falsch.
+
+Neu:
+- Aquarell wird als Pigmentmischung PLUS Verdünnung auf hellem Aquarellpapier berechnet.
+- Helle Farben entstehen primär durch Wasser/Papier.
+- Einzelfarbe wird zuerst geprüft.
+- Danach Zweiermischungen.
+- Ein drittes Pigment nur, wenn es die Zweierlösung deutlich verbessert.
+- Farbton-, Sättigungs- und Helligkeitsabweichungen werden zusätzlich geprüft.
+- Bei rosigen Hauttönen werden unnötige Cyan-/Türkis-/Grün-Gegenmischungen stark abgewertet.
+- Jeder Vorschlag zeigt jetzt eine ungefähre „Farbwirkung“/Verdünnung in Prozent.
+- Horadam und Akademie können weiterhin gemeinsam verwendet werden.
+- Nur die als vorhanden ausgewählten Farben werden benutzt.
