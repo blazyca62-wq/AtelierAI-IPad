@@ -1,12 +1,9 @@
-AtelierAI iPad 1.10.3 PC
+AtelierAI iPad 1.10.4 PC
 
-Notfallkorrektur nach 1.10.2:
-- Basis wieder 1.10.1, damit Foto öffnen unverändert funktioniert.
-- Der Foto-Import-Code wurde NICHT verändert.
-- Punkt-Pipette nur mit einem kleinen, getrennten Tap-Handler ergänzt.
-- Farbideen ausgeblendet, ohne den HTML-Aufbau zu löschen.
-- Flächenberater und sichtbare Bereichsmarkierung bleiben erhalten.
-- Studio-Mischung aus dem Flächenberater bleibt erhalten.
-- Navigation aus 1.10 bleibt erhalten.
+Änderung:
+- Punkt-Pipette springt nach der Farbauswahl automatisch direkt zum Bereich „Mischen“.
+- Die aufgenommene Farbe bleibt Zielfarbe für die Studio-Mischung.
+- Mischvorschläge werden sofort sichtbar.
+- Foto öffnen, Flächenberater, Navigation und alle Funktionen aus 1.10.3 bleiben unverändert.
 
 Orientierung: PC AtelierAI 2.6.96.
