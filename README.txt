@@ -1,4 +1,4 @@
-AtelierAI iPad 1.20.9 ZIELFARBE HELLER
+AtelierAI iPad 1.20.10 PUNKTPIPETTE FIX
 
 Stabilitaetsstand auf Basis von 1.20.3 FARBTREU.
 Zielreferenz fuer die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.

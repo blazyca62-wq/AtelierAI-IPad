@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.9 ZIELFARBE HELLER</title>
+  <title>AtelierAI iPad 1.20.10 PUNKTPIPETTE FIX</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.9 ZIELFARBE HELLER</div>
+    <div class="title">AtelierAI · iPad 1.20.10 PUNKTPIPETTE FIX</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1466,8 +1466,9 @@
     lastAverageColor=[...rgb];
     lastSmartColor=[...rgb];
     const hx=rgbHex(rgb);
-    avgTargetBox.style.background=hx;
-    smartTargetBox.style.background=hx;
+    const displayHx=rgbHex(displayTargetColor(rgb));
+    avgTargetBox.style.background=displayHx;
+    smartTargetBox.style.background=displayHx;
     targetInfo.innerHTML=`${label} ${hx} · RGB ${rgb.join(', ')}`;
   }
 
@@ -3407,7 +3408,14 @@
       touches.delete(e.pointerId);
       return;
     }
-    if(mode==='picker'&&touches.size===1){ pickColor(e.clientX,e.clientY); return; }
+    if(mode==='picker'&&touches.size===1){
+      pickColor(e.clientX,e.clientY);
+      touches.delete(e.pointerId);
+      try{ viewer.releasePointerCapture?.(e.pointerId); }catch(_){}
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     if(mode==='move'){
       if(touches.size===1){
         const p=[...touches.values()][0];
