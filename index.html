@@ -846,9 +846,24 @@
     return sum.map(v=>linearToSrgb8(v/sw));
   }
 
+  // Malerische Helligkeitskorrektur für größere Messflächen.
+  // Flächenmittel wirken visuell oft dunkler als die Farbe, die man
+  // beim Malen tatsächlich ansetzen würde. Die Anhebung arbeitet
+  // luminanzabhängig: Schatten/Mitteltöne werden deutlicher angehoben,
+  // helle Farben fast gar nicht. Punkt-Pipette bleibt unverändert.
+  function painterAreaLift(rgb){
+    const lum=luminance(rgb[0],rgb[1],rgb[2]);
+    const t=Math.max(0,Math.min(1,(220-lum)/220));
+    const gamma=1-(0.13*t); // bis ca. Gamma 0.87 in dunklen Bereichen
+    return rgb.map(v=>{
+      const n=Math.max(0,Math.min(1,v/255));
+      return Math.round(Math.pow(n,gamma)*255);
+    });
+  }
+
   function robustSmartColor(samples){
     if(!samples.length) return null;
-    const raw=linearAverageRGB(samples);
+    const raw=painterAreaLift(linearAverageRGB(samples));
     if(samples.length<7) return {smart:raw,count:samples.length,filtered:samples.length};
     const med=[0,1,2].map(ch=>median(samples.map(p=>p[ch])));
     const rows=samples.map(p=>{
@@ -862,7 +877,7 @@
     let kept=rows.filter(x=>!(((x.lum>247)||(x.lum<8)) && x.dist>limit) && x.dist<=limit*1.45);
     if(kept.length<Math.max(3,Math.floor(samples.length*.25))) kept=rows;
     const weights=kept.map(x=>1/(1+Math.pow(x.dist/Math.max(10,limit),2)));
-    const smart=linearAverageRGB(kept.map(x=>x.p),weights);
+    const smart=painterAreaLift(linearAverageRGB(kept.map(x=>x.p),weights));
     return {smart,count:samples.length,filtered:kept.length};
   }
 
@@ -1412,7 +1427,7 @@
       }
     }
     if(!samples.length) return;
-    const avg=linearAverageRGB(samples);
+    const avg=painterAreaLift(linearAverageRGB(samples));
     const robust=robustSmartColor(samples);
     lastAverageColor=avg;
     lastSmartColor=robust ? robust.smart : avg;
