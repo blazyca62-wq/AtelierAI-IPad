@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.14 PC</title>
+  <title>AtelierAI iPad 1.15 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.14 PC</div>
+    <div class="title">AtelierAI · iPad 1.15 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -356,8 +356,8 @@
 
 
       <div class="section" id="glazePanel">
-        <h3>Lasuren – Aquarell & Öl</h3>
-        <p>Von einer vorhandenen Grundfarbe zur gewünschten Zielfarbe. AtelierAI prüft zuerst eine Lasur und erst danach zwei Lasuren.</p>
+        <h3>Lasurenvergleich – Original ↔ Gemälde</h3>
+        <p>Das Originalfoto ist das Ziel. Das zweite Bild ist dein aktuelles Aquarell- oder Ölbild. Tippe im Gemälde auf eine Stelle; AtelierAI vergleicht dort beide Bilder und berechnet passende Lasuren.</p>
 
         <div class="palette-grid">
           <button id="glazeWaterBtn" class="active">Aquarell</button>
@@ -372,30 +372,56 @@
         </select>
 
         <div class="pc-card" style="margin-top:9px;">
-          <div class="tiny">1. Farbe aufnehmen → als Grundfarbe übernehmen. Danach zweite Farbe aufnehmen → als Zielfarbe übernehmen.</div>
+          <div class="grid2">
+            <label class="secondary" style="display:flex;align-items:center;justify-content:center;padding:9px;border-radius:8px;cursor:pointer;">
+              Originalfoto laden
+              <input id="glazeOriginalInput" type="file" accept="image/*" style="display:none">
+            </label>
+            <label class="secondary" style="display:flex;align-items:center;justify-content:center;padding:9px;border-radius:8px;cursor:pointer;">
+              Gemälde laden
+              <input id="glazePaintingInput" type="file" accept="image/*" style="display:none">
+            </label>
+          </div>
+
+          <div class="grid2" style="margin-top:8px;gap:8px;">
+            <div>
+              <div class="tiny">Original / Ziel</div>
+              <div style="position:relative;background:#ddd;border-radius:8px;overflow:hidden;aspect-ratio:4/3;">
+                <canvas id="glazeOriginalCanvas" style="width:100%;height:100%;display:block;"></canvas>
+              </div>
+            </div>
+            <div>
+              <div class="tiny">Aktuelles Gemälde</div>
+              <div style="position:relative;background:#ddd;border-radius:8px;overflow:hidden;aspect-ratio:4/3;">
+                <canvas id="glazePaintingCanvas" style="width:100%;height:100%;display:block;touch-action:none;"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="control-line" style="margin-top:8px;">
+            <label>Messradius</label>
+            <input id="glazeSampleRadius" type="range" min="1" max="30" value="8">
+            <span id="glazeSampleRadiusVal">8 px</span>
+          </div>
+
           <div class="mix-swatches" style="margin-top:7px;">
-            <div><div class="tiny">Grundfarbe</div><div id="glazeBaseSwatch" class="mix-swatch" style="background:#FFFFFF"></div></div>
-            <div><div class="tiny">Zielfarbe</div><div id="glazeTargetSwatch" class="mix-swatch" style="background:#808080"></div></div>
+            <div><div class="tiny">Gemälde-Farbe</div><div id="glazeBaseSwatch" class="mix-swatch" style="background:#808080"></div></div>
+            <div><div class="tiny">Original-Zielfarbe</div><div id="glazeTargetSwatch" class="mix-swatch" style="background:#808080"></div></div>
           </div>
-          <div class="grid2" style="margin-top:7px;">
-            <button id="glazeTakeBaseBtn" class="secondary">Pipette → Grundfarbe</button>
-            <button id="glazeTakeTargetBtn" class="secondary">Pipette → Zielfarbe</button>
-          </div>
-          <button id="glazeWhiteBaseBtn" class="secondary" style="width:100%;margin-top:6px;">Grundfarbe = Weiß</button>
-          <div id="glazeColorInfo" class="tiny" style="margin-top:7px;">Grundfarbe: Weiß · Zielfarbe noch nicht gesetzt.</div>
+          <div id="glazeColorInfo" class="tiny" style="margin-top:7px;">Bitte Originalfoto und Gemälde laden.</div>
         </div>
 
         <div class="control-line">
           <label>Max. Lasurstärke</label>
-          <input id="glazeMaxStrength" type="range" min="5" max="35" value="22">
-          <span id="glazeMaxStrengthVal">22 %</span>
+          <input id="glazeMaxStrength" type="range" min="5" max="35" value="18">
+          <span id="glazeMaxStrengthVal">18 %</span>
         </div>
 
         <button id="glazeCalcBtn" style="width:100%;">Lasur-Vorschläge berechnen</button>
         <div class="tiny" style="margin-top:6px;">Einfach vor komplex: Eine Lasur wird bevorzugt. Zwei Lasuren nur, wenn sie deutlich genauer sind.</div>
 
         <div id="glazeResults" class="pc-card" style="margin-top:8px;">
-          <span class="tiny">Noch keine Lasur berechnet.</span>
+          <span class="tiny">Noch keine Stelle im Gemälde ausgewählt.</span>
         </div>
       </div>
 
@@ -545,11 +571,14 @@
   const glazeWaterBtn=document.getElementById('glazeWaterBtn');
   const glazeOilBtn=document.getElementById('glazeOilBtn');
   const glazePalette=document.getElementById('glazePalette');
+  const glazeOriginalInput=document.getElementById('glazeOriginalInput');
+  const glazePaintingInput=document.getElementById('glazePaintingInput');
+  const glazeOriginalCanvas=document.getElementById('glazeOriginalCanvas');
+  const glazePaintingCanvas=document.getElementById('glazePaintingCanvas');
+  const glazeSampleRadius=document.getElementById('glazeSampleRadius');
+  const glazeSampleRadiusVal=document.getElementById('glazeSampleRadiusVal');
   const glazeBaseSwatch=document.getElementById('glazeBaseSwatch');
   const glazeTargetSwatch=document.getElementById('glazeTargetSwatch');
-  const glazeTakeBaseBtn=document.getElementById('glazeTakeBaseBtn');
-  const glazeTakeTargetBtn=document.getElementById('glazeTakeTargetBtn');
-  const glazeWhiteBaseBtn=document.getElementById('glazeWhiteBaseBtn');
   const glazeColorInfo=document.getElementById('glazeColorInfo');
   const glazeMaxStrength=document.getElementById('glazeMaxStrength');
   const glazeMaxStrengthVal=document.getElementById('glazeMaxStrengthVal');
@@ -645,8 +674,11 @@
   let surfaceMarkCanvas=null;
 
   let glazeMedium='water';
-  let glazeBase=[255,255,255];
+  let glazeBase=null;
   let glazeTarget=null;
+  let glazeOriginalImg=null;
+  let glazePaintingImg=null;
+  let glazePoint=null;
 
   let ideasBase=null;
 
@@ -1110,10 +1142,107 @@
   }
 
   function refreshGlazeColors(){
-    glazeBaseSwatch.style.background=rgbHex(glazeBase);
+    glazeBaseSwatch.style.background=glazeBase?rgbHex(glazeBase):'#808080';
     glazeTargetSwatch.style.background=glazeTarget?rgbHex(glazeTarget):'#808080';
-    glazeColorInfo.innerHTML=`Grundfarbe ${rgbHex(glazeBase)} · RGB ${glazeBase.join(', ')}<br>`+
-      (glazeTarget?`Zielfarbe ${rgbHex(glazeTarget)} · RGB ${glazeTarget.join(', ')}`:'Zielfarbe noch nicht gesetzt.');
+    if(glazeBase && glazeTarget){
+      glazeColorInfo.innerHTML=`Gemälde ${rgbHex(glazeBase)} · RGB ${glazeBase.join(', ')}<br>`+
+        `Original ${rgbHex(glazeTarget)} · RGB ${glazeTarget.join(', ')}`;
+    }else if(glazeOriginalImg && glazePaintingImg){
+      glazeColorInfo.textContent='Beide Bilder geladen. Jetzt im Gemälde auf die gewünschte Stelle tippen.';
+    }else{
+      glazeColorInfo.textContent='Bitte Originalfoto und Gemälde laden.';
+    }
+  }
+
+  function drawGlazePreview(canvas,image,point=null){
+    const rect=canvas.getBoundingClientRect();
+    const w=Math.max(2,Math.round(rect.width*devicePixelRatio));
+    const h=Math.max(2,Math.round(rect.height*devicePixelRatio));
+    if(canvas.width!==w) canvas.width=w;
+    if(canvas.height!==h) canvas.height=h;
+    const c=canvas.getContext('2d');
+    c.clearRect(0,0,w,h);
+    if(!image) return;
+    const scaleFit=Math.min(w/image.width,h/image.height);
+    const dw=image.width*scaleFit, dh=image.height*scaleFit;
+    const ox=(w-dw)/2, oy=(h-dh)/2;
+    c.drawImage(image,ox,oy,dw,dh);
+    if(point){
+      const px=ox+point.x*dw, py=oy+point.y*dh;
+      c.save();
+      c.strokeStyle='#fff'; c.lineWidth=Math.max(2,3*devicePixelRatio);
+      c.shadowColor='#000'; c.shadowBlur=4*devicePixelRatio;
+      c.beginPath(); c.arc(px,py,8*devicePixelRatio,0,Math.PI*2); c.stroke();
+      c.restore();
+    }
+  }
+
+  function redrawGlazePreviews(){
+    drawGlazePreview(glazeOriginalCanvas,glazeOriginalImg,glazePoint);
+    drawGlazePreview(glazePaintingCanvas,glazePaintingImg,glazePoint);
+  }
+
+  function loadGlazeImage(file,which){
+    if(!file) return;
+    const url=URL.createObjectURL(file);
+    const im=new Image();
+    im.onload=()=>{
+      if(which==='original') glazeOriginalImg=im;
+      else glazePaintingImg=im;
+      glazePoint=null; glazeBase=null; glazeTarget=null;
+      redrawGlazePreviews(); refreshGlazeColors();
+      glazeResults.innerHTML='<span class="tiny">Bild geladen. Für den Vergleich beide Bilder laden und dann im Gemälde eine Stelle antippen.</span>';
+      URL.revokeObjectURL(url);
+    };
+    im.src=url;
+  }
+
+  function sampleImageNormalized(image,point,radiusPx){
+    if(!image||!point) return null;
+    const c=document.createElement('canvas');
+    c.width=image.width; c.height=image.height;
+    const cc=c.getContext('2d',{willReadFrequently:true});
+    cc.drawImage(image,0,0);
+    const cx=Math.round(point.x*image.width), cy=Math.round(point.y*image.height);
+    const r=Math.max(1,Math.round(radiusPx));
+    const x0=Math.max(0,cx-r), y0=Math.max(0,cy-r);
+    const x1=Math.min(image.width,cx+r+1), y1=Math.min(image.height,cy+r+1);
+    const w=Math.max(1,x1-x0), h=Math.max(1,y1-y0);
+    const d=cc.getImageData(x0,y0,w,h).data;
+    let sr=0,sg=0,sb=0,n=0;
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+      const dx=x+x0-cx,dy=y+y0-cy;
+      if(dx*dx+dy*dy>r*r) continue;
+      const i=(y*w+x)*4;
+      if(d[i+3]<20) continue;
+      sr+=d[i];sg+=d[i+1];sb+=d[i+2];n++;
+    }
+    return n?[Math.round(sr/n),Math.round(sg/n),Math.round(sb/n)]:null;
+  }
+
+  function pickGlazeComparisonPoint(clientX,clientY){
+    if(!glazePaintingImg || !glazeOriginalImg){
+      glazeColorInfo.textContent='Bitte zuerst Originalfoto und Gemälde laden.';
+      return;
+    }
+    const r=glazePaintingCanvas.getBoundingClientRect();
+    const cw=glazePaintingCanvas.width, ch=glazePaintingCanvas.height;
+    const sx=(clientX-r.left)*devicePixelRatio;
+    const sy=(clientY-r.top)*devicePixelRatio;
+    const fit=Math.min(cw/glazePaintingImg.width,ch/glazePaintingImg.height);
+    const dw=glazePaintingImg.width*fit, dh=glazePaintingImg.height*fit;
+    const ox=(cw-dw)/2, oy=(ch-dh)/2;
+    if(sx<ox||sy<oy||sx>ox+dw||sy>oy+dh) return;
+    glazePoint={x:(sx-ox)/dw,y:(sy-oy)/dh};
+    const rad=Number(glazeSampleRadius.value);
+    glazeBase=sampleImageNormalized(glazePaintingImg,glazePoint,rad);
+    // Radius scales relative to image size so both images sample roughly
+    // the same visual area even if their resolutions differ.
+    const scaleR=rad*(glazeOriginalImg.width/glazePaintingImg.width);
+    glazeTarget=sampleImageNormalized(glazeOriginalImg,glazePoint,scaleR);
+    redrawGlazePreviews();
+    refreshGlazeColors();
+    glazeResults.innerHTML='<span class="tiny">Vergleichsstelle aufgenommen. Jetzt Lasur-Vorschläge berechnen.</span>';
   }
 
   function setGlazeMedium(m){
@@ -1132,11 +1261,12 @@
     // Praxisnah sanfter Startwert.
     glazeMaxStrength.value=m==='water'?'18':'22';
     glazeMaxStrengthVal.textContent=glazeMaxStrength.value+' %';
-    glazeResults.innerHTML='<span class="tiny">Noch keine Lasur berechnet.</span>';
+    glazeResults.innerHTML='<span class="tiny">Originalfoto und Gemälde vergleichen.</span>';
   }
 
   function bestSingleGlazes(colors,maxStrength){
     const out=[];
+    if(!glazeBase||!glazeTarget) return out;
     const step=2;
     for(const [name,rgb] of colors){
       let best=null;
@@ -1223,7 +1353,7 @@
 
   function calculateGlazes(){
     if(!glazeTarget){
-      glazeResults.innerHTML='<b>Bitte zuerst eine Zielfarbe übernehmen.</b>';
+      glazeResults.innerHTML='<b>Bitte zuerst Originalfoto und Gemälde laden und im Gemälde eine Stelle auswählen.</b>';
       return;
     }
     const colors=glazeActiveColors();
@@ -2135,24 +2265,27 @@
 
   glazeWaterBtn.addEventListener('click',()=>setGlazeMedium('water'));
   glazeOilBtn.addEventListener('click',()=>setGlazeMedium('oil'));
-  glazeTakeBaseBtn.addEventListener('click',()=>{
-    const t=targetArray();
-    if(t){ glazeBase=[...t]; refreshGlazeColors(); glazeResults.innerHTML='<span class="tiny">Grundfarbe übernommen. Jetzt Zielfarbe aufnehmen.</span>'; }
+  glazeOriginalInput.addEventListener('change',e=>loadGlazeImage(e.target.files&&e.target.files[0],'original'));
+  glazePaintingInput.addEventListener('change',e=>loadGlazeImage(e.target.files&&e.target.files[0],'painting'));
+  glazePaintingCanvas.addEventListener('pointerup',e=>{
+    pickGlazeComparisonPoint(e.clientX,e.clientY);
+    e.preventDefault();
   });
-  glazeTakeTargetBtn.addEventListener('click',()=>{
-    const t=targetArray();
-    if(t){ glazeTarget=[...t]; refreshGlazeColors(); glazeResults.innerHTML='<span class="tiny">Zielfarbe übernommen. Lasur-Vorschläge können berechnet werden.</span>'; }
+  glazeSampleRadius.addEventListener('input',()=>{
+    glazeSampleRadiusVal.textContent=glazeSampleRadius.value+' px';
+    if(glazePoint && glazeOriginalImg && glazePaintingImg){
+      const rad=Number(glazeSampleRadius.value);
+      glazeBase=sampleImageNormalized(glazePaintingImg,glazePoint,rad);
+      glazeTarget=sampleImageNormalized(glazeOriginalImg,glazePoint,rad*(glazeOriginalImg.width/glazePaintingImg.width));
+      refreshGlazeColors();
+    }
   });
-  glazeWhiteBaseBtn.addEventListener('click',()=>{
-    glazeBase=[255,255,255]; refreshGlazeColors();
-  });
-  glazeMaxStrength.addEventListener('input',()=>{
-    glazeMaxStrengthVal.textContent=glazeMaxStrength.value+' %';
-  });
+  glazeMaxStrength.addEventListener('input',()=>{glazeMaxStrengthVal.textContent=glazeMaxStrength.value+' %';});
   glazeCalcBtn.addEventListener('click',calculateGlazes);
   glazePalette.addEventListener('change',()=>{
     glazeResults.innerHTML='<span class="tiny">Palette geändert. Vorschläge neu berechnen.</span>';
   });
+  window.addEventListener('resize',redrawGlazePreviews);
   refreshGlazeColors();
   setGlazeMedium('water');
 

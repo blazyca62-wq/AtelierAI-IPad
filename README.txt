@@ -1,22 +1,25 @@
-AtelierAI iPad 1.14 PC
+AtelierAI iPad 1.15 PC
 
-Neu: Lasuren – Aquarell & Öl
+Lasurenvergleich neu aufgebaut: Originalfoto ↔ aktuelles Gemälde
 
-Nach dem Prinzip des früheren PC-Lasur-Assistenten:
-- Grundfarbe und Zielfarbe getrennt übernehmen.
-- Aquarell: Schmincke Horadam oder Akademie.
+Arbeitsablauf:
+1. Originalfoto laden – dieses Bild ist das Ziel.
+2. Foto des aktuellen Aquarell- oder Ölbildes laden.
+3. Im Gemälde auf die zu korrigierende Stelle tippen.
+4. AtelierAI übernimmt die Farbe des Gemäldes als Ausgangsfarbe.
+5. An derselben relativen Bildposition wird die Farbe aus dem Original als Zielfarbe gemessen.
+6. Lasur-Vorschläge berechnen.
+
+Weitere Punkte:
+- Einstellbarer Messradius.
+- Vergleichspunkt wird in beiden Bildern markiert.
+- Aquarell: Horadam / Akademie.
 - Öl: Winsor & Newton Artisan.
-- Zuerst Einzelfarben / eine Lasur prüfen.
-- Zwei Lasuren nur dann bevorzugen, wenn sie deutlich besser sind.
-- Reihenfolge und Lasurstärke werden angezeigt.
-- Farbfortschritt Grundfarbe -> Lasur(en) -> Zielfarbe.
-- Max. Lasurstärke einstellbar.
-- Aquarell standardmäßig bewusst sanfter als Öl.
-- Verwendet die in AtelierAI vorhandene aktive Palette; wenn noch keine
-  persönliche Farbauswahl gesetzt ist, steht die Herstellerpalette zur Verfügung.
+- Eine Lasur wird bevorzugt; zwei nur bei deutlicher Verbesserung.
+- Aquarell-Lasurstärke bewusst sanfter.
+- Alle bisherigen Funktionen aus 1.14 bleiben erhalten.
 
-Hinweis:
-Die iPad-Simulation ist eine Bildschirmannäherung. Papier, Pigmenttransparenz,
-Malmittel und reale Schichtdicke beeinflussen das tatsächliche Ergebnis.
-
-Alle Funktionen aus 1.13 bleiben erhalten.
+Wichtig:
+Für die automatische Positionszuordnung sollten Original und Gemälde möglichst
+denselben Bildausschnitt und ähnliche Perspektive haben. Eine spätere automatische
+Ausrichtung kann darauf aufbauen.
