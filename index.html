@@ -188,7 +188,7 @@
           <input id="formsSlider" type="range" min="0" max="5" value="0" step="1">
           <div class="formsValue" id="formsValue">Aus</div>
         </div>
-        <p>1 = leichte Vereinfachung, 5 = große ruhige Malflächen. Ähnliche Farben werden zu großen zusammenhängenden Malflächen vereinigt. Kleine Farbinseln verschwinden, wichtige Kanten bleiben erhalten.</p>
+        <p>1 = viele ruhige Malflächen, 5 = stärkere Vereinfachung mit weniger großen Farbflächen. Ähnliche Farben werden zu großen zusammenhängenden Malflächen vereinigt. Kleine Farbinseln verschwinden, wichtige Kanten bleiben erhalten.</p>
       </div>
 
       <div class="section" id="tonesPanel">
@@ -2666,21 +2666,21 @@
       return;
     }
 
-    // Neue Großformen 1.20:
-    // Nicht nur weniger RGB-Werte, sondern tatsächlich größere zusammenhängende Malflächen.
-    // Stufe 5 ist bewusst am stärksten flächenorientiert.
+    // 1.20.1 – Großformen neu:
+    // Ziel: ruhige Malflächen statt Pixel-/Mosaikoptik.
+    // Höhere Arbeitsauflösung + kantenschonende Glättung + Farbcluster + Inselbereinigung.
     const cfg={
-      1:{workLong:320, smooth:1, colorStep:34, mergePasses:1, mergeRadius:2, edge:58, minRegion:3},
-      2:{workLong:420, smooth:1, colorStep:38, mergePasses:2, mergeRadius:2, edge:62, minRegion:5},
-      3:{workLong:520, smooth:2, colorStep:43, mergePasses:2, mergeRadius:3, edge:68, minRegion:9},
-      4:{workLong:620, smooth:2, colorStep:49, mergePasses:3, mergeRadius:3, edge:74, minRegion:15},
-      5:{workLong:700, smooth:3, colorStep:56, mergePasses:4, mergeRadius:4, edge:82, minRegion:24}
+      1:{workLong:900, clusters:28, blurPasses:2, majority:1, minIsland:14},
+      2:{workLong:920, clusters:23, blurPasses:2, majority:2, minIsland:20},
+      3:{workLong:940, clusters:18, blurPasses:3, majority:2, minIsland:28},
+      4:{workLong:960, clusters:14, blurPasses:3, majority:3, minIsland:38},
+      5:{workLong:980, clusters:11, blurPasses:4, majority:3, minIsland:52}
     }[formLevel];
 
     const longSide=Math.max(w,h);
     const scaleDown=Math.min(1,cfg.workLong/longSide);
-    const ww=Math.max(48,Math.round(w*scaleDown));
-    const wh=Math.max(48,Math.round(h*scaleDown));
+    const ww=Math.max(64,Math.round(w*scaleDown));
+    const wh=Math.max(64,Math.round(h*scaleDown));
 
     const work=document.createElement('canvas');
     work.width=ww;work.height=wh;
@@ -2691,184 +2691,210 @@
 
     let img=ctx.getImageData(0,0,ww,wh);
 
-    const d2=(r1,g1,b1,r2,g2,b2)=>{
-      const dr=r1-r2,dg=g1-g2,db=b1-b2;
-      return dr*dr+dg*dg+db*db;
+    const colorD2=(a,b,c,d,e,f)=>{
+      const dr=a-d,dg=b-e,db=c-f;
+      // Grün ist für wahrgenommene Helligkeit stärker, Blau etwas schwächer.
+      return dr*dr*.9 + dg*dg*1.15 + db*db*.75;
     };
 
-    // 1) Kantenschonendes Glätten:
-    // Nachbarn werden nur einbezogen, wenn ihre Farbe noch zur lokalen Fläche gehört.
-    for(let pass=0;pass<cfg.smooth;pass++){
+    // 1) Kantenschonende Glättung.
+    // Nur ähnliche Nachbarn werden gemittelt; starke Grenzen bleiben stehen.
+    for(let pass=0;pass<cfg.blurPasses;pass++){
       const src=img.data;
       const next=ctx.createImageData(ww,wh);
       const out=next.data;
-      const rad=formLevel>=4?2:1;
-      const colorLimit=(cfg.edge*.82)**2;
+      const rad=2;
+      const limit=(formLevel<=2?42:formLevel===3?48:54);
+      const limit2=limit*limit;
+
       for(let y=0;y<wh;y++){
         for(let x=0;x<ww;x++){
           const i=(y*ww+x)*4;
           const cr=src[i],cg=src[i+1],cb=src[i+2];
-          let sr=0,sg=0,sb=0,sw=0;
+          let sr=cr*4,sg=cg*4,sb=cb*4,sw=4;
+
           for(let yy=Math.max(0,y-rad);yy<=Math.min(wh-1,y+rad);yy++){
             for(let xx=Math.max(0,x-rad);xx<=Math.min(ww-1,x+rad);xx++){
+              if(xx===x&&yy===y)continue;
               const j=(yy*ww+xx)*4;
-              const dd=d2(cr,cg,cb,src[j],src[j+1],src[j+2]);
-              if(dd>colorLimit)continue;
-              const wt=dd<colorLimit*.20?3:1;
+              const d=colorD2(cr,cg,cb,src[j],src[j+1],src[j+2]);
+              if(d>limit2)continue;
+              const wt=d<limit2*.18?3:d<limit2*.48?2:1;
               sr+=src[j]*wt;sg+=src[j+1]*wt;sb+=src[j+2]*wt;sw+=wt;
             }
           }
-          out[i]=Math.round(sr/sw);out[i+1]=Math.round(sg/sw);out[i+2]=Math.round(sb/sw);out[i+3]=255;
+
+          out[i]=Math.round(sr/sw);
+          out[i+1]=Math.round(sg/sw);
+          out[i+2]=Math.round(sb/sw);
+          out[i+3]=255;
         }
       }
       img=next;
     }
 
-    // 2) Wahrnehmungsfreundlichere Quantisierung:
-    // Helligkeit etwas feiner erhalten als Farbkanäle, damit Nase/Mund/Augen nicht verschwinden.
-    {
-      const src=img.data;
-      const q=cfg.colorStep;
-      for(let i=0;i<src.length;i+=4){
-        const r=src[i],g=src[i+1],b=src[i+2];
-        const lum=.2126*r+.7152*g+.0722*b;
-        let rr=Math.round(r/q)*q,gg=Math.round(g/q)*q,bb=Math.round(b/q)*q;
-        const qLum=.2126*rr+.7152*gg+.0722*bb;
-        const correction=(lum-qLum)*.55;
-        src[i]=Math.max(0,Math.min(255,Math.round(rr+correction)));
-        src[i+1]=Math.max(0,Math.min(255,Math.round(gg+correction)));
-        src[i+2]=Math.max(0,Math.min(255,Math.round(bb+correction)));
+    // 2) K-Means-artige Farbgruppen aus dem Bild selbst.
+    // Dadurch entstehen natürliche Bildfarben statt starre RGB-Rasterfarben.
+    const data=img.data;
+    const samples=[];
+    const sampleStep=Math.max(1,Math.floor(Math.sqrt((ww*wh)/14000)));
+    for(let y=0;y<wh;y+=sampleStep){
+      for(let x=0;x<ww;x+=sampleStep){
+        const i=(y*ww+x)*4;
+        samples.push([data[i],data[i+1],data[i+2]]);
       }
     }
 
-    // 3) Flächenvereinigung statt Pixelmuster:
-    // Jeder Punkt übernimmt bevorzugt die dominante ähnliche Nachbarfläche.
-    for(let pass=0;pass<cfg.mergePasses;pass++){
-      const src=img.data;
-      const next=ctx.createImageData(ww,wh);
-      next.data.set(src);
-      const out=next.data;
-      const rad=cfg.mergeRadius;
-      const sameLimit=(cfg.edge*1.15)**2;
-      const edgeLimit=(cfg.edge*1.55)**2;
+    const k=Math.min(cfg.clusters,Math.max(4,samples.length));
+    const centers=[];
+
+    // deterministische Startfarben über Helligkeits-/Farbverteilung
+    const sorted=[...samples].sort((a,b)=>
+      (.2126*a[0]+.7152*a[1]+.0722*a[2])-(.2126*b[0]+.7152*b[1]+.0722*b[2])
+    );
+    for(let n=0;n<k;n++){
+      const idx=Math.min(sorted.length-1,Math.round((n+.5)/k*(sorted.length-1)));
+      centers.push([...sorted[idx]]);
+    }
+
+    for(let iter=0;iter<7;iter++){
+      const sums=Array.from({length:k},()=>[0,0,0,0]);
+      for(const q of samples){
+        let bi=0,bd=Infinity;
+        for(let c=0;c<k;c++){
+          const z=centers[c];
+          const d=colorD2(q[0],q[1],q[2],z[0],z[1],z[2]);
+          if(d<bd){bd=d;bi=c;}
+        }
+        const z=sums[bi];
+        z[0]+=q[0];z[1]+=q[1];z[2]+=q[2];z[3]++;
+      }
+      for(let c=0;c<k;c++){
+        const z=sums[c];
+        if(z[3]){
+          centers[c]=[z[0]/z[3],z[1]/z[3],z[2]/z[3]];
+        }
+      }
+    }
+
+    // Pixel den natürlichen Farbgruppen zuweisen.
+    let labels=new Uint16Array(ww*wh);
+    for(let pidx=0;pidx<ww*wh;pidx++){
+      const i=pidx*4;
+      let bi=0,bd=Infinity;
+      for(let c=0;c<k;c++){
+        const z=centers[c];
+        const d=colorD2(data[i],data[i+1],data[i+2],z[0],z[1],z[2]);
+        if(d<bd){bd=d;bi=c;}
+      }
+      labels[pidx]=bi;
+    }
+
+    // 3) Mehrheitsfilter: einzelne Sprenkel verschwinden,
+    // Flächenränder werden ruhiger und weniger gezackt.
+    for(let pass=0;pass<cfg.majority;pass++){
+      const next=new Uint16Array(labels);
+      const radius=formLevel>=4?2:1;
 
       for(let y=0;y<wh;y++){
         for(let x=0;x<ww;x++){
-          const i=(y*ww+x)*4;
-          const cr=src[i],cg=src[i+1],cb=src[i+2];
-
-          // Starke lokale Kante? Dann konservativer zusammenführen.
-          let maxEdge=0;
-          if(x>0){const j=i-4;maxEdge=Math.max(maxEdge,d2(cr,cg,cb,src[j],src[j+1],src[j+2]));}
-          if(x<ww-1){const j=i+4;maxEdge=Math.max(maxEdge,d2(cr,cg,cb,src[j],src[j+1],src[j+2]));}
-          if(y>0){const j=i-ww*4;maxEdge=Math.max(maxEdge,d2(cr,cg,cb,src[j],src[j+1],src[j+2]));}
-          if(y<wh-1){const j=i+ww*4;maxEdge=Math.max(maxEdge,d2(cr,cg,cb,src[j],src[j+1],src[j+2]));}
-          const limit=maxEdge>edgeLimit?sameLimit*.45:sameLimit;
-
-          const buckets=new Map();
-          const step=formLevel>=4?2:1;
-          for(let yy=Math.max(0,y-rad);yy<=Math.min(wh-1,y+rad);yy+=step){
-            for(let xx=Math.max(0,x-rad);xx<=Math.min(ww-1,x+rad);xx+=step){
-              const j=(yy*ww+xx)*4;
-              const rr=src[j],gg=src[j+1],bb=src[j+2];
-              if(d2(cr,cg,cb,rr,gg,bb)>limit)continue;
-              // Bucket etwas gröber als die Quantisierung: benachbarte Töne bilden EINE Malfläche.
-              const kq=Math.max(18,Math.round(cfg.colorStep*.72));
-              const kr=Math.round(rr/kq)*kq,kg=Math.round(gg/kq)*kq,kb=Math.round(bb/kq)*kq;
-              const key=(kr<<16)|(kg<<8)|kb;
-              let z=buckets.get(key);
-              if(!z){z=[0,0,0,0];buckets.set(key,z);}
-              z[0]+=rr;z[1]+=gg;z[2]+=bb;z[3]++;
+          const pos=y*ww+x;
+          const counts=new Map();
+          for(let yy=Math.max(0,y-radius);yy<=Math.min(wh-1,y+radius);yy++){
+            for(let xx=Math.max(0,x-radius);xx<=Math.min(ww-1,x+radius);xx++){
+              const lab=labels[yy*ww+xx];
+              counts.set(lab,(counts.get(lab)||0)+1);
             }
           }
-          let best=null;
-          for(const z of buckets.values())if(!best||z[3]>best[3])best=z;
-          if(best&&best[3]>=2){
-            out[i]=Math.round(best[0]/best[3]);
-            out[i+1]=Math.round(best[1]/best[3]);
-            out[i+2]=Math.round(best[2]/best[3]);
+          let best=labels[pos],bestN=0;
+          for(const [lab,n] of counts){
+            if(n>bestN){bestN=n;best=lab;}
+          }
+
+          // Nicht über sehr starke Bildkanten hinweg bügeln.
+          const i=pos*4;
+          const own=centers[labels[pos]],cand=centers[best];
+          if(colorD2(own[0],own[1],own[2],cand[0],cand[1],cand[2]) < 78*78){
+            next[pos]=best;
           }
         }
       }
-      img=next;
+      labels=next;
     }
 
-    // 4) Kleine Farbinseln als echte zusammenhängende Regionen erkennen und
-    // mit der häufigsten ähnlichen Nachbarfläche verschmelzen.
-    // Auf Arbeitsauflösung bewusst begrenzt, damit Safari/iPad stabil bleibt.
+    // 4) Kleine zusammenhängende Inseln entfernen.
+    // Nur kleine Regionen werden mit der häufigsten angrenzenden Farbe verschmolzen.
     {
-      const data=img.data;
-      const labels=new Int32Array(ww*wh);
-      labels.fill(-1);
-      const dirs=[-1,1,-ww,ww];
-      const regions=[];
-      let label=0;
-      const regionTol=(cfg.colorStep*.82)**2;
+      const seen=new Uint8Array(ww*wh);
+      const minSize=cfg.minIsland;
 
       for(let seed=0;seed<ww*wh;seed++){
-        if(labels[seed]!==-1)continue;
-        const si=seed*4,sr=data[si],sg=data[si+1],sb=data[si+2];
-        const stack=[seed],pixels=[];
-        labels[seed]=label;
-        while(stack.length){
-          const pos=stack.pop();pixels.push(pos);
-          const x=pos%ww,y=(pos/ww)|0;
-          if(x>0){
-            const n=pos-1;if(labels[n]===-1){const j=n*4;if(d2(sr,sg,sb,data[j],data[j+1],data[j+2])<=regionTol){labels[n]=label;stack.push(n);}}
-          }
-          if(x<ww-1){
-            const n=pos+1;if(labels[n]===-1){const j=n*4;if(d2(sr,sg,sb,data[j],data[j+1],data[j+2])<=regionTol){labels[n]=label;stack.push(n);}}
-          }
-          if(y>0){
-            const n=pos-ww;if(labels[n]===-1){const j=n*4;if(d2(sr,sg,sb,data[j],data[j+1],data[j+2])<=regionTol){labels[n]=label;stack.push(n);}}
-          }
-          if(y<wh-1){
-            const n=pos+ww;if(labels[n]===-1){const j=n*4;if(d2(sr,sg,sb,data[j],data[j+1],data[j+2])<=regionTol){labels[n]=label;stack.push(n);}}
-          }
-        }
-        let ar=0,ag=0,ab=0;
-        for(const pos of pixels){const j=pos*4;ar+=data[j];ag+=data[j+1];ab+=data[j+2];}
-        regions.push({pixels,rgb:[ar/pixels.length,ag/pixels.length,ab/pixels.length]});
-        label++;
-      }
+        if(seen[seed])continue;
+        const lab=labels[seed];
+        const stack=[seed];
+        const region=[];
+        seen[seed]=1;
 
-      const minSize=cfg.minRegion;
-      for(let rid=0;rid<regions.length;rid++){
-        const reg=regions[rid];
-        if(reg.pixels.length>=minSize)continue;
-        const neigh=new Map();
-        for(const pos of reg.pixels){
+        while(stack.length){
+          const pos=stack.pop();
+          region.push(pos);
           const x=pos%ww,y=(pos/ww)|0;
-          const ns=[];
-          if(x>0)ns.push(pos-1);if(x<ww-1)ns.push(pos+1);
-          if(y>0)ns.push(pos-ww);if(y<wh-1)ns.push(pos+ww);
-          for(const n of ns){
+          const neigh=[];
+          if(x>0)neigh.push(pos-1);
+          if(x<ww-1)neigh.push(pos+1);
+          if(y>0)neigh.push(pos-ww);
+          if(y<wh-1)neigh.push(pos+ww);
+
+          for(const n of neigh){
+            if(!seen[n]&&labels[n]===lab){
+              seen[n]=1;stack.push(n);
+            }
+          }
+        }
+
+        if(region.length>=minSize)continue;
+
+        const border=new Map();
+        for(const pos of region){
+          const x=pos%ww,y=(pos/ww)|0;
+          const neigh=[];
+          if(x>0)neigh.push(pos-1);
+          if(x<ww-1)neigh.push(pos+1);
+          if(y>0)neigh.push(pos-ww);
+          if(y<wh-1)neigh.push(pos+ww);
+          for(const n of neigh){
             const nl=labels[n];
-            if(nl!==rid)neigh.set(nl,(neigh.get(nl)||0)+1);
+            if(nl!==lab)border.set(nl,(border.get(nl)||0)+1);
           }
         }
-        let bestId=-1,bestScore=-Infinity;
-        for(const [nid,border] of neigh){
-          const nr=regions[nid];if(!nr)continue;
-          const cd=d2(reg.rgb[0],reg.rgb[1],reg.rgb[2],nr.rgb[0],nr.rgb[1],nr.rgb[2]);
-          // Viel gemeinsame Grenze bevorzugen, sehr unähnliche Kanten schützen.
-          if(cd>(cfg.edge*2.0)**2)continue;
-          const score=border-cd/5000;
-          if(score>bestScore){bestScore=score;bestId=nid;}
+
+        let best=-1,bestScore=-Infinity;
+        for(const [nl,count] of border){
+          const a=centers[lab],b=centers[nl];
+          const cd=colorD2(a[0],a[1],a[2],b[0],b[1],b[2]);
+          if(cd>95*95)continue; // wichtige Kontrastkante schützen
+          const score=count-cd/8000;
+          if(score>bestScore){bestScore=score;best=nl;}
         }
-        if(bestId>=0){
-          const col=regions[bestId].rgb;
-          for(const pos of reg.pixels){
-            const j=pos*4;
-            data[j]=Math.round(col[0]);data[j+1]=Math.round(col[1]);data[j+2]=Math.round(col[2]);
-          }
+        if(best>=0){
+          for(const pos of region)labels[pos]=best;
         }
       }
     }
 
-    ctx.putImageData(img,0,0);
+    // 5) Ergebnis aus Clusterfarben rendern.
+    const out=ctx.createImageData(ww,wh);
+    for(let pidx=0;pidx<ww*wh;pidx++){
+      const i=pidx*4;
+      const z=centers[labels[pidx]];
+      out.data[i]=Math.round(z[0]);
+      out.data[i+1]=Math.round(z[1]);
+      out.data[i+2]=Math.round(z[2]);
+      out.data[i+3]=255;
+    }
+    ctx.putImageData(out,0,0);
 
-    // 5) Hochskalieren mit Glättung. Keine künstliche Pixelkante.
+    // Hochskalieren weich, damit keine blockige Pixelkante sichtbar wird.
     formCtx.imageSmoothingEnabled=true;
     formCtx.imageSmoothingQuality='high';
     formCtx.drawImage(work,0,0,ww,wh,0,0,w,h);

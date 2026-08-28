@@ -1,13 +1,14 @@
-AtelierAI iPad 1.20 PC
+AtelierAI iPad 1.20.1 PC
 
-Großformen grundlegend verbessert:
-- Ziel: echte große, zusammenhängende Malflächen statt pixelartiger Farbvereinfachung
-- kantenschonende lokale Glättung
-- Farbreduktion mit besserem Erhalt der Helligkeitsstruktur
-- dominante Nachbarflächen werden zusammengeführt
-- kleine zusammenhängende Farbinseln werden erkannt und mit passenden Nachbarflächen verschmolzen
-- starke Kanten werden geschützt
-- Stufe 5 ist jetzt die stärkste Flächenvereinfachung
-- Stufen 1–5 steigern zunehmend die Flächenbildung
-- Berechnung erfolgt auf begrenzter Arbeitsauflösung für iPad-Stabilität
-- alle Funktionen aus 1.19 bleiben erhalten; Misch- und Lasurenlogik unverändert
+Großformen zweite grundlegende Überarbeitung:
+- bisherige blockige RGB-Quantisierung entfernt
+- deutlich höhere Arbeitsauflösung (ca. 900–980 Pixel lange Seite)
+- kantenschonende Glättung
+- natürliche Farbcluster direkt aus dem Bild statt starrem RGB-Raster
+- Stufen 1–5: ca. 28 / 23 / 18 / 14 / 11 Farbbereiche
+- Nachbarschafts-Mehrheitsfilter gegen Sprenkel und gezackte Pixelmuster
+- kleine Farbinseln werden zusammengeführt
+- starke Kontrastkanten bleiben geschützt
+- weiches Hochskalieren
+- Ziel: ruhige, malbare Flächen ähnlich einer guten fotografischen Vereinfachung
+- Mischung und Lasuren aus 1.19 unverändert
