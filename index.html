@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.2 PC</title>
+  <title>AtelierAI iPad 1.20.3 FARBTREU</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -818,9 +818,37 @@
     return a.length%2 ? a[m] : (a[m-1]+a[m])/2;
   }
 
+  // Farbtreue Mittelung:
+  // RGB-Fotos liegen in sRGB. Ein direktes arithmetisches Mitteln der
+  // 8-Bit-sRGB-Werte macht gemischte Messbereiche sichtbar zu dunkel.
+  // Deshalb für Mittelwerte zuerst in lineares Licht umrechnen und danach
+  // wieder nach sRGB zurückwandeln.
+  function srgb8ToLinear(v){
+    const c=Math.max(0,Math.min(255,v))/255;
+    return c<=0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4);
+  }
+  function linearToSrgb8(v){
+    const c=Math.max(0,Math.min(1,v));
+    const s=c<=0.0031308 ? 12.92*c : 1.055*Math.pow(c,1/2.4)-0.055;
+    return Math.round(Math.max(0,Math.min(1,s))*255);
+  }
+  function linearAverageRGB(samples, weights=null){
+    if(!samples || !samples.length) return [0,0,0];
+    let sum=[0,0,0], sw=0;
+    for(let i=0;i<samples.length;i++){
+      const w=weights ? weights[i] : 1;
+      sw+=w;
+      sum[0]+=srgb8ToLinear(samples[i][0])*w;
+      sum[1]+=srgb8ToLinear(samples[i][1])*w;
+      sum[2]+=srgb8ToLinear(samples[i][2])*w;
+    }
+    if(sw<=0) return [0,0,0];
+    return sum.map(v=>linearToSrgb8(v/sw));
+  }
+
   function robustSmartColor(samples){
     if(!samples.length) return null;
-    const raw=[0,1,2].map(ch=>Math.round(samples.reduce((s,p)=>s+p[ch],0)/samples.length));
+    const raw=linearAverageRGB(samples);
     if(samples.length<7) return {smart:raw,count:samples.length,filtered:samples.length};
     const med=[0,1,2].map(ch=>median(samples.map(p=>p[ch])));
     const rows=samples.map(p=>{
@@ -833,12 +861,9 @@
     const limit=Math.max(10, md+Math.max(12,3.5*mad));
     let kept=rows.filter(x=>!(((x.lum>247)||(x.lum<8)) && x.dist>limit) && x.dist<=limit*1.45);
     if(kept.length<Math.max(3,Math.floor(samples.length*.25))) kept=rows;
-    let sum=[0,0,0], sw=0;
-    kept.forEach(x=>{
-      const w=1/(1+Math.pow(x.dist/Math.max(10,limit),2));
-      sw+=w; sum[0]+=x.p[0]*w; sum[1]+=x.p[1]*w; sum[2]+=x.p[2]*w;
-    });
-    return {smart:sum.map(v=>Math.round(v/sw)),count:samples.length,filtered:kept.length};
+    const weights=kept.map(x=>1/(1+Math.pow(x.dist/Math.max(10,limit),2)));
+    const smart=linearAverageRGB(kept.map(x=>x.p),weights);
+    return {smart,count:samples.length,filtered:kept.length};
   }
 
   function showSmartColor(result){
@@ -858,7 +883,7 @@
     const x0=Math.max(0,Math.floor(ix-radius)), y0=Math.max(0,Math.floor(iy-radius));
     const x1=Math.min(img.width,Math.ceil(ix+radius)), y1=Math.min(img.height,Math.ceil(iy+radius));
     const w=Math.max(1,x1-x0), h=Math.max(1,y1-y0);
-    const data=sourceContextForPicker().getImageData(x0,y0,w,h).data;
+    const data=readImageDataSRGB(sourceContextForPicker(),x0,y0,w,h).data;
     const samples=[];
     const step=Math.max(1,Math.floor(Math.sqrt((w*h)/700)));
     for(let y=0;y<h;y+=step){
@@ -1375,7 +1400,7 @@
     const x0=Math.max(0,Math.floor(ix-radius)), y0=Math.max(0,Math.floor(iy-radius));
     const x1=Math.min(img.width,Math.ceil(ix+radius)), y1=Math.min(img.height,Math.ceil(iy+radius));
     const w=Math.max(1,x1-x0), h=Math.max(1,y1-y0);
-    const data=processedCtx.getImageData(x0,y0,w,h).data;
+    const data=readImageDataSRGB(sourceContextForPicker(),x0,y0,w,h).data;
     const samples=[];
     const step=Math.max(1,Math.floor(Math.sqrt((w*h)/900)));
     for(let y=0;y<h;y+=step){
@@ -1387,7 +1412,7 @@
       }
     }
     if(!samples.length) return;
-    const avg=[0,1,2].map(ch=>Math.round(samples.reduce((s,p)=>s+p[ch],0)/samples.length));
+    const avg=linearAverageRGB(samples);
     const robust=robustSmartColor(samples);
     lastAverageColor=avg;
     lastSmartColor=robust ? robust.smart : avg;
@@ -1429,6 +1454,14 @@
     avgTargetBox.style.background=hx;
     smartTargetBox.style.background=hx;
     targetInfo.innerHTML=`${label} ${hx} · RGB ${rgb.join(', ')}`;
+  }
+
+  function readImageDataSRGB(context,x,y,w,h){
+    try{
+      return context.getImageData(x,y,w,h,{colorSpace:'srgb'});
+    }catch(e){
+      return context.getImageData(x,y,w,h);
+    }
   }
 
   function sourceContextForPicker(){
@@ -2881,7 +2914,7 @@
     const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
     if(ix<0||iy<0||ix>=img.width||iy>=img.height) return;
     const pc=sourceContextForPicker();
-    const d=pc.getImageData(Math.floor(ix),Math.floor(iy),1,1).data;
+    const d=readImageDataSRGB(pc,Math.floor(ix),Math.floor(iy),1,1).data;
     const rgb=[d[0],d[1],d[2]];
     surfaceSelectedIndex=null;
     surfaceMarkCanvas=null;
