@@ -1,19 +1,30 @@
-AtelierAI iPad 1.9 PC
+AtelierAI iPad 1.10 PC
 
-Aufräum- und Qualitätsversion:
-- Werkzeugleiste in einklappbare Bereiche umgebaut.
-- Nur ein großer Arbeitsbereich gleichzeitig offen; dadurch viel kürzer und übersichtlicher.
-- Die provisorische Warm/Kalt-Untermalung wurde vollständig entfernt, weil sie nur einen Farbschleier erzeugte.
-- Mischpalette überarbeitet:
-  * kein missverständliches '1. 5 %' mehr
-  * klare Anzeige 'Treffer xx %'
-  * Bedeutung der Trefferzahl erklärt
-  * bestes Verhältnis wird für jedes Tubenfarbenpaar automatisch gesucht (10:90 bis 90:10)
-  * nur die 8 besten Zweiermischungen
-  * Hinweis, wenn Zweiermischungen nicht gut genug sind und Studio 3–5 Farben sinnvoller ist
-- Flächenberater mit sichtbarem Kreis/Rechteck bleibt erhalten.
-- Korrekturatelier, Farbideen, Raster, Speichern, Tonwerte, Großformen, Pipetten und Studio-Mischung bleiben erhalten.
-- Cache auf 1.9 aktualisiert.
+Bedienungsumbau für iPad:
+- Das problematische Akkordeon aus 1.9 wurde ersetzt.
+- Oben bleibt jetzt eine horizontale Werkzeugauswahl immer erreichbar.
+- Es wird jeweils nur ein Werkzeugbereich angezeigt.
+- Werkzeugauswahl kann horizontal mit dem Finger verschoben werden.
+- Der geöffnete Werkzeugbereich kann normal vertikal bedient werden.
+- Große iPad-taugliche Schaltflächen.
+- Bildbereich wird nicht mit einer endlos langen Werkzeugleiste belastet.
+
+Erhalten:
+- Großformen
+- Tonwerte
+- Pipette und Maler-Pipette
+- Flächenberater mit sichtbarem Kreis/Rechteck
+- Studio-Mischungen
+- überarbeitete Zweier-Mischpalette
+- Korrekturatelier
+- Farbideen
+- Raster und Speichern
+- Palettenauswahl
+- Zoom und Verschieben
+
+Nicht enthalten:
+- die fehlerhafte Warm/Kalt-Schleierfunktion
+- Malreise
+- Malberater
 
 Orientierung: PC AtelierAI 2.6.96.
-Malreise und Malberater bleiben ausgeschlossen.

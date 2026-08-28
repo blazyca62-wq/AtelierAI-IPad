@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.9 PC</title>
+  <title>AtelierAI iPad 1.10 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -100,12 +100,46 @@
     .section.accordion.open > .accordion-body{display:block}
     .section.accordion.open > .accordion-head{margin-bottom:7px}
 
+
+    .toolnav-wrap{
+      position:sticky; top:0; z-index:30; background:#f3f3f3;
+      padding:7px 0 8px; border-bottom:1px solid #ccc; margin-bottom:8px;
+    }
+    .toolnav{
+      display:flex; gap:6px; overflow-x:auto; overflow-y:hidden;
+      -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:0 3px 3px;
+    }
+    .toolnav::-webkit-scrollbar{display:none}
+    .toolnav button{
+      flex:0 0 auto; min-height:42px; padding:8px 11px; border-radius:9px;
+      white-space:nowrap; font-size:14px;
+    }
+    aside.side > .section.tool-page{display:none !important}
+    aside.side > .section.tool-page.tool-page-active{display:block !important}
+    aside.side > .section.tool-page .accordion-head{display:none !important}
+    aside.side > .section.tool-page .accordion-body{display:block !important;padding:0 !important}
+    aside.side > .section.tool-page{
+      padding:10px !important; overflow:visible !important;
+    }
+    .tool-page-title{font-weight:700;font-size:17px;margin:0 0 9px}
+
+
+    aside.side{
+      overflow-y:auto !important;
+      overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
+    }
+    @media (max-width: 900px){
+      .toolnav-wrap{top:0}
+      .toolnav button{min-height:46px;font-size:15px}
+    }
+
 </style>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.9 PC</div>
+    <div class="title">AtelierAI · iPad 1.10 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1461,37 +1495,90 @@
 
 
   function setupCompactSidebar(){
-    const sections=[...document.querySelectorAll('aside.side > .section')];
-    const stayOpen=new Set(['toolPanel']);
-    sections.forEach(sec=>{
-      const title=sec.querySelector(':scope > h3');
-      if(!title) return;
-      const head=document.createElement('button');
-      head.type='button';
-      head.className='accordion-head';
-      head.innerHTML=`<span class="acc-title">${title.textContent}</span><span class="acc-arrow">›</span>`;
-      const body=document.createElement('div');
-      body.className='accordion-body';
+    const side=document.querySelector('aside.side');
+    if(!side) return;
 
-      // Alles außer der ersten Überschrift in den einklappbaren Körper verschieben.
-      [...sec.childNodes].forEach(node=>{
-        if(node!==title) body.appendChild(node);
-      });
-      title.remove();
-      sec.classList.add('accordion');
-      sec.prepend(head);
-      sec.appendChild(body);
+    const sections=[...side.querySelectorAll(':scope > .section')];
+    if(!sections.length) return;
 
-      if(stayOpen.has(sec.id)) sec.classList.add('open');
+    // 1.9 hatte die Bereiche bereits als Accordion umgebaut.
+    // Für 1.10 holen wir den Inhalt wieder aus diesem Verhalten heraus
+    // und zeigen immer genau eine Werkzeugseite.
+    const labels={
+      toolPanel:'Werkzeug',
+      formsPanel:'Großformen',
+      tonesPanel:'Tonwerte',
+      surfaceAdvisorPanel:'Flächenberater',
+      correctionStudioPanel:'Korrektur',
+      mixPalettePanel:'Mischpalette',
+      colorIdeasPanel:'Farbideen',
+      gridSavePanel:'Raster & Speichern',
+      sampleColorPanel:'Farbe'
+    };
 
-      head.addEventListener('click',()=>{
-        const willOpen=!sec.classList.contains('open');
-        // Nur einen Arbeitsbereich gleichzeitig offen lassen; Werkzeug bleibt offen.
-        sections.forEach(other=>{
-          if(other!==sec && other.id!=='toolPanel') other.classList.remove('open');
-        });
-        sec.classList.toggle('open',willOpen);
-      });
+    const nav=document.createElement('div');
+    nav.className='toolnav-wrap';
+    const strip=document.createElement('div');
+    strip.className='toolnav';
+    nav.appendChild(strip);
+    side.insertBefore(nav,side.firstChild);
+
+    let active=null;
+
+    function sectionName(sec){
+      if(labels[sec.id]) return labels[sec.id];
+      const oldTitle=sec.querySelector(':scope > h3');
+      if(oldTitle) return oldTitle.textContent.trim();
+      const accTitle=sec.querySelector(':scope > .accordion-head .acc-title');
+      if(accTitle) return accTitle.textContent.trim();
+      return 'Werkzeug';
+    }
+
+    function normalize(sec){
+      sec.classList.add('tool-page');
+      sec.classList.remove('open');
+
+      const head=sec.querySelector(':scope > .accordion-head');
+      const body=sec.querySelector(':scope > .accordion-body');
+      const name=sectionName(sec);
+
+      if(head) head.style.display='none';
+      if(body){
+        body.style.display='block';
+        body.style.padding='0';
+        // sichtbare Überschrift im Werkzeugfenster
+        if(!body.querySelector(':scope > .tool-page-title')){
+          const t=document.createElement('div');
+          t.className='tool-page-title';
+          t.textContent=name;
+          body.prepend(t);
+        }
+      } else {
+        const h=sec.querySelector(':scope > h3');
+        if(h){ h.classList.add('tool-page-title'); }
+      }
+      return name;
+    }
+
+    function show(sec,btn){
+      sections.forEach(x=>x.classList.remove('tool-page-active'));
+      [...strip.querySelectorAll('button')].forEach(b=>b.classList.remove('active'));
+      sec.classList.add('tool-page-active');
+      btn.classList.add('active');
+      active=sec;
+      // Werkzeugfenster immer oben beginnen, ohne die ganze Seite zu verschieben.
+      side.scrollTop=0;
+    }
+
+    sections.forEach((sec,i)=>{
+      const name=normalize(sec);
+      const b=document.createElement('button');
+      b.type='button';
+      b.textContent=name;
+      b.className='secondary';
+      b.addEventListener('click',()=>show(sec,b));
+      strip.appendChild(b);
+      if(i===0) show(sec,b);
     });
   }
   setupCompactSidebar();
