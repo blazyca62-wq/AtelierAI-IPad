@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.14 PIPETTEN STABIL</title>
+  <title>AtelierAI iPad 1.20.8 FARBFELD HELLER</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.14 PIPETTEN STABIL</div>
+    <div class="title">AtelierAI · iPad 1.20.8 FARBFELD HELLER</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -727,7 +727,6 @@
   let touches = new Map();
   let gestureStart = null;
   let smartPickerArmed = false;
-  let pointPickerArmed=false;
   let smartStart = null;
   let areaPickerMode = null;
   let lastAverageColor = null;
@@ -1361,14 +1360,10 @@
     }
     const mixes=chooseMixes(target,paletteKey);
     mixResults.innerHTML='';
-    if(!mixes.length){
-      mixResults.innerHTML='<div class="mix-card"><b>Keine Mischung berechnet.</b><br><span class="tiny">Bitte Palette prüfen oder mindestens zwei Farben aktivieren.</span></div>';
-      return;
-    }
     mixes.forEach((m,idx)=>{
       const card=document.createElement('div');
       card.className='mix-card';
-      const targetHex=rgbHex(displayTargetColor(target)), mixHex=rgbHex(m.rgb);
+      const targetHex=rgbHex(target), mixHex=rgbHex(m.rgb);
       card.innerHTML=`
         <div class="mix-head"><b>Vorschlag ${idx+1}</b><span>${m.score}% Annäherung</span></div>
         <div class="mix-swatches">
@@ -1437,22 +1432,14 @@
     lastAverageColor=avg;
     lastSmartColor=robust ? robust.smart : avg;
     avgTargetBox.style.background=rgbHex(avg);
-    smartTargetBox.style.background=rgbHex(displayTargetColor(lastSmartColor));
+    smartTargetBox.style.background=rgbHex(lastSmartColor);
     targetInfo.innerHTML=`Durchschnitt ${rgbHex(avg)} · RGB ${avg.join(', ')}<br>`+
-      `Smart ${rgbHex(displayTargetColor(lastSmartColor))} · RGB ${lastSmartColor.join(', ')}<br>`+
+      `Smart ${rgbHex(lastSmartColor)} · RGB ${lastSmartColor.join(', ')}<br>`+
       `<span class="tiny">${smart ? 'Smart-Malfarbe aktiv' : 'Kreis-Durchschnitt aufgenommen'} · ${samples.length} Messpunkte</span>`;
     // also update the existing smart color display for consistency
     if(robust) showSmartColor(robust);
     correctionBase=[...lastSmartColor]; refreshCorrection(); ideasBase=[...lastSmartColor]; refreshIdea();
     showMixes();
-    if(typeof window.activateToolPage==='function'){
-      window.activateToolPage('paintMixPanel');
-    }
-    setTimeout(()=>{
-      if(mixResults && typeof mixResults.scrollIntoView==='function'){
-        mixResults.scrollIntoView({behavior:'smooth',block:'nearest'});
-      }
-    },40);
   }
 
 
@@ -1479,9 +1466,8 @@
     lastAverageColor=[...rgb];
     lastSmartColor=[...rgb];
     const hx=rgbHex(rgb);
-    const displayHx=rgbHex(displayTargetColor(rgb));
-    avgTargetBox.style.background=displayHx;
-    smartTargetBox.style.background=displayHx;
+    avgTargetBox.style.background=hx;
+    smartTargetBox.style.background=hx;
     targetInfo.innerHTML=`${label} ${hx} · RGB ${rgb.join(', ')}`;
   }
 
@@ -3123,15 +3109,6 @@
     surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>'; draw();
   });
 
-  viewer.addEventListener('click',e=>{
-    if(!loaded || mode!=='picker') return;
-    // Ein normaler Tipp nimmt immer die Punktfarbe auf.
-    pickColor(e.clientX,e.clientY);
-    pointPickerArmed=false;
-    hint.textContent='Punktfarbe aufgenommen';
-    e.preventDefault();
-  });
-
   viewer.addEventListener('pointerdown',e=>{
     if(!surfaceMode||!loaded)return;
     const p=canvasPoint(e.clientX,e.clientY);
@@ -3399,13 +3376,7 @@
   fitBtn.addEventListener('click',fitImage);
   resetBtn.addEventListener('click',fitImage);
   moveMode.addEventListener('click',()=>setMode('move'));
-  pickerMode.addEventListener('click',()=>{
-    setMode('picker');
-    pointPickerArmed=true;
-    areaPickerMode=null;
-    smartPickerArmed=false;
-    hint.textContent='Punkt-Pipette aktiv – jetzt Bild antippen';
-  });
+  pickerMode.addEventListener('click',()=>setMode('picker'));
   waterMode.addEventListener('click',()=>setPaintMode('water'));
   oilMode.addEventListener('click',()=>setPaintMode('oil'));
   toneAll.addEventListener('click',()=>setToneView('all'));
@@ -3436,10 +3407,7 @@
       touches.delete(e.pointerId);
       return;
     }
-    if(mode==='picker'&&touches.size===1){
-      // Punktaufnahme erfolgt beim anschließenden click (iPad stabiler).
-      return;
-    }
+    if(mode==='picker'&&touches.size===1){ pickColor(e.clientX,e.clientY); return; }
     if(mode==='move'){
       if(touches.size===1){
         const p=[...touches.values()][0];
