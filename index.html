@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.12.2 PC</title>
+  <title>AtelierAI iPad 1.13 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.12.2 PC</div>
+    <div class="title">AtelierAI · iPad 1.13 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -153,6 +153,18 @@
     </div>
 
     <aside class="side">
+      <div id="globalViewControls" class="pc-card" style="position:sticky;top:0;z-index:20;margin-bottom:8px;">
+        <div class="grid2">
+          <button id="globalMoveBtn" class="secondary">Verschieben</button>
+          <button id="globalFitBtn" class="secondary">Einpassen</button>
+        </div>
+        <div class="control-line" style="margin-top:6px;">
+          <label>Bild-Zoom</label>
+          <input id="globalZoom" type="range" min="25" max="600" value="100">
+          <span id="globalZoomVal">100 %</span>
+        </div>
+        <div class="tiny">Gilt in allen Werkzeugen · Zwei Finger zum Zoomen</div>
+      </div>
       <div class="section" id="toolPanel">
         <h3>Werkzeug</h3>
         <div class="mode">
@@ -232,6 +244,7 @@
 
       
       <div class="section" id="paintMixPanel">
+        <div class="tiny" style="margin-bottom:7px;">Bild oben: jederzeit zoomen und verschieben.</div>
         <h3>Malfarben & Mischungen</h3>
         <div class="palette-grid">
           <button id="mediumOilBtn" class="active">Öl</button>
@@ -420,6 +433,10 @@
   const fileInput = document.getElementById('fileInput');
   const placeholder = document.getElementById('placeholder');
   const fitBtn = document.getElementById('fitBtn');
+  const globalMoveBtn=document.getElementById('globalMoveBtn');
+  const globalFitBtn=document.getElementById('globalFitBtn');
+  const globalZoom=document.getElementById('globalZoom');
+  const globalZoomVal=document.getElementById('globalZoomVal');
   const resetBtn = document.getElementById('resetBtn');
   const moveMode = document.getElementById('moveMode');
   const pickerMode = document.getElementById('pickerMode');
@@ -1380,7 +1397,7 @@
     scale = Math.min(r.width/img.width, r.height/img.height);
     offsetX = (r.width-img.width*scale)/2;
     offsetY = (r.height-img.height*scale)/2;
-    draw();
+    draw(); syncGlobalViewControls();
   }
 
   function setMode(next){
@@ -1390,6 +1407,7 @@
     moveMode.classList.toggle('secondary', mode!=='move');
     pickerMode.classList.toggle('secondary', mode!=='picker');
     hint.textContent = mode==='move' ? 'Modus: Verschieben / Zoom' : 'Modus: Pipette';
+    syncGlobalViewControls();
   }
 
   function setPaintMode(next){
@@ -1603,6 +1621,29 @@
     draw();
   }
 
+
+  function syncGlobalViewControls(){
+    if(!loaded){globalZoomVal.textContent='–';return;}
+    const pct=Math.round(scale*100);
+    globalZoom.value=String(Math.max(25,Math.min(600,pct)));
+    globalZoomVal.textContent=`${pct} %`;
+    globalMoveBtn.classList.toggle('active',mode==='move');
+    globalMoveBtn.classList.toggle('secondary',mode!=='move');
+  }
+
+  function setGlobalZoom(percent){
+    if(!loaded)return;
+    const vr=viewer.getBoundingClientRect();
+    const cx=(vr.width/2-offsetX)/scale;
+    const cy=(vr.height/2-offsetY)/scale;
+    const ns=Math.max(.25,Math.min(6,Number(percent)/100));
+    scale=ns;
+    offsetX=vr.width/2-cx*scale;
+    offsetY=vr.height/2-cy*scale;
+    syncGlobalViewControls();
+    draw();
+  }
+
   function draw(){
     const r=viewer.getBoundingClientRect();
     ctx.clearRect(0,0,r.width,r.height);
@@ -1663,6 +1704,11 @@
       }
     },40);
   }
+
+
+  globalMoveBtn.addEventListener('click',()=>setMode('move'));
+  globalFitBtn.addEventListener('click',()=>fitImage());
+  globalZoom.addEventListener('input',()=>setGlobalZoom(globalZoom.value));
 
   [lightSlider,midSlider,darkSlider].forEach(sl=>{
     sl.addEventListener('input',()=>{
@@ -2052,6 +2098,7 @@
       const p=[...touches.values()][0];
       offsetX=gestureStart.offsetX+(p.x-gestureStart.startX);
       offsetY=gestureStart.offsetY+(p.y-gestureStart.startY);
+      syncGlobalViewControls();
       draw();
     }else if(touches.size===2){
       const pts=[...touches.values()];
@@ -2067,6 +2114,7 @@
       scale=newScale;
       offsetX=local.x-gestureStart.imageX*scale;
       offsetY=local.y-gestureStart.imageY*scale;
+      syncGlobalViewControls();
       draw();
     }
   });
