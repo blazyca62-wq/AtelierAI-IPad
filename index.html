@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.11 PUNKTPIPETTE DIREKT</title>
+  <title>AtelierAI iPad 1.20.13 PIPETTEN MISCHFIX</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.11 PUNKTPIPETTE DIREKT</div>
+    <div class="title">AtelierAI · iPad 1.20.13 PIPETTEN MISCHFIX</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -727,6 +727,7 @@
   let touches = new Map();
   let gestureStart = null;
   let smartPickerArmed = false;
+  let pointPickerArmed=false;
   let smartStart = null;
   let areaPickerMode = null;
   let lastAverageColor = null;
@@ -1360,6 +1361,10 @@
     }
     const mixes=chooseMixes(target,paletteKey);
     mixResults.innerHTML='';
+    if(!mixes.length){
+      mixResults.innerHTML='<div class="mix-card"><b>Keine Mischung berechnet.</b><br><span class="tiny">Bitte Palette prüfen oder mindestens zwei Farben aktivieren.</span></div>';
+      return;
+    }
     mixes.forEach((m,idx)=>{
       const card=document.createElement('div');
       card.className='mix-card';
@@ -1440,6 +1445,14 @@
     if(robust) showSmartColor(robust);
     correctionBase=[...lastSmartColor]; refreshCorrection(); ideasBase=[...lastSmartColor]; refreshIdea();
     showMixes();
+    if(typeof window.activateToolPage==='function'){
+      window.activateToolPage('paintMixPanel');
+    }
+    setTimeout(()=>{
+      if(mixResults && typeof mixResults.scrollIntoView==='function'){
+        mixResults.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+    },40);
   }
 
 
@@ -3110,15 +3123,17 @@
     surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>'; draw();
   });
 
-  // iPad Punkt-Pipette: direkt auf dem sichtbaren Canvas abfangen.
-  // Dadurch ist die Aufnahme unabhängig vom Viewer-Gestenhandler.
-  canvas.addEventListener('pointerdown',e=>{
-    if(mode!=='picker' || !loaded || areaPickerMode || smartPickerArmed) return;
+  // Punkt-Pipette als eigener Einmal-Tipp im Capture-Phase.
+  // Sie wird vor allen Verschiebe-/Zoom-/Flächen-Gesten verarbeitet.
+  viewer.addEventListener('pointerdown',e=>{
+    if(!pointPickerArmed || !loaded) return;
+    pointPickerArmed=false;
     pickColor(e.clientX,e.clientY);
-    touches.delete(e.pointerId);
+    hint.textContent='Punktfarbe aufgenommen';
     e.preventDefault();
-    e.stopPropagation();
-  }, {passive:false});
+    e.stopImmediatePropagation();
+  }, {capture:true, passive:false});
+  // Alte direkte Canvas-Punktaufnahme deaktiviert; 1.20.12 nutzt den eindeutigen Einmal-Tipp oben.
 
   viewer.addEventListener('pointerdown',e=>{
     if(!surfaceMode||!loaded)return;
@@ -3389,9 +3404,10 @@
   moveMode.addEventListener('click',()=>setMode('move'));
   pickerMode.addEventListener('click',()=>{
     setMode('picker');
+    pointPickerArmed=true;
     areaPickerMode=null;
     smartPickerArmed=false;
-    hint.textContent='Punkt-Pipette aktiv – Bild antippen';
+    hint.textContent='Punkt-Pipette aktiv – jetzt Bild antippen';
   });
   waterMode.addEventListener('click',()=>setPaintMode('water'));
   oilMode.addEventListener('click',()=>setPaintMode('oil'));
