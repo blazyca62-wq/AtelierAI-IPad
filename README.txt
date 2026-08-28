@@ -1,9 +1,23 @@
-AtelierAI iPad 1.20.2 PC
+AtelierAI iPad 1.20.4 FARBTREU
 
-Sicherheits-Rückkehr der Großformen-Funktion:
-- NUR die Großformen-Berechnung wurde auf den stabilen Stand aus 1.19 zurückgesetzt.
-- Alle anderen Funktionen aus 1.20.1 bleiben unverändert.
-- Mischfunktion bleibt unverändert.
-- Lasurenvergleich mit Mehrfachlasuren bleibt unverändert.
-- Auto-Ausrichtung, mehrere Messpunkte, synchrones Zoom/Pan bleiben unverändert.
-- Die experimentelle Großformen-Flächenbildung aus 1.20/1.20.1 ist entfernt.
+Stabilitaetsstand auf Basis von 1.20.3 FARBTREU.
+Zielreferenz fuer die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.
+
+Unveraendert bewahrt:
+- farbtreue Bildverarbeitung
+- stabile Grossformen-Berechnung aus dem 1.19-Stand
+- Tonwerte und Farbanalyse
+- Studio-Mischungen und persoenliche Paletten
+- Lasurenvergleich mit Mehrfachlasuren
+- Auto-Ausrichtung und mehrere Messpunkte
+- synchrones Zoom/Pan
+- Raster und Speichern
+
+Korrekturen in 1.20.4:
+- sichtbare Versionsangaben vereinheitlicht
+- PWA-Manifest auf aktuellen Versionsstand gebracht
+- Service-Worker-Cache auf 1.20.4 angehoben
+- doppelte Ausloesung der Punkt-Pipette auf dem iPad entfernt
+
+Wichtig:
+Die Farb-, Grossformen-, Tonwert-, Misch- und Lasurberechnungen wurden in diesem Stabilitaetsschritt nicht veraendert.

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.3 FARBTREU</title>
+  <title>AtelierAI iPad 1.20.4 FARBTREU</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.2 PC</div>
+    <div class="title">AtelierAI · iPad 1.20.4 FARBTREU</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -3335,23 +3335,8 @@
   setupCompactSidebar();
 
 
-  // iPad Punkt-Pipette: vorhandene pickColor-Funktion benutzen,
-  // ohne den Foto-Öffnen-Code oder den Flächenberater umzubauen.
-  let pointPickDown=null;
-  viewer.addEventListener('pointerdown',e=>{
-    if(!loaded || surfaceMode || mode!=='picker') return;
-    pointPickDown={x:e.clientX,y:e.clientY,t:performance.now()};
-  });
-  viewer.addEventListener('pointerup',e=>{
-    if(!pointPickDown || !loaded || surfaceMode || mode!=='picker') { pointPickDown=null; return; }
-    const d=Math.hypot(e.clientX-pointPickDown.x,e.clientY-pointPickDown.y);
-    const dt=performance.now()-pointPickDown.t;
-    pointPickDown=null;
-    if(d<=12 && dt<=700){
-      pickColor(e.clientX,e.clientY);
-      e.preventDefault();
-    }
-  });
+  // Punkt-Pipette wird zentral im Viewer-pointerdown verarbeitet.
+  // Kein zweiter pointerup-Aufruf: verhindert doppelte Farbaufnahme auf dem iPad.
 
   fileInput.addEventListener('change',e=>{
     const file=e.target.files&&e.target.files[0];
