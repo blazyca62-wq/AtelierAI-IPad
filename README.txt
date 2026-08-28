@@ -1,12 +1,18 @@
-AtelierAI iPad 1.5.1 PC
+AtelierAI iPad 1.6 PC
 
-Vereinfachte Pipette:
-- Pipette (Punkt): einzelne Farbe aufnehmen
-- Maler-Pipette: intelligenter Kreis / repräsentative Malfarbe
-- Smart-Pipette und einfache Kreis-Pipette aus der sichtbaren Bedienung entfernt
-- nach einer Farbaufnahme wird die Studio-Mischung automatisch berechnet
-- Mischung nur aus den aktivierten Farben
-- Studio bis 5 Farben
-- alle bisherigen Funktionen bleiben erhalten
+Neu aus der PC-Referenz:
+- Flächenberater
+- Kreis oder Rechteck auf dem Bild analysieren
+- vier Hauptfarben des Bereichs
+- Anteil jeder Hauptfarbe
+- jede Hauptfarbe direkt als Ziel für die Studio-Mischung übernehmen
 
-Weiterhin an der PC-Version AtelierAI 2.6.96 orientiert.
+Erhalten:
+- Pipette (Punkt)
+- Maler-Pipette
+- Studio-Mischung bis 5 Farben
+- persönliche Artisan-Auswahl / Grundpalette / Standardpalette
+- Tonwerte, Großformen, Farbfamilien, Zoom/Pan
+
+Referenz: PC AtelierAI 2.6.96.
+Malreise und Malberater bleiben bewusst ausgeschlossen.

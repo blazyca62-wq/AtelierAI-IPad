@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.5.1 PC</title>
+  <title>AtelierAI iPad 1.6 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -84,7 +84,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.5.1 PC</div>
+    <div class="title">AtelierAI · iPad 1.6 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -246,7 +246,19 @@
         <div id="targetInfo" class="rgb" style="margin-top:6px;">Noch keine Bereichsfarbe aufgenommen.</div>
 
         <div class="mode" style="margin-top:10px;">
-          <button id="calcMixesBtn">Studio-Mischung berechnen</button>
+          <button id="calcMixesBtn">
+<section class="panel" id="surfaceAdvisorPanel">
+  <h3>Flächenberater</h3>
+  <div class="tiny">Wie in der PC-Version: einen Bildbereich untersuchen und vier Hauptfarben als Malfarben bestimmen.</div>
+  <div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap">
+    <button id="surfaceCircleBtn">Kreis analysieren</button>
+    <button id="surfaceRectBtn">Rechteck analysieren</button>
+    <button id="surfaceResetBtn">Zurücksetzen</button>
+  </div>
+  <label class="tiny">Bereichsgröße <input id="surfaceSize" type="range" min="20" max="140" value="70"></label>
+  <div id="surfaceResults" class="mixes"><div class="tiny">Noch kein Bereich analysiert.</div></div>
+</section>
+Studio-Mischung berechnen</button>
         </div>
 
         <div class="tiny" style="margin-top:6px;">PC-Modus: Studio · maximale Genauigkeit bis 5 Farben</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Punkt)</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Nach der Aufnahme wird die Studio-Mischung automatisch berechnet.</div><div id="mixResults"></div>
@@ -1186,6 +1198,71 @@
   if('serviceWorker' in navigator){
     window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
   }
+
+  const surfaceCircleBtn=document.getElementById('surfaceCircleBtn');
+  const surfaceRectBtn=document.getElementById('surfaceRectBtn');
+  const surfaceResetBtn=document.getElementById('surfaceResetBtn');
+  const surfaceSize=document.getElementById('surfaceSize');
+  const surfaceResults=document.getElementById('surfaceResults');
+  let surfaceMode=null;
+
+  function surfaceClusterPixels(cx,cy,size,shape){
+    const src=processedCtx.getImageData(0,0,processedCanvas.width,processedCanvas.height);
+    const pts=[], half=Math.max(10,Math.round(size/2));
+    const x0=Math.max(0,Math.round(cx-half)), x1=Math.min(processedCanvas.width-1,Math.round(cx+half));
+    const y0=Math.max(0,Math.round(cy-half)), y1=Math.min(processedCanvas.height-1,Math.round(cy+half));
+    const step=Math.max(1,Math.floor(size/35));
+    for(let y=y0;y<=y1;y+=step) for(let x=x0;x<=x1;x+=step){
+      if(shape==='circle'){
+        const dx=x-cx,dy=y-cy;if(dx*dx+dy*dy>half*half) continue;
+      }
+      const i=(y*processedCanvas.width+x)*4;
+      pts.push([src.data[i],src.data[i+1],src.data[i+2]]);
+    }
+    if(!pts.length)return [];
+    let centers=[];
+    centers.push(pts[Math.floor(pts.length*.18)],pts[Math.floor(pts.length*.42)],pts[Math.floor(pts.length*.67)],pts[Math.floor(pts.length*.88)]);
+    for(let it=0;it<7;it++){
+      const sums=centers.map(()=>[0,0,0,0]);
+      for(const q of pts){
+        let bi=0,bd=1e20;
+        centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});
+        sums[bi][0]+=q[0];sums[bi][1]+=q[1];sums[bi][2]+=q[2];sums[bi][3]++;
+      }
+      centers=sums.map((a,j)=>a[3]?[a[0]/a[3],a[1]/a[3],a[2]/a[3]]:centers[j]);
+    }
+    const counts=centers.map(()=>0);
+    for(const q of pts){let bi=0,bd=1e20;centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});counts[bi]++}
+    return centers.map((c,i)=>({rgb:c.map(v=>Math.round(v)),pct:100*counts[i]/pts.length})).sort((a,b)=>b.pct-a.pct);
+  }
+  function renderSurfaceClusters(clusters){
+    surfaceResults.innerHTML='';
+    clusters.forEach((c,i)=>{
+      const card=document.createElement('div'); card.className='mix-card';
+      const hex='#'+c.rgb.map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();
+      card.innerHTML=`<div style="display:flex;align-items:center;gap:8px"><span style="width:38px;height:38px;border-radius:8px;border:1px solid #777;background:${hex};display:inline-block"></span><b>Hauptfarbe ${i+1}</b> · ${c.pct.toFixed(0)}%</div><div class="tiny">RGB ${c.rgb.join(', ')} · ${hex}</div><button class="surfaceMixBtn">Mischung berechnen</button>`;
+      card.querySelector('button').onclick=()=>{
+        sampledColor={r:c.rgb[0],g:c.rgb[1],b:c.rgb[2]};
+        if(typeof updateSampleUI==='function') updateSampleUI(sampledColor);
+        if(typeof showMixes==='function') showMixes();
+      };
+      surfaceResults.appendChild(card);
+    });
+  }
+  function armSurface(shape){surfaceMode=shape; surfaceResults.innerHTML='<div class="tiny">Jetzt auf die gewünschte Stelle im Bild tippen.</div>'}
+  surfaceCircleBtn?.addEventListener('click',()=>armSurface('circle'));
+  surfaceRectBtn?.addEventListener('click',()=>armSurface('rect'));
+  surfaceResetBtn?.addEventListener('click',()=>{surfaceMode=null;surfaceResults.innerHTML='<div class="tiny">Noch kein Bereich analysiert.</div>'});
+  viewCanvas?.addEventListener('click',(ev)=>{
+    if(!surfaceMode)return;
+    const rect=viewCanvas.getBoundingClientRect();
+    const vx=(ev.clientX-rect.left)*viewCanvas.width/rect.width, vy=(ev.clientY-rect.top)*viewCanvas.height/rect.height;
+    // use same displayed coordinate proportion on processed image
+    const cx=vx/viewCanvas.width*processedCanvas.width, cy=vy/viewCanvas.height*processedCanvas.height;
+    const clusters=surfaceClusterPixels(cx,cy,Number(surfaceSize.value),surfaceMode);
+    renderSurfaceClusters(clusters); surfaceMode=null;
+  },true);
+
 })();
 
 
