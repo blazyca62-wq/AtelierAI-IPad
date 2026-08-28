@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.8d GLEICHE FARBFELDER</title>
+  <title>AtelierAI iPad 1.20.8e ADAPTIVE FARBFELDER</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -136,14 +136,14 @@
 
 
   /* 1.20.8c: reine Anzeige-Korrektur. Keine RGB-Werte, Pipetten oder Mischberechnungen verändert. */
-  #colorBox, #avgTargetBox, #smartTargetBox { filter: brightness(1.35); }
+  
 
 </style>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.8d GLEICHE FARBFELDER</div>
+    <div class="title">AtelierAI · iPad 1.20.8e ADAPTIVE FARBFELDER</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1013,6 +1013,17 @@
       row.appendChild(b);customColorsList.appendChild(row);
     });
   }
+  function adaptiveDisplayColor(c){
+    // Anzeige-Korrektur nur für Farbfelder:
+    // helle und sehr dunkle Farben bleiben nahezu unverändert,
+    // nur mittlere Töne werden sanft aufgehellt.
+    if(!c) return c;
+    const y=0.2126*c[0]+0.7152*c[1]+0.0722*c[2];
+    const mid=Math.max(0,1-Math.abs(y-135)/95);
+    const strength=0.22*mid;
+    return c.map(v=>Math.round(v+(255-v)*strength));
+  }
+
   function rgbHex(rgb){
     return '#'+rgb.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('').toUpperCase();
   }
@@ -1367,12 +1378,12 @@
     mixes.forEach((m,idx)=>{
       const card=document.createElement('div');
       card.className='mix-card';
-      const targetHex=rgbHex(target), mixHex=rgbHex(m.rgb);
+      const targetHex=rgbHex(adaptiveDisplayColor(target)), mixHex=rgbHex(adaptiveDisplayColor(m.rgb));
       card.innerHTML=`
         <div class="mix-head"><b>Vorschlag ${idx+1}</b><span>${m.score}% Annäherung</span></div>
         <div class="mix-swatches">
-          <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${targetHex};filter:brightness(1.35)"></div></div>
-          <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex};filter:brightness(1.35)"></div></div>
+          <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${targetHex}"></div></div>
+          <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex}"></div></div>
         </div>
         <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i]} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · Studio-Mischung · bis 5 Farben':'Mischqualität: Studio · bis 5 Farben'}</span></div>
       `;
@@ -1435,8 +1446,8 @@
     const robust=robustSmartColor(samples);
     lastAverageColor=avg;
     lastSmartColor=robust ? robust.smart : avg;
-    avgTargetBox.style.background=rgbHex(avg);
-    smartTargetBox.style.background=rgbHex(lastSmartColor);
+    avgTargetBox.style.background=rgbHex(adaptiveDisplayColor(avg));
+    smartTargetBox.style.background=rgbHex(adaptiveDisplayColor(lastSmartColor));
     targetInfo.innerHTML=`Durchschnitt ${rgbHex(avg)} · RGB ${avg.join(', ')}<br>`+
       `Smart ${rgbHex(lastSmartColor)} · RGB ${lastSmartColor.join(', ')}<br>`+
       `<span class="tiny">${smart ? 'Smart-Malfarbe aktiv' : 'Kreis-Durchschnitt aufgenommen'} · ${samples.length} Messpunkte</span>`;
@@ -1470,8 +1481,9 @@
     lastAverageColor=[...rgb];
     lastSmartColor=[...rgb];
     const hx=rgbHex(rgb);
-    avgTargetBox.style.background=hx;
-    smartTargetBox.style.background=hx;
+    const displayHx=rgbHex(adaptiveDisplayColor(rgb));
+    avgTargetBox.style.background=displayHx;
+    smartTargetBox.style.background=displayHx;
     targetInfo.innerHTML=`${label} ${hx} · RGB ${rgb.join(', ')}`;
   }
 
@@ -2939,7 +2951,7 @@
     surfaceSelectedIndex=null;
     surfaceMarkCanvas=null;
     const hex=rgbHex(rgb);
-    colorBox.style.background=hex;
+    colorBox.style.background=rgbHex(adaptiveDisplayColor(rgb));
     colorText.innerHTML=`RGB: ${rgb.join(', ')}<br>HEX: ${hex}`;
     setMixTarget(rgb,'Pipette');
     correctionBase=[...rgb]; refreshCorrection(); ideasBase=[...rgb]; refreshIdea();
