@@ -1,4 +1,4 @@
-const CACHE='atelierai-ipad-v1-20-8-farbfeld-hellersplay-heller';
+const CACHE='atelierai-ipad-v1-20-8a-only-swatchessplay-heller';
 const ASSETS=['./','./index.html','./manifest.webmanifest'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
 self.addEventListener('activate',e=>{e.waitUntil(Promise.all([
