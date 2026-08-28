@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.8g ÄHNLICHKEIT LIVE</title>
+  <title>AtelierAI iPad 1.20.8h REGLER FLÜSSIG</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -138,12 +138,19 @@
   /* 1.20.8c: reine Anzeige-Korrektur. Keine RGB-Werte, Pipetten oder Mischberechnungen verändert. */
   
 
+
+    /* 1.20.8h: größere Touch-Fläche für Ähnlichkeitsregler */
+    #pickerColorTolerance, #surfaceColorTolerance{
+      min-height:38px;
+      touch-action:pan-x;
+    }
+
 </style>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.8g ÄHNLICHKEIT LIVE</div>
+    <div class="title">AtelierAI · iPad 1.20.8h REGLER FLÜSSIG</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -3086,17 +3093,22 @@
     pickerColorToleranceVal.textContent=v;
     surfaceColorToleranceVal.textContent=v;
   }
+  let isolationRAF=0;
+  function refreshIsolationSmooth(){
+    if(!activeIsolatedColor) return;
+    if(isolationRAF) cancelAnimationFrame(isolationRAF);
+    isolationRAF=requestAnimationFrame(()=>{
+      isolationRAF=0;
+      isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
+    });
+  }
   pickerColorTolerance.addEventListener('input',()=>{
     syncColorTolerance(pickerColorTolerance.value);
-    if(activeIsolatedColor){
-      isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
-    }
+    refreshIsolationSmooth();
   });
   surfaceColorTolerance.addEventListener('input',()=>{
     syncColorTolerance(surfaceColorTolerance.value);
-    if(activeIsolatedColor){
-      isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
-    }
+    refreshIsolationSmooth();
   });
   syncColorTolerance(12);
 
