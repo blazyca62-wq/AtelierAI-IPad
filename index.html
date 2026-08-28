@@ -188,7 +188,7 @@
           <input id="formsSlider" type="range" min="0" max="5" value="0" step="1">
           <div class="formsValue" id="formsValue">Aus</div>
         </div>
-        <p>1 = sehr grob, 5 = näher am Original. Ähnliche Farben werden zu klaren zusammenhängenden Malflächen gebündelt – ohne Weichzeichnen.</p>
+        <p>1 = leichte Vereinfachung, 5 = große ruhige Malflächen. Ähnliche Farben werden zu großen zusammenhängenden Malflächen vereinigt. Kleine Farbinseln verschwinden, wichtige Kanten bleiben erhalten.</p>
       </div>
 
       <div class="section" id="tonesPanel">
@@ -2657,8 +2657,8 @@
   function rebuildForms(){
     if(!loaded) return;
 
-    const w = sourceCanvas.width, h = sourceCanvas.height;
-    formCanvas.width = w; formCanvas.height = h;
+    const w=sourceCanvas.width,h=sourceCanvas.height;
+    formCanvas.width=w;formCanvas.height=h;
     formCtx.clearRect(0,0,w,h);
 
     if(formLevel===0){
@@ -2666,111 +2666,214 @@
       return;
     }
 
-    // Schnellere Großformen:
-    // Analyse auf begrenzter Arbeitsauflösung, danach kantenschonend hochskalieren.
-    const cfg = {
-      1:{step:52, spatial:4, passes:1, workLong:280},
-      2:{step:40, spatial:5, passes:1, workLong:420},
-      3:{step:28, spatial:8, passes:2, workLong:760},
-      4:{step:20, spatial:6, passes:1, workLong:900},
-      5:{step:14, spatial:4, passes:1, workLong:1100}
+    // Neue Großformen 1.20:
+    // Nicht nur weniger RGB-Werte, sondern tatsächlich größere zusammenhängende Malflächen.
+    // Stufe 5 ist bewusst am stärksten flächenorientiert.
+    const cfg={
+      1:{workLong:320, smooth:1, colorStep:34, mergePasses:1, mergeRadius:2, edge:58, minRegion:3},
+      2:{workLong:420, smooth:1, colorStep:38, mergePasses:2, mergeRadius:2, edge:62, minRegion:5},
+      3:{workLong:520, smooth:2, colorStep:43, mergePasses:2, mergeRadius:3, edge:68, minRegion:9},
+      4:{workLong:620, smooth:2, colorStep:49, mergePasses:3, mergeRadius:3, edge:74, minRegion:15},
+      5:{workLong:700, smooth:3, colorStep:56, mergePasses:4, mergeRadius:4, edge:82, minRegion:24}
     }[formLevel];
 
-    const longSide = Math.max(w,h);
-    const scaleDown = Math.min(1, cfg.workLong / longSide);
-    const ww = Math.max(32, Math.round(w*scaleDown));
-    const wh = Math.max(32, Math.round(h*scaleDown));
+    const longSide=Math.max(w,h);
+    const scaleDown=Math.min(1,cfg.workLong/longSide);
+    const ww=Math.max(48,Math.round(w*scaleDown));
+    const wh=Math.max(48,Math.round(h*scaleDown));
 
-    const work = document.createElement('canvas');
-    work.width = ww; work.height = wh;
-    const wctx = work.getContext('2d', {willReadFrequently:true});
-    wctx.imageSmoothingEnabled = true;
-    wctx.imageSmoothingQuality = 'high';
-    wctx.drawImage(sourceCanvas,0,0,w,h,0,0,ww,wh);
+    const work=document.createElement('canvas');
+    work.width=ww;work.height=wh;
+    const ctx=work.getContext('2d',{willReadFrequently:true});
+    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingQuality='high';
+    ctx.drawImage(sourceCanvas,0,0,w,h,0,0,ww,wh);
 
-    const src = wctx.getImageData(0,0,ww,wh);
-    const out = wctx.createImageData(ww,wh);
+    let img=ctx.getImageData(0,0,ww,wh);
 
-    // 1) Farbquantisierung: ähnliche Farben zu Malflächen bündeln.
-    const q = cfg.step;
-    for(let i=0;i<src.data.length;i+=4){
-      const r=src.data[i], g=src.data[i+1], b=src.data[i+2];
-      out.data[i]   = Math.max(0,Math.min(255,Math.round(r/q)*q));
-      out.data[i+1] = Math.max(0,Math.min(255,Math.round(g/q)*q));
-      out.data[i+2] = Math.max(0,Math.min(255,Math.round(b/q)*q));
-      out.data[i+3] = src.data[i+3];
-    }
-
-    function dist3(a,b,c,d,e,f){
-      const dr=a-d,dg=b-e,db=c-f;
+    const d2=(r1,g1,b1,r2,g2,b2)=>{
+      const dr=r1-r2,dg=g1-g2,db=b1-b2;
       return dr*dr+dg*dg+db*db;
+    };
+
+    // 1) Kantenschonendes Glätten:
+    // Nachbarn werden nur einbezogen, wenn ihre Farbe noch zur lokalen Fläche gehört.
+    for(let pass=0;pass<cfg.smooth;pass++){
+      const src=img.data;
+      const next=ctx.createImageData(ww,wh);
+      const out=next.data;
+      const rad=formLevel>=4?2:1;
+      const colorLimit=(cfg.edge*.82)**2;
+      for(let y=0;y<wh;y++){
+        for(let x=0;x<ww;x++){
+          const i=(y*ww+x)*4;
+          const cr=src[i],cg=src[i+1],cb=src[i+2];
+          let sr=0,sg=0,sb=0,sw=0;
+          for(let yy=Math.max(0,y-rad);yy<=Math.min(wh-1,y+rad);yy++){
+            for(let xx=Math.max(0,x-rad);xx<=Math.min(ww-1,x+rad);xx++){
+              const j=(yy*ww+xx)*4;
+              const dd=d2(cr,cg,cb,src[j],src[j+1],src[j+2]);
+              if(dd>colorLimit)continue;
+              const wt=dd<colorLimit*.20?3:1;
+              sr+=src[j]*wt;sg+=src[j+1]*wt;sb+=src[j+2]*wt;sw+=wt;
+            }
+          }
+          out[i]=Math.round(sr/sw);out[i+1]=Math.round(sg/sw);out[i+2]=Math.round(sb/sw);out[i+3]=255;
+        }
+      }
+      img=next;
     }
 
-    let cur = out;
-    const radius = cfg.spatial;
-    const threshold2 = (cfg.step*1.7)*(cfg.step*1.7);
-
-    // Stufe 1: extrem grob und sehr schnell.
-    // Keine große Nachbarschaftssuche; nur Farbflächen quantisieren.
-    if(formLevel===1){
-      wctx.putImageData(cur,0,0);
-      formCtx.imageSmoothingEnabled = false;
-      formCtx.drawImage(work,0,0,ww,wh,0,0,w,h);
-      return;
+    // 2) Wahrnehmungsfreundlichere Quantisierung:
+    // Helligkeit etwas feiner erhalten als Farbkanäle, damit Nase/Mund/Augen nicht verschwinden.
+    {
+      const src=img.data;
+      const q=cfg.colorStep;
+      for(let i=0;i<src.length;i+=4){
+        const r=src[i],g=src[i+1],b=src[i+2];
+        const lum=.2126*r+.7152*g+.0722*b;
+        let rr=Math.round(r/q)*q,gg=Math.round(g/q)*q,bb=Math.round(b/q)*q;
+        const qLum=.2126*rr+.7152*gg+.0722*bb;
+        const correction=(lum-qLum)*.55;
+        src[i]=Math.max(0,Math.min(255,Math.round(rr+correction)));
+        src[i+1]=Math.max(0,Math.min(255,Math.round(gg+correction)));
+        src[i+2]=Math.max(0,Math.min(255,Math.round(bb+correction)));
+      }
     }
 
-    // 2) Kleine Inseln entfernen, starke Kanten respektieren.
-    for(let pass=0; pass<cfg.passes; pass++){
-      const next = wctx.createImageData(ww,wh);
-      next.data.set(cur.data);
+    // 3) Flächenvereinigung statt Pixelmuster:
+    // Jeder Punkt übernimmt bevorzugt die dominante ähnliche Nachbarfläche.
+    for(let pass=0;pass<cfg.mergePasses;pass++){
+      const src=img.data;
+      const next=ctx.createImageData(ww,wh);
+      next.data.set(src);
+      const out=next.data;
+      const rad=cfg.mergeRadius;
+      const sameLimit=(cfg.edge*1.15)**2;
+      const edgeLimit=(cfg.edge*1.55)**2;
 
       for(let y=0;y<wh;y++){
         for(let x=0;x<ww;x++){
-          const idx=(y*ww+x)*4;
-          const cr=cur.data[idx], cg=cur.data[idx+1], cb=cur.data[idx+2];
+          const i=(y*ww+x)*4;
+          const cr=src[i],cg=src[i+1],cb=src[i+2];
 
-          const counts = new Map();
-          let bestCount=0;
-          let br=cr,bg=cg,bb=cb;
+          // Starke lokale Kante? Dann konservativer zusammenführen.
+          let maxEdge=0;
+          if(x>0){const j=i-4;maxEdge=Math.max(maxEdge,d2(cr,cg,cb,src[j],src[j+1],src[j+2]));}
+          if(x<ww-1){const j=i+4;maxEdge=Math.max(maxEdge,d2(cr,cg,cb,src[j],src[j+1],src[j+2]));}
+          if(y>0){const j=i-ww*4;maxEdge=Math.max(maxEdge,d2(cr,cg,cb,src[j],src[j+1],src[j+2]));}
+          if(y<wh-1){const j=i+ww*4;maxEdge=Math.max(maxEdge,d2(cr,cg,cb,src[j],src[j+1],src[j+2]));}
+          const limit=maxEdge>edgeLimit?sameLimit*.45:sameLimit;
 
-          const y0=Math.max(0,y-radius), y1=Math.min(wh-1,y+radius);
-          const x0=Math.max(0,x-radius), x1=Math.min(ww-1,x+radius);
-
-          // gröberes Sampling spart auf dem iPad sehr viel Rechenzeit
-          const sampleStep = formLevel===1 ? 4 : (formLevel===2 ? 3 : 2);
-
-          for(let yy=y0; yy<=y1; yy+=sampleStep){
-            for(let xx=x0; xx<=x1; xx+=sampleStep){
+          const buckets=new Map();
+          const step=formLevel>=4?2:1;
+          for(let yy=Math.max(0,y-rad);yy<=Math.min(wh-1,y+rad);yy+=step){
+            for(let xx=Math.max(0,x-rad);xx<=Math.min(ww-1,x+rad);xx+=step){
               const j=(yy*ww+xx)*4;
-              const rr=cur.data[j], gg=cur.data[j+1], bb2=cur.data[j+2];
-              if(dist3(cr,cg,cb,rr,gg,bb2) > threshold2) continue;
-
-              const key=(rr<<16)|(gg<<8)|bb2;
-              const n=(counts.get(key)||0)+1;
-              counts.set(key,n);
-              if(n>bestCount){
-                bestCount=n; br=rr; bg=gg; bb=bb2;
-              }
+              const rr=src[j],gg=src[j+1],bb=src[j+2];
+              if(d2(cr,cg,cb,rr,gg,bb)>limit)continue;
+              // Bucket etwas gröber als die Quantisierung: benachbarte Töne bilden EINE Malfläche.
+              const kq=Math.max(18,Math.round(cfg.colorStep*.72));
+              const kr=Math.round(rr/kq)*kq,kg=Math.round(gg/kq)*kq,kb=Math.round(bb/kq)*kq;
+              const key=(kr<<16)|(kg<<8)|kb;
+              let z=buckets.get(key);
+              if(!z){z=[0,0,0,0];buckets.set(key,z);}
+              z[0]+=rr;z[1]+=gg;z[2]+=bb;z[3]++;
             }
           }
-
-          next.data[idx]=br;
-          next.data[idx+1]=bg;
-          next.data[idx+2]=bb;
-          next.data[idx+3]=cur.data[idx+3];
+          let best=null;
+          for(const z of buckets.values())if(!best||z[3]>best[3])best=z;
+          if(best&&best[3]>=2){
+            out[i]=Math.round(best[0]/best[3]);
+            out[i+1]=Math.round(best[1]/best[3]);
+            out[i+2]=Math.round(best[2]/best[3]);
+          }
         }
       }
-      cur=next;
+      img=next;
     }
 
-    wctx.putImageData(cur,0,0);
+    // 4) Kleine Farbinseln als echte zusammenhängende Regionen erkennen und
+    // mit der häufigsten ähnlichen Nachbarfläche verschmelzen.
+    // Auf Arbeitsauflösung bewusst begrenzt, damit Safari/iPad stabil bleibt.
+    {
+      const data=img.data;
+      const labels=new Int32Array(ww*wh);
+      labels.fill(-1);
+      const dirs=[-1,1,-ww,ww];
+      const regions=[];
+      let label=0;
+      const regionTol=(cfg.colorStep*.82)**2;
 
-    // 3) Ergebnis zurück auf Originalgröße.
-    // Glatte Skalierung nur geometrisch – keine zusätzliche Unschärfeanalyse.
-    formCtx.imageSmoothingEnabled = true;
-    formCtx.imageSmoothingQuality = 'high';
+      for(let seed=0;seed<ww*wh;seed++){
+        if(labels[seed]!==-1)continue;
+        const si=seed*4,sr=data[si],sg=data[si+1],sb=data[si+2];
+        const stack=[seed],pixels=[];
+        labels[seed]=label;
+        while(stack.length){
+          const pos=stack.pop();pixels.push(pos);
+          const x=pos%ww,y=(pos/ww)|0;
+          if(x>0){
+            const n=pos-1;if(labels[n]===-1){const j=n*4;if(d2(sr,sg,sb,data[j],data[j+1],data[j+2])<=regionTol){labels[n]=label;stack.push(n);}}
+          }
+          if(x<ww-1){
+            const n=pos+1;if(labels[n]===-1){const j=n*4;if(d2(sr,sg,sb,data[j],data[j+1],data[j+2])<=regionTol){labels[n]=label;stack.push(n);}}
+          }
+          if(y>0){
+            const n=pos-ww;if(labels[n]===-1){const j=n*4;if(d2(sr,sg,sb,data[j],data[j+1],data[j+2])<=regionTol){labels[n]=label;stack.push(n);}}
+          }
+          if(y<wh-1){
+            const n=pos+ww;if(labels[n]===-1){const j=n*4;if(d2(sr,sg,sb,data[j],data[j+1],data[j+2])<=regionTol){labels[n]=label;stack.push(n);}}
+          }
+        }
+        let ar=0,ag=0,ab=0;
+        for(const pos of pixels){const j=pos*4;ar+=data[j];ag+=data[j+1];ab+=data[j+2];}
+        regions.push({pixels,rgb:[ar/pixels.length,ag/pixels.length,ab/pixels.length]});
+        label++;
+      }
+
+      const minSize=cfg.minRegion;
+      for(let rid=0;rid<regions.length;rid++){
+        const reg=regions[rid];
+        if(reg.pixels.length>=minSize)continue;
+        const neigh=new Map();
+        for(const pos of reg.pixels){
+          const x=pos%ww,y=(pos/ww)|0;
+          const ns=[];
+          if(x>0)ns.push(pos-1);if(x<ww-1)ns.push(pos+1);
+          if(y>0)ns.push(pos-ww);if(y<wh-1)ns.push(pos+ww);
+          for(const n of ns){
+            const nl=labels[n];
+            if(nl!==rid)neigh.set(nl,(neigh.get(nl)||0)+1);
+          }
+        }
+        let bestId=-1,bestScore=-Infinity;
+        for(const [nid,border] of neigh){
+          const nr=regions[nid];if(!nr)continue;
+          const cd=d2(reg.rgb[0],reg.rgb[1],reg.rgb[2],nr.rgb[0],nr.rgb[1],nr.rgb[2]);
+          // Viel gemeinsame Grenze bevorzugen, sehr unähnliche Kanten schützen.
+          if(cd>(cfg.edge*2.0)**2)continue;
+          const score=border-cd/5000;
+          if(score>bestScore){bestScore=score;bestId=nid;}
+        }
+        if(bestId>=0){
+          const col=regions[bestId].rgb;
+          for(const pos of reg.pixels){
+            const j=pos*4;
+            data[j]=Math.round(col[0]);data[j+1]=Math.round(col[1]);data[j+2]=Math.round(col[2]);
+          }
+        }
+      }
+    }
+
+    ctx.putImageData(img,0,0);
+
+    // 5) Hochskalieren mit Glättung. Keine künstliche Pixelkante.
+    formCtx.imageSmoothingEnabled=true;
+    formCtx.imageSmoothingQuality='high';
     formCtx.drawImage(work,0,0,ww,wh,0,0,w,h);
   }
+
   function rebuildToneImage(){
     if(!loaded) return;
 

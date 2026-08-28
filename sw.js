@@ -1,4 +1,4 @@
-const CACHE='atelierai-ipad-v1-19-pc';
+const CACHE='atelierai-ipad-v1-20-pc';
 const ASSETS=['./','./index.html','./manifest.webmanifest'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
 self.addEventListener('activate',e=>{e.waitUntil(Promise.all([
