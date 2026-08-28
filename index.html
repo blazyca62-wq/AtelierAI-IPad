@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.10.5 PC</title>
+  <title>AtelierAI iPad 1.10.6 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.10.5 PC</div>
+    <div class="title">AtelierAI · iPad 1.10.6 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1341,8 +1341,6 @@
   }
 
   function pickColor(clientX,clientY){
-    const shouldJumpAfterPick = !!window.__atelierPointPickJump;
-
     if(!loaded) return;
     const p=canvasPoint(clientX,clientY);
     const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
@@ -1356,6 +1354,17 @@
     setMixTarget(rgb,'Pipette');
     correctionBase=[...rgb]; refreshCorrection(); ideasBase=[...rgb]; refreshIdea();
     showMixes();
+
+    // Punkt-Pipette: nach erfolgreicher Farbaufnahme sofort zum Mischen.
+    if(typeof window.activateToolPage==='function'){
+      window.activateToolPage('paintMixPanel');
+    }
+    setTimeout(()=>{
+      const target=document.getElementById('mixResults');
+      if(target && typeof target.scrollIntoView==='function'){
+        target.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+    },40);
   }
 
   [lightSlider,midSlider,darkSlider].forEach(sl=>{
@@ -1616,17 +1625,15 @@
   // ohne den Foto-Öffnen-Code oder den Flächenberater umzubauen.
   let pointPickDown=null;
   viewer.addEventListener('pointerdown',e=>{
-    window.__atelierPointPickJump=false;
-    if(!loaded || surfaceMode || mode!=='pick') return;
+    if(!loaded || surfaceMode || mode!=='picker') return;
     pointPickDown={x:e.clientX,y:e.clientY,t:performance.now()};
   });
   viewer.addEventListener('pointerup',e=>{
-    if(!pointPickDown || !loaded || surfaceMode || mode!=='pick') { pointPickDown=null; return; }
+    if(!pointPickDown || !loaded || surfaceMode || mode!=='picker') { pointPickDown=null; return; }
     const d=Math.hypot(e.clientX-pointPickDown.x,e.clientY-pointPickDown.y);
     const dt=performance.now()-pointPickDown.t;
     pointPickDown=null;
     if(d<=12 && dt<=700){
-      window.__atelierPointPickJump=true;
       pickColor(e.clientX,e.clientY);
       e.preventDefault();
     }
