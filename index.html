@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.17.2 PC</title>
+  <title>AtelierAI iPad 1.17.4 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.17.2 PC</div>
+    <div class="title">AtelierAI · iPad 1.17.4 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -366,11 +366,13 @@
 
         <label style="display:block;margin-top:9px;">Palette</label>
         <select id="glazePalette" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;">
-          <option value="horadam">Schmincke Horadam</option>
-          <option value="akademie">Schmincke Akademie</option>
+          <option value="watercolor" selected>Meine Aquarellfarben · Horadam + Akademie</option>
+          <option value="horadam">Nur Schmincke Horadam</option>
+          <option value="akademie">Nur Schmincke Akademie</option>
           <option value="artisan">Winsor & Newton Artisan</option>
         </select>
         <div id="glazePaletteStatus" class="tiny" style="margin-top:5px;font-weight:600;">Palette wird geprüft…</div>
+        <div class="tiny" style="margin-top:3px;">Bei „Meine Aquarellfarben“ dürfen Horadam- und Akademie-Farben gemeinsam in einem Vorschlag verwendet werden.</div>
 
         <div class="pc-card" style="margin-top:9px;">
           <div class="grid2">
@@ -886,12 +888,22 @@
   function saveCustom(c){localStorage.setItem(CUSTOM_KEY,JSON.stringify(c))}
   function currentCatalogueKey(){return paintPalette.value}
   function paletteId(key,name){return key+'::'+name}
-  function selectedPaletteColors(key){
+  function selectedPaletteColorsSingle(key){
     const owned=loadOwned();
     const base=(PALETTES[key]||[]).filter(x=>owned[paletteId(key,x[0])]===true);
     const custom=loadCustom().filter(x=>x.enabled!==false).map(x=>[x.name,x.rgb]);
     return base.concat(custom);
   }
+
+  function selectedPaletteColors(key){
+    if(key==='watercolor'){
+      const h=selectedPaletteColorsSingle('horadam').map(([name,rgb])=>[name,rgb,'Horadam']);
+      const a=selectedPaletteColorsSingle('akademie').map(([name,rgb])=>[name,rgb,'Akademie']);
+      return h.concat(a);
+    }
+    return selectedPaletteColorsSingle(key);
+  }
+
   function updateOwnedSummary(){
     const key=currentCatalogueKey(), owned=loadOwned();
     const n=(PALETTES[key]||[]).filter(x=>owned[paletteId(key,x[0])]===true).length;
@@ -938,7 +950,7 @@
     (PALETTES[key]||[]).filter(x=>!q||x[0].toLowerCase().includes(q)).forEach(([name,rgb])=>{
       const row=document.createElement('label'); row.className='palette-item';
       const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=owned[paletteId(key,name)]===true;
-      const dot=document.createElement('span'); dot.className='palette-dot'; dot.style.background=rgbHex(rgb);
+      const dot=document.createElement('span'); dot.className='palette-dot'; dot.style.background=rgbHex(paletteMixRgb(name,rgb,key));
       const txt=document.createElement('span'); txt.textContent=name;
       cb.addEventListener('change',()=>{const o=loadOwned();o[paletteId(key,name)]=cb.checked;saveOwned(o);updateOwnedSummary();});
       row.append(cb,dot,txt);paletteChecklist.appendChild(row);
@@ -959,6 +971,219 @@
     return '#'+rgb.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('').toUpperCase();
   }
 
+
+  // Aquarell-Palettenkorrektur:
+  // Die frühen iPad-Versionen enthielten grobe Familien-Platzhalterwerte
+  // (viele Gelb-/Rot-/Blau-Farben mit identischem RGB). Für Mischvorschläge
+  // werden die Herstellerfarben deshalb anhand ihres tatsächlichen Farbnamens
+  // differenziert. Das ersetzt die Platzhalter, ohne die gespeicherte Auswahl
+  // des Nutzers zu verändern.
+  function watercolorRepresentativeRgb(name, fallback){
+    const n=(name||'').toLowerCase();
+
+    const rules=[
+      // Weiß / Grau / Schwarz
+      [/titan.*weiß|deckweiß/, [248,247,242]],
+      [/chinesisch.*weiß/, [251,250,246]],
+      [/lampen.*schwarz|elfenbein.*schwarz|eisenoxid.*schwarz|hämatit.*schwarz/, [31,31,32]],
+      [/anthrazit|graphitgrau/, [75,79,83]],
+      [/neutralgrau|paynesgrau|payne.*grau/, [70,78,87]],
+      [/neutraltinte/, [76,70,76]],
+
+      // Rosa / Karmin / Magenta / Purpur – wichtig für Haut und Wangen
+      [/potters pink/, [184,111,111]],
+      [/krapplack rosa/, [203,83,112]],
+      [/goldrosa/, [218,122,119]],
+      [/brillant opernrosa|neonpink/, [238,66,137]],
+      [/chinacridon hellrot/, [225,62,72]],
+      [/rubinrot dunkel/, [145,38,59]],
+      [/rubinrot/, [196,45,72]],
+      [/permanent karmin|karmin/, [178,37,64]],
+      [/alizarin.*karmesin/, [145,37,54]],
+      [/krapplack dunkel/, [137,42,61]],
+      [/krapprot tief/, [160,38,59]],
+      [/lasurdunkelrot/, [139,37,48]],
+      [/bordeauxrot/, [122,38,57]],
+      [/perylenrot tief/, [157,36,43]],
+      [/dunkelrot/, [151,41,47]],
+      [/permanentrot/, [207,48,49]],
+      [/geranienrot/, [220,45,55]],
+      [/scharlachrot/, [224,51,45]],
+      [/zinnoberrot/, [221,69,48]],
+      [/kadmiumrot.*orange/, [229,83,43]],
+      [/kadmiumrot.*hell/, [222,61,48]],
+      [/kadmiumrot.*mittel/, [199,48,44]],
+      [/kadmiumrot.*dunkel/, [158,45,44]],
+      [/saturnrot/, [214,64,51]],
+      [/magenta/, [190,40,119]],
+      [/purpur magenta/, [167,42,112]],
+      [/chinacridon magenta/, [182,39,111]],
+      [/chinacridon purpur/, [137,49,109]],
+      [/brillant purpur/, [196,61,131]],
+      [/brillant rotviolett/, [170,56,105]],
+
+      // Violett
+      [/chinacridon violett/, [111,53,118]],
+      [/perylenviolett/, [91,46,75]],
+      [/manganviolett/, [121,72,142]],
+      [/schmincke violett/, [102,57,130]],
+      [/kobaltviolett/, [119,78,145]],
+      [/ultramarinviolett/, [89,71,148]],
+      [/blauviolett/, [83,67,145]],
+      [/lavendelviolett/, [142,125,170]],
+      [/violett/, [105,63,139]],
+
+      // Gelb
+      [/zitronengelb|kadmiumgelb zitron|chromgelbton zitron|hellgelb zitron/, [238,218,46]],
+      [/vanadiumgelb/, [239,210,41]],
+      [/reingelb/, [239,194,35]],
+      [/aureolin/, [222,183,53]],
+      [/kadmiumgelb hell/, [239,190,35]],
+      [/kadmiumgelb mittel|kadmiumgelbton/, [231,165,34]],
+      [/chromgelbton hell/, [236,180,37]],
+      [/lasurgelb/, [231,186,47]],
+      [/turners gelb/, [236,188,65]],
+      [/chinacridongold/, [190,133,49]],
+      [/chromgelbton dunkel|kadmiumgelb dunkel/, [222,142,34]],
+      [/indischgelb/, [226,157,43]],
+      [/titangelb/, [231,190,79]],
+      [/rutilgelb/, [198,170,93]],
+      [/jaune brillant/, [232,196,134]],
+      [/neapelgelb rötlich/, [218,164,113]],
+      [/neapelgelb/, [228,194,121]],
+      [/lichter ocker natur/, [190,147,82]],
+      [/titangoldocker/, [185,139,68]],
+      [/lichter ocker/, [194,145,73]],
+      [/lasur ocker/, [188,132,57]],
+      [/oliv.*gelbgrün|olivgrün gelblich/, [157,149,55]],
+
+      // Orange
+      [/gelborange/, [230,137,36]],
+      [/kadmiumorange hell/, [231,104,43]],
+      [/chromorangeton/, [220,92,42]],
+      [/kadmiumorange dunkel/, [207,76,38]],
+      [/lasurorange/, [222,91,40]],
+      [/orange/, [226,103,43]],
+      [/neonorange/, [245,104,45]],
+
+      // Braun / Erden
+      [/siena natur/, [170,121,73]],
+      [/umbra natur/, [112,91,69]],
+      [/spinellbraun/, [112,68,55]],
+      [/goldbraun/, [153,94,51]],
+      [/lasur siena/, [160,87,50]],
+      [/kastanienbraun/, [113,58,48]],
+      [/siena gebrannt/, [139,72,48]],
+      [/englisch.*rot|englischrot/, [158,62,50]],
+      [/krappbraun/, [113,56,53]],
+      [/lasurbraun/, [103,66,50]],
+      [/mahagonibraun/, [104,53,48]],
+      [/caput mortuum/, [91,53,65]],
+      [/eisenoxidbraun/, [105,67,53]],
+      [/lasur umbra/, [91,72,55]],
+      [/umbra gebrannt/, [91,65,52]],
+      [/vandyckbraun/, [79,62,50]],
+      [/sepiabraun rötlich/, [88,62,55]],
+      [/sepiabraun|sepia/, [77,65,56]],
+
+      // Blau
+      [/delftblau/, [39,69,111]],
+      [/indigo/, [42,57,84]],
+      [/tiefblau/, [39,60,102]],
+      [/phthalo saphirblau/, [27,70,119]],
+      [/kobaltblau dunkel/, [43,74,126]],
+      [/franz.*ultramarin/, [50,70,137]],
+      [/ultramarin feinst/, [55,76,148]],
+      [/ultramarinblau|ultramarin/, [57,78,151]],
+      [/kobaltblau hell/, [66,105,165]],
+      [/kobaltblauton/, [61,100,160]],
+      [/bergblau/, [77,123,166]],
+      [/kobalt azur/, [74,134,179]],
+      [/preußischblau/, [33,58,92]],
+      [/pariserblau/, [30,68,104]],
+      [/phthaloblau/, [27,82,126]],
+      [/coelinblauton/, [67,139,170]],
+      [/heliocoelin/, [47,137,161]],
+      [/kobaltcoelin/, [72,145,170]],
+      [/cyan/, [35,142,173]],
+
+      // Türkis
+      [/heliotürkis/, [37,145,152]],
+      [/kobalttürkis/, [64,151,154]],
+      [/kobaltgrün türkis/, [50,137,128]],
+
+      // Grün
+      [/preußischgrün/, [47,93,68]],
+      [/smaragdgrün/, [35,134,78]],
+      [/chromoxidgrün feurig/, [58,125,71]],
+      [/phthalogrün/, [25,110,78]],
+      [/heliogrün/, [35,124,78]],
+      [/permanentgrün oliv/, [89,105,56]],
+      [/saftgrün/, [84,115,65]],
+      [/permanentgrün/, [57,127,70]],
+      [/maigrün/, [116,151,62]],
+      [/kobaltgrün rein/, [61,135,96]],
+      [/kobaltgrün tief/, [50,108,80]],
+      [/hookersgrün/, [57,101,61]],
+      [/grünoliv/, [76,88,50]],
+      [/chromoxidgrün stumpf/, [73,95,66]],
+      [/grüne erde/, [92,111,78]],
+      [/lasurgoldgrün/, [107,119,51]],
+      [/umbra grünlich/, [78,84,61]],
+      [/perylengrün/, [42,69,61]],
+      [/brillantgrün/, [45,142,76]],
+      [/laubgrün/, [73,121,67]],
+      [/dunkelgrün/, [42,84,58]]
+    ];
+    for(const [rx,rgb] of rules) if(rx.test(n)) return rgb;
+    return fallback;
+  }
+
+  function paletteMixRgb(name,rgb,paletteKey){
+    return paletteKey==='watercolor'||paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie'
+      ? watercolorRepresentativeRgb(name,rgb)
+      : rgb;
+  }
+
+  function opticalDensityMix(items,parts,paletteKey){
+    const total=parts.reduce((a,b)=>a+b,0)||1;
+    const out=[0,1,2].map(ch=>{
+      let od=0;
+      for(let i=0;i<items.length;i++){
+        const rgb=paletteMixRgb(items[i].name,items[i].rgb,paletteKey);
+        const norm=Math.max(.015,Math.min(.995,rgb[ch]/255));
+        od+=(-Math.log(norm))*(parts[i]/total);
+      }
+      return Math.round(255*Math.exp(-od));
+    });
+    return out;
+  }
+
+  function perceptualMixScore(target,rgb,items,paletteKey){
+    const d=deltaE76FromLab(rgbToLabFast(target),rgbToLabFast(rgb));
+    let penalty=0;
+    if(paletteKey==='watercolor'||paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie'){
+      const [th,ts,tv]=rgbToHsv(target);
+      // Bei klar rosigen/roten/magentafarbenen Zielen vermeiden wir,
+      // dass gelb-ocker-dominierte Rezepte mathematisch "gewinnen".
+      const rosy=(th>=330||th<=28) && ts>=0.12;
+      if(rosy){
+        const warmEarth=items.filter(x=>/ocker|siena|umbra|neapel|gold|gelb|orange/i.test(x.name)).length;
+        const rosePigment=items.filter(x=>/rosa|pink|karmin|krap|magenta|rot|rubin|purpur|alizarin|potters/i.test(x.name)).length;
+        if(warmEarth && !rosePigment) penalty+=18;
+        else if(warmEarth>rosePigment) penalty+=7;
+      }
+      // Zu viele Pigmente ergeben bei Aquarell schnell stumpfe Mischungen.
+      if(items.length>2) penalty+=(items.length-2)*2.5;
+    }
+    return d+penalty;
+  }
+
+  function watercolorSimilarityPct(target,rgb,items,paletteKey){
+    const d=perceptualMixScore(target,rgb,items,paletteKey);
+    return Math.max(0,Math.min(100,Math.round(100-d*1.35)));
+  }
+
   function colorDistance(a,b){
     return Math.sqrt(.30*(a[0]-b[0])**2+.59*(a[1]-b[1])**2+.11*(a[2]-b[2])**2);
   }
@@ -977,7 +1202,75 @@
   function chooseMixes(target, paletteKey){
     const pal=selectedPaletteColors(paletteKey);
     if(pal.length<2)return[];
-    const candidates=pal.map(([name,rgb])=>({name,rgb}));
+    const isWater=paletteKey==='watercolor'||paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie';
+    const candidates=pal.map(([name,rgb,series])=>({name,rgb,series}));
+
+    if(isWater){
+      // Aquarell: zuerst pigmentnahe Kandidaten, dann echte 2er-/3er-Mischungen.
+      const nearest=[...candidates].sort((a,b)=>{
+        const ar=paletteMixRgb(a.name,a.rgb,paletteKey), br=paletteMixRgb(b.name,b.rgb,paletteKey);
+        return deltaE76FromLab(rgbToLabFast(ar),rgbToLabFast(target))-
+               deltaE76FromLab(rgbToLabFast(br),rgbToLabFast(target));
+      }).slice(0,Math.min(22,candidates.length));
+
+      const pool=[];
+      // Zweiermischungen in gut malbaren 10-%-Schritten.
+      for(let i=0;i<nearest.length;i++){
+        for(let j=i+1;j<nearest.length;j++){
+          for(let a=10;a<=90;a+=10){
+            const items=[nearest[i],nearest[j]], parts=[a,100-a];
+            const rgb=opticalDensityMix(items,parts,paletteKey);
+            const score=watercolorSimilarityPct(target,rgb,items,paletteKey);
+            pool.push({items,parts,rgb,score,cost:perceptualMixScore(target,rgb,items,paletteKey)});
+          }
+        }
+      }
+
+      pool.sort((a,b)=>a.cost-b.cost);
+      const bestPairs=pool.slice(0,28);
+
+      // Nur wenn es sichtbar hilft: dritte Farbe in groben, praxisnahen Anteilen.
+      const triples=[...pool];
+      const topColors=[];
+      for(const x of bestPairs){
+        for(const c of x.items) if(!topColors.some(q=>q.name===c.name)) topColors.push(c);
+      }
+      const thirdCandidates=nearest.slice(0,12);
+      for(const pair of bestPairs.slice(0,12)){
+        for(const c of thirdCandidates){
+          if(pair.items.some(x=>x.name===c.name))continue;
+          for(const add of [10,20,30]){
+            const p1=Math.round(pair.parts[0]*(100-add)/100);
+            const p2=100-add-p1;
+            if(p1<5||p2<5)continue;
+            const items=[pair.items[0],pair.items[1],c],parts=[p1,p2,add];
+            const rgb=opticalDensityMix(items,parts,paletteKey);
+            const cost=perceptualMixScore(target,rgb,items,paletteKey);
+            triples.push({items,parts,rgb,cost,score:watercolorSimilarityPct(target,rgb,items,paletteKey)});
+          }
+        }
+      }
+
+      triples.sort((a,b)=>a.cost-b.cost);
+      const chosen=[],seen=new Set();
+      for(const x of triples){
+        const sig=x.items.map(i=>i.name).sort().join('|');
+        if(seen.has(sig))continue;
+        seen.add(sig);
+        chosen.push({
+          sig,
+          names:x.items.map(i=>(paletteKey==='watercolor'&&i.series)?`${i.name} (${i.series})`:i.name),
+          parts:x.parts.map(v=>Math.max(1,Math.round(v/10))),
+          rgb:x.rgb,
+          score:x.score,
+          watercolor:true
+        });
+        if(chosen.length===3)break;
+      }
+      return chosen;
+    }
+
+    // Öl: bisherige PC-nahe iPad-Suche unverändert lassen.
     const nearest=[...candidates].sort((a,b)=>colorDistance(a.rgb,target)-colorDistance(b.rgb,target))
       .slice(0,Math.min(16,candidates.length));
     let beam=nearest.map(c=>({items:[c],parts:[20],rgb:c.rgb,score:similarityPct(target,c.rgb)}))
@@ -1009,7 +1302,7 @@
     for(const x of beam.sort((a,b)=>b.score-a.score)){
       const sig=x.items.map(i=>i.name).sort().join('|');
       if(chosen.some(y=>y.sig===sig))continue;
-      chosen.push({sig,names:x.items.map(i=>i.name),parts:x.parts,rgb:x.rgb,score:x.score,alternatives});
+      chosen.push({sig,names:x.items.map(i=>(paletteKey==='watercolor'&&i.series)?`${i.name} (${i.series})`:i.name),parts:x.parts,rgb:x.rgb,score:x.score,alternatives});
       if(chosen.length===3)break;
     }
     return chosen;
@@ -1039,7 +1332,7 @@
           <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${targetHex}"></div></div>
           <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex}"></div></div>
         </div>
-        <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i]} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">Mischqualität: Studio · bis 5 Farben</span></div>
+        <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i]} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell-Mischung · max. 3 Pigmente':'Mischqualität: Studio · bis 5 Farben'}</span></div>
       `;
       mixResults.appendChild(card);
     });
@@ -1210,9 +1503,11 @@
 
   function refreshGlazePaletteStatus(){
     const key=glazePalette.value;
-    const total=(PALETTES[key]||[]).length;
+    const total=key==='watercolor'
+      ? (PALETTES.horadam||[]).length+(PALETTES.akademie||[]).length
+      : (PALETTES[key]||[]).length;
     const active=selectedPaletteColors(key).length;
-    const names={horadam:'Schmincke Horadam',akademie:'Schmincke Akademie',artisan:'Winsor & Newton Artisan'};
+    const names={watercolor:'Meine Aquarellfarben · Horadam + Akademie',horadam:'Schmincke Horadam',akademie:'Schmincke Akademie',artisan:'Winsor & Newton Artisan'};
     glazePaletteStatus.textContent=`${names[key]||key} – ${active} von ${total} Farben aktiv`;
   }
 
@@ -1589,7 +1884,7 @@
     const out=[];
     if(!glazeBase||!glazeTarget) return out;
     const step=2;
-    for(const [name,rgb] of colors){
+    for(const [name,rgb,series] of colors){
       let best=null;
       for(let strength=2;strength<=maxStrength;strength+=step){
         const result=glazeApply(glazeBase,rgb,strength,glazeMedium);
