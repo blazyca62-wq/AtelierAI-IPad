@@ -1,4 +1,4 @@
-AtelierAI iPad 1.20.13 PIPETTEN MISCHFIX
+AtelierAI iPad 1.20.14 PIPETTEN STABIL
 
 Stabilitaetsstand auf Basis von 1.20.3 FARBTREU.
 Zielreferenz fuer die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.

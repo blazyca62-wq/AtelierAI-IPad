@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.13 PIPETTEN MISCHFIX</title>
+  <title>AtelierAI iPad 1.20.14 PIPETTEN STABIL</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.13 PIPETTEN MISCHFIX</div>
+    <div class="title">AtelierAI · iPad 1.20.14 PIPETTEN STABIL</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -3123,17 +3123,14 @@
     surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>'; draw();
   });
 
-  // Punkt-Pipette als eigener Einmal-Tipp im Capture-Phase.
-  // Sie wird vor allen Verschiebe-/Zoom-/Flächen-Gesten verarbeitet.
-  viewer.addEventListener('pointerdown',e=>{
-    if(!pointPickerArmed || !loaded) return;
-    pointPickerArmed=false;
+  viewer.addEventListener('click',e=>{
+    if(!loaded || mode!=='picker') return;
+    // Ein normaler Tipp nimmt immer die Punktfarbe auf.
     pickColor(e.clientX,e.clientY);
+    pointPickerArmed=false;
     hint.textContent='Punktfarbe aufgenommen';
     e.preventDefault();
-    e.stopImmediatePropagation();
-  }, {capture:true, passive:false});
-  // Alte direkte Canvas-Punktaufnahme deaktiviert; 1.20.12 nutzt den eindeutigen Einmal-Tipp oben.
+  });
 
   viewer.addEventListener('pointerdown',e=>{
     if(!surfaceMode||!loaded)return;
@@ -3440,11 +3437,7 @@
       return;
     }
     if(mode==='picker'&&touches.size===1){
-      pickColor(e.clientX,e.clientY);
-      touches.delete(e.pointerId);
-      try{ viewer.releasePointerCapture?.(e.pointerId); }catch(_){}
-      e.preventDefault();
-      e.stopPropagation();
+      // Punktaufnahme erfolgt beim anschließenden click (iPad stabiler).
       return;
     }
     if(mode==='move'){
