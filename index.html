@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.10 PUNKTPIPETTE FIX</title>
+  <title>AtelierAI iPad 1.20.11 PUNKTPIPETTE DIREKT</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.10 PUNKTPIPETTE FIX</div>
+    <div class="title">AtelierAI · iPad 1.20.11 PUNKTPIPETTE DIREKT</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -3110,6 +3110,16 @@
     surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>'; draw();
   });
 
+  // iPad Punkt-Pipette: direkt auf dem sichtbaren Canvas abfangen.
+  // Dadurch ist die Aufnahme unabhängig vom Viewer-Gestenhandler.
+  canvas.addEventListener('pointerdown',e=>{
+    if(mode!=='picker' || !loaded || areaPickerMode || smartPickerArmed) return;
+    pickColor(e.clientX,e.clientY);
+    touches.delete(e.pointerId);
+    e.preventDefault();
+    e.stopPropagation();
+  }, {passive:false});
+
   viewer.addEventListener('pointerdown',e=>{
     if(!surfaceMode||!loaded)return;
     const p=canvasPoint(e.clientX,e.clientY);
@@ -3377,7 +3387,12 @@
   fitBtn.addEventListener('click',fitImage);
   resetBtn.addEventListener('click',fitImage);
   moveMode.addEventListener('click',()=>setMode('move'));
-  pickerMode.addEventListener('click',()=>setMode('picker'));
+  pickerMode.addEventListener('click',()=>{
+    setMode('picker');
+    areaPickerMode=null;
+    smartPickerArmed=false;
+    hint.textContent='Punkt-Pipette aktiv – Bild antippen';
+  });
   waterMode.addEventListener('click',()=>setPaintMode('water'));
   oilMode.addEventListener('click',()=>setPaintMode('oil'));
   toneAll.addEventListener('click',()=>setToneView('all'));
