@@ -1,9 +1,12 @@
-AtelierAI iPad 1.10.6 PC
+AtelierAI iPad 1.10.7 PC
 
-Punkt-Pipette korrigiert:
-- Fehler gefunden: Der iPad-Tap-Handler prüfte auf 'pick', die App verwendet aber tatsächlich 'picker'.
-- Nach erfolgreicher Punkt-Farbaufnahme wechselt AtelierAI jetzt direkt aus pickColor() zum Bereich „Mischen“.
-- Die Studio-Mischung wird vorher berechnet und anschließend sichtbar angezeigt.
-- Foto öffnen und die übrigen Funktionen bleiben unverändert.
+Änderungen:
+- Farbideen aus der Werkzeugleiste entfernt.
+- Rasterlinien nicht mehr fest weiß.
+- Raster passt sich jetzt automatisch an die Bildhelligkeit an:
+  helles Bild -> dunkle Rasterlinien
+  dunkles Bild -> helle Rasterlinien
+- Punkt-Pipette -> Mischen aus 1.10.6 bleibt erhalten.
+- Foto öffnen, Flächenberater, Tonwerte, Großformen, Mischungen und Korrekturatelier bleiben unverändert.
 
 Orientierung: PC AtelierAI 2.6.96.
