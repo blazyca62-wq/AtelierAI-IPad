@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.6 PC</title>
+  <title>AtelierAI iPad 1.7 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -79,12 +79,19 @@
     .custom-add input{min-width:0;padding:8px;border:1px solid #aaa;border-radius:7px}
     .custom-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #eee}
 
+
+    .pc-card{border:1px solid #d8d8d8;border-radius:10px;padding:9px;margin-top:8px;background:#fafafa}
+    .swatch-line{display:flex;align-items:center;gap:8px;margin:6px 0}
+    .small-swatch{width:44px;height:34px;border-radius:7px;border:1px solid #777;flex:0 0 auto}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .control-line{display:grid;grid-template-columns:92px 1fr 42px;gap:6px;align-items:center;margin:7px 0}
+
 </style>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.6 PC</div>
+    <div class="title">AtelierAI · iPad 1.7 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -190,6 +197,13 @@
           <option value="akademie">Schmincke Akademie</option>
         </select>
 
+        <label style="display:block;margin-top:9px;">Pipettenquelle</label>
+        <select id="pickerSource" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;">
+          <option value="visible">Sichtbares Bild</option>
+          <option value="original">Originalbild</option>
+        </select>
+        <div class="tiny" style="margin-top:4px;">PC-Standard: Sichtbares/bearbeitetes Bild.</div>
+
         <div class="mode" style="margin-top:8px;">
           <button id="managePaletteBtn" class="secondary">Meine Farben auswählen</button>
         </div>
@@ -246,25 +260,68 @@
         <div id="targetInfo" class="rgb" style="margin-top:6px;">Noch keine Bereichsfarbe aufgenommen.</div>
 
         <div class="mode" style="margin-top:10px;">
-          <button id="calcMixesBtn">
-<section class="panel" id="surfaceAdvisorPanel">
-  <h3>Flächenberater</h3>
-  <div class="tiny">Wie in der PC-Version: einen Bildbereich untersuchen und vier Hauptfarben als Malfarben bestimmen.</div>
-  <div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap">
-    <button id="surfaceCircleBtn">Kreis analysieren</button>
-    <button id="surfaceRectBtn">Rechteck analysieren</button>
-    <button id="surfaceResetBtn">Zurücksetzen</button>
-  </div>
-  <label class="tiny">Bereichsgröße <input id="surfaceSize" type="range" min="20" max="140" value="70"></label>
-  <div id="surfaceResults" class="mixes"><div class="tiny">Noch kein Bereich analysiert.</div></div>
-</section>
-Studio-Mischung berechnen</button>
+          <button id="calcMixesBtn">Studio-Mischung berechnen</button>
         </div>
 
-        <div class="tiny" style="margin-top:6px;">PC-Modus: Studio · maximale Genauigkeit bis 5 Farben</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Punkt)</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Nach der Aufnahme wird die Studio-Mischung automatisch berechnet.</div><div id="mixResults"></div>
+        <div class="tiny" style="margin-top:6px;">PC-Modus: Studio · maximale Genauigkeit bis 5 Farben</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Punkt)</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Punkt- und Maler-Pipette berechnen die Studio-Mischung jetzt automatisch.</div><div id="mixResults"></div>
       </div>
 
-<div class="section">
+
+      <div class="section" id="surfaceAdvisorPanel">
+        <h3>Flächenberater</h3>
+        <p>Bereich antippen → vier Hauptfarben bestimmen. Jede Hauptfarbe kann direkt gemischt werden.</p>
+        <div class="grid2">
+          <button id="surfaceCircleBtn">Kreis analysieren</button>
+          <button id="surfaceRectBtn" class="secondary">Rechteck analysieren</button>
+        </div>
+        <div class="control-line"><label>Größe</label><input id="surfaceSize" type="range" min="24" max="180" value="84"><span id="surfaceSizeVal">84</span></div>
+        <button id="surfaceResetBtn" class="secondary" style="width:100%;">Flächenanalyse löschen</button>
+        <div id="surfaceResults" class="pc-card"><span class="tiny">Noch kein Bereich analysiert.</span></div>
+      </div>
+
+      <div class="section" id="correctionStudioPanel">
+        <h3>Korrekturatelier</h3>
+        <p>Aufgenommene Farbe malerisch korrigieren und anschließend neu mischen.</p>
+        <div class="swatch-line"><div id="corrOriginal" class="small-swatch" style="background:#808080"></div><span class="tiny">Ausgangsfarbe</span></div>
+        <div class="swatch-line"><div id="corrResult" class="small-swatch" style="background:#808080"></div><span id="corrInfo" class="tiny">Noch keine Farbe übernommen.</span></div>
+        <div class="control-line"><label>Helligkeit</label><input id="corrLight" type="range" min="-50" max="50" value="0"><span id="corrLightVal">0</span></div>
+        <div class="control-line"><label>Wärme</label><input id="corrWarm" type="range" min="-50" max="50" value="0"><span id="corrWarmVal">0</span></div>
+        <div class="control-line"><label>Sättigung</label><input id="corrSat" type="range" min="-50" max="50" value="0"><span id="corrSatVal">0</span></div>
+        <div class="grid2">
+          <button id="corrTakeBtn">Pipettenfarbe übernehmen</button>
+          <button id="corrMixBtn">Korrigierte Farbe mischen</button>
+        </div>
+        <button id="corrResetBtn" class="secondary" style="width:100%;margin-top:7px;">Korrektur zurücksetzen</button>
+      </div>
+
+      <div class="section" id="mixPalettePanel">
+        <h3>Mischpalette</h3>
+        <p>Aktive Tubenfarben als Zweiermischungen vergleichen. Für das iPad werden die besten Treffer zuerst gezeigt.</p>
+        <div class="control-line"><label>Verhältnis</label><input id="pairRatio" type="range" min="10" max="90" value="50"><span id="pairRatioVal">50/50</span></div>
+        <button id="pairCalcBtn" style="width:100%;">Beste Zweiermischungen berechnen</button>
+        <div id="pairResults" class="pc-card"><span class="tiny">Noch keine Mischpalette berechnet.</span></div>
+      </div>
+
+      <div class="section" id="underpaintingPanel">
+        <h3>Warm / Kalt</h3>
+        <div class="grid2">
+          <button id="underWarmBtn" class="secondary">Warme Untermalung</button>
+          <button id="underCoolBtn" class="secondary">Kühle Untermalung</button>
+        </div>
+        <button id="underOffBtn" class="active" style="width:100%;margin-top:7px;">Aus</button>
+        <div class="control-line"><label>Stärke</label><input id="underStrength" type="range" min="0" max="60" value="22"><span id="underStrengthVal">22</span></div>
+      </div>
+
+      <div class="section" id="gridSavePanel">
+        <h3>Raster & Speichern</h3>
+        <div class="grid2">
+          <button id="gridToggleBtn" class="secondary">Raster ein</button>
+          <button id="saveViewBtn">Bild speichern</button>
+        </div>
+        <div class="control-line"><label>Raster</label><input id="gridDensity" type="range" min="2" max="20" value="8"><span id="gridDensityVal">8</span></div>
+      </div>
+
+      <div class="section">
         <h3>Aufgenommene Farbe</h3>
         <div class="colorbox" id="colorBox"></div>
       </div>
@@ -327,6 +384,40 @@ Studio-Mischung berechnen</button>
   const deleteStandardPalette=document.getElementById('deleteStandardPalette');
   const standardPaletteInfo=document.getElementById('standardPaletteInfo');
 
+  const pickerSource=document.getElementById('pickerSource');
+  const surfaceCircleBtn=document.getElementById('surfaceCircleBtn');
+  const surfaceRectBtn=document.getElementById('surfaceRectBtn');
+  const surfaceResetBtn=document.getElementById('surfaceResetBtn');
+  const surfaceSize=document.getElementById('surfaceSize');
+  const surfaceSizeVal=document.getElementById('surfaceSizeVal');
+  const surfaceResults=document.getElementById('surfaceResults');
+  const corrOriginal=document.getElementById('corrOriginal');
+  const corrResult=document.getElementById('corrResult');
+  const corrInfo=document.getElementById('corrInfo');
+  const corrLight=document.getElementById('corrLight');
+  const corrWarm=document.getElementById('corrWarm');
+  const corrSat=document.getElementById('corrSat');
+  const corrLightVal=document.getElementById('corrLightVal');
+  const corrWarmVal=document.getElementById('corrWarmVal');
+  const corrSatVal=document.getElementById('corrSatVal');
+  const corrTakeBtn=document.getElementById('corrTakeBtn');
+  const corrMixBtn=document.getElementById('corrMixBtn');
+  const corrResetBtn=document.getElementById('corrResetBtn');
+  const pairRatio=document.getElementById('pairRatio');
+  const pairRatioVal=document.getElementById('pairRatioVal');
+  const pairCalcBtn=document.getElementById('pairCalcBtn');
+  const pairResults=document.getElementById('pairResults');
+  const underWarmBtn=document.getElementById('underWarmBtn');
+  const underCoolBtn=document.getElementById('underCoolBtn');
+  const underOffBtn=document.getElementById('underOffBtn');
+  const underStrength=document.getElementById('underStrength');
+  const underStrengthVal=document.getElementById('underStrengthVal');
+  const gridToggleBtn=document.getElementById('gridToggleBtn');
+  const gridDensity=document.getElementById('gridDensity');
+  const gridDensityVal=document.getElementById('gridDensityVal');
+  const saveViewBtn=document.getElementById('saveViewBtn');
+
+
   const lightSlider = document.getElementById('lightSlider');
   const midSlider = document.getElementById('midSlider');
   const darkSlider = document.getElementById('darkSlider');
@@ -360,6 +451,12 @@ Studio-Mischung berechnen</button>
   let lastAverageColor = null;
   let lastSmartColor = null;
   let paintMedium = 'oil';
+
+  let surfaceMode=null;
+  let correctionBase=null;
+  let underMode='off';
+  let gridEnabled=false;
+
 
   let sourceCanvas = document.createElement('canvas');
   let sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
@@ -460,7 +557,7 @@ Studio-Mischung berechnen</button>
     const x0=Math.max(0,Math.floor(ix-radius)), y0=Math.max(0,Math.floor(iy-radius));
     const x1=Math.min(img.width,Math.ceil(ix+radius)), y1=Math.min(img.height,Math.ceil(iy+radius));
     const w=Math.max(1,x1-x0), h=Math.max(1,y1-y0);
-    const data=processedCtx.getImageData(x0,y0,w,h).data;
+    const data=sourceContextForPicker().getImageData(x0,y0,w,h).data;
     const samples=[];
     const step=Math.max(1,Math.floor(Math.sqrt((w*h)/700)));
     for(let y=0;y<h;y+=step){
@@ -624,7 +721,7 @@ Studio-Mischung berechnen</button>
   function showMixes(){
     const target=lastSmartColor || lastAverageColor;
     if(!target){
-      targetInfo.textContent='Bitte zuerst mit Kreis-Pipette oder Smart-Kreis eine Farbe aufnehmen.';
+      targetInfo.textContent='Bitte zuerst mit Pipette, Maler-Pipette oder Flächenberater eine Farbe aufnehmen.';
       return;
     }
     const paletteKey=paintPalette.value;
@@ -713,7 +810,140 @@ Studio-Mischung berechnen</button>
       `<span class="tiny">${smart ? 'Smart-Malfarbe aktiv' : 'Kreis-Durchschnitt aufgenommen'} · ${samples.length} Messpunkte</span>`;
     // also update the existing smart color display for consistency
     if(robust) showSmartColor(robust);
+    correctionBase=[...lastSmartColor]; refreshCorrection();
+    showMixes();
   }
+
+
+  function targetArray(){
+    if(lastSmartColor) return [...lastSmartColor];
+    if(lastAverageColor) return [...lastAverageColor];
+    return null;
+  }
+
+  function setMixTarget(rgb, label='Zielfarbe'){
+    if(!rgb) return;
+    lastAverageColor=[...rgb];
+    lastSmartColor=[...rgb];
+    const hx=rgbHex(rgb);
+    avgTargetBox.style.background=hx;
+    smartTargetBox.style.background=hx;
+    targetInfo.innerHTML=`${label} ${hx} · RGB ${rgb.join(', ')}`;
+  }
+
+  function sourceContextForPicker(){
+    return pickerSource && pickerSource.value==='original' ? sourceCtx : processedCtx;
+  }
+
+  function applyUnderpainting(imageData){
+    if(underMode==='off') return imageData;
+    const k=Number(underStrength.value)/100;
+    const d=imageData.data;
+    const tint=underMode==='warm'?[232,157,92]:[103,151,213];
+    for(let i=0;i<d.length;i+=4){
+      d[i]=Math.round(d[i]*(1-k)+tint[0]*k);
+      d[i+1]=Math.round(d[i+1]*(1-k)+tint[1]*k);
+      d[i+2]=Math.round(d[i+2]*(1-k)+tint[2]*k);
+    }
+    return imageData;
+  }
+
+  function drawGridOverlay(targetCtx, w, h, density){
+    const n=Math.max(2,Number(density)||8);
+    targetCtx.save();
+    targetCtx.strokeStyle='rgba(255,255,255,.62)';
+    targetCtx.lineWidth=1;
+    for(let i=1;i<n;i++){
+      const x=w*i/n, y=h*i/n;
+      targetCtx.beginPath(); targetCtx.moveTo(x,0); targetCtx.lineTo(x,h); targetCtx.stroke();
+      targetCtx.beginPath(); targetCtx.moveTo(0,y); targetCtx.lineTo(w,y); targetCtx.stroke();
+    }
+    targetCtx.restore();
+  }
+
+  function rgbToHsv(rgb){
+    let [r,g,b]=rgb.map(v=>v/255), mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+    let h=0;
+    if(d){ if(mx===r)h=((g-b)/d)%6; else if(mx===g)h=(b-r)/d+2; else h=(r-g)/d+4; h*=60;if(h<0)h+=360; }
+    return [h,mx===0?0:d/mx,mx];
+  }
+  function hsvToRgb(h,s,v){
+    const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;let q=[0,0,0];
+    if(h<60)q=[c,x,0]; else if(h<120)q=[x,c,0]; else if(h<180)q=[0,c,x]; else if(h<240)q=[0,x,c]; else if(h<300)q=[x,0,c]; else q=[c,0,x];
+    return q.map(z=>Math.round((z+m)*255));
+  }
+  function correctedColor(){
+    if(!correctionBase) return null;
+    let [h,sv,v]=rgbToHsv(correctionBase);
+    v=Math.max(0,Math.min(1,v+Number(corrLight.value)/100));
+    sv=Math.max(0,Math.min(1,sv+Number(corrSat.value)/100));
+    h=(h+Number(corrWarm.value)*0.55+360)%360;
+    return hsvToRgb(h,sv,v);
+  }
+  function refreshCorrection(){
+    const c=correctedColor();
+    corrLightVal.textContent=corrLight.value;
+    corrWarmVal.textContent=corrWarm.value;
+    corrSatVal.textContent=corrSat.value;
+    if(!correctionBase||!c){corrInfo.textContent='Noch keine Farbe übernommen.';return;}
+    corrOriginal.style.background=rgbHex(correctionBase);
+    corrResult.style.background=rgbHex(c);
+    corrInfo.textContent=`${rgbHex(c)} · RGB ${c.join(', ')}`;
+  }
+
+  function clusterArea(cx,cy,size,shape){
+    const srcCtx=sourceContextForPicker();
+    const w=srcCtx.canvas.width,h=srcCtx.canvas.height;
+    const half=Math.max(12,Math.round(size/2));
+    const pts=[];
+    const x0=Math.max(0,Math.floor(cx-half)),x1=Math.min(w-1,Math.ceil(cx+half));
+    const y0=Math.max(0,Math.floor(cy-half)),y1=Math.min(h-1,Math.ceil(cy+half));
+    const step=Math.max(1,Math.floor(size/40));
+    for(let y=y0;y<=y1;y+=step)for(let x=x0;x<=x1;x+=step){
+      if(shape==='circle'){const dx=x-cx,dy=y-cy;if(dx*dx+dy*dy>half*half)continue;}
+      const q=srcCtx.getImageData(x,y,1,1).data;
+      pts.push([q[0],q[1],q[2]]);
+    }
+    if(pts.length<4)return[];
+    let centers=[.12,.37,.63,.88].map(f=>[...pts[Math.min(pts.length-1,Math.floor(pts.length*f))]]);
+    for(let it=0;it<6;it++){
+      const sums=centers.map(()=>[0,0,0,0]);
+      for(const q of pts){let bi=0,bd=Infinity;centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});sums[bi][0]+=q[0];sums[bi][1]+=q[1];sums[bi][2]+=q[2];sums[bi][3]++;}
+      centers=sums.map((a,j)=>a[3]?[a[0]/a[3],a[1]/a[3],a[2]/a[3]]:centers[j]);
+    }
+    const counts=centers.map(()=>0);
+    for(const q of pts){let bi=0,bd=Infinity;centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});counts[bi]++;}
+    return centers.map((c,i)=>({rgb:c.map(v=>Math.round(v)),pct:100*counts[i]/pts.length})).sort((a,b)=>b.pct-a.pct);
+  }
+  function renderSurface(clusters){
+    surfaceResults.innerHTML='';
+    clusters.forEach((c,i)=>{
+      const row=document.createElement('div');row.className='pc-card';
+      row.innerHTML=`<div class="swatch-line"><div class="small-swatch" style="background:${rgbHex(c.rgb)}"></div><div><b>Hauptfarbe ${i+1}</b><br><span class="tiny">${Math.round(c.pct)}% · ${rgbHex(c.rgb)} · RGB ${c.rgb.join(', ')}</span></div></div><button>Diese Farbe mischen</button>`;
+      row.querySelector('button').onclick=()=>{setMixTarget(c.rgb,`Hauptfarbe ${i+1}`);showMixes();};
+      surfaceResults.appendChild(row);
+    });
+  }
+
+  function calculatePairPalette(){
+    const target=targetArray();
+    if(!target){pairResults.innerHTML='<span class="tiny">Bitte zuerst eine Farbe aufnehmen.</span>';return;}
+    const colors=selectedPaletteColors(paintPalette.value);
+    if(colors.length<2){pairResults.innerHTML='<span class="tiny">Mindestens zwei aktive Farben nötig.</span>';return;}
+    const a=Number(pairRatio.value)/100,b=1-a, rows=[];
+    for(let i=0;i<colors.length;i++)for(let j=i+1;j<colors.length;j++){
+      const rgb=[0,1,2].map(ch=>Math.round(colors[i][1][ch]*a+colors[j][1][ch]*b));
+      rows.push({n1:colors[i][0],n2:colors[j][0],rgb,score:similarityPct(target,rgb)});
+    }
+    rows.sort((x,y)=>y.score-x.score);
+    pairResults.innerHTML='';
+    rows.slice(0,12).forEach((m,i)=>{
+      const el=document.createElement('div');el.className='pc-card';
+      el.innerHTML=`<div class="swatch-line"><div class="small-swatch" style="background:${rgbHex(m.rgb)}"></div><div><b>${i+1}. ${m.score}%</b><br><span class="tiny">${Math.round(a*100)}% ${m.n1}<br>${Math.round(b*100)}% ${m.n2}</span></div></div>`;
+      pairResults.appendChild(el);
+    });
+  }
+
 
   function resizeCanvas(){
     const r = viewer.getBoundingClientRect();
@@ -951,6 +1181,7 @@ Studio-Mischung berechnen</button>
       }
     }
     applyFamilyVisibility(out);
+    applyUnderpainting(out);
     processedCtx.putImageData(out,0,0);
     draw();
   }
@@ -965,6 +1196,7 @@ Studio-Mischung berechnen</button>
     ctx.translate(offsetX,offsetY);
     ctx.scale(scale,scale);
     ctx.drawImage(processedCanvas,0,0);
+    if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value);
     ctx.restore();
   }
 
@@ -978,11 +1210,15 @@ Studio-Mischung berechnen</button>
     const p=canvasPoint(clientX,clientY);
     const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
     if(ix<0||iy<0||ix>=img.width||iy>=img.height) return;
-    const d=sourceCtx.getImageData(Math.floor(ix),Math.floor(iy),1,1).data;
-    const [r,g,b]=d;
-    const hex='#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();
-    colorBox.style.background=`rgb(${r},${g},${b})`;
-    colorText.innerHTML=`RGB: ${r}, ${g}, ${b}<br>HEX: ${hex}`;
+    const pc=sourceContextForPicker();
+    const d=pc.getImageData(Math.floor(ix),Math.floor(iy),1,1).data;
+    const rgb=[d[0],d[1],d[2]];
+    const hex=rgbHex(rgb);
+    colorBox.style.background=hex;
+    colorText.innerHTML=`RGB: ${rgb.join(', ')}<br>HEX: ${hex}`;
+    setMixTarget(rgb,'Pipette');
+    correctionBase=[...rgb]; refreshCorrection();
+    showMixes();
   }
 
   [lightSlider,midSlider,darkSlider].forEach(sl=>{
@@ -1081,6 +1317,57 @@ Studio-Mischung berechnen</button>
     smartPickerBtn.classList.toggle('secondary',!smartPickerArmed);
     hint.textContent=smartPickerArmed ? 'Smart-Pipette: im Bild antippen' : (mode==='move' ? 'Modus: Verschieben / Zoom' : 'Modus: Pipette');
   });
+
+
+  surfaceSize.addEventListener('input',()=>surfaceSizeVal.textContent=surfaceSize.value);
+  surfaceCircleBtn.addEventListener('click',()=>{surfaceMode='circle';hint.textContent='Flächenberater: Kreis im Bild antippen';});
+  surfaceRectBtn.addEventListener('click',()=>{surfaceMode='rect';hint.textContent='Flächenberater: Rechteck im Bild antippen';});
+  surfaceResetBtn.addEventListener('click',()=>{surfaceMode=null;surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';});
+
+  viewer.addEventListener('pointerdown',e=>{
+    if(!surfaceMode||!loaded)return;
+    const p=canvasPoint(e.clientX,e.clientY);
+    const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
+    if(ix<0||iy<0||ix>=img.width||iy>=img.height)return;
+    const clusters=clusterArea(ix,iy,Number(surfaceSize.value)/Math.max(scale,.05),surfaceMode);
+    renderSurface(clusters);
+    surfaceMode=null;
+    hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette';
+    e.preventDefault(); e.stopImmediatePropagation();
+  },true);
+
+  [corrLight,corrWarm,corrSat].forEach(x=>x.addEventListener('input',refreshCorrection));
+  corrTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){correctionBase=[...t];refreshCorrection();}});
+  corrMixBtn.addEventListener('click',()=>{const c=correctedColor();if(c){setMixTarget(c,'Korrekturatelier');showMixes();}});
+  corrResetBtn.addEventListener('click',()=>{corrLight.value=0;corrWarm.value=0;corrSat.value=0;refreshCorrection();});
+
+  pairRatio.addEventListener('input',()=>{const a=pairRatio.value;pairRatioVal.textContent=`${a}/${100-a}`;});
+  pairCalcBtn.addEventListener('click',calculatePairPalette);
+
+  function setUnder(m){
+    underMode=m;
+    underWarmBtn.classList.toggle('active',m==='warm');underWarmBtn.classList.toggle('secondary',m!=='warm');
+    underCoolBtn.classList.toggle('active',m==='cool');underCoolBtn.classList.toggle('secondary',m!=='cool');
+    underOffBtn.classList.toggle('active',m==='off');underOffBtn.classList.toggle('secondary',m!=='off');
+    rebuildToneImage();
+  }
+  underWarmBtn.addEventListener('click',()=>setUnder('warm'));
+  underCoolBtn.addEventListener('click',()=>setUnder('cool'));
+  underOffBtn.addEventListener('click',()=>setUnder('off'));
+  underStrength.addEventListener('input',()=>{underStrengthVal.textContent=underStrength.value;rebuildToneImage();});
+
+  gridToggleBtn.addEventListener('click',()=>{gridEnabled=!gridEnabled;gridToggleBtn.textContent=gridEnabled?'Raster aus':'Raster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);draw();});
+  gridDensity.addEventListener('input',()=>{gridDensityVal.textContent=gridDensity.value;draw();});
+  saveViewBtn.addEventListener('click',()=>{
+    if(!loaded)return;
+    const out=document.createElement('canvas');out.width=processedCanvas.width;out.height=processedCanvas.height;
+    const oc=out.getContext('2d');oc.drawImage(processedCanvas,0,0);
+    if(gridEnabled)drawGridOverlay(oc,out.width,out.height,gridDensity.value);
+    out.toBlob(blob=>{
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='AtelierAI_Bild.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+    },'image/png');
+  });
+
 
   fileInput.addEventListener('change',e=>{
     const file=e.target.files&&e.target.files[0];
@@ -1198,71 +1485,6 @@ Studio-Mischung berechnen</button>
   if('serviceWorker' in navigator){
     window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
   }
-
-  const surfaceCircleBtn=document.getElementById('surfaceCircleBtn');
-  const surfaceRectBtn=document.getElementById('surfaceRectBtn');
-  const surfaceResetBtn=document.getElementById('surfaceResetBtn');
-  const surfaceSize=document.getElementById('surfaceSize');
-  const surfaceResults=document.getElementById('surfaceResults');
-  let surfaceMode=null;
-
-  function surfaceClusterPixels(cx,cy,size,shape){
-    const src=processedCtx.getImageData(0,0,processedCanvas.width,processedCanvas.height);
-    const pts=[], half=Math.max(10,Math.round(size/2));
-    const x0=Math.max(0,Math.round(cx-half)), x1=Math.min(processedCanvas.width-1,Math.round(cx+half));
-    const y0=Math.max(0,Math.round(cy-half)), y1=Math.min(processedCanvas.height-1,Math.round(cy+half));
-    const step=Math.max(1,Math.floor(size/35));
-    for(let y=y0;y<=y1;y+=step) for(let x=x0;x<=x1;x+=step){
-      if(shape==='circle'){
-        const dx=x-cx,dy=y-cy;if(dx*dx+dy*dy>half*half) continue;
-      }
-      const i=(y*processedCanvas.width+x)*4;
-      pts.push([src.data[i],src.data[i+1],src.data[i+2]]);
-    }
-    if(!pts.length)return [];
-    let centers=[];
-    centers.push(pts[Math.floor(pts.length*.18)],pts[Math.floor(pts.length*.42)],pts[Math.floor(pts.length*.67)],pts[Math.floor(pts.length*.88)]);
-    for(let it=0;it<7;it++){
-      const sums=centers.map(()=>[0,0,0,0]);
-      for(const q of pts){
-        let bi=0,bd=1e20;
-        centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});
-        sums[bi][0]+=q[0];sums[bi][1]+=q[1];sums[bi][2]+=q[2];sums[bi][3]++;
-      }
-      centers=sums.map((a,j)=>a[3]?[a[0]/a[3],a[1]/a[3],a[2]/a[3]]:centers[j]);
-    }
-    const counts=centers.map(()=>0);
-    for(const q of pts){let bi=0,bd=1e20;centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});counts[bi]++}
-    return centers.map((c,i)=>({rgb:c.map(v=>Math.round(v)),pct:100*counts[i]/pts.length})).sort((a,b)=>b.pct-a.pct);
-  }
-  function renderSurfaceClusters(clusters){
-    surfaceResults.innerHTML='';
-    clusters.forEach((c,i)=>{
-      const card=document.createElement('div'); card.className='mix-card';
-      const hex='#'+c.rgb.map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();
-      card.innerHTML=`<div style="display:flex;align-items:center;gap:8px"><span style="width:38px;height:38px;border-radius:8px;border:1px solid #777;background:${hex};display:inline-block"></span><b>Hauptfarbe ${i+1}</b> · ${c.pct.toFixed(0)}%</div><div class="tiny">RGB ${c.rgb.join(', ')} · ${hex}</div><button class="surfaceMixBtn">Mischung berechnen</button>`;
-      card.querySelector('button').onclick=()=>{
-        sampledColor={r:c.rgb[0],g:c.rgb[1],b:c.rgb[2]};
-        if(typeof updateSampleUI==='function') updateSampleUI(sampledColor);
-        if(typeof showMixes==='function') showMixes();
-      };
-      surfaceResults.appendChild(card);
-    });
-  }
-  function armSurface(shape){surfaceMode=shape; surfaceResults.innerHTML='<div class="tiny">Jetzt auf die gewünschte Stelle im Bild tippen.</div>'}
-  surfaceCircleBtn?.addEventListener('click',()=>armSurface('circle'));
-  surfaceRectBtn?.addEventListener('click',()=>armSurface('rect'));
-  surfaceResetBtn?.addEventListener('click',()=>{surfaceMode=null;surfaceResults.innerHTML='<div class="tiny">Noch kein Bereich analysiert.</div>'});
-  viewCanvas?.addEventListener('click',(ev)=>{
-    if(!surfaceMode)return;
-    const rect=viewCanvas.getBoundingClientRect();
-    const vx=(ev.clientX-rect.left)*viewCanvas.width/rect.width, vy=(ev.clientY-rect.top)*viewCanvas.height/rect.height;
-    // use same displayed coordinate proportion on processed image
-    const cx=vx/viewCanvas.width*processedCanvas.width, cy=vy/viewCanvas.height*processedCanvas.height;
-    const clusters=surfaceClusterPixels(cx,cy,Number(surfaceSize.value),surfaceMode);
-    renderSurfaceClusters(clusters); surfaceMode=null;
-  },true);
-
 })();
 
 
