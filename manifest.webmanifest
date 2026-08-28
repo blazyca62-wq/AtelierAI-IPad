@@ -1,0 +1,9 @@
+{
+  "name": "AtelierAI iPad 1.5.1 PC",
+  "short_name": "AtelierAI",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f2f1ed",
+  "theme_color": "#f2f1ed",
+  "orientation": "any"
+}
