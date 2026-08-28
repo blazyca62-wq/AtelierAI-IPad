@@ -1,4 +1,4 @@
-const CACHE='atelierai-ipad-v1-10-pc';
+const CACHE='atelierai-ipad-v1-10-1-pc';
 const ASSETS=['./','./index.html','./manifest.webmanifest'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
 self.addEventListener('activate',e=>{e.waitUntil(Promise.all([
@@ -8,7 +8,7 @@ self.addEventListener('activate',e=>{e.waitUntil(Promise.all([
 self.addEventListener('fetch',e=>{
   if(e.request.mode==='navigate'){
     e.respondWith(fetch(e.request,{cache:'no-store'}).then(r=>{
-      const c=r.clone(); caches.open(CACHE).then(x=>x.put('./index.html',c)); return r;
+      const c=r.clone();caches.open(CACHE).then(x=>x.put('./index.html',c));return r;
     }).catch(()=>caches.match('./index.html')));
     return;
   }

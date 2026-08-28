@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.10 PC</title>
+  <title>AtelierAI iPad 1.10.1 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.10 PC</div>
+    <div class="title">AtelierAI · iPad 1.10.1 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -877,6 +877,18 @@
     return null;
   }
 
+  function showStudioMixPage(){
+    showMixes();
+    if(typeof window.activateToolPage==='function'){
+      window.activateToolPage('paintMixPanel');
+    }
+    setTimeout(()=>{
+      if(mixResults && typeof mixResults.scrollIntoView==='function'){
+        mixResults.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+    },30);
+  }
+
   function setMixTarget(rgb, label='Zielfarbe'){
     if(!rgb) return;
     lastAverageColor=[...rgb];
@@ -962,8 +974,13 @@
     surfaceResults.innerHTML='';
     clusters.forEach((c,i)=>{
       const row=document.createElement('div');row.className='pc-card';
-      row.innerHTML=`<div class="swatch-line"><div class="small-swatch" style="background:${rgbHex(c.rgb)}"></div><div><b>Hauptfarbe ${i+1}</b><br><span class="tiny">${Math.round(c.pct)}% · ${rgbHex(c.rgb)} · RGB ${c.rgb.join(', ')}</span></div></div><button>Diese Farbe mischen</button>`;
-      row.querySelector('button').onclick=()=>{setMixTarget(c.rgb,`Hauptfarbe ${i+1}`);showMixes();};
+      row.innerHTML=`<div class="swatch-line"><div class="small-swatch" style="background:${rgbHex(c.rgb)}"></div><div><b>Hauptfarbe ${i+1}</b><br><span class="tiny">${Math.round(c.pct)}% · ${rgbHex(c.rgb)} · RGB ${c.rgb.join(', ')}</span></div></div><button>Diese Farbe als Studio-Mischung</button>`;
+      row.querySelector('button').onclick=()=>{
+        setMixTarget(c.rgb,`Hauptfarbe ${i+1}`);
+        correctionBase=[...c.rgb]; refreshCorrection();
+        ideasBase=[...c.rgb]; refreshIdea();
+        showStudioMixPage();
+      };
       surfaceResults.appendChild(row);
     });
   }
@@ -1470,13 +1487,13 @@
 
   [corrLight,corrWarm,corrSat].forEach(x=>x.addEventListener('input',refreshCorrection));
   corrTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){correctionBase=[...t];refreshCorrection();}});
-  corrMixBtn.addEventListener('click',()=>{const c=correctedColor();if(c){setMixTarget(c,'Korrekturatelier');showMixes();}});
+  corrMixBtn.addEventListener('click',()=>{const c=correctedColor();if(c){setMixTarget(c,'Korrekturatelier');showStudioMixPage();}});
   corrResetBtn.addEventListener('click',()=>{corrLight.value=0;corrWarm.value=0;corrSat.value=0;refreshCorrection();});
 
 
   [ideaLight,ideaWarm,ideaSat].forEach(x=>x.addEventListener('input',refreshIdea));
   ideaTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){ideasBase=[...t];refreshIdea();}});
-  ideaMixBtn.addEventListener('click',()=>{const c=ideaColor();if(c){setMixTarget(c,'Farbidee');showMixes();}});
+  ideaMixBtn.addEventListener('click',()=>{const c=ideaColor();if(c){setMixTarget(c,'Farbidee');showStudioMixPage();}});
   ideaResetBtn.addEventListener('click',()=>{ideaLight.value=0;ideaWarm.value=0;ideaSat.value=0;refreshIdea();});
   pairCalcBtn.addEventListener('click',calculatePairPalette);
 
@@ -1508,6 +1525,8 @@
       toolPanel:'Werkzeug',
       formsPanel:'Großformen',
       tonesPanel:'Tonwerte',
+      paintMixPanel:'Mischen',
+      colorAnalysisPanel:'Farbanalyse',
       surfaceAdvisorPanel:'Flächenberater',
       correctionStudioPanel:'Korrektur',
       mixPalettePanel:'Mischpalette',
@@ -1564,11 +1583,18 @@
       sections.forEach(x=>x.classList.remove('tool-page-active'));
       [...strip.querySelectorAll('button')].forEach(b=>b.classList.remove('active'));
       sec.classList.add('tool-page-active');
-      btn.classList.add('active');
+      if(btn) btn.classList.add('active');
       active=sec;
-      // Werkzeugfenster immer oben beginnen, ohne die ganze Seite zu verschieben.
       side.scrollTop=0;
     }
+
+    window.activateToolPage=function(id){
+      const sec=sections.find(x=>x.id===id);
+      if(!sec) return false;
+      const btn=[...strip.querySelectorAll('button')].find(b=>b.dataset.targetId===id);
+      show(sec,btn||null);
+      return true;
+    };
 
     sections.forEach((sec,i)=>{
       const name=normalize(sec);
@@ -1576,6 +1602,7 @@
       b.type='button';
       b.textContent=name;
       b.className='secondary';
+      b.dataset.targetId=sec.id||'';
       b.addEventListener('click',()=>show(sec,b));
       strip.appendChild(b);
       if(i===0) show(sec,b);

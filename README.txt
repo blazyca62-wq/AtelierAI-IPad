@@ -1,30 +1,12 @@
-AtelierAI iPad 1.10 PC
+AtelierAI iPad 1.10.1 PC
 
-Bedienungsumbau für iPad:
-- Das problematische Akkordeon aus 1.9 wurde ersetzt.
-- Oben bleibt jetzt eine horizontale Werkzeugauswahl immer erreichbar.
-- Es wird jeweils nur ein Werkzeugbereich angezeigt.
-- Werkzeugauswahl kann horizontal mit dem Finger verschoben werden.
-- Der geöffnete Werkzeugbereich kann normal vertikal bedient werden.
-- Große iPad-taugliche Schaltflächen.
-- Bildbereich wird nicht mit einer endlos langen Werkzeugleiste belastet.
+Fehlerkorrektur:
+- Flächenberater: „Diese Farbe als Studio-Mischung“ funktioniert jetzt sichtbar.
+- Die gewählte Hauptfarbe wird als echte Zielfarbe übernommen.
+- AtelierAI wechselt danach automatisch zum Bereich „Mischen“ und zeigt dort die Studio-Mischung.
+- Die Farbe wird zugleich an Korrekturatelier und Farbideen weitergegeben.
+- Dasselbe Verhalten wurde für „Korrigierte Farbe mischen“ und „Idee mischen“ korrigiert.
+- Werkzeugleiste enthält nun klare Punkte „Farbanalyse“ und „Mischen“.
 
-Erhalten:
-- Großformen
-- Tonwerte
-- Pipette und Maler-Pipette
-- Flächenberater mit sichtbarem Kreis/Rechteck
-- Studio-Mischungen
-- überarbeitete Zweier-Mischpalette
-- Korrekturatelier
-- Farbideen
-- Raster und Speichern
-- Palettenauswahl
-- Zoom und Verschieben
-
-Nicht enthalten:
-- die fehlerhafte Warm/Kalt-Schleierfunktion
-- Malreise
-- Malberater
-
+Alle Funktionen aus 1.10 bleiben erhalten.
 Orientierung: PC AtelierAI 2.6.96.
