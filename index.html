@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.15 PC</title>
+  <title>AtelierAI iPad 1.16 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.15 PC</div>
+    <div class="title">AtelierAI · iPad 1.16 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -357,7 +357,7 @@
 
       <div class="section" id="glazePanel">
         <h3>Lasurenvergleich – Original ↔ Gemälde</h3>
-        <p>Das Originalfoto ist das Ziel. Das zweite Bild ist dein aktuelles Aquarell- oder Ölbild. Tippe im Gemälde auf eine Stelle; AtelierAI vergleicht dort beide Bilder und berechnet passende Lasuren.</p>
+        <p>Originalfoto = Ziel. Gemäldefoto = aktueller Stand. Beide Bilder können groß betrachtet werden; mehrere Messpunkte bleiben gespeichert.</p>
 
         <div class="palette-grid">
           <button id="glazeWaterBtn" class="active">Aquarell</button>
@@ -383,19 +383,27 @@
             </label>
           </div>
 
-          <div class="grid2" style="margin-top:8px;gap:8px;">
+          <button id="glazeAutoAlignBtn" class="secondary" style="width:100%;margin-top:7px;">Gemälde automatisch ausrichten</button>
+          <div id="glazeAlignInfo" class="tiny" style="margin-top:5px;">Noch nicht ausgerichtet.</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
             <div>
               <div class="tiny">Original / Ziel</div>
-              <div style="position:relative;background:#ddd;border-radius:8px;overflow:hidden;aspect-ratio:4/3;">
-                <canvas id="glazeOriginalCanvas" style="width:100%;height:100%;display:block;"></canvas>
+              <div style="position:relative;background:#ddd;border-radius:8px;overflow:hidden;height:300px;">
+                <canvas id="glazeOriginalCanvas" style="width:100%;height:100%;display:block;touch-action:none;"></canvas>
               </div>
             </div>
             <div>
               <div class="tiny">Aktuelles Gemälde</div>
-              <div style="position:relative;background:#ddd;border-radius:8px;overflow:hidden;aspect-ratio:4/3;">
+              <div style="position:relative;background:#ddd;border-radius:8px;overflow:hidden;height:300px;">
                 <canvas id="glazePaintingCanvas" style="width:100%;height:100%;display:block;touch-action:none;"></canvas>
               </div>
             </div>
+          </div>
+
+          <div class="grid2" style="margin-top:7px;">
+            <button id="glazeCompareBiggerBtn" class="secondary">Bilder größer / kleiner</button>
+            <button id="glazeClearPointsBtn" class="secondary">Messpunkte löschen</button>
           </div>
 
           <div class="control-line" style="margin-top:8px;">
@@ -404,9 +412,12 @@
             <span id="glazeSampleRadiusVal">8 px</span>
           </div>
 
+          <div class="tiny" style="margin-top:4px;">Im Gemälde antippen: Jeder Tipp erzeugt einen neuen Messpunkt. Die entsprechende Stelle im Original wird automatisch verglichen.</div>
+          <div id="glazePointsList" style="margin-top:7px;"></div>
+
           <div class="mix-swatches" style="margin-top:7px;">
-            <div><div class="tiny">Gemälde-Farbe</div><div id="glazeBaseSwatch" class="mix-swatch" style="background:#808080"></div></div>
-            <div><div class="tiny">Original-Zielfarbe</div><div id="glazeTargetSwatch" class="mix-swatch" style="background:#808080"></div></div>
+            <div><div class="tiny">Aktiver Punkt – Gemälde</div><div id="glazeBaseSwatch" class="mix-swatch" style="background:#808080"></div></div>
+            <div><div class="tiny">Aktiver Punkt – Original</div><div id="glazeTargetSwatch" class="mix-swatch" style="background:#808080"></div></div>
           </div>
           <div id="glazeColorInfo" class="tiny" style="margin-top:7px;">Bitte Originalfoto und Gemälde laden.</div>
         </div>
@@ -417,11 +428,11 @@
           <span id="glazeMaxStrengthVal">18 %</span>
         </div>
 
-        <button id="glazeCalcBtn" style="width:100%;">Lasur-Vorschläge berechnen</button>
-        <div class="tiny" style="margin-top:6px;">Einfach vor komplex: Eine Lasur wird bevorzugt. Zwei Lasuren nur, wenn sie deutlich genauer sind.</div>
+        <button id="glazeCalcBtn" style="width:100%;">Lasur für aktiven Punkt berechnen</button>
+        <div class="tiny" style="margin-top:6px;">Eine Lasur wird bevorzugt. Zwei Lasuren nur bei deutlicher Verbesserung.</div>
 
         <div id="glazeResults" class="pc-card" style="margin-top:8px;">
-          <span class="tiny">Noch keine Stelle im Gemälde ausgewählt.</span>
+          <span class="tiny">Noch kein Messpunkt ausgewählt.</span>
         </div>
       </div>
 
@@ -575,6 +586,11 @@
   const glazePaintingInput=document.getElementById('glazePaintingInput');
   const glazeOriginalCanvas=document.getElementById('glazeOriginalCanvas');
   const glazePaintingCanvas=document.getElementById('glazePaintingCanvas');
+  const glazeAutoAlignBtn=document.getElementById('glazeAutoAlignBtn');
+  const glazeAlignInfo=document.getElementById('glazeAlignInfo');
+  const glazeCompareBiggerBtn=document.getElementById('glazeCompareBiggerBtn');
+  const glazeClearPointsBtn=document.getElementById('glazeClearPointsBtn');
+  const glazePointsList=document.getElementById('glazePointsList');
   const glazeSampleRadius=document.getElementById('glazeSampleRadius');
   const glazeSampleRadiusVal=document.getElementById('glazeSampleRadiusVal');
   const glazeBaseSwatch=document.getElementById('glazeBaseSwatch');
@@ -679,6 +695,10 @@
   let glazeOriginalImg=null;
   let glazePaintingImg=null;
   let glazePoint=null;
+  let glazePoints=[];
+  let glazeActivePoint=-1;
+  let glazeLargeCompare=false;
+  let glazeAlign={scale:1,dx:0,dy:0,score:null};
 
   let ideasBase=null;
 
@@ -1148,38 +1168,70 @@
       glazeColorInfo.innerHTML=`Gemälde ${rgbHex(glazeBase)} · RGB ${glazeBase.join(', ')}<br>`+
         `Original ${rgbHex(glazeTarget)} · RGB ${glazeTarget.join(', ')}`;
     }else if(glazeOriginalImg && glazePaintingImg){
-      glazeColorInfo.textContent='Beide Bilder geladen. Jetzt im Gemälde auf die gewünschte Stelle tippen.';
+      glazeColorInfo.textContent='Beide Bilder geladen. Im Gemälde beliebig viele Stellen antippen.';
     }else{
       glazeColorInfo.textContent='Bitte Originalfoto und Gemälde laden.';
     }
   }
 
-  function drawGlazePreview(canvas,image,point=null){
+  function paintingToOriginalNorm(p){
+    return {
+      x:0.5+(p.x-0.5)*glazeAlign.scale+glazeAlign.dx,
+      y:0.5+(p.y-0.5)*glazeAlign.scale+glazeAlign.dy
+    };
+  }
+  function originalToPaintingNorm(p){
+    return {
+      x:0.5+(p.x-glazeAlign.dx-0.5)/glazeAlign.scale,
+      y:0.5+(p.y-glazeAlign.dy-0.5)/glazeAlign.scale
+    };
+  }
+
+  function drawGlazePreview(canvas,image,which){
     const rect=canvas.getBoundingClientRect();
-    const w=Math.max(2,Math.round(rect.width*devicePixelRatio));
-    const h=Math.max(2,Math.round(rect.height*devicePixelRatio));
+    const dpr=window.devicePixelRatio||1;
+    const w=Math.max(2,Math.round(rect.width*dpr));
+    const h=Math.max(2,Math.round(rect.height*dpr));
     if(canvas.width!==w) canvas.width=w;
     if(canvas.height!==h) canvas.height=h;
     const c=canvas.getContext('2d');
     c.clearRect(0,0,w,h);
     if(!image) return;
-    const scaleFit=Math.min(w/image.width,h/image.height);
-    const dw=image.width*scaleFit, dh=image.height*scaleFit;
+
+    const fit=Math.min(w/image.width,h/image.height);
+    const dw=image.width*fit, dh=image.height*fit;
     const ox=(w-dw)/2, oy=(h-dh)/2;
-    c.drawImage(image,ox,oy,dw,dh);
-    if(point){
-      const px=ox+point.x*dw, py=oy+point.y*dh;
-      c.save();
-      c.strokeStyle='#fff'; c.lineWidth=Math.max(2,3*devicePixelRatio);
-      c.shadowColor='#000'; c.shadowBlur=4*devicePixelRatio;
-      c.beginPath(); c.arc(px,py,8*devicePixelRatio,0,Math.PI*2); c.stroke();
-      c.restore();
+
+    c.save();
+    if(which==='painting'){
+      // Draw painting already transformed into the original reference frame.
+      const refW=dw*glazeAlign.scale, refH=dh*glazeAlign.scale;
+      const tx=ox+glazeAlign.dx*dw+(dw-refW)/2;
+      const ty=oy+glazeAlign.dy*dh+(dh-refH)/2;
+      c.drawImage(image,tx,ty,refW,refH);
+    }else{
+      c.drawImage(image,ox,oy,dw,dh);
     }
+    c.restore();
+
+    // All saved points.
+    glazePoints.forEach((pt,idx)=>{
+      const q=pt.originalPoint;
+      const px=ox+q.x*dw, py=oy+q.y*dh;
+      c.save();
+      c.strokeStyle=idx===glazeActivePoint?'#ffcf33':'#fff';
+      c.fillStyle='rgba(0,0,0,.65)';
+      c.lineWidth=Math.max(2,2.5*dpr);
+      c.beginPath(); c.arc(px,py,8*dpr,0,Math.PI*2); c.fill(); c.stroke();
+      c.fillStyle='#fff'; c.font=`bold ${11*dpr}px sans-serif`; c.textAlign='center'; c.textBaseline='middle';
+      c.fillText(String(idx+1),px,py);
+      c.restore();
+    });
   }
 
   function redrawGlazePreviews(){
-    drawGlazePreview(glazeOriginalCanvas,glazeOriginalImg,glazePoint);
-    drawGlazePreview(glazePaintingCanvas,glazePaintingImg,glazePoint);
+    drawGlazePreview(glazeOriginalCanvas,glazeOriginalImg,'original');
+    drawGlazePreview(glazePaintingCanvas,glazePaintingImg,'painting');
   }
 
   function loadGlazeImage(file,which){
@@ -1189,18 +1241,101 @@
     im.onload=()=>{
       if(which==='original') glazeOriginalImg=im;
       else glazePaintingImg=im;
-      glazePoint=null; glazeBase=null; glazeTarget=null;
+      glazePoints=[]; glazeActivePoint=-1; glazePoint=null; glazeBase=null; glazeTarget=null;
+      glazeAlign={scale:1,dx:0,dy:0,score:null};
+      renderGlazePoints();
       redrawGlazePreviews(); refreshGlazeColors();
-      glazeResults.innerHTML='<span class="tiny">Bild geladen. Für den Vergleich beide Bilder laden und dann im Gemälde eine Stelle antippen.</span>';
+      glazeAlignInfo.textContent='Noch nicht ausgerichtet.';
+      glazeResults.innerHTML='<span class="tiny">Bild geladen. Beide Bilder laden, automatisch ausrichten und Messpunkte setzen.</span>';
       URL.revokeObjectURL(url);
     };
     im.src=url;
   }
 
-  function sampleImageNormalized(image,point,radiusPx){
-    if(!image||!point) return null;
+  function imageGrayThumb(image,size=96){
     const c=document.createElement('canvas');
-    c.width=image.width; c.height=image.height;
+    c.width=size;c.height=size;
+    const cc=c.getContext('2d',{willReadFrequently:true});
+    cc.fillStyle='#fff';cc.fillRect(0,0,size,size);
+    const fit=Math.min(size/image.width,size/image.height);
+    const dw=image.width*fit,dh=image.height*fit,ox=(size-dw)/2,oy=(size-dh)/2;
+    cc.drawImage(image,ox,oy,dw,dh);
+    const d=cc.getImageData(0,0,size,size).data;
+    const out=new Float32Array(size*size);
+    for(let i=0,j=0;i<d.length;i+=4,j++) out[j]=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    return out;
+  }
+
+  function alignScore(ref,mov,size,scale,dx,dy){
+    let err=0,n=0;
+    for(let y=10;y<size-10;y+=2){
+      for(let x=10;x<size-10;x+=2){
+        const ux=(x-size/2-dx)/scale+size/2;
+        const uy=(y-size/2-dy)/scale+size/2;
+        const ix=Math.round(ux),iy=Math.round(uy);
+        if(ix<0||iy<0||ix>=size||iy>=size) continue;
+        const a=ref[y*size+x],b=mov[iy*size+ix];
+        const diff=a-b;
+        // Edge-ish weighting helps against overall brightness changes.
+        const ax=Math.abs(ref[y*size+Math.min(size-1,x+1)]-ref[y*size+Math.max(0,x-1)]);
+        const ay=Math.abs(ref[Math.min(size-1,y+1)*size+x]-ref[Math.max(0,y-1)*size+x]);
+        const wt=1+Math.min(3,(ax+ay)/25);
+        err+=diff*diff*wt;n+=wt;
+      }
+    }
+    return n?err/n:Infinity;
+  }
+
+  function autoAlignGlaze(){
+    if(!glazeOriginalImg||!glazePaintingImg){
+      glazeAlignInfo.textContent='Bitte zuerst beide Bilder laden.';
+      return;
+    }
+    glazeAutoAlignBtn.disabled=true;
+    glazeAlignInfo.textContent='Ausrichtung wird berechnet…';
+
+    setTimeout(()=>{
+      const size=96;
+      const ref=imageGrayThumb(glazeOriginalImg,size);
+      const mov=imageGrayThumb(glazePaintingImg,size);
+      let best={score:Infinity,scale:1,dx:0,dy:0};
+
+      for(let scale=.86;scale<=1.1401;scale+=.04){
+        for(let dy=-15;dy<=15;dy+=3){
+          for(let dx=-15;dx<=15;dx+=3){
+            const score=alignScore(ref,mov,size,scale,dx,dy);
+            if(score<best.score) best={score,scale,dx,dy};
+          }
+        }
+      }
+      const coarse=best;
+      for(let scale=Math.max(.80,coarse.scale-.04);scale<=Math.min(1.20,coarse.scale+.04)+.001;scale+=.01){
+        for(let dy=coarse.dy-4;dy<=coarse.dy+4;dy+=1){
+          for(let dx=coarse.dx-4;dx<=coarse.dx+4;dx+=1){
+            const score=alignScore(ref,mov,size,scale,dx,dy);
+            if(score<best.score) best={score,scale,dx,dy};
+          }
+        }
+      }
+      glazeAlign={
+        scale:best.scale,
+        dx:best.dx/size,
+        dy:best.dy/size,
+        score:best.score
+      };
+      glazePoints=[]; glazeActivePoint=-1; glazeBase=null; glazeTarget=null;
+      renderGlazePoints(); refreshGlazeColors(); redrawGlazePreviews();
+      const quality=best.score<350?'sehr gut':best.score<900?'gut':best.score<1800?'mittel':'unsicher';
+      glazeAlignInfo.textContent=`Automatisch ausgerichtet · Qualität: ${quality} · Größe ${Math.round(best.scale*100)} % · Verschiebung ${Math.round(best.dx)} / ${Math.round(best.dy)} px`;
+      glazeAutoAlignBtn.disabled=false;
+      glazeResults.innerHTML='<span class="tiny">Ausrichtung fertig. Jetzt mehrere Stellen im Gemälde antippen.</span>';
+    },30);
+  }
+
+  function sampleImageNormalized(image,point,radiusPx){
+    if(!image||!point||point.x<0||point.y<0||point.x>1||point.y>1) return null;
+    const c=document.createElement('canvas');
+    c.width=image.width;c.height=image.height;
     const cc=c.getContext('2d',{willReadFrequently:true});
     cc.drawImage(image,0,0);
     const cx=Math.round(point.x*image.width), cy=Math.round(point.y*image.height);
@@ -1209,40 +1344,83 @@
     const x1=Math.min(image.width,cx+r+1), y1=Math.min(image.height,cy+r+1);
     const w=Math.max(1,x1-x0), h=Math.max(1,y1-y0);
     const d=cc.getImageData(x0,y0,w,h).data;
-    let sr=0,sg=0,sb=0,n=0;
-    for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const vals=[];
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
       const dx=x+x0-cx,dy=y+y0-cy;
-      if(dx*dx+dy*dy>r*r) continue;
-      const i=(y*w+x)*4;
-      if(d[i+3]<20) continue;
-      sr+=d[i];sg+=d[i+1];sb+=d[i+2];n++;
+      if(dx*dx+dy*dy>r*r)continue;
+      const i=(y*w+x)*4;if(d[i+3]>20) vals.push([d[i],d[i+1],d[i+2]]);
     }
-    return n?[Math.round(sr/n),Math.round(sg/n),Math.round(sb/n)]:null;
+    if(!vals.length)return null;
+    // Robust average: remove darkest/lightest 10% by luminance.
+    vals.sort((a,b)=>(a[0]+a[1]+a[2])-(b[0]+b[1]+b[2]));
+    const cut=Math.floor(vals.length*.10), use=vals.slice(cut,Math.max(cut+1,vals.length-cut));
+    return [0,1,2].map(ch=>Math.round(use.reduce((sum,v)=>sum+v[ch],0)/use.length));
+  }
+
+  function activateGlazePoint(index){
+    if(index<0||index>=glazePoints.length)return;
+    glazeActivePoint=index;
+    const pt=glazePoints[index];
+    glazePoint=pt.originalPoint;
+    glazeBase=[...pt.base];
+    glazeTarget=[...pt.target];
+    refreshGlazeColors();renderGlazePoints();redrawGlazePreviews();
+    glazeResults.innerHTML='<span class="tiny">Messpunkt '+(index+1)+' aktiv. Lasur kann berechnet werden.</span>';
+  }
+
+  function renderGlazePoints(){
+    glazePointsList.innerHTML='';
+    if(!glazePoints.length){
+      glazePointsList.innerHTML='<div class="tiny">Noch keine Messpunkte.</div>';
+      return;
+    }
+    glazePoints.forEach((pt,i)=>{
+      const row=document.createElement('div');
+      row.className='mix-card';
+      row.style.padding='7px';
+      row.style.cursor='pointer';
+      row.innerHTML=`<div class="mix-head"><b>Punkt ${i+1}</b><span>${i===glazeActivePoint?'aktiv':''}</span></div>
+        <div class="tiny">Gemälde ${rgbHex(pt.base)} → Original ${rgbHex(pt.target)}</div>`;
+      row.addEventListener('click',()=>activateGlazePoint(i));
+      glazePointsList.appendChild(row);
+    });
   }
 
   function pickGlazeComparisonPoint(clientX,clientY){
-    if(!glazePaintingImg || !glazeOriginalImg){
+    if(!glazePaintingImg||!glazeOriginalImg){
       glazeColorInfo.textContent='Bitte zuerst Originalfoto und Gemälde laden.';
       return;
     }
     const r=glazePaintingCanvas.getBoundingClientRect();
-    const cw=glazePaintingCanvas.width, ch=glazePaintingCanvas.height;
-    const sx=(clientX-r.left)*devicePixelRatio;
-    const sy=(clientY-r.top)*devicePixelRatio;
+    const dpr=window.devicePixelRatio||1;
+    const cw=glazePaintingCanvas.width,ch=glazePaintingCanvas.height;
+    const sx=(clientX-r.left)*dpr, sy=(clientY-r.top)*dpr;
+
+    // Because the painting preview is displayed in aligned/original coordinates,
+    // a tap directly specifies the original normalized location.
     const fit=Math.min(cw/glazePaintingImg.width,ch/glazePaintingImg.height);
-    const dw=glazePaintingImg.width*fit, dh=glazePaintingImg.height*fit;
-    const ox=(cw-dw)/2, oy=(ch-dh)/2;
-    if(sx<ox||sy<oy||sx>ox+dw||sy>oy+dh) return;
-    glazePoint={x:(sx-ox)/dw,y:(sy-oy)/dh};
+    const dw=glazePaintingImg.width*fit,dh=glazePaintingImg.height*fit;
+    const ox=(cw-dw)/2,oy=(ch-dh)/2;
+    const originalPoint={x:(sx-ox)/dw,y:(sy-oy)/dh};
+    if(originalPoint.x<0||originalPoint.y<0||originalPoint.x>1||originalPoint.y>1)return;
+
+    const paintingPoint=originalToPaintingNorm(originalPoint);
+    if(paintingPoint.x<0||paintingPoint.y<0||paintingPoint.x>1||paintingPoint.y>1){
+      glazeColorInfo.textContent='Diese Stelle liegt nach der Ausrichtung außerhalb des Gemäldefotos.';
+      return;
+    }
+
     const rad=Number(glazeSampleRadius.value);
-    glazeBase=sampleImageNormalized(glazePaintingImg,glazePoint,rad);
-    // Radius scales relative to image size so both images sample roughly
-    // the same visual area even if their resolutions differ.
-    const scaleR=rad*(glazeOriginalImg.width/glazePaintingImg.width);
-    glazeTarget=sampleImageNormalized(glazeOriginalImg,glazePoint,scaleR);
-    redrawGlazePreviews();
-    refreshGlazeColors();
-    glazeResults.innerHTML='<span class="tiny">Vergleichsstelle aufgenommen. Jetzt Lasur-Vorschläge berechnen.</span>';
+    const base=sampleImageNormalized(glazePaintingImg,paintingPoint,rad);
+    const target=sampleImageNormalized(glazeOriginalImg,originalPoint,rad*(glazeOriginalImg.width/glazePaintingImg.width));
+    if(!base||!target)return;
+
+    const pt={originalPoint,paintingPoint,base,target};
+    glazePoints.push(pt);
+    glazeActivePoint=glazePoints.length-1;
+    glazePoint=originalPoint;glazeBase=[...base];glazeTarget=[...target];
+    renderGlazePoints();redrawGlazePreviews();refreshGlazeColors();
+    glazeResults.innerHTML='<span class="tiny">Punkt '+glazePoints.length+' aufgenommen. Weitere Punkte können sofort hinzugefügt werden.</span>';
   }
 
   function setGlazeMedium(m){
@@ -1353,7 +1531,7 @@
 
   function calculateGlazes(){
     if(!glazeTarget){
-      glazeResults.innerHTML='<b>Bitte zuerst Originalfoto und Gemälde laden und im Gemälde eine Stelle auswählen.</b>';
+      glazeResults.innerHTML='<b>Bitte zuerst einen Messpunkt im Gemälde auswählen.</b>';
       return;
     }
     const colors=glazeActiveColors();
@@ -2267,18 +2445,30 @@
   glazeOilBtn.addEventListener('click',()=>setGlazeMedium('oil'));
   glazeOriginalInput.addEventListener('change',e=>loadGlazeImage(e.target.files&&e.target.files[0],'original'));
   glazePaintingInput.addEventListener('change',e=>loadGlazeImage(e.target.files&&e.target.files[0],'painting'));
+  glazeAutoAlignBtn.addEventListener('click',autoAlignGlaze);
+
   glazePaintingCanvas.addEventListener('pointerup',e=>{
     pickGlazeComparisonPoint(e.clientX,e.clientY);
     e.preventDefault();
   });
+
+  glazeCompareBiggerBtn.addEventListener('click',()=>{
+    glazeLargeCompare=!glazeLargeCompare;
+    const h=glazeLargeCompare?'470px':'300px';
+    glazeOriginalCanvas.parentElement.style.height=h;
+    glazePaintingCanvas.parentElement.style.height=h;
+    glazeCompareBiggerBtn.textContent=glazeLargeCompare?'Bilder wieder kleiner':'Bilder größer / kleiner';
+    setTimeout(redrawGlazePreviews,0);
+  });
+
+  glazeClearPointsBtn.addEventListener('click',()=>{
+    glazePoints=[];glazeActivePoint=-1;glazePoint=null;glazeBase=null;glazeTarget=null;
+    renderGlazePoints();refreshGlazeColors();redrawGlazePreviews();
+    glazeResults.innerHTML='<span class="tiny">Messpunkte gelöscht.</span>';
+  });
+
   glazeSampleRadius.addEventListener('input',()=>{
     glazeSampleRadiusVal.textContent=glazeSampleRadius.value+' px';
-    if(glazePoint && glazeOriginalImg && glazePaintingImg){
-      const rad=Number(glazeSampleRadius.value);
-      glazeBase=sampleImageNormalized(glazePaintingImg,glazePoint,rad);
-      glazeTarget=sampleImageNormalized(glazeOriginalImg,glazePoint,rad*(glazeOriginalImg.width/glazePaintingImg.width));
-      refreshGlazeColors();
-    }
   });
   glazeMaxStrength.addEventListener('input',()=>{glazeMaxStrengthVal.textContent=glazeMaxStrength.value+' %';});
   glazeCalcBtn.addEventListener('click',calculateGlazes);
@@ -2286,6 +2476,7 @@
     glazeResults.innerHTML='<span class="tiny">Palette geändert. Vorschläge neu berechnen.</span>';
   });
   window.addEventListener('resize',redrawGlazePreviews);
+  renderGlazePoints();
   refreshGlazeColors();
   setGlazeMedium('water');
 

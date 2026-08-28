@@ -1,25 +1,22 @@
-AtelierAI iPad 1.15 PC
+AtelierAI iPad 1.16 PC
 
-Lasurenvergleich neu aufgebaut: Originalfoto ↔ aktuelles Gemälde
+Lasurenvergleich verbessert
 
-Arbeitsablauf:
-1. Originalfoto laden – dieses Bild ist das Ziel.
-2. Foto des aktuellen Aquarell- oder Ölbildes laden.
-3. Im Gemälde auf die zu korrigierende Stelle tippen.
-4. AtelierAI übernimmt die Farbe des Gemäldes als Ausgangsfarbe.
-5. An derselben relativen Bildposition wird die Farbe aus dem Original als Zielfarbe gemessen.
-6. Lasur-Vorschläge berechnen.
+- Vergleichsbilder deutlich größer: 300 px hoch.
+- Zusätzlicher Schalter auf 470 px für genaue Arbeit.
+- Mehrere Messpunkte: Jeder Tipp im Gemälde erzeugt einen neuen Punkt.
+- Alle Messpunkte bleiben in einer Liste erhalten und können erneut ausgewählt werden.
+- Alle Punkte werden nummeriert in beiden Vergleichsbildern angezeigt.
+- Messpunkte können gemeinsam gelöscht werden.
+- Automatische Ausrichtung des Gemäldefotos auf das Original.
+- Automatische Ausrichtung korrigiert Verschiebung und Größenunterschied.
+- Qualitätsanzeige für die automatische Ausrichtung.
+- Nach der Ausrichtung wird beim Tippen automatisch die entsprechende
+  Stelle des Originalfotos mit der Gemäldefarbe verglichen.
+- Messradius bleibt einstellbar.
+- Lasuren Aquarell/Öl und alle Funktionen aus 1.15 bleiben erhalten.
 
-Weitere Punkte:
-- Einstellbarer Messradius.
-- Vergleichspunkt wird in beiden Bildern markiert.
-- Aquarell: Horadam / Akademie.
-- Öl: Winsor & Newton Artisan.
-- Eine Lasur wird bevorzugt; zwei nur bei deutlicher Verbesserung.
-- Aquarell-Lasurstärke bewusst sanfter.
-- Alle bisherigen Funktionen aus 1.14 bleiben erhalten.
-
-Wichtig:
-Für die automatische Positionszuordnung sollten Original und Gemälde möglichst
-denselben Bildausschnitt und ähnliche Perspektive haben. Eine spätere automatische
-Ausrichtung kann darauf aufbauen.
+Hinweis:
+Die automatische Ausrichtung arbeitet bewusst schnell und iPad-tauglich.
+Sie korrigiert Verschiebung und Maßstab. Eine starke perspektivische Verzerrung
+oder deutliche Drehung des Fotos wird noch nicht vollständig korrigiert.
