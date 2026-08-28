@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.17.6 PC</title>
+  <title>AtelierAI iPad 1.18 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.17.6 PC</div>
+    <div class="title">AtelierAI · iPad 1.18 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -433,6 +433,7 @@
         </div>
 
         <button id="glazeCalcBtn" style="width:100%;">Lasur für aktiven Punkt berechnen</button>
+        <button id="glazeCalcAllBtn" class="secondary" style="width:100%;margin-top:7px;">Lasuren für alle Messpunkte berechnen</button>
         <div class="tiny" style="margin-top:6px;">Eine Lasur wird bevorzugt. Zwei Lasuren nur bei deutlicher Verbesserung.</div>
 
         <div id="glazeResults" class="pc-card" style="margin-top:8px;">
@@ -530,7 +531,7 @@
           </div>
         </div>
         <div style="min-width:0;min-height:0;display:flex;flex-direction:column;">
-          <div class="tiny" style="color:white;margin-bottom:4px;">Aktuelles Gemälde – hier Messpunkte setzen</div>
+          <div class="tiny" style="color:white;margin-bottom:4px;">Aktuelles Gemälde – hier Messpunkte setzen · beide Bilder synchron zoomen/verschieben</div>
           <div style="flex:1;min-height:0;background:#222;border:1px solid #555;border-radius:10px;overflow:hidden;position:relative;">
             <canvas id="glazeFsPaintingCanvas" style="width:100%;height:100%;display:block;touch-action:none;"></canvas>
           </div>
@@ -638,6 +639,7 @@
   const glazeMaxStrength=document.getElementById('glazeMaxStrength');
   const glazeMaxStrengthVal=document.getElementById('glazeMaxStrengthVal');
   const glazeCalcBtn=document.getElementById('glazeCalcBtn');
+  const glazeCalcAllBtn=document.getElementById('glazeCalcAllBtn');
   const glazeResults=document.getElementById('glazeResults');
   const glazeOpenFullscreenBtn=document.getElementById('glazeOpenFullscreenBtn');
   const glazeFullscreen=document.getElementById('glazeFullscreen');
@@ -749,7 +751,7 @@
   let glazePoints=[];
   let glazeActivePoint=-1;
   let glazeLargeCompare=false;
-  let glazeAlign={scale:1,dx:0,dy:0,score:null};
+  let glazeAlign={scale:1,rotation:0,dx:0,dy:0,score:null};
   let glazeFsView={zoom:1,panX:0,panY:0};
   let glazeFsGesture=null;
   let glazeFsTouches=new Map();
@@ -1520,18 +1522,28 @@
     }
   }
 
+  function rotateGlazeNorm(p,deg){
+    const a=deg*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a);
+    const x=p.x-.5,y=p.y-.5;
+    return {x:.5+x*ca-y*sa,y:.5+x*sa+y*ca};
+  }
+
   function paintingToOriginalNorm(p){
+    const r=rotateGlazeNorm(p,glazeAlign.rotation||0);
     return {
-      x:0.5+(p.x-0.5)*glazeAlign.scale+glazeAlign.dx,
-      y:0.5+(p.y-0.5)*glazeAlign.scale+glazeAlign.dy
+      x:.5+(r.x-.5)*glazeAlign.scale+glazeAlign.dx,
+      y:.5+(r.y-.5)*glazeAlign.scale+glazeAlign.dy
     };
   }
+
   function originalToPaintingNorm(p){
-    return {
-      x:0.5+(p.x-glazeAlign.dx-0.5)/glazeAlign.scale,
-      y:0.5+(p.y-glazeAlign.dy-0.5)/glazeAlign.scale
+    const q={
+      x:.5+(p.x-glazeAlign.dx-.5)/glazeAlign.scale,
+      y:.5+(p.y-glazeAlign.dy-.5)/glazeAlign.scale
     };
+    return rotateGlazeNorm(q,-(glazeAlign.rotation||0));
   }
+
 
   function drawTinyMarker(c,px,py,idx,active,dpr=1){
     c.save();
@@ -1566,9 +1578,13 @@
 
     if(which==='painting'){
       const refW=dw*glazeAlign.scale, refH=dh*glazeAlign.scale;
-      const tx=ox+glazeAlign.dx*dw+(dw-refW)/2;
-      const ty=oy+glazeAlign.dy*dh+(dh-refH)/2;
-      c.drawImage(image,tx,ty,refW,refH);
+      const cx=ox+dw/2+glazeAlign.dx*dw;
+      const cy=oy+dh/2+glazeAlign.dy*dh;
+      c.save();
+      c.translate(cx,cy);
+      c.rotate((glazeAlign.rotation||0)*Math.PI/180);
+      c.drawImage(image,-refW/2,-refH/2,refW,refH);
+      c.restore();
     }else{
       c.drawImage(image,ox,oy,dw,dh);
     }
@@ -1605,9 +1621,13 @@
 
     if(which==='painting'){
       const refW=dw*glazeAlign.scale,refH=dh*glazeAlign.scale;
-      const tx=ox+glazeAlign.dx*dw+(dw-refW)/2;
-      const ty=oy+glazeAlign.dy*dh+(dh-refH)/2;
-      c.drawImage(image,tx,ty,refW,refH);
+      const cx=ox+dw/2+glazeAlign.dx*dw;
+      const cy=oy+dh/2+glazeAlign.dy*dh;
+      c.save();
+      c.translate(cx,cy);
+      c.rotate((glazeAlign.rotation||0)*Math.PI/180);
+      c.drawImage(image,-refW/2,-refH/2,refW,refH);
+      c.restore();
     }else{
       c.drawImage(image,ox,oy,dw,dh);
     }
@@ -1675,7 +1695,7 @@
       if(which==='original') glazeOriginalImg=im;
       else glazePaintingImg=im;
       glazePoints=[]; glazeActivePoint=-1; glazePoint=null; glazeBase=null; glazeTarget=null;
-      glazeAlign={scale:1,dx:0,dy:0,score:null};
+      glazeAlign={scale:1,rotation:0,dx:0,dy:0,score:null};
       renderGlazePoints();
       redrawGlazePreviews(); refreshGlazeColors();
       glazeAlignInfo.textContent='Noch nicht ausgerichtet.';
@@ -1699,19 +1719,20 @@
     return out;
   }
 
-  function alignScore(ref,mov,size,scale,dx,dy){
+  function alignScore(ref,mov,size,scale,rotation,dx,dy){
     let err=0,n=0;
-    for(let y=10;y<size-10;y+=2){
-      for(let x=10;x<size-10;x+=2){
-        const ux=(x-size/2-dx)/scale+size/2;
-        const uy=(y-size/2-dy)/scale+size/2;
+    const a=-(rotation||0)*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a);
+    for(let y=9;y<size-9;y+=2){
+      for(let x=9;x<size-9;x+=2){
+        const qx=(x-size/2-dx)/scale;
+        const qy=(y-size/2-dy)/scale;
+        const ux=qx*ca-qy*sa+size/2;
+        const uy=qx*sa+qy*ca+size/2;
         const ix=Math.round(ux),iy=Math.round(uy);
-        if(ix<0||iy<0||ix>=size||iy>=size) continue;
-        const a=ref[y*size+x],b=mov[iy*size+ix];
-        const diff=a-b;
-        // Edge-ish weighting helps against overall brightness changes.
-        const ax=Math.abs(ref[y*size+Math.min(size-1,x+1)]-ref[y*size+Math.max(0,x-1)]);
-        const ay=Math.abs(ref[Math.min(size-1,y+1)*size+x]-ref[Math.max(0,y-1)*size+x]);
+        if(ix<1||iy<1||ix>=size-1||iy>=size-1)continue;
+        const av=ref[y*size+x],bv=mov[iy*size+ix],diff=av-bv;
+        const ax=Math.abs(ref[y*size+x+1]-ref[y*size+x-1]);
+        const ay=Math.abs(ref[(y+1)*size+x]-ref[(y-1)*size+x]);
         const wt=1+Math.min(3,(ax+ay)/25);
         err+=diff*diff*wt;n+=wt;
       }
@@ -1725,44 +1746,58 @@
       return;
     }
     glazeAutoAlignBtn.disabled=true;
+    if(glazeFsAutoAlign)glazeFsAutoAlign.disabled=true;
     glazeAlignInfo.textContent='Ausrichtung wird berechnet…';
+    if(glazeFsAlignInfo)glazeFsAlignInfo.textContent='Ausrichtung wird berechnet…';
 
     setTimeout(()=>{
-      const size=96;
+      const size=84;
       const ref=imageGrayThumb(glazeOriginalImg,size);
       const mov=imageGrayThumb(glazePaintingImg,size);
-      let best={score:Infinity,scale:1,dx:0,dy:0};
+      let best={score:Infinity,scale:1,rotation:0,dx:0,dy:0};
 
-      for(let scale=.86;scale<=1.1401;scale+=.04){
-        for(let dy=-15;dy<=15;dy+=3){
-          for(let dx=-15;dx<=15;dx+=3){
-            const score=alignScore(ref,mov,size,scale,dx,dy);
-            if(score<best.score) best={score,scale,dx,dy};
+      // Grobsuche: leichte Drehung + Größe + Verschiebung.
+      for(let rotation=-8;rotation<=8;rotation+=2){
+        for(let scale=.86;scale<=1.1401;scale+=.04){
+          for(let dy=-14;dy<=14;dy+=4){
+            for(let dx=-14;dx<=14;dx+=4){
+              const score=alignScore(ref,mov,size,scale,rotation,dx,dy);
+              if(score<best.score)best={score,scale,rotation,dx,dy};
+            }
           }
         }
       }
-      const coarse=best;
-      for(let scale=Math.max(.80,coarse.scale-.04);scale<=Math.min(1.20,coarse.scale+.04)+.001;scale+=.01){
-        for(let dy=coarse.dy-4;dy<=coarse.dy+4;dy+=1){
-          for(let dx=coarse.dx-4;dx<=coarse.dx+4;dx+=1){
-            const score=alignScore(ref,mov,size,scale,dx,dy);
-            if(score<best.score) best={score,scale,dx,dy};
+
+      const coarse={...best};
+      // Feinsuche um den besten Bereich.
+      for(let rotation=coarse.rotation-2;rotation<=coarse.rotation+2.001;rotation+=.5){
+        for(let scale=Math.max(.80,coarse.scale-.04);scale<=Math.min(1.20,coarse.scale+.04)+.001;scale+=.01){
+          for(let dy=coarse.dy-4;dy<=coarse.dy+4;dy+=1){
+            for(let dx=coarse.dx-4;dx<=coarse.dx+4;dx+=1){
+              const score=alignScore(ref,mov,size,scale,rotation,dx,dy);
+              if(score<best.score)best={score,scale,rotation,dx,dy};
+            }
           }
         }
       }
+
       glazeAlign={
         scale:best.scale,
+        rotation:best.rotation,
         dx:best.dx/size,
         dy:best.dy/size,
         score:best.score
       };
-      glazePoints=[]; glazeActivePoint=-1; glazeBase=null; glazeTarget=null;
-      renderGlazePoints(); refreshGlazeColors(); redrawGlazePreviews();
+
+      glazePoints=[];glazeActivePoint=-1;glazePoint=null;glazeBase=null;glazeTarget=null;
+      renderGlazePoints();refreshGlazeColors();redrawGlazePreviews();redrawGlazeFullscreen();
+
       const quality=best.score<350?'sehr gut':best.score<900?'gut':best.score<1800?'mittel':'unsicher';
-      glazeAlignInfo.textContent=`Automatisch ausgerichtet · Qualität: ${quality} · Größe ${Math.round(best.scale*100)} % · Verschiebung ${Math.round(best.dx)} / ${Math.round(best.dy)} px`;
-      glazeFsAlignInfo.textContent=glazeAlignInfo.textContent;
+      glazeAlignInfo.textContent=`Automatisch ausgerichtet · Qualität: ${quality} · Größe ${Math.round(best.scale*100)} % · Drehung ${best.rotation.toFixed(1)}° · Verschiebung ${Math.round(best.dx)} / ${Math.round(best.dy)} px`;
+      if(glazeFsAlignInfo)glazeFsAlignInfo.textContent=glazeAlignInfo.textContent;
       glazeAutoAlignBtn.disabled=false;
-      glazeResults.innerHTML='<span class="tiny">Ausrichtung fertig. Jetzt mehrere Stellen im Gemälde antippen.</span>';
+      if(glazeFsAutoAlign)glazeFsAutoAlign.disabled=false;
+      glazeResults.innerHTML='<span class="tiny">Ausrichtung fertig. Jetzt mehrere Stellen aufnehmen.</span>';
     },30);
   }
 
@@ -1813,8 +1848,11 @@
       row.className='mix-card';
       row.style.padding='7px';
       row.style.cursor='pointer';
+      const resultText=pt.glazeResult
+        ? `<div class="tiny" style="margin-top:3px;"><b>${pt.glazeResult.recipe}</b> · ${pt.glazeResult.match}%</div>`
+        : '';
       row.innerHTML=`<div class="mix-head"><b>Punkt ${i+1}</b><span>${i===glazeActivePoint?'aktiv':''}</span></div>
-        <div class="tiny">Gemälde ${rgbHex(pt.base)} → Original ${rgbHex(pt.target)}</div>`;
+        <div class="tiny">Gemälde ${rgbHex(pt.base)} → Original ${rgbHex(pt.target)}</div>${resultText}`;
       row.addEventListener('click',()=>activateGlazePoint(i));
       glazePointsList.appendChild(row);
     });
@@ -1963,6 +2001,59 @@
     return card;
   }
 
+  function computeGlazeSuggestionFor(base,target){
+    const saveBase=glazeBase,saveTarget=glazeTarget;
+    glazeBase=base;glazeTarget=target;
+    try{
+      const colors=glazeActiveColors();
+      if(!colors.length)return null;
+      const maxStrength=Number(glazeMaxStrength.value);
+      const singles=bestSingleGlazes(colors,maxStrength);
+      if(!singles.length)return null;
+      const bestSingle=singles[0];
+      const doubles=bestDoubleGlazes(colors,maxStrength,singles);
+      const bestDouble=doubles[0];
+      let best=bestSingle;
+      if(bestDouble&&bestDouble.d<bestSingle.d*.82)best=bestDouble;
+      const match=glazeMatchPercent(best.result,target);
+      const recipe=best.type===1
+        ? `${best.name1} ${best.s1}%`
+        : `${best.name1} ${best.s1}% → ${best.name2} ${best.s2}%`;
+      return {best,match,recipe};
+    }finally{
+      glazeBase=saveBase;glazeTarget=saveTarget;
+    }
+  }
+
+  function calculateAllGlazePoints(){
+    if(!glazePoints.length){
+      glazeResults.innerHTML='<b>Bitte zuerst Messpunkte setzen.</b>';
+      return;
+    }
+    if(!glazeActiveColors().length){
+      glazeResults.innerHTML='<b>Bitte zuerst vorhandene Farben in der Palette aktivieren.</b>';
+      return;
+    }
+    glazeCalcAllBtn.disabled=true;
+    glazeResults.innerHTML='<span class="tiny">Lasuren für alle Messpunkte werden berechnet…</span>';
+    let index=0;
+    const next=()=>{
+      if(index>=glazePoints.length){
+        glazeCalcAllBtn.disabled=false;
+        renderGlazePoints();
+        glazeResults.innerHTML='<b>Alle Messpunkte berechnet.</b><br><span class="tiny">Die beste Lasur steht jetzt direkt bei jedem Punkt. Einen Punkt antippen, um die ausführlichen Alternativen zu sehen.</span>';
+        return;
+      }
+      const pt=glazePoints[index];
+      pt.glazeResult=computeGlazeSuggestionFor(pt.base,pt.target);
+      index++;
+      renderGlazePoints();
+      glazeResults.innerHTML=`<span class="tiny">Berechnung ${index} von ${glazePoints.length}…</span>`;
+      setTimeout(next,15);
+    };
+    next();
+  }
+
   function calculateGlazes(){
     if(!glazeTarget){
       glazeResults.innerHTML='<b>Bitte zuerst einen Messpunkt im Gemälde auswählen.</b>';
@@ -2004,6 +2095,17 @@
 
       glazeResults.innerHTML='';
       chosen.slice(0,3).forEach((item,i)=>glazeResults.appendChild(renderGlazeCard(item,i,bestSingle.d)));
+      if(glazeActivePoint>=0&&glazePoints[glazeActivePoint]){
+        const best=chosen[0];
+        glazePoints[glazeActivePoint].glazeResult={
+          best,
+          match:glazeMatchPercent(best.result,glazeTarget),
+          recipe:best.type===1
+            ? `${best.name1} ${best.s1}%`
+            : `${best.name1} ${best.s1}% → ${best.name2} ${best.s2}%`
+        };
+        renderGlazePoints();
+      }
 
       const note=document.createElement('div');
       note.className='tiny';
@@ -2908,53 +3010,62 @@
     glazeSampleRadiusVal.textContent=glazeFsRadius.value+' px';
   });
 
-  glazeFsPaintingCanvas.addEventListener('pointerdown',e=>{
-    glazeFsPaintingCanvas.setPointerCapture?.(e.pointerId);
-    glazeFsTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(glazeFsTouches.size===1){
-      glazeFsGesture={type:'maybeTap',x:e.clientX,y:e.clientY,panX:glazeFsView.panX,panY:glazeFsView.panY};
-    }else if(glazeFsTouches.size===2){
-      const pts=[...glazeFsTouches.values()];
-      glazeFsGesture={type:'pinch',dist:Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y),zoom:glazeFsView.zoom,
-        midX:(pts[0].x+pts[1].x)/2,midY:(pts[0].y+pts[1].y)/2,panX:glazeFsView.panX,panY:glazeFsView.panY};
-    }
-  });
-  glazeFsPaintingCanvas.addEventListener('pointermove',e=>{
-    if(!glazeFsTouches.has(e.pointerId))return;
-    glazeFsTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(glazeFsTouches.size===1&&glazeFsGesture){
-      const p=[...glazeFsTouches.values()][0],dx=p.x-glazeFsGesture.x,dy=p.y-glazeFsGesture.y;
-      if(Math.hypot(dx,dy)>8){
-        glazeFsGesture.type='pan';
-        glazeFsView.panX=glazeFsGesture.panX+dx;
-        glazeFsView.panY=glazeFsGesture.panY+dy;
+  function installGlazeFsGestures(canvas,allowPick){
+    canvas.addEventListener('pointerdown',e=>{
+      canvas.setPointerCapture?.(e.pointerId);
+      glazeFsTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(glazeFsTouches.size===1){
+        glazeFsGesture={type:'maybeTap',x:e.clientX,y:e.clientY,panX:glazeFsView.panX,panY:glazeFsView.panY,canvas,allowPick};
+      }else if(glazeFsTouches.size===2){
+        const pts=[...glazeFsTouches.values()];
+        glazeFsGesture={type:'pinch',dist:Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y),zoom:glazeFsView.zoom,
+          panX:glazeFsView.panX,panY:glazeFsView.panY};
+      }
+    });
+    canvas.addEventListener('pointermove',e=>{
+      if(!glazeFsTouches.has(e.pointerId))return;
+      glazeFsTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(glazeFsTouches.size===1&&glazeFsGesture){
+        const q=[...glazeFsTouches.values()][0],dx=q.x-glazeFsGesture.x,dy=q.y-glazeFsGesture.y;
+        if(Math.hypot(dx,dy)>8){
+          glazeFsGesture.type='pan';
+          glazeFsView.panX=glazeFsGesture.panX+dx;
+          glazeFsView.panY=glazeFsGesture.panY+dy;
+          redrawGlazeFullscreen();
+        }
+      }else if(glazeFsTouches.size===2){
+        const pts=[...glazeFsTouches.values()];
+        const dist=Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y);
+        if(glazeFsGesture?.type!=='pinch'){
+          glazeFsGesture={type:'pinch',dist,zoom:glazeFsView.zoom,panX:glazeFsView.panX,panY:glazeFsView.panY};
+        }
+        glazeFsView.zoom=Math.max(.5,Math.min(6,glazeFsGesture.zoom*dist/Math.max(1,glazeFsGesture.dist)));
         redrawGlazeFullscreen();
       }
-    }else if(glazeFsTouches.size===2){
-      const pts=[...glazeFsTouches.values()];
-      const dist=Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y);
-      if(glazeFsGesture?.type!=='pinch'){
-        glazeFsGesture={type:'pinch',dist,zoom:glazeFsView.zoom,panX:glazeFsView.panX,panY:glazeFsView.panY};
+    });
+    canvas.addEventListener('pointerup',e=>{
+      const g=glazeFsGesture;
+      const wasTap=g&&g.type==='maybeTap'&&g.canvas===canvas&&g.allowPick;
+      glazeFsTouches.delete(e.pointerId);
+      if(wasTap&&glazeFsTouches.size===0){
+        addGlazePointFromOriginalNorm(fullscreenOriginalPoint(e.clientX,e.clientY));
       }
-      glazeFsView.zoom=Math.max(.5,Math.min(6,glazeFsGesture.zoom*dist/Math.max(1,glazeFsGesture.dist)));
-      redrawGlazeFullscreen();
-    }
-  });
-  glazeFsPaintingCanvas.addEventListener('pointerup',e=>{
-    const wasTap=glazeFsGesture&&glazeFsGesture.type==='maybeTap';
-    glazeFsTouches.delete(e.pointerId);
-    if(wasTap && glazeFsTouches.size===0){
-      addGlazePointFromOriginalNorm(fullscreenOriginalPoint(e.clientX,e.clientY));
-    }
-    if(glazeFsTouches.size===0)glazeFsGesture=null;
-  });
-  glazeFsPaintingCanvas.addEventListener('pointercancel',e=>{glazeFsTouches.delete(e.pointerId);if(!glazeFsTouches.size)glazeFsGesture=null;});
+      if(glazeFsTouches.size===0)glazeFsGesture=null;
+    });
+    canvas.addEventListener('pointercancel',e=>{
+      glazeFsTouches.delete(e.pointerId);
+      if(!glazeFsTouches.size)glazeFsGesture=null;
+    });
+  }
+  installGlazeFsGestures(glazeFsOriginalCanvas,false);
+  installGlazeFsGestures(glazeFsPaintingCanvas,true);
 
   glazeSampleRadius.addEventListener('input',()=>{
     glazeSampleRadiusVal.textContent=glazeSampleRadius.value+' px';
   });
   glazeMaxStrength.addEventListener('input',()=>{glazeMaxStrengthVal.textContent=glazeMaxStrength.value+' %';});
   glazeCalcBtn.addEventListener('click',calculateGlazes);
+  glazeCalcAllBtn.addEventListener('click',calculateAllGlazePoints);
   glazePalette.addEventListener('change',()=>{
     refreshGlazePaletteStatus();
     glazeResults.innerHTML='<span class="tiny">Palette geändert. Es werden nur deine aktiv ausgewählten Farben verwendet.</span>';
