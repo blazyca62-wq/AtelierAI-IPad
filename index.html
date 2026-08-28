@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.8f HELLE FARBFELDER</title>
+  <title>AtelierAI iPad 1.20.8g ÄHNLICHKEIT LIVE</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -143,7 +143,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.8f HELLE FARBFELDER</div>
+    <div class="title">AtelierAI · iPad 1.20.8g ÄHNLICHKEIT LIVE</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -2350,7 +2350,12 @@
     return Number(pickerColorTolerance ? pickerColorTolerance.value : 12);
   }
 
+  let activeIsolatedColor=null;
+  let activeIsolatedLabel='Farbe';
+
   function isolateColorAcrossImage(target,label='Farbe'){
+    activeIsolatedColor=target ? [...target] : null;
+    activeIsolatedLabel=label;
     surfaceMarkCanvas=null;
     if(!loaded || !target){ draw(); return; }
 
@@ -3083,14 +3088,14 @@
   }
   pickerColorTolerance.addEventListener('input',()=>{
     syncColorTolerance(pickerColorTolerance.value);
-    if(surfaceSelectedIndex!==null && surfaceClusters[surfaceSelectedIndex]){
-      isolateColorAcrossImage(surfaceClusters[surfaceSelectedIndex].rgb,`Flächenberater · Hauptfarbe ${surfaceSelectedIndex+1}`);
+    if(activeIsolatedColor){
+      isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
     }
   });
   surfaceColorTolerance.addEventListener('input',()=>{
     syncColorTolerance(surfaceColorTolerance.value);
-    if(surfaceSelectedIndex!==null && surfaceClusters[surfaceSelectedIndex]){
-      isolateColorAcrossImage(surfaceClusters[surfaceSelectedIndex].rgb,`Flächenberater · Hauptfarbe ${surfaceSelectedIndex+1}`);
+    if(activeIsolatedColor){
+      isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
     }
   });
   syncColorTolerance(12);
@@ -3101,6 +3106,7 @@
   });
   pickerShowAllBtn.addEventListener('click',()=>{
     surfaceSelectedIndex=null;
+    activeIsolatedColor=null;
     surfaceMarkCanvas=null;
     draw();
     hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette';
