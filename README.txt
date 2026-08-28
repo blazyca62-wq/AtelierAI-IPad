@@ -1,4 +1,4 @@
-AtelierAI iPad 1.20.7 PIPETTE FARBTREU
+AtelierAI iPad 1.20.8 FARBFELD HELLER
 
 Stabilitaetsstand auf Basis von 1.20.3 FARBTREU.
 Zielreferenz fuer die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.
