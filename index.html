@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.8 PC</title>
+  <title>AtelierAI iPad 1.9 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -86,12 +86,26 @@
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
     .control-line{display:grid;grid-template-columns:92px 1fr 42px;gap:6px;align-items:center;margin:7px 0}
 
+
+    .section.accordion { padding:0; overflow:hidden; }
+    .section.accordion > .accordion-head{
+      width:100%; display:flex; align-items:center; justify-content:space-between;
+      gap:8px; padding:11px 12px; background:#f6f6f6; border:0;
+      border-radius:10px; text-align:left; color:inherit; font:inherit;
+    }
+    .section.accordion > .accordion-head .acc-title{font-weight:700;font-size:15px}
+    .section.accordion > .accordion-head .acc-arrow{font-size:18px;line-height:1;transition:transform .15s ease}
+    .section.accordion.open > .accordion-head .acc-arrow{transform:rotate(90deg)}
+    .section.accordion > .accordion-body{display:none;padding:0 12px 12px}
+    .section.accordion.open > .accordion-body{display:block}
+    .section.accordion.open > .accordion-head{margin-bottom:7px}
+
 </style>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.8 PC</div>
+    <div class="title">AtelierAI · iPad 1.9 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -105,7 +119,7 @@
     </div>
 
     <aside class="side">
-      <div class="section">
+      <div class="section" id="toolPanel">
         <h3>Werkzeug</h3>
         <div class="mode">
           <button id="moveMode" class="active">Bewegen</button>
@@ -113,7 +127,7 @@
         </div>
       </div>
 
-      <div class="section">
+      <div class="section" id="formsPanel">
         <h3>Großformen</h3>
         <button id="formsOriginal" class="secondary" style="width:100%;margin-bottom:8px;">Zurück zum Original</button>
         <div class="formsButtons">
@@ -131,7 +145,7 @@
         <p>1 = sehr grob, 5 = näher am Original. Ähnliche Farben werden zu klaren zusammenhängenden Malflächen gebündelt – ohne Weichzeichnen.</p>
       </div>
 
-      <div class="section">
+      <div class="section" id="tonesPanel">
         <h3>Tonwerte</h3>
         <div class="toneToggle">
           <button id="toneAll" class="active">Alle</button>
@@ -263,7 +277,7 @@
           <button id="calcMixesBtn">Studio-Mischung berechnen</button>
         </div>
 
-        <div class="tiny" style="margin-top:6px;">PC-Modus: Studio · maximale Genauigkeit bis 5 Farben</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Punkt)</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Punkt- und Maler-Pipette berechnen die Studio-Mischung jetzt automatisch.</div><div id="mixResults"></div>
+        <div class="tiny" style="margin-top:6px;">Studio-Mischung · bis zu 5 Farben</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Punkt)</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Punkt- und Maler-Pipette berechnen die Studio-Mischung automatisch.</div><div id="mixResults"></div>
       </div>
 
 
@@ -296,9 +310,8 @@
 
       <div class="section" id="mixPalettePanel">
         <h3>Mischpalette</h3>
-        <p>Aktive Tubenfarben als Zweiermischungen vergleichen. Für das iPad werden die besten Treffer zuerst gezeigt.</p>
-        <div class="control-line"><label>Verhältnis</label><input id="pairRatio" type="range" min="10" max="90" value="50"><span id="pairRatioVal">50/50</span></div>
-        <button id="pairCalcBtn" style="width:100%;">Beste Zweiermischungen berechnen</button>
+        <p>AtelierAI prüft die aktiven Tubenfarben paarweise und sucht für jedes Paar automatisch das beste Mischverhältnis zur Zielfarbe.</p>
+<button id="pairCalcBtn" style="width:100%;">Beste Zweiermischungen finden</button>
         <div id="pairResults" class="pc-card"><span class="tiny">Noch keine Mischpalette berechnet.</span></div>
       </div>
 
@@ -316,18 +329,7 @@
         </div>
         <button id="ideaResetBtn" class="secondary" style="width:100%;margin-top:7px;">Farbidee zurücksetzen</button>
       </div>
-
-      <div class="section" id="underpaintingPanel">
-        <h3>Warm / Kalt</h3>
-        <div class="grid2">
-          <button id="underWarmBtn" class="secondary">Warme Untermalung</button>
-          <button id="underCoolBtn" class="secondary">Kühle Untermalung</button>
-        </div>
-        <button id="underOffBtn" class="active" style="width:100%;margin-top:7px;">Aus</button>
-        <div class="control-line"><label>Stärke</label><input id="underStrength" type="range" min="0" max="60" value="22"><span id="underStrengthVal">22</span></div>
-      </div>
-
-      <div class="section" id="gridSavePanel">
+<div class="section" id="gridSavePanel">
         <h3>Raster & Speichern</h3>
         <div class="grid2">
           <button id="gridToggleBtn" class="secondary">Raster ein</button>
@@ -336,14 +338,10 @@
         <div class="control-line"><label>Raster</label><input id="gridDensity" type="range" min="2" max="20" value="8"><span id="gridDensityVal">8</span></div>
       </div>
 
-      <div class="section">
+      <div class="section" id="sampleColorPanel">
         <h3>Aufgenommene Farbe</h3>
         <div class="colorbox" id="colorBox"></div>
-      </div>
-
-      <div class="section">
-        <div class="rgb" id="colorText">RGB: –<br>HEX: –</div>
-      </div>
+      <div class="rgb" id="colorText" style="margin-top:7px;">RGB: –<br>HEX: –</div></div>
     </aside>
   </div>
 </div>
@@ -418,15 +416,8 @@
   const corrTakeBtn=document.getElementById('corrTakeBtn');
   const corrMixBtn=document.getElementById('corrMixBtn');
   const corrResetBtn=document.getElementById('corrResetBtn');
-  const pairRatio=document.getElementById('pairRatio');
-  const pairRatioVal=document.getElementById('pairRatioVal');
   const pairCalcBtn=document.getElementById('pairCalcBtn');
   const pairResults=document.getElementById('pairResults');
-  const underWarmBtn=document.getElementById('underWarmBtn');
-  const underCoolBtn=document.getElementById('underCoolBtn');
-  const underOffBtn=document.getElementById('underOffBtn');
-  const underStrength=document.getElementById('underStrength');
-  const underStrengthVal=document.getElementById('underStrengthVal');
   const gridToggleBtn=document.getElementById('gridToggleBtn');
   const gridDensity=document.getElementById('gridDensity');
   const gridDensityVal=document.getElementById('gridDensityVal');
@@ -483,7 +474,6 @@
 
   let surfaceMode=null;
   let correctionBase=null;
-  let underMode='off';
   let gridEnabled=false;
   let surfacePreview=null;
   let surfaceHoverImage=null;
@@ -867,19 +857,6 @@
     return pickerSource && pickerSource.value==='original' ? sourceCtx : processedCtx;
   }
 
-  function applyUnderpainting(imageData){
-    if(underMode==='off') return imageData;
-    const k=Number(underStrength.value)/100;
-    const d=imageData.data;
-    const tint=underMode==='warm'?[232,157,92]:[103,151,213];
-    for(let i=0;i<d.length;i+=4){
-      d[i]=Math.round(d[i]*(1-k)+tint[0]*k);
-      d[i+1]=Math.round(d[i+1]*(1-k)+tint[1]*k);
-      d[i+2]=Math.round(d[i+2]*(1-k)+tint[2]*k);
-    }
-    return imageData;
-  }
-
   function drawGridOverlay(targetCtx, w, h, density){
     const n=Math.max(2,Number(density)||8);
     targetCtx.save();
@@ -978,21 +955,66 @@
 
   function calculatePairPalette(){
     const target=targetArray();
-    if(!target){pairResults.innerHTML='<span class="tiny">Bitte zuerst eine Farbe aufnehmen.</span>';return;}
-    const colors=selectedPaletteColors(paintPalette.value);
-    if(colors.length<2){pairResults.innerHTML='<span class="tiny">Mindestens zwei aktive Farben nötig.</span>';return;}
-    const a=Number(pairRatio.value)/100,b=1-a, rows=[];
-    for(let i=0;i<colors.length;i++)for(let j=i+1;j<colors.length;j++){
-      const rgb=[0,1,2].map(ch=>Math.round(colors[i][1][ch]*a+colors[j][1][ch]*b));
-      rows.push({n1:colors[i][0],n2:colors[j][0],rgb,score:similarityPct(target,rgb)});
+    if(!target){
+      pairResults.innerHTML='<span class="tiny">Bitte zuerst mit Pipette, Maler-Pipette oder Flächenberater eine Zielfarbe aufnehmen.</span>';
+      return;
     }
+    const colors=selectedPaletteColors(paintPalette.value);
+    if(colors.length<2){
+      pairResults.innerHTML='<span class="tiny">Mindestens zwei aktive Tubenfarben nötig.</span>';
+      return;
+    }
+
+    const rows=[];
+    for(let i=0;i<colors.length;i++){
+      for(let j=i+1;j<colors.length;j++){
+        let best=null;
+        // Malerisch brauchbare Abstufungen statt nur 50:50:
+        // für jedes Farbpaar automatisch 10:90 bis 90:10 prüfen.
+        for(let pct=10;pct<=90;pct+=5){
+          const a=pct/100, b=1-a;
+          const rgb=[0,1,2].map(ch=>Math.round(colors[i][1][ch]*a+colors[j][1][ch]*b));
+          const score=similarityPct(target,rgb);
+          if(!best || score>best.score){
+            best={n1:colors[i][0],n2:colors[j][0],rgb,score,p1:pct,p2:100-pct};
+          }
+        }
+        rows.push(best);
+      }
+    }
+
     rows.sort((x,y)=>y.score-x.score);
+    const shown=rows.slice(0,8);
     pairResults.innerHTML='';
-    rows.slice(0,12).forEach((m,i)=>{
-      const el=document.createElement('div');el.className='pc-card';
-      el.innerHTML=`<div class="swatch-line"><div class="small-swatch" style="background:${rgbHex(m.rgb)}"></div><div><b>${i+1}. ${m.score}%</b><br><span class="tiny">${Math.round(a*100)}% ${m.n1}<br>${Math.round(b*100)}% ${m.n2}</span></div></div>`;
+
+    const intro=document.createElement('div');
+    intro.className='tiny';
+    intro.style.marginBottom='8px';
+    intro.innerHTML='<b>Treffer</b> = Ähnlichkeit zur aufgenommenen Zielfarbe. Je höher, desto näher. Das Verhältnis zeigt die vorgeschlagenen Anteile der beiden Tubenfarben.';
+    pairResults.appendChild(intro);
+
+    shown.forEach((m,i)=>{
+      const el=document.createElement('div');
+      el.className='pc-card';
+      let quality = m.score>=90 ? 'sehr nah' : (m.score>=80 ? 'gut' : (m.score>=70 ? 'Annäherung' : 'nur grobe Annäherung'));
+      el.innerHTML=`
+        <div class="swatch-line">
+          <div class="small-swatch" style="background:${rgbHex(m.rgb)}"></div>
+          <div style="min-width:0">
+            <b>Treffer ${m.score} %</b> <span class="tiny">(${quality})</span><br>
+            <span class="tiny"><b>${m.p1} %</b> ${m.n1}<br><b>${m.p2} %</b> ${m.n2}</span>
+          </div>
+        </div>`;
       pairResults.appendChild(el);
     });
+
+    if(shown.length && shown[0].score<70){
+      const warn=document.createElement('div');
+      warn.className='tiny';
+      warn.style.marginTop='8px';
+      warn.textContent='Kein gutes Zweierpaar gefunden. Für diese Zielfarbe ist die Studio-Mischung mit 3–5 Farben wahrscheinlich sinnvoller.';
+      pairResults.appendChild(warn);
+    }
   }
 
 
@@ -1232,7 +1254,6 @@
       }
     }
     applyFamilyVisibility(out);
-    applyUnderpainting(out);
     processedCtx.putImageData(out,0,0);
     draw();
   }
@@ -1423,21 +1444,7 @@
   ideaTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){ideasBase=[...t];refreshIdea();}});
   ideaMixBtn.addEventListener('click',()=>{const c=ideaColor();if(c){setMixTarget(c,'Farbidee');showMixes();}});
   ideaResetBtn.addEventListener('click',()=>{ideaLight.value=0;ideaWarm.value=0;ideaSat.value=0;refreshIdea();});
-
-  pairRatio.addEventListener('input',()=>{const a=pairRatio.value;pairRatioVal.textContent=`${a}/${100-a}`;});
   pairCalcBtn.addEventListener('click',calculatePairPalette);
-
-  function setUnder(m){
-    underMode=m;
-    underWarmBtn.classList.toggle('active',m==='warm');underWarmBtn.classList.toggle('secondary',m!=='warm');
-    underCoolBtn.classList.toggle('active',m==='cool');underCoolBtn.classList.toggle('secondary',m!=='cool');
-    underOffBtn.classList.toggle('active',m==='off');underOffBtn.classList.toggle('secondary',m!=='off');
-    rebuildToneImage();
-  }
-  underWarmBtn.addEventListener('click',()=>setUnder('warm'));
-  underCoolBtn.addEventListener('click',()=>setUnder('cool'));
-  underOffBtn.addEventListener('click',()=>setUnder('off'));
-  underStrength.addEventListener('input',()=>{underStrengthVal.textContent=underStrength.value;rebuildToneImage();});
 
   gridToggleBtn.addEventListener('click',()=>{gridEnabled=!gridEnabled;gridToggleBtn.textContent=gridEnabled?'Raster aus':'Raster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);draw();});
   gridDensity.addEventListener('input',()=>{gridDensityVal.textContent=gridDensity.value;draw();});
@@ -1451,6 +1458,43 @@
     },'image/png');
   });
 
+
+
+  function setupCompactSidebar(){
+    const sections=[...document.querySelectorAll('aside.side > .section')];
+    const stayOpen=new Set(['toolPanel']);
+    sections.forEach(sec=>{
+      const title=sec.querySelector(':scope > h3');
+      if(!title) return;
+      const head=document.createElement('button');
+      head.type='button';
+      head.className='accordion-head';
+      head.innerHTML=`<span class="acc-title">${title.textContent}</span><span class="acc-arrow">›</span>`;
+      const body=document.createElement('div');
+      body.className='accordion-body';
+
+      // Alles außer der ersten Überschrift in den einklappbaren Körper verschieben.
+      [...sec.childNodes].forEach(node=>{
+        if(node!==title) body.appendChild(node);
+      });
+      title.remove();
+      sec.classList.add('accordion');
+      sec.prepend(head);
+      sec.appendChild(body);
+
+      if(stayOpen.has(sec.id)) sec.classList.add('open');
+
+      head.addEventListener('click',()=>{
+        const willOpen=!sec.classList.contains('open');
+        // Nur einen Arbeitsbereich gleichzeitig offen lassen; Werkzeug bleibt offen.
+        sections.forEach(other=>{
+          if(other!==sec && other.id!=='toolPanel') other.classList.remove('open');
+        });
+        sec.classList.toggle('open',willOpen);
+      });
+    });
+  }
+  setupCompactSidebar();
 
   fileInput.addEventListener('change',e=>{
     const file=e.target.files&&e.target.files[0];
