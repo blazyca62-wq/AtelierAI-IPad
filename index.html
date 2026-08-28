@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.13 PC</title>
+  <title>AtelierAI iPad 1.14 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.13 PC</div>
+    <div class="title">AtelierAI · iPad 1.14 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -354,6 +354,51 @@
         <div id="surfaceResults" class="pc-card"><span class="tiny">Noch kein Bereich analysiert.</span></div>
       </div>
 
+
+      <div class="section" id="glazePanel">
+        <h3>Lasuren – Aquarell & Öl</h3>
+        <p>Von einer vorhandenen Grundfarbe zur gewünschten Zielfarbe. AtelierAI prüft zuerst eine Lasur und erst danach zwei Lasuren.</p>
+
+        <div class="palette-grid">
+          <button id="glazeWaterBtn" class="active">Aquarell</button>
+          <button id="glazeOilBtn" class="secondary">Öl</button>
+        </div>
+
+        <label style="display:block;margin-top:9px;">Palette</label>
+        <select id="glazePalette" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;">
+          <option value="horadam">Schmincke Horadam</option>
+          <option value="akademie">Schmincke Akademie</option>
+          <option value="artisan">Winsor & Newton Artisan</option>
+        </select>
+
+        <div class="pc-card" style="margin-top:9px;">
+          <div class="tiny">1. Farbe aufnehmen → als Grundfarbe übernehmen. Danach zweite Farbe aufnehmen → als Zielfarbe übernehmen.</div>
+          <div class="mix-swatches" style="margin-top:7px;">
+            <div><div class="tiny">Grundfarbe</div><div id="glazeBaseSwatch" class="mix-swatch" style="background:#FFFFFF"></div></div>
+            <div><div class="tiny">Zielfarbe</div><div id="glazeTargetSwatch" class="mix-swatch" style="background:#808080"></div></div>
+          </div>
+          <div class="grid2" style="margin-top:7px;">
+            <button id="glazeTakeBaseBtn" class="secondary">Pipette → Grundfarbe</button>
+            <button id="glazeTakeTargetBtn" class="secondary">Pipette → Zielfarbe</button>
+          </div>
+          <button id="glazeWhiteBaseBtn" class="secondary" style="width:100%;margin-top:6px;">Grundfarbe = Weiß</button>
+          <div id="glazeColorInfo" class="tiny" style="margin-top:7px;">Grundfarbe: Weiß · Zielfarbe noch nicht gesetzt.</div>
+        </div>
+
+        <div class="control-line">
+          <label>Max. Lasurstärke</label>
+          <input id="glazeMaxStrength" type="range" min="5" max="35" value="22">
+          <span id="glazeMaxStrengthVal">22 %</span>
+        </div>
+
+        <button id="glazeCalcBtn" style="width:100%;">Lasur-Vorschläge berechnen</button>
+        <div class="tiny" style="margin-top:6px;">Einfach vor komplex: Eine Lasur wird bevorzugt. Zwei Lasuren nur, wenn sie deutlich genauer sind.</div>
+
+        <div id="glazeResults" class="pc-card" style="margin-top:8px;">
+          <span class="tiny">Noch keine Lasur berechnet.</span>
+        </div>
+      </div>
+
       <div class="section" id="correctionStudioPanel">
         <h3>Korrekturatelier</h3>
         <p>Aufgenommene Farbe malerisch korrigieren und anschließend neu mischen.</p>
@@ -497,6 +542,20 @@
   const corrOriginal=document.getElementById('corrOriginal');
   const corrResult=document.getElementById('corrResult');
   const corrInfo=document.getElementById('corrInfo');
+  const glazeWaterBtn=document.getElementById('glazeWaterBtn');
+  const glazeOilBtn=document.getElementById('glazeOilBtn');
+  const glazePalette=document.getElementById('glazePalette');
+  const glazeBaseSwatch=document.getElementById('glazeBaseSwatch');
+  const glazeTargetSwatch=document.getElementById('glazeTargetSwatch');
+  const glazeTakeBaseBtn=document.getElementById('glazeTakeBaseBtn');
+  const glazeTakeTargetBtn=document.getElementById('glazeTakeTargetBtn');
+  const glazeWhiteBaseBtn=document.getElementById('glazeWhiteBaseBtn');
+  const glazeColorInfo=document.getElementById('glazeColorInfo');
+  const glazeMaxStrength=document.getElementById('glazeMaxStrength');
+  const glazeMaxStrengthVal=document.getElementById('glazeMaxStrengthVal');
+  const glazeCalcBtn=document.getElementById('glazeCalcBtn');
+  const glazeResults=document.getElementById('glazeResults');
+
   const corrLight=document.getElementById('corrLight');
   const corrWarm=document.getElementById('corrWarm');
   const corrSat=document.getElementById('corrSat');
@@ -584,6 +643,10 @@
   let surfaceClusters=[];
   let surfaceSelectedIndex=null;
   let surfaceMarkCanvas=null;
+
+  let glazeMedium='water';
+  let glazeBase=[255,255,255];
+  let glazeTarget=null;
 
   let ideasBase=null;
 
@@ -1017,6 +1080,199 @@
     if(h<60)q=[c,x,0]; else if(h<120)q=[x,c,0]; else if(h<180)q=[0,c,x]; else if(h<240)q=[0,x,c]; else if(h<300)q=[x,0,c]; else q=[c,0,x];
     return q.map(z=>Math.round((z+m)*255));
   }
+
+  function glazeClamp(v){return Math.max(0,Math.min(255,Math.round(v)));}
+
+  function glazeApply(base,paint,strength,medium){
+    let a=Math.max(0,Math.min(1,strength/100));
+    // Aquarell bleibt bewusst sanfter als eine reine Bildschirm-Überblendung.
+    // Öl darf etwas stärker wirken.
+    const effective=medium==='water' ? a*0.72 : a*0.88;
+    return [0,1,2].map(i=>glazeClamp(base[i]*(1-effective)+paint[i]*effective));
+  }
+
+  function glazeDistance(a,b){
+    const la=rgbToLabFast(a), lb=rgbToLabFast(b);
+    return deltaE76FromLab(la,lb);
+  }
+
+  function glazeMatchPercent(rgb,target){
+    return Math.max(0,Math.min(100,Math.round((1-glazeDistance(rgb,target)/100)*100)));
+  }
+
+  function glazeActiveColors(){
+    const key=glazePalette.value;
+    let colors=selectedPaletteColors(key);
+    // Falls noch keine persönliche Auswahl gesetzt wurde, die Herstellerpalette
+    // als Arbeitsgrundlage verwenden, damit der Lasur-Assistent direkt nutzbar ist.
+    if(!colors.length) colors=(PALETTES[key]||[]).map(([n,rgb])=>[n,rgb]);
+    return colors;
+  }
+
+  function refreshGlazeColors(){
+    glazeBaseSwatch.style.background=rgbHex(glazeBase);
+    glazeTargetSwatch.style.background=glazeTarget?rgbHex(glazeTarget):'#808080';
+    glazeColorInfo.innerHTML=`Grundfarbe ${rgbHex(glazeBase)} · RGB ${glazeBase.join(', ')}<br>`+
+      (glazeTarget?`Zielfarbe ${rgbHex(glazeTarget)} · RGB ${glazeTarget.join(', ')}`:'Zielfarbe noch nicht gesetzt.');
+  }
+
+  function setGlazeMedium(m){
+    glazeMedium=m;
+    glazeWaterBtn.classList.toggle('active',m==='water');
+    glazeWaterBtn.classList.toggle('secondary',m!=='water');
+    glazeOilBtn.classList.toggle('active',m==='oil');
+    glazeOilBtn.classList.toggle('secondary',m!=='oil');
+    [...glazePalette.options].forEach(o=>{
+      if(m==='oil') o.disabled=o.value!=='artisan';
+      else o.disabled=o.value==='artisan';
+    });
+    if(m==='oil') glazePalette.value='artisan';
+    else if(glazePalette.value==='artisan') glazePalette.value='horadam';
+
+    // Praxisnah sanfter Startwert.
+    glazeMaxStrength.value=m==='water'?'18':'22';
+    glazeMaxStrengthVal.textContent=glazeMaxStrength.value+' %';
+    glazeResults.innerHTML='<span class="tiny">Noch keine Lasur berechnet.</span>';
+  }
+
+  function bestSingleGlazes(colors,maxStrength){
+    const out=[];
+    const step=2;
+    for(const [name,rgb] of colors){
+      let best=null;
+      for(let strength=2;strength<=maxStrength;strength+=step){
+        const result=glazeApply(glazeBase,rgb,strength,glazeMedium);
+        const d=glazeDistance(result,glazeTarget);
+        if(!best||d<best.d) best={type:1,name1:name,rgb1:rgb,s1:strength,result,d};
+      }
+      if(best) out.push(best);
+    }
+    return out.sort((a,b)=>a.d-b.d);
+  }
+
+  function bestDoubleGlazes(colors,maxStrength,singleBest){
+    // iPad-schonend: nur die farblich plausibelsten Einzelkandidaten
+    // werden für die zweite Lasur kombiniert.
+    const pool=singleBest.slice(0,Math.min(18,singleBest.length));
+    const out=[];
+    const strengths=[];
+    for(let v=4;v<=maxStrength;v+=4) strengths.push(v);
+    for(let i=0;i<pool.length;i++){
+      for(let j=0;j<pool.length;j++){
+        if(i===j) continue;
+        const a=pool[i], b=pool[j];
+        let best=null;
+        for(const s1 of strengths){
+          const first=glazeApply(glazeBase,a.rgb1,s1,glazeMedium);
+          for(const s2 of strengths){
+            const result=glazeApply(first,b.rgb1,s2,glazeMedium);
+            const d=glazeDistance(result,glazeTarget);
+            if(!best||d<best.d){
+              best={type:2,name1:a.name1,rgb1:a.rgb1,s1,name2:b.name1,rgb2:b.rgb1,s2,first,result,d};
+            }
+          }
+        }
+        if(best) out.push(best);
+      }
+    }
+    return out.sort((a,b)=>a.d-b.d);
+  }
+
+  function glazeStrengthText(v){
+    if(v<=8) return 'sehr dünn';
+    if(v<=16) return 'dünn';
+    if(v<=24) return 'mittel';
+    return 'kräftiger';
+  }
+
+  function renderGlazeCard(item,rank,bestSingleDistance){
+    const match=glazeMatchPercent(item.result,glazeTarget);
+    const card=document.createElement('div');
+    card.className='mix-card';
+    const isBest=rank===0;
+    const title=isBest?'Beste Lösung':`Alternative ${rank+1}`;
+    let recipe='';
+    let progress='';
+    if(item.type===1){
+      recipe=`<b>Eine Lasur</b><br>${item.name1} · ${item.s1}% Farbwirkung (${glazeStrengthText(item.s1)})`;
+      const mid=glazeApply(glazeBase,item.rgb1,item.s1,glazeMedium);
+      progress=`
+        <div class="mix-swatches" style="margin-top:7px;">
+          <div><div class="tiny">Grundfarbe</div><div class="mix-swatch" style="background:${rgbHex(glazeBase)}"></div></div>
+          <div><div class="tiny">${item.s1}% ${item.name1}</div><div class="mix-swatch" style="background:${rgbHex(mid)}"></div></div>
+          <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${rgbHex(glazeTarget)}"></div></div>
+        </div>`;
+    }else{
+      recipe=`<b>Zwei Lasuren</b><br>1. ${item.name1} · ${item.s1}%<br>2. ${item.name2} · ${item.s2}%`;
+      progress=`
+        <div class="mix-swatches" style="margin-top:7px;">
+          <div><div class="tiny">Grundfarbe</div><div class="mix-swatch" style="background:${rgbHex(glazeBase)}"></div></div>
+          <div><div class="tiny">1. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.first)}"></div></div>
+          <div><div class="tiny">2. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.result)}"></div></div>
+          <div><div class="tiny">Ziel</div><div class="mix-swatch" style="background:${rgbHex(glazeTarget)}"></div></div>
+        </div>`;
+    }
+    card.innerHTML=`
+      <div class="mix-head"><b>${title}</b><span>${match}% Annäherung</span></div>
+      <div style="margin-top:6px;">${recipe}</div>
+      ${progress}
+      <div class="tiny" style="margin-top:6px;">Berechnetes Ergebnis: ${rgbHex(item.result)} · RGB ${item.result.join(', ')}</div>
+    `;
+    return card;
+  }
+
+  function calculateGlazes(){
+    if(!glazeTarget){
+      glazeResults.innerHTML='<b>Bitte zuerst eine Zielfarbe übernehmen.</b>';
+      return;
+    }
+    const colors=glazeActiveColors();
+    if(!colors.length){
+      glazeResults.innerHTML='<b>Keine Farben in der gewählten Palette verfügbar.</b>';
+      return;
+    }
+    const maxStrength=Number(glazeMaxStrength.value);
+    glazeResults.innerHTML='<span class="tiny">Lasuren werden berechnet…</span>';
+
+    // Kurzer Yield, damit Safari die Statusanzeige zeichnen kann.
+    setTimeout(()=>{
+      const singles=bestSingleGlazes(colors,maxStrength);
+      if(!singles.length){
+        glazeResults.innerHTML='<b>Keine passende Lasur gefunden.</b>';
+        return;
+      }
+      const bestSingle=singles[0];
+      const doubles=bestDoubleGlazes(colors,maxStrength,singles);
+      const bestDouble=doubles[0];
+
+      // PC-Prinzip „einfach vor komplex“:
+      // Zwei Lasuren nur dann nach vorne nehmen, wenn die Verbesserung
+      // deutlich genug ist. Sonst bleibt die Einzellasur die Empfehlung.
+      let chosen=[bestSingle];
+      if(bestDouble && bestDouble.d < bestSingle.d*0.82){
+        chosen.push(bestDouble);
+      }
+
+      // Weitere echte Alternativen ohne unnötige Wiederholungen.
+      for(const x of singles.slice(1)){
+        if(chosen.length>=3) break;
+        if(!chosen.some(c=>c.type===1 && c.name1===x.name1)) chosen.push(x);
+      }
+      if(chosen.length<3 && bestDouble && !chosen.includes(bestDouble)) chosen.push(bestDouble);
+
+      glazeResults.innerHTML='';
+      chosen.slice(0,3).forEach((item,i)=>glazeResults.appendChild(renderGlazeCard(item,i,bestSingle.d)));
+
+      const note=document.createElement('div');
+      note.className='tiny';
+      note.style.marginTop='8px';
+      note.innerHTML=glazeMedium==='water'
+        ? 'Aquarell: Lasurstärken sind bewusst sanft angesetzt. Papier, Wasser und Pigmenttransparenz verändern das reale Ergebnis.'
+        : 'Öl: als transparente Abschlusslasur gedacht. Deckende Pigmente und Malmittel können das reale Ergebnis verändern.';
+      glazeResults.appendChild(note);
+    },30);
+  }
+
   function correctedColor(){
     if(!correctionBase) return null;
     let [h,sv,v]=rgbToHsv(correctionBase);
@@ -1876,6 +2132,30 @@
     e.preventDefault(); e.stopImmediatePropagation();
   },true);
 
+
+  glazeWaterBtn.addEventListener('click',()=>setGlazeMedium('water'));
+  glazeOilBtn.addEventListener('click',()=>setGlazeMedium('oil'));
+  glazeTakeBaseBtn.addEventListener('click',()=>{
+    const t=targetArray();
+    if(t){ glazeBase=[...t]; refreshGlazeColors(); glazeResults.innerHTML='<span class="tiny">Grundfarbe übernommen. Jetzt Zielfarbe aufnehmen.</span>'; }
+  });
+  glazeTakeTargetBtn.addEventListener('click',()=>{
+    const t=targetArray();
+    if(t){ glazeTarget=[...t]; refreshGlazeColors(); glazeResults.innerHTML='<span class="tiny">Zielfarbe übernommen. Lasur-Vorschläge können berechnet werden.</span>'; }
+  });
+  glazeWhiteBaseBtn.addEventListener('click',()=>{
+    glazeBase=[255,255,255]; refreshGlazeColors();
+  });
+  glazeMaxStrength.addEventListener('input',()=>{
+    glazeMaxStrengthVal.textContent=glazeMaxStrength.value+' %';
+  });
+  glazeCalcBtn.addEventListener('click',calculateGlazes);
+  glazePalette.addEventListener('change',()=>{
+    glazeResults.innerHTML='<span class="tiny">Palette geändert. Vorschläge neu berechnen.</span>';
+  });
+  refreshGlazeColors();
+  setGlazeMedium('water');
+
   [corrLight,corrWarm,corrSat].forEach(x=>x.addEventListener('input',refreshCorrection));
   corrTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){correctionBase=[...t];refreshCorrection();}});
   corrMixBtn.addEventListener('click',()=>{const c=correctedColor();if(c){setMixTarget(c,'Korrekturatelier');showStudioMixPage();}});
@@ -1920,6 +2200,7 @@
       paintMixPanel:'Mischen',
       colorAnalysisPanel:'Farbanalyse',
       surfaceAdvisorPanel:'Flächenberater',
+      glazePanel:'Lasuren',
       correctionStudioPanel:'Korrektur',
       mixPalettePanel:'Mischpalette',
       gridSavePanel:'Raster & Speichern',

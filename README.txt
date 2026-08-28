@@ -1,16 +1,22 @@
-AtelierAI iPad 1.13 PC
+AtelierAI iPad 1.14 PC
 
-Gemeinsame Bildnavigation für alle Werkzeuge
+Neu: Lasuren – Aquarell & Öl
 
-- Oberhalb der Werkzeugauswahl bleibt jetzt eine kompakte Bildsteuerung sichtbar.
-- Bild-Zoom 25–600 %.
-- „Verschieben“ schaltet direkt in den Bild-Verschiebemodus.
-- „Einpassen“ zeigt wieder das vollständige Bild.
-- Zwei-Finger-Zoom funktioniert weiterhin direkt auf dem Bild.
-- Verschieben funktioniert mit einem Finger im Verschieben-Modus.
-- Die Bildposition und der Zoom bleiben beim Wechsel zwischen Mischen,
-  Flächenberater, Tonwerten, Farbanalyse, Korrektur, Mischpalette usw. erhalten.
-- Damit kann besonders beim Mischen die betreffende Bildstelle vergrößert
-  und anschließend die Mischfarbe beurteilt werden.
+Nach dem Prinzip des früheren PC-Lasur-Assistenten:
+- Grundfarbe und Zielfarbe getrennt übernehmen.
+- Aquarell: Schmincke Horadam oder Akademie.
+- Öl: Winsor & Newton Artisan.
+- Zuerst Einzelfarben / eine Lasur prüfen.
+- Zwei Lasuren nur dann bevorzugen, wenn sie deutlich besser sind.
+- Reihenfolge und Lasurstärke werden angezeigt.
+- Farbfortschritt Grundfarbe -> Lasur(en) -> Zielfarbe.
+- Max. Lasurstärke einstellbar.
+- Aquarell standardmäßig bewusst sanfter als Öl.
+- Verwendet die in AtelierAI vorhandene aktive Palette; wenn noch keine
+  persönliche Farbauswahl gesetzt ist, steht die Herstellerpalette zur Verfügung.
 
-Alle Funktionen aus 1.12.2 bleiben erhalten.
+Hinweis:
+Die iPad-Simulation ist eine Bildschirmannäherung. Papier, Pigmenttransparenz,
+Malmittel und reale Schichtdicke beeinflussen das tatsächliche Ergebnis.
+
+Alle Funktionen aus 1.13 bleiben erhalten.
