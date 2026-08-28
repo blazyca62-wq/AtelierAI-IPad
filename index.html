@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.8 FARBFELD HELLER</title>
+  <title>AtelierAI iPad 1.20.9 ZIELFARBE HELLER</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.8 FARBFELD HELLER</div>
+    <div class="title">AtelierAI · iPad 1.20.9 ZIELFARBE HELLER</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1363,7 +1363,7 @@
     mixes.forEach((m,idx)=>{
       const card=document.createElement('div');
       card.className='mix-card';
-      const targetHex=rgbHex(target), mixHex=rgbHex(m.rgb);
+      const targetHex=rgbHex(displayTargetColor(target)), mixHex=rgbHex(m.rgb);
       card.innerHTML=`
         <div class="mix-head"><b>Vorschlag ${idx+1}</b><span>${m.score}% Annäherung</span></div>
         <div class="mix-swatches">
@@ -1432,9 +1432,9 @@
     lastAverageColor=avg;
     lastSmartColor=robust ? robust.smart : avg;
     avgTargetBox.style.background=rgbHex(avg);
-    smartTargetBox.style.background=rgbHex(lastSmartColor);
+    smartTargetBox.style.background=rgbHex(displayTargetColor(lastSmartColor));
     targetInfo.innerHTML=`Durchschnitt ${rgbHex(avg)} · RGB ${avg.join(', ')}<br>`+
-      `Smart ${rgbHex(lastSmartColor)} · RGB ${lastSmartColor.join(', ')}<br>`+
+      `Smart ${rgbHex(displayTargetColor(lastSmartColor))} · RGB ${lastSmartColor.join(', ')}<br>`+
       `<span class="tiny">${smart ? 'Smart-Malfarbe aktiv' : 'Kreis-Durchschnitt aufgenommen'} · ${samples.length} Messpunkte</span>`;
     // also update the existing smart color display for consistency
     if(robust) showSmartColor(robust);
