@@ -1,4 +1,4 @@
-AtelierAI iPad 1.20.5 FARBTREU
+AtelierAI iPad 1.20.7 PIPETTE FARBTREU
 
 Stabilitaetsstand auf Basis von 1.20.3 FARBTREU.
 Zielreferenz fuer die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.
@@ -13,10 +13,10 @@ Unveraendert bewahrt:
 - synchrones Zoom/Pan
 - Raster und Speichern
 
-Korrekturen in 1.20.5:
+Korrekturen in 1.20.6:
 - sichtbare Versionsangaben vereinheitlicht
 - PWA-Manifest auf aktuellen Versionsstand gebracht
-- Service-Worker-Cache auf 1.20.5 angehoben
+- Service-Worker-Cache auf 1.20.6 angehoben
 - doppelte Ausloesung der Punkt-Pipette auf dem iPad entfernt
 
 Wichtig:

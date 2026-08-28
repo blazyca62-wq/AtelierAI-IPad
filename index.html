@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.5 FARBTREU HELLER</title>
+  <title>AtelierAI iPad 1.20.7 PIPETTE FARBTREU</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.5 FARBTREU HELLER</div>
+    <div class="title">AtelierAI · iPad 1.20.7 PIPETTE FARBTREU</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -863,7 +863,7 @@
 
   function robustSmartColor(samples){
     if(!samples.length) return null;
-    const raw=painterAreaLift(linearAverageRGB(samples));
+    const raw=linearAverageRGB(samples);
     if(samples.length<7) return {smart:raw,count:samples.length,filtered:samples.length};
     const med=[0,1,2].map(ch=>median(samples.map(p=>p[ch])));
     const rows=samples.map(p=>{
@@ -877,7 +877,7 @@
     let kept=rows.filter(x=>!(((x.lum>247)||(x.lum<8)) && x.dist>limit) && x.dist<=limit*1.45);
     if(kept.length<Math.max(3,Math.floor(samples.length*.25))) kept=rows;
     const weights=kept.map(x=>1/(1+Math.pow(x.dist/Math.max(10,limit),2)));
-    const smart=painterAreaLift(linearAverageRGB(kept.map(x=>x.p),weights));
+    const smart=linearAverageRGB(kept.map(x=>x.p),weights);
     return {smart,count:samples.length,filtered:kept.length};
   }
 
@@ -1427,7 +1427,7 @@
       }
     }
     if(!samples.length) return;
-    const avg=painterAreaLift(linearAverageRGB(samples));
+    const avg=linearAverageRGB(samples);
     const robust=robustSmartColor(samples);
     lastAverageColor=avg;
     lastSmartColor=robust ? robust.smart : avg;
@@ -2900,6 +2900,7 @@
     ctx.imageSmoothingQuality='high';
     ctx.translate(offsetX,offsetY);
     ctx.scale(scale,scale);
+    // Farbtreue Darstellung: Bild unverändert zeichnen.
     if(surfaceMarkCanvas) ctx.drawImage(surfaceMarkCanvas,0,0);
     else ctx.drawImage(processedCanvas,0,0);
     if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value);
