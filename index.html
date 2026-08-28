@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.10.1 PC</title>
+  <title>AtelierAI iPad 1.10.2 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.10.1 PC</div>
+    <div class="title">AtelierAI · iPad 1.10.2 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -348,31 +348,7 @@
 <button id="pairCalcBtn" style="width:100%;">Beste Zweiermischungen finden</button>
         <div id="pairResults" class="pc-card"><span class="tiny">Noch keine Mischpalette berechnet.</span></div>
       </div>
-
-
-      <div class="section" id="colorIdeasPanel">
-        <h3>Farbideen</h3>
-        <p>Eine aufgenommene Farbe variieren, ohne die Grundfarbe aus dem Blick zu verlieren.</p>
-        <div class="swatch-line"><div id="ideaBase" class="small-swatch" style="background:#808080"></div><div id="ideaResult" class="small-swatch" style="background:#808080"></div><span id="ideaInfo" class="tiny">Pipettenfarbe übernehmen.</span></div>
-        <div class="control-line"><label>Heller</label><input id="ideaLight" type="range" min="-40" max="40" value="0"><span id="ideaLightVal">0</span></div>
-        <div class="control-line"><label>Warm/Kalt</label><input id="ideaWarm" type="range" min="-40" max="40" value="0"><span id="ideaWarmVal">0</span></div>
-        <div class="control-line"><label>Sättigung</label><input id="ideaSat" type="range" min="-40" max="40" value="0"><span id="ideaSatVal">0</span></div>
-        <div class="grid2">
-          <button id="ideaTakeBtn">Farbe übernehmen</button>
-          <button id="ideaMixBtn">Idee mischen</button>
-        </div>
-        <button id="ideaResetBtn" class="secondary" style="width:100%;margin-top:7px;">Farbidee zurücksetzen</button>
-      </div>
-<div class="section" id="gridSavePanel">
-        <h3>Raster & Speichern</h3>
-        <div class="grid2">
-          <button id="gridToggleBtn" class="secondary">Raster ein</button>
-          <button id="saveViewBtn">Bild speichern</button>
-        </div>
-        <div class="control-line"><label>Raster</label><input id="gridDensity" type="range" min="2" max="20" value="8"><span id="gridDensityVal">8</span></div>
-      </div>
-
-      <div class="section" id="sampleColorPanel">
+<div class="section" id="sampleColorPanel">
         <h3>Aufgenommene Farbe</h3>
         <div class="colorbox" id="colorBox"></div>
       <div class="rgb" id="colorText" style="margin-top:7px;">RGB: –<br>HEX: –</div></div>
@@ -457,18 +433,6 @@
   const gridDensityVal=document.getElementById('gridDensityVal');
   const saveViewBtn=document.getElementById('saveViewBtn');
 
-  const ideaBase=document.getElementById('ideaBase');
-  const ideaResult=document.getElementById('ideaResult');
-  const ideaInfo=document.getElementById('ideaInfo');
-  const ideaLight=document.getElementById('ideaLight');
-  const ideaWarm=document.getElementById('ideaWarm');
-  const ideaSat=document.getElementById('ideaSat');
-  const ideaLightVal=document.getElementById('ideaLightVal');
-  const ideaWarmVal=document.getElementById('ideaWarmVal');
-  const ideaSatVal=document.getElementById('ideaSatVal');
-  const ideaTakeBtn=document.getElementById('ideaTakeBtn');
-  const ideaMixBtn=document.getElementById('ideaMixBtn');
-  const ideaResetBtn=document.getElementById('ideaResetBtn');
 
 
 
@@ -511,7 +475,6 @@
   let gridEnabled=false;
   let surfacePreview=null;
   let surfaceHoverImage=null;
-  let ideasBase=null;
 
 
   let sourceCanvas = document.createElement('canvas');
@@ -866,7 +829,7 @@
       `<span class="tiny">${smart ? 'Smart-Malfarbe aktiv' : 'Kreis-Durchschnitt aufgenommen'} · ${samples.length} Messpunkte</span>`;
     // also update the existing smart color display for consistency
     if(robust) showSmartColor(robust);
-    correctionBase=[...lastSmartColor]; refreshCorrection(); ideasBase=[...lastSmartColor]; refreshIdea();
+    correctionBase=[...lastSmartColor]; refreshCorrection();
     showMixes();
   }
 
@@ -978,30 +941,10 @@
       row.querySelector('button').onclick=()=>{
         setMixTarget(c.rgb,`Hauptfarbe ${i+1}`);
         correctionBase=[...c.rgb]; refreshCorrection();
-        ideasBase=[...c.rgb]; refreshIdea();
         showStudioMixPage();
       };
       surfaceResults.appendChild(row);
     });
-  }
-
-
-  function ideaColor(){
-    if(!ideasBase)return null;
-    let [h,sv,v]=rgbToHsv(ideasBase);
-    v=Math.max(0,Math.min(1,v+Number(ideaLight.value)/100));
-    sv=Math.max(0,Math.min(1,sv+Number(ideaSat.value)/100));
-    h=(h+Number(ideaWarm.value)*0.55+360)%360;
-    return hsvToRgb(h,sv,v);
-  }
-  function refreshIdea(){
-    ideaLightVal.textContent=ideaLight.value;
-    ideaWarmVal.textContent=ideaWarm.value;
-    ideaSatVal.textContent=ideaSat.value;
-    const c=ideaColor();
-    if(!ideasBase||!c){ideaInfo.textContent='Pipettenfarbe übernehmen.';return;}
-    ideaBase.style.background=rgbHex(ideasBase);ideaResult.style.background=rgbHex(c);
-    ideaInfo.textContent=`${rgbHex(c)} · RGB ${c.join(', ')}`;
   }
 
   function calculatePairPalette(){
@@ -1348,12 +1291,14 @@
     const pc=sourceContextForPicker();
     const d=pc.getImageData(Math.floor(ix),Math.floor(iy),1,1).data;
     const rgb=[d[0],d[1],d[2]];
+    if(typeof sampledColor!=='undefined') sampledColor=[...rgb];
     const hex=rgbHex(rgb);
     colorBox.style.background=hex;
     colorText.innerHTML=`RGB: ${rgb.join(', ')}<br>HEX: ${hex}`;
     setMixTarget(rgb,'Pipette');
-    correctionBase=[...rgb]; refreshCorrection(); ideasBase=[...rgb]; refreshIdea();
+    correctionBase=[...rgb]; refreshCorrection();
     showMixes();
+    hint.textContent='Pipette: Farbe aufgenommen '+hex;
   }
 
   [lightSlider,midSlider,darkSlider].forEach(sl=>{
@@ -1471,7 +1416,7 @@
   surfaceResetBtn.addEventListener('click',()=>{surfaceMode=null;surfacePreview=null;surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';draw();});
 
   viewer.addEventListener('pointerdown',e=>{
-    if(!surfaceMode||!loaded)return;
+    if(!surfaceMode || !loaded) return;
     const p=canvasPoint(e.clientX,e.clientY);
     const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
     if(ix<0||iy<0||ix>=img.width||iy>=img.height)return;
@@ -1489,12 +1434,6 @@
   corrTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){correctionBase=[...t];refreshCorrection();}});
   corrMixBtn.addEventListener('click',()=>{const c=correctedColor();if(c){setMixTarget(c,'Korrekturatelier');showStudioMixPage();}});
   corrResetBtn.addEventListener('click',()=>{corrLight.value=0;corrWarm.value=0;corrSat.value=0;refreshCorrection();});
-
-
-  [ideaLight,ideaWarm,ideaSat].forEach(x=>x.addEventListener('input',refreshIdea));
-  ideaTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){ideasBase=[...t];refreshIdea();}});
-  ideaMixBtn.addEventListener('click',()=>{const c=ideaColor();if(c){setMixTarget(c,'Farbidee');showStudioMixPage();}});
-  ideaResetBtn.addEventListener('click',()=>{ideaLight.value=0;ideaWarm.value=0;ideaSat.value=0;refreshIdea();});
   pairCalcBtn.addEventListener('click',calculatePairPalette);
 
   gridToggleBtn.addEventListener('click',()=>{gridEnabled=!gridEnabled;gridToggleBtn.textContent=gridEnabled?'Raster aus':'Raster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);draw();});
@@ -1530,7 +1469,6 @@
       surfaceAdvisorPanel:'Flächenberater',
       correctionStudioPanel:'Korrektur',
       mixPalettePanel:'Mischpalette',
-      colorIdeasPanel:'Farbideen',
       gridSavePanel:'Raster & Speichern',
       sampleColorPanel:'Farbe'
     };
@@ -1609,6 +1547,33 @@
     });
   }
   setupCompactSidebar();
+
+
+  // Robuste Punkt-Pipette für iPad:
+  // kurzer Fingertipp im Pipettenmodus = Farbe aufnehmen.
+  let pointTapStart=null;
+  viewer.addEventListener('pointerdown',e=>{
+    if(!loaded || surfaceMode) return;
+    pointTapStart={x:e.clientX,y:e.clientY,t:performance.now(),id:e.pointerId};
+  },false);
+
+  viewer.addEventListener('pointerup',e=>{
+    if(!loaded || surfaceMode || !pointTapStart) return;
+    const dx=e.clientX-pointTapStart.x, dy=e.clientY-pointTapStart.y;
+    const dist=Math.hypot(dx,dy);
+    const dt=performance.now()-pointTapStart.t;
+    const start=pointTapStart;
+    pointTapStart=null;
+
+    // Nur ein echter Tipp; Verschieben/Zoom bleibt unangetastet.
+    if(dist<=12 && dt<=700){
+      // Punkt-Pipette nur im Pipettenmodus.
+      if(mode==='pick'){
+        pickColor(e.clientX,e.clientY);
+        e.preventDefault();
+      }
+    }
+  },false);
 
   fileInput.addEventListener('change',e=>{
     const file=e.target.files&&e.target.files[0];

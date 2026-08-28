@@ -1,12 +1,25 @@
-AtelierAI iPad 1.10.1 PC
+AtelierAI iPad 1.10.2 PC
 
-Fehlerkorrektur:
-- Flächenberater: „Diese Farbe als Studio-Mischung“ funktioniert jetzt sichtbar.
-- Die gewählte Hauptfarbe wird als echte Zielfarbe übernommen.
-- AtelierAI wechselt danach automatisch zum Bereich „Mischen“ und zeigt dort die Studio-Mischung.
-- Die Farbe wird zugleich an Korrekturatelier und Farbideen weitergegeben.
-- Dasselbe Verhalten wurde für „Korrigierte Farbe mischen“ und „Idee mischen“ korrigiert.
-- Werkzeugleiste enthält nun klare Punkte „Farbanalyse“ und „Mischen“.
+Korrekturversion:
+- Punkt-Pipette auf dem iPad repariert.
+- Ein kurzer Fingertipp im Pipettenmodus nimmt jetzt zuverlässig die Farbe auf.
+- Verschieben und Zoom werden davon nicht ausgelöst.
+- Flächenberater fängt normale Pipetten-Tipps nicht mehr ab.
+- Aufgenommene Punktfarbe wird sofort angezeigt und an Studio-Mischung/Korrekturatelier übergeben.
+- Farbideen entfernt, weil die bisherige iPad-Umsetzung praktisch nur eine Dublette des Korrekturateliers war.
+- Dadurch weniger Funktionen, aber klarere Bedienung.
 
-Alle Funktionen aus 1.10 bleiben erhalten.
+Erhalten:
+- Großformen
+- Tonwerte
+- Punkt-Pipette
+- Maler-Pipette
+- Flächenberater
+- Studio-Mischung
+- Zweier-Mischpalette
+- Korrekturatelier
+- Raster/Speichern
+- Palettenauswahl
+- Zoom/Verschieben
+
 Orientierung: PC AtelierAI 2.6.96.
