@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.7 PC</title>
+  <title>AtelierAI iPad 1.8 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -91,7 +91,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.7 PC</div>
+    <div class="title">AtelierAI · iPad 1.8 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -302,6 +302,21 @@
         <div id="pairResults" class="pc-card"><span class="tiny">Noch keine Mischpalette berechnet.</span></div>
       </div>
 
+
+      <div class="section" id="colorIdeasPanel">
+        <h3>Farbideen</h3>
+        <p>Eine aufgenommene Farbe variieren, ohne die Grundfarbe aus dem Blick zu verlieren.</p>
+        <div class="swatch-line"><div id="ideaBase" class="small-swatch" style="background:#808080"></div><div id="ideaResult" class="small-swatch" style="background:#808080"></div><span id="ideaInfo" class="tiny">Pipettenfarbe übernehmen.</span></div>
+        <div class="control-line"><label>Heller</label><input id="ideaLight" type="range" min="-40" max="40" value="0"><span id="ideaLightVal">0</span></div>
+        <div class="control-line"><label>Warm/Kalt</label><input id="ideaWarm" type="range" min="-40" max="40" value="0"><span id="ideaWarmVal">0</span></div>
+        <div class="control-line"><label>Sättigung</label><input id="ideaSat" type="range" min="-40" max="40" value="0"><span id="ideaSatVal">0</span></div>
+        <div class="grid2">
+          <button id="ideaTakeBtn">Farbe übernehmen</button>
+          <button id="ideaMixBtn">Idee mischen</button>
+        </div>
+        <button id="ideaResetBtn" class="secondary" style="width:100%;margin-top:7px;">Farbidee zurücksetzen</button>
+      </div>
+
       <div class="section" id="underpaintingPanel">
         <h3>Warm / Kalt</h3>
         <div class="grid2">
@@ -417,6 +432,20 @@
   const gridDensityVal=document.getElementById('gridDensityVal');
   const saveViewBtn=document.getElementById('saveViewBtn');
 
+  const ideaBase=document.getElementById('ideaBase');
+  const ideaResult=document.getElementById('ideaResult');
+  const ideaInfo=document.getElementById('ideaInfo');
+  const ideaLight=document.getElementById('ideaLight');
+  const ideaWarm=document.getElementById('ideaWarm');
+  const ideaSat=document.getElementById('ideaSat');
+  const ideaLightVal=document.getElementById('ideaLightVal');
+  const ideaWarmVal=document.getElementById('ideaWarmVal');
+  const ideaSatVal=document.getElementById('ideaSatVal');
+  const ideaTakeBtn=document.getElementById('ideaTakeBtn');
+  const ideaMixBtn=document.getElementById('ideaMixBtn');
+  const ideaResetBtn=document.getElementById('ideaResetBtn');
+
+
 
   const lightSlider = document.getElementById('lightSlider');
   const midSlider = document.getElementById('midSlider');
@@ -456,6 +485,9 @@
   let correctionBase=null;
   let underMode='off';
   let gridEnabled=false;
+  let surfacePreview=null;
+  let surfaceHoverImage=null;
+  let ideasBase=null;
 
 
   let sourceCanvas = document.createElement('canvas');
@@ -810,7 +842,7 @@
       `<span class="tiny">${smart ? 'Smart-Malfarbe aktiv' : 'Kreis-Durchschnitt aufgenommen'} · ${samples.length} Messpunkte</span>`;
     // also update the existing smart color display for consistency
     if(robust) showSmartColor(robust);
-    correctionBase=[...lastSmartColor]; refreshCorrection();
+    correctionBase=[...lastSmartColor]; refreshCorrection(); ideasBase=[...lastSmartColor]; refreshIdea();
     showMixes();
   }
 
@@ -923,6 +955,25 @@
       row.querySelector('button').onclick=()=>{setMixTarget(c.rgb,`Hauptfarbe ${i+1}`);showMixes();};
       surfaceResults.appendChild(row);
     });
+  }
+
+
+  function ideaColor(){
+    if(!ideasBase)return null;
+    let [h,sv,v]=rgbToHsv(ideasBase);
+    v=Math.max(0,Math.min(1,v+Number(ideaLight.value)/100));
+    sv=Math.max(0,Math.min(1,sv+Number(ideaSat.value)/100));
+    h=(h+Number(ideaWarm.value)*0.55+360)%360;
+    return hsvToRgb(h,sv,v);
+  }
+  function refreshIdea(){
+    ideaLightVal.textContent=ideaLight.value;
+    ideaWarmVal.textContent=ideaWarm.value;
+    ideaSatVal.textContent=ideaSat.value;
+    const c=ideaColor();
+    if(!ideasBase||!c){ideaInfo.textContent='Pipettenfarbe übernehmen.';return;}
+    ideaBase.style.background=rgbHex(ideasBase);ideaResult.style.background=rgbHex(c);
+    ideaInfo.textContent=`${rgbHex(c)} · RGB ${c.join(', ')}`;
   }
 
   function calculatePairPalette(){
@@ -1198,6 +1249,18 @@
     ctx.drawImage(processedCanvas,0,0);
     if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value);
     ctx.restore();
+    if(surfacePreview){
+      const sx=offsetX+surfacePreview.x*scale, sy=offsetY+surfacePreview.y*scale;
+      const sz=surfacePreview.size*scale;
+      ctx.save();
+      ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=3;
+      ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=3;
+      ctx.setLineDash([10,6]);
+      ctx.beginPath();
+      if(surfacePreview.shape==='circle') ctx.arc(sx,sy,sz/2,0,Math.PI*2);
+      else ctx.rect(sx-sz/2,sy-sz/2,sz,sz);
+      ctx.stroke(); ctx.restore();
+    }
   }
 
   function canvasPoint(clientX,clientY){
@@ -1217,7 +1280,7 @@
     colorBox.style.background=hex;
     colorText.innerHTML=`RGB: ${rgb.join(', ')}<br>HEX: ${hex}`;
     setMixTarget(rgb,'Pipette');
-    correctionBase=[...rgb]; refreshCorrection();
+    correctionBase=[...rgb]; refreshCorrection(); ideasBase=[...rgb]; refreshIdea();
     showMixes();
   }
 
@@ -1319,19 +1382,33 @@
   });
 
 
-  surfaceSize.addEventListener('input',()=>surfaceSizeVal.textContent=surfaceSize.value);
-  surfaceCircleBtn.addEventListener('click',()=>{surfaceMode='circle';hint.textContent='Flächenberater: Kreis im Bild antippen';});
-  surfaceRectBtn.addEventListener('click',()=>{surfaceMode='rect';hint.textContent='Flächenberater: Rechteck im Bild antippen';});
-  surfaceResetBtn.addEventListener('click',()=>{surfaceMode=null;surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';});
+  surfaceSize.addEventListener('input',()=>{
+    surfaceSizeVal.textContent=surfaceSize.value;
+    if(surfacePreview){surfacePreview.size=Number(surfaceSize.value)/Math.max(scale,.05);draw();}
+  });
+  surfaceCircleBtn.addEventListener('click',()=>{
+    surfaceMode='circle';
+    if(loaded) surfacePreview={shape:'circle',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
+    hint.textContent='Flächenberater: Kreis ist sichtbar – gewünschte Stelle antippen'; draw();
+  });
+  surfaceRectBtn.addEventListener('click',()=>{
+    surfaceMode='rect';
+    if(loaded) surfacePreview={shape:'rect',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
+    hint.textContent='Flächenberater: Rechteck ist sichtbar – gewünschte Stelle antippen'; draw();
+  });
+  surfaceResetBtn.addEventListener('click',()=>{surfaceMode=null;surfacePreview=null;surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';draw();});
 
   viewer.addEventListener('pointerdown',e=>{
     if(!surfaceMode||!loaded)return;
     const p=canvasPoint(e.clientX,e.clientY);
     const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
     if(ix<0||iy<0||ix>=img.width||iy>=img.height)return;
-    const clusters=clusterArea(ix,iy,Number(surfaceSize.value)/Math.max(scale,.05),surfaceMode);
+    const realSize=Number(surfaceSize.value)/Math.max(scale,.05);
+    surfacePreview={shape:surfaceMode,x:ix,y:iy,size:realSize};
+    const clusters=clusterArea(ix,iy,realSize,surfaceMode);
     renderSurface(clusters);
     surfaceMode=null;
+    draw();
     hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette';
     e.preventDefault(); e.stopImmediatePropagation();
   },true);
@@ -1340,6 +1417,12 @@
   corrTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){correctionBase=[...t];refreshCorrection();}});
   corrMixBtn.addEventListener('click',()=>{const c=correctedColor();if(c){setMixTarget(c,'Korrekturatelier');showMixes();}});
   corrResetBtn.addEventListener('click',()=>{corrLight.value=0;corrWarm.value=0;corrSat.value=0;refreshCorrection();});
+
+
+  [ideaLight,ideaWarm,ideaSat].forEach(x=>x.addEventListener('input',refreshIdea));
+  ideaTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){ideasBase=[...t];refreshIdea();}});
+  ideaMixBtn.addEventListener('click',()=>{const c=ideaColor();if(c){setMixTarget(c,'Farbidee');showMixes();}});
+  ideaResetBtn.addEventListener('click',()=>{ideaLight.value=0;ideaWarm.value=0;ideaSat.value=0;refreshIdea();});
 
   pairRatio.addEventListener('input',()=>{const a=pairRatio.value;pairRatioVal.textContent=`${a}/${100-a}`;});
   pairCalcBtn.addEventListener('click',calculatePairPalette);
