@@ -1,25 +1,12 @@
-AtelierAI iPad 1.10.2 PC
+AtelierAI iPad 1.10.3 PC
 
-Korrekturversion:
-- Punkt-Pipette auf dem iPad repariert.
-- Ein kurzer Fingertipp im Pipettenmodus nimmt jetzt zuverlässig die Farbe auf.
-- Verschieben und Zoom werden davon nicht ausgelöst.
-- Flächenberater fängt normale Pipetten-Tipps nicht mehr ab.
-- Aufgenommene Punktfarbe wird sofort angezeigt und an Studio-Mischung/Korrekturatelier übergeben.
-- Farbideen entfernt, weil die bisherige iPad-Umsetzung praktisch nur eine Dublette des Korrekturateliers war.
-- Dadurch weniger Funktionen, aber klarere Bedienung.
-
-Erhalten:
-- Großformen
-- Tonwerte
-- Punkt-Pipette
-- Maler-Pipette
-- Flächenberater
-- Studio-Mischung
-- Zweier-Mischpalette
-- Korrekturatelier
-- Raster/Speichern
-- Palettenauswahl
-- Zoom/Verschieben
+Notfallkorrektur nach 1.10.2:
+- Basis wieder 1.10.1, damit Foto öffnen unverändert funktioniert.
+- Der Foto-Import-Code wurde NICHT verändert.
+- Punkt-Pipette nur mit einem kleinen, getrennten Tap-Handler ergänzt.
+- Farbideen ausgeblendet, ohne den HTML-Aufbau zu löschen.
+- Flächenberater und sichtbare Bereichsmarkierung bleiben erhalten.
+- Studio-Mischung aus dem Flächenberater bleibt erhalten.
+- Navigation aus 1.10 bleibt erhalten.
 
 Orientierung: PC AtelierAI 2.6.96.
