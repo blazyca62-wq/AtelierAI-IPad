@@ -1,17 +1,11 @@
-AtelierAI iPad 1.12 PC
+AtelierAI iPad 1.12.1 PC
 
-Weitere Funktion aus der PC-Version: Flächenberater erweitert
+Änderung im Flächenberater:
+- „Im Bild markieren“ wurde durch „Nur diese Farbe zeigen“ ersetzt.
+- Beim Antippen wird die ausgewählte Hauptfarbe isoliert dargestellt.
+- Andere Farben werden ausgeblendet.
+- Die Auswahl bezieht sich auf den zuvor analysierten Kreis bzw. das Rechteck.
+- „Alle Farben zeigen“ kehrt zur normalen Bildansicht zurück.
+- Studio-Mischung und Bereich vergrößern bleiben erhalten.
 
-Neu:
-- Nach der Flächenanalyse bleiben die vier Hauptfarben erhalten.
-- Jede Hauptfarbe kann „Im Bild markieren“.
-- Die Markierung gilt nur innerhalb des gewählten Kreises/Rechtecks.
-- „Bereich vergrößern“ zoomt auf den zu dieser Hauptfarbe passenden Bereich.
-- „Farbmarkierung aus“ entfernt nur die Markierung, die Flächenanalyse bleibt erhalten.
-- „Flächenanalyse löschen“ setzt den gesamten Flächenberater zurück.
-- Direkte Studio-Mischung jeder Hauptfarbe bleibt erhalten.
-
-Orientierung an AtelierAI PC 2.6.96:
-select_surface_cluster / zoom_surface_cluster / clear_surface_selection.
-
-Alle stabilen Funktionen von 1.11 bleiben erhalten.
+Alle übrigen Funktionen von 1.12 bleiben unverändert.

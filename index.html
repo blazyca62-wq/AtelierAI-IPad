@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.12 PC</title>
+  <title>AtelierAI iPad 1.12.1 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.12 PC</div>
+    <div class="title">AtelierAI · iPad 1.12.1 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -324,7 +324,7 @@
         </div>
         <div class="control-line"><label>Größe</label><input id="surfaceSize" type="range" min="24" max="180" value="84"><span id="surfaceSizeVal">84</span></div>
         <div class="grid2">
-          <button id="surfaceClearMarkBtn" class="secondary">Farbmarkierung aus</button>
+          <button id="surfaceClearMarkBtn" class="secondary">Alle Farben zeigen</button>
           <button id="surfaceResetBtn" class="secondary">Flächenanalyse löschen</button>
         </div>
         <div id="surfaceResults" class="pc-card"><span class="tiny">Noch kein Bereich analysiert.</span></div>
@@ -1044,14 +1044,18 @@
     const tolerance=42;
     const src=sourceContextForPicker();
     const w=processedCanvas.width, h=processedCanvas.height;
+    const original=src.getImageData(0,0,w,h);
     const out=document.createElement('canvas'); out.width=w; out.height=h;
     const oc=out.getContext('2d');
-    const image=src.getImageData(0,0,w,h);
-    const overlay=oc.createImageData(w,h);
-    const d=image.data, o=overlay.data;
+    const isolated=oc.createImageData(w,h);
+    const d=original.data, o=isolated.data;
 
-    // Nur innerhalb der aktuell gewählten Kreis-/Rechteckfläche markieren,
-    // wie beim PC-Flächenberater mit Auswahlmaske.
+    // Weißer Hintergrund; sichtbar bleiben ausschließlich Pixel der
+    // gewählten Hauptfarbe innerhalb des analysierten Kreises/Rechtecks.
+    for(let i=0;i<o.length;i+=4){
+      o[i]=255; o[i+1]=255; o[i+2]=255; o[i+3]=255;
+    }
+
     const x0=Math.max(0,Math.floor(surfacePreview.x-surfacePreview.size/2));
     const x1=Math.min(w-1,Math.ceil(surfacePreview.x+surfacePreview.size/2));
     const y0=Math.max(0,Math.floor(surfacePreview.y-surfacePreview.size/2));
@@ -1064,14 +1068,14 @@
         const dr=d[i]-target[0], dg=d[i+1]-target[1], db=d[i+2]-target[2];
         const dist=Math.sqrt(.30*dr*dr+.59*dg*dg+.11*db*db);
         if(dist<=tolerance){
-          // kontrastreiche grünliche Markierung; Bild bleibt erkennbar
-          o[i]=40; o[i+1]=255; o[i+2]=125; o[i+3]=118;
+          o[i]=d[i]; o[i+1]=d[i+1]; o[i+2]=d[i+2]; o[i+3]=255;
         }
       }
     }
-    oc.putImageData(overlay,0,0);
+    oc.putImageData(isolated,0,0);
     surfaceMarkCanvas=out;
     draw();
+    hint.textContent=`Flächenberater: nur Hauptfarbe ${index+1} sichtbar`;
   }
 
   function zoomSurfaceCluster(index){
@@ -1136,7 +1140,7 @@
           <div><b>Hauptfarbe ${i+1}</b><br><span class="tiny">${Math.round(c.pct)}% · ${rgbHex(c.rgb)} · RGB ${c.rgb.join(', ')}</span></div>
         </div>
         <div class="grid2" style="margin-top:7px;">
-          <button class="surfaceMarkBtn secondary">Im Bild markieren</button>
+          <button class="surfaceMarkBtn secondary">Nur diese Farbe zeigen</button>
           <button class="surfaceZoomBtn secondary">Bereich vergrößern</button>
         </div>
         <button class="surfaceMixBtn" style="width:100%;margin-top:6px;">Diese Farbe als Studio-Mischung</button>`;
@@ -1579,8 +1583,8 @@
     ctx.imageSmoothingQuality='high';
     ctx.translate(offsetX,offsetY);
     ctx.scale(scale,scale);
-    ctx.drawImage(processedCanvas,0,0);
     if(surfaceMarkCanvas) ctx.drawImage(surfaceMarkCanvas,0,0);
+    else ctx.drawImage(processedCanvas,0,0);
     if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value);
     ctx.restore();
     if(surfacePreview){
