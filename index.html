@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.10.8 PC</title>
+  <title>AtelierAI iPad 1.12 PC</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -139,7 +139,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.10.8 PC</div>
+    <div class="title">AtelierAI · iPad 1.12 PC</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -323,7 +323,10 @@
           <button id="surfaceRectBtn" class="secondary">Rechteck analysieren</button>
         </div>
         <div class="control-line"><label>Größe</label><input id="surfaceSize" type="range" min="24" max="180" value="84"><span id="surfaceSizeVal">84</span></div>
-        <button id="surfaceResetBtn" class="secondary" style="width:100%;">Flächenanalyse löschen</button>
+        <div class="grid2">
+          <button id="surfaceClearMarkBtn" class="secondary">Farbmarkierung aus</button>
+          <button id="surfaceResetBtn" class="secondary">Flächenanalyse löschen</button>
+        </div>
         <div id="surfaceResults" class="pc-card"><span class="tiny">Noch kein Bereich analysiert.</span></div>
       </div>
 
@@ -347,6 +350,24 @@
         <p>AtelierAI prüft die aktiven Tubenfarben paarweise und sucht für jedes Paar automatisch das beste Mischverhältnis zur Zielfarbe.</p>
 <button id="pairCalcBtn" style="width:100%;">Beste Zweiermischungen finden</button>
         <div id="pairResults" class="pc-card"><span class="tiny">Noch keine Mischpalette berechnet.</span></div>
+
+        <div id="pairEditBox" class="pc-card" style="display:none;margin-top:9px;">
+          <b>Mischung weiter korrigieren</b>
+          <div class="swatch-line" style="margin-top:7px;">
+            <div id="pairEditBase" class="small-swatch" style="background:#808080"></div>
+            <div id="pairEditResult" class="small-swatch" style="background:#808080"></div>
+            <span id="pairEditInfo" class="tiny"></span>
+          </div>
+          <div class="control-line"><label>Verhältnis</label><input id="pairEditRatio" type="range" min="0" max="100" value="50"><span id="pairEditRatioVal">50 : 50</span></div>
+          <div class="control-line"><label>Helligkeit</label><input id="pairEditLight" type="range" min="-100" max="100" value="0"><span id="pairEditLightVal">Original</span></div>
+          <div class="control-line"><label>Korrekturfarbe</label><input id="pairEditAmount" type="range" min="5" max="50" value="20"><span id="pairEditAmountVal">20 %</span></div>
+          <div class="tiny" style="margin:7px 0 4px;"><b>Heller machen</b></div>
+          <div id="pairEditLighter"></div>
+          <div class="tiny" style="margin:8px 0 4px;"><b>Dunkler machen</b></div>
+          <div id="pairEditDarker"></div>
+          <div id="pairEditRecipe" class="tiny" style="margin-top:8px;"></div>
+          <button id="pairEditReset" class="secondary" style="width:100%;margin-top:8px;">Zurücksetzen</button>
+        </div>
       </div>
 
 
@@ -435,6 +456,7 @@
   const surfaceCircleBtn=document.getElementById('surfaceCircleBtn');
   const surfaceRectBtn=document.getElementById('surfaceRectBtn');
   const surfaceResetBtn=document.getElementById('surfaceResetBtn');
+  const surfaceClearMarkBtn=document.getElementById('surfaceClearMarkBtn');
   const surfaceSize=document.getElementById('surfaceSize');
   const surfaceSizeVal=document.getElementById('surfaceSizeVal');
   const surfaceResults=document.getElementById('surfaceResults');
@@ -452,6 +474,20 @@
   const corrResetBtn=document.getElementById('corrResetBtn');
   const pairCalcBtn=document.getElementById('pairCalcBtn');
   const pairResults=document.getElementById('pairResults');
+  const pairEditBox=document.getElementById('pairEditBox');
+  const pairEditBase=document.getElementById('pairEditBase');
+  const pairEditResult=document.getElementById('pairEditResult');
+  const pairEditInfo=document.getElementById('pairEditInfo');
+  const pairEditRatio=document.getElementById('pairEditRatio');
+  const pairEditRatioVal=document.getElementById('pairEditRatioVal');
+  const pairEditLight=document.getElementById('pairEditLight');
+  const pairEditLightVal=document.getElementById('pairEditLightVal');
+  const pairEditAmount=document.getElementById('pairEditAmount');
+  const pairEditAmountVal=document.getElementById('pairEditAmountVal');
+  const pairEditLighter=document.getElementById('pairEditLighter');
+  const pairEditDarker=document.getElementById('pairEditDarker');
+  const pairEditRecipe=document.getElementById('pairEditRecipe');
+  const pairEditReset=document.getElementById('pairEditReset');
   const gridToggleBtn=document.getElementById('gridToggleBtn');
   const gridDensity=document.getElementById('gridDensity');
   const gridDensityVal=document.getElementById('gridDensityVal');
@@ -511,6 +547,10 @@
   let gridEnabled=false;
   let surfacePreview=null;
   let surfaceHoverImage=null;
+  let surfaceClusters=[];
+  let surfaceSelectedIndex=null;
+  let surfaceMarkCanvas=null;
+
   let ideasBase=null;
 
 
@@ -986,15 +1026,125 @@
     for(const q of pts){let bi=0,bd=Infinity;centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});counts[bi]++;}
     return centers.map((c,i)=>({rgb:c.map(v=>Math.round(v)),pct:100*counts[i]/pts.length})).sort((a,b)=>b.pct-a.pct);
   }
+
+  function surfaceInsideSelection(x,y){
+    if(!surfacePreview) return false;
+    const dx=x-surfacePreview.x, dy=y-surfacePreview.y;
+    const half=surfacePreview.size/2;
+    if(surfacePreview.shape==='circle') return dx*dx+dy*dy <= half*half;
+    return Math.abs(dx)<=half && Math.abs(dy)<=half;
+  }
+
+  function buildSurfaceMark(index){
+    surfaceSelectedIndex=index;
+    surfaceMarkCanvas=null;
+    if(!loaded || !surfacePreview || !surfaceClusters[index]){ draw(); return; }
+
+    const target=surfaceClusters[index].rgb;
+    const tolerance=42;
+    const src=sourceContextForPicker();
+    const w=processedCanvas.width, h=processedCanvas.height;
+    const out=document.createElement('canvas'); out.width=w; out.height=h;
+    const oc=out.getContext('2d');
+    const image=src.getImageData(0,0,w,h);
+    const overlay=oc.createImageData(w,h);
+    const d=image.data, o=overlay.data;
+
+    // Nur innerhalb der aktuell gewählten Kreis-/Rechteckfläche markieren,
+    // wie beim PC-Flächenberater mit Auswahlmaske.
+    const x0=Math.max(0,Math.floor(surfacePreview.x-surfacePreview.size/2));
+    const x1=Math.min(w-1,Math.ceil(surfacePreview.x+surfacePreview.size/2));
+    const y0=Math.max(0,Math.floor(surfacePreview.y-surfacePreview.size/2));
+    const y1=Math.min(h-1,Math.ceil(surfacePreview.y+surfacePreview.size/2));
+
+    for(let y=y0;y<=y1;y++){
+      for(let x=x0;x<=x1;x++){
+        if(!surfaceInsideSelection(x,y)) continue;
+        const i=(y*w+x)*4;
+        const dr=d[i]-target[0], dg=d[i+1]-target[1], db=d[i+2]-target[2];
+        const dist=Math.sqrt(.30*dr*dr+.59*dg*dg+.11*db*db);
+        if(dist<=tolerance){
+          // kontrastreiche grünliche Markierung; Bild bleibt erkennbar
+          o[i]=40; o[i+1]=255; o[i+2]=125; o[i+3]=118;
+        }
+      }
+    }
+    oc.putImageData(overlay,0,0);
+    surfaceMarkCanvas=out;
+    draw();
+  }
+
+  function zoomSurfaceCluster(index){
+    if(!loaded || !surfacePreview || !surfaceClusters[index]) return;
+    const target=surfaceClusters[index].rgb;
+    const tolerance=42;
+    const src=sourceContextForPicker();
+    const w=processedCanvas.width, h=processedCanvas.height;
+    const d=src.getImageData(0,0,w,h).data;
+
+    const x0=Math.max(0,Math.floor(surfacePreview.x-surfacePreview.size/2));
+    const x1=Math.min(w-1,Math.ceil(surfacePreview.x+surfacePreview.size/2));
+    const y0=Math.max(0,Math.floor(surfacePreview.y-surfacePreview.size/2));
+    const y1=Math.min(h-1,Math.ceil(surfacePreview.y+surfacePreview.size/2));
+
+    let minX=w,minY=h,maxX=-1,maxY=-1;
+    for(let y=y0;y<=y1;y+=2){
+      for(let x=x0;x<=x1;x+=2){
+        if(!surfaceInsideSelection(x,y)) continue;
+        const i=(y*w+x)*4;
+        const dr=d[i]-target[0], dg=d[i+1]-target[1], db=d[i+2]-target[2];
+        const dist=Math.sqrt(.30*dr*dr+.59*dg*dg+.11*db*db);
+        if(dist<=tolerance){
+          if(x<minX)minX=x;if(x>maxX)maxX=x;
+          if(y<minY)minY=y;if(y>maxY)maxY=y;
+        }
+      }
+    }
+    if(maxX<minX || maxY<minY) return;
+
+    const pad=Math.max(12,Math.round(surfacePreview.size*.12));
+    minX=Math.max(0,minX-pad); minY=Math.max(0,minY-pad);
+    maxX=Math.min(w,maxX+pad); maxY=Math.min(h,maxY+pad);
+
+    const vr=viewer.getBoundingClientRect();
+    const bw=Math.max(1,maxX-minX), bh=Math.max(1,maxY-minY);
+    const desired=Math.min(vr.width/bw,vr.height/bh)*.72;
+    scale=Math.max(.05,Math.min(24,desired));
+    const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+    offsetX=vr.width/2-cx*scale;
+    offsetY=vr.height/2-cy*scale;
+    buildSurfaceMark(index);
+    hint.textContent=`Flächenberater: Hauptfarbe ${index+1} vergrößert`;
+  }
+
+  function clearSurfaceMark(){
+    surfaceSelectedIndex=null;
+    surfaceMarkCanvas=null;
+    draw();
+  }
+
   function renderSurface(clusters){
+    surfaceClusters=clusters.map(c=>({rgb:[...c.rgb],pct:c.pct}));
+    surfaceSelectedIndex=null;
+    surfaceMarkCanvas=null;
     surfaceResults.innerHTML='';
     clusters.forEach((c,i)=>{
       const row=document.createElement('div');row.className='pc-card';
-      row.innerHTML=`<div class="swatch-line"><div class="small-swatch" style="background:${rgbHex(c.rgb)}"></div><div><b>Hauptfarbe ${i+1}</b><br><span class="tiny">${Math.round(c.pct)}% · ${rgbHex(c.rgb)} · RGB ${c.rgb.join(', ')}</span></div></div><button>Diese Farbe als Studio-Mischung</button>`;
-      row.querySelector('button').onclick=()=>{
+      row.innerHTML=`
+        <div class="swatch-line">
+          <div class="small-swatch" style="background:${rgbHex(c.rgb)}"></div>
+          <div><b>Hauptfarbe ${i+1}</b><br><span class="tiny">${Math.round(c.pct)}% · ${rgbHex(c.rgb)} · RGB ${c.rgb.join(', ')}</span></div>
+        </div>
+        <div class="grid2" style="margin-top:7px;">
+          <button class="surfaceMarkBtn secondary">Im Bild markieren</button>
+          <button class="surfaceZoomBtn secondary">Bereich vergrößern</button>
+        </div>
+        <button class="surfaceMixBtn" style="width:100%;margin-top:6px;">Diese Farbe als Studio-Mischung</button>`;
+      row.querySelector('.surfaceMarkBtn').onclick=()=>buildSurfaceMark(i);
+      row.querySelector('.surfaceZoomBtn').onclick=()=>zoomSurfaceCluster(i);
+      row.querySelector('.surfaceMixBtn').onclick=()=>{
         setMixTarget(c.rgb,`Hauptfarbe ${i+1}`);
         correctionBase=[...c.rgb]; refreshCorrection();
-        ideasBase=[...c.rgb]; refreshIdea();
         showStudioMixPage();
       };
       surfaceResults.appendChild(row);
@@ -1019,6 +1169,97 @@
     ideaBase.style.background=rgbHex(ideasBase);ideaResult.style.background=rgbHex(c);
     ideaInfo.textContent=`${rgbHex(c)} · RGB ${c.join(', ')}`;
   }
+
+
+  let selectedPairMix=null;
+  let selectedAdjustColor=null;
+
+  function pairMixRgb(a,b,pct){
+    const f=Math.max(0,Math.min(1,Number(pct)/100));
+    return [0,1,2].map(ch=>Math.round(a[ch]*f+b[ch]*(1-f)));
+  }
+  function pairLum(rgb){return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];}
+  function pairClamp(v){return Math.max(0,Math.min(255,Math.round(v)));}
+  function pairLight(rgb,v){
+    const t=Math.max(-1,Math.min(1,Number(v)/100));
+    return rgb.map(x=>t>=0?pairClamp(x+(255-x)*t):pairClamp(x*(1+t)));
+  }
+  function pairAdd(rgb,c,amount){
+    const f=Math.max(0,Math.min(1,Number(amount)/100));
+    return [0,1,2].map(ch=>pairClamp(rgb[ch]*(1-f)+c[ch]*f));
+  }
+  function pairColorByName(name){
+    const colors=selectedPaletteColors(paintPalette.value);
+    const hit=colors.find(x=>x[0]===name);
+    return hit ? hit[1] : null;
+  }
+  function pairCandidates(base,kind){
+    const amount=Number(pairEditAmount.value);
+    const baseL=pairLum(base);
+    return selectedPaletteColors(paintPalette.value).map(c=>{
+      const rgb=pairAdd(base,c[1],amount);
+      return {name:c[0],rgb:c[1],out:rgb,delta:pairLum(rgb)-baseL};
+    }).filter(x=>kind==='lighter'?x.delta>1:x.delta<-1)
+      .sort((a,b)=>kind==='lighter'?a.delta-b.delta:b.delta-a.delta)
+      .slice(0,8);
+  }
+  function renderPairCandidates(container,items){
+    container.innerHTML='';
+    if(!items.length){container.innerHTML='<span class="tiny">Keine passende aktive Farbe.</span>';return;}
+    items.forEach(item=>{
+      const b=document.createElement('button');
+      b.type='button'; b.className='secondary';
+      b.style.cssText='width:100%;display:flex;align-items:center;gap:7px;margin:3px 0;text-align:left;';
+      b.innerHTML=`<span style="width:24px;height:24px;border-radius:5px;border:1px solid #777;background:${rgbHex(item.rgb)};display:inline-block"></span><span>${item.name}</span>`;
+      b.addEventListener('click',()=>{selectedAdjustColor=item;refreshPairEditor();});
+      container.appendChild(b);
+    });
+  }
+  function refreshPairEditor(){
+    if(!selectedPairMix)return;
+    const c1=pairColorByName(selectedPairMix.n1), c2=pairColorByName(selectedPairMix.n2);
+    if(!c1||!c2)return;
+    const ratio=Number(pairEditRatio.value), other=100-ratio;
+    let base=pairMixRgb(c1,c2,ratio);
+    base=pairLight(base,Number(pairEditLight.value));
+    let out=[...base];
+    if(selectedAdjustColor)out=pairAdd(base,selectedAdjustColor.rgb,Number(pairEditAmount.value));
+
+    pairEditBase.style.background=rgbHex(base);
+    pairEditResult.style.background=rgbHex(out);
+    pairEditInfo.textContent=`${selectedPairMix.n1} + ${selectedPairMix.n2}`;
+    pairEditRatioVal.textContent=`${ratio.toFixed(0)} : ${other.toFixed(0)}`;
+
+    const lv=Number(pairEditLight.value);
+    pairEditLightVal.textContent=Math.abs(lv)<3?'Original':(lv>0?`${Math.abs(lv)} % heller`:`${Math.abs(lv)} % dunkler`);
+    pairEditAmountVal.textContent=`${Number(pairEditAmount.value).toFixed(0)} %`;
+
+    const p1=Math.max(1,Math.round(ratio/10)), p2=Math.max(1,Math.round(other/10));
+    let txt=`${p1} Teile ${selectedPairMix.n1} · ${p2} Teile ${selectedPairMix.n2}`;
+    if(lv>3)txt+=' · langsam Titanweiß einarbeiten';
+    if(lv<-3)txt+=' · vorsichtig mit dunkler Tubenfarbe vertiefen';
+    if(selectedAdjustColor)txt+=` · + ${Number(pairEditAmount.value).toFixed(0)} % ${selectedAdjustColor.name}`;
+    pairEditRecipe.textContent=txt;
+
+    renderPairCandidates(pairEditLighter,pairCandidates(base,'lighter'));
+    renderPairCandidates(pairEditDarker,pairCandidates(base,'darker'));
+  }
+  function openPairEditor(m){
+    selectedPairMix=m; selectedAdjustColor=null;
+    pairEditRatio.value=String(m.p1);
+    pairEditLight.value='0'; pairEditAmount.value='20';
+    pairEditBox.style.display='block';
+    refreshPairEditor();
+    setTimeout(()=>pairEditBox.scrollIntoView({behavior:'smooth',block:'nearest'}),20);
+  }
+  [pairEditRatio,pairEditLight,pairEditAmount].forEach(el=>el.addEventListener('input',refreshPairEditor));
+  pairEditReset.addEventListener('click',()=>{
+    if(!selectedPairMix)return;
+    selectedAdjustColor=null;
+    pairEditRatio.value=String(selectedPairMix.p1);
+    pairEditLight.value='0'; pairEditAmount.value='20';
+    refreshPairEditor();
+  });
 
   function calculatePairPalette(){
     const target=targetArray();
@@ -1053,6 +1294,7 @@
     rows.sort((x,y)=>y.score-x.score);
     const shown=rows.slice(0,8);
     pairResults.innerHTML='';
+    pairEditBox.style.display='none'; selectedPairMix=null; selectedAdjustColor=null;
 
     const intro=document.createElement('div');
     intro.className='tiny';
@@ -1072,6 +1314,9 @@
             <span class="tiny"><b>${m.p1} %</b> ${m.n1}<br><b>${m.p2} %</b> ${m.n2}</span>
           </div>
         </div>`;
+      el.style.cursor='pointer';
+      el.title='Antippen: Mischung weiter korrigieren';
+      el.addEventListener('click',()=>openPairEditor(m));
       pairResults.appendChild(el);
     });
 
@@ -1335,6 +1580,7 @@
     ctx.translate(offsetX,offsetY);
     ctx.scale(scale,scale);
     ctx.drawImage(processedCanvas,0,0);
+    if(surfaceMarkCanvas) ctx.drawImage(surfaceMarkCanvas,0,0);
     if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value);
     ctx.restore();
     if(surfacePreview){
@@ -1486,16 +1732,20 @@
     if(surfacePreview){surfacePreview.size=Number(surfaceSize.value)/Math.max(scale,.05);draw();}
   });
   surfaceCircleBtn.addEventListener('click',()=>{
-    surfaceMode='circle';
+    surfaceMode='circle'; surfaceMarkCanvas=null; surfaceSelectedIndex=null;
     if(loaded) surfacePreview={shape:'circle',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
     hint.textContent='Flächenberater: Kreis ist sichtbar – gewünschte Stelle antippen'; draw();
   });
   surfaceRectBtn.addEventListener('click',()=>{
-    surfaceMode='rect';
+    surfaceMode='rect'; surfaceMarkCanvas=null; surfaceSelectedIndex=null;
     if(loaded) surfacePreview={shape:'rect',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
     hint.textContent='Flächenberater: Rechteck ist sichtbar – gewünschte Stelle antippen'; draw();
   });
-  surfaceResetBtn.addEventListener('click',()=>{surfaceMode=null;surfacePreview=null;surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';draw();});
+  surfaceClearMarkBtn.addEventListener('click',clearSurfaceMark);
+  surfaceResetBtn.addEventListener('click',()=>{
+    surfaceMode=null; surfacePreview=null; surfaceClusters=[]; surfaceSelectedIndex=null; surfaceMarkCanvas=null;
+    surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>'; draw();
+  });
 
   viewer.addEventListener('pointerdown',e=>{
     if(!surfaceMode||!loaded)return;

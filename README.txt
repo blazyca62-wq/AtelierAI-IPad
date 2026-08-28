@@ -1,14 +1,17 @@
-AtelierAI iPad 1.10.8 PC
+AtelierAI iPad 1.12 PC
 
-Gezielte Korrektur nach Prüfung des tatsächlichen Codes:
-- Farbideen wird jetzt beim Aufbau der Werkzeugleiste ausdrücklich ausgeschlossen.
-  Der Button kann deshalb nicht mehr dynamisch wieder erscheinen.
-- Die echte Funktion drawGridOverlay wurde geändert.
-- Rasterlinien verwenden jetzt den Canvas-Modus "difference":
-  auf hellen Bildstellen erscheinen sie dunkel,
-  auf dunklen Bildstellen erscheinen sie hell.
-  Die Anpassung erfolgt lokal innerhalb des Bildes, nicht nur nach der Durchschnittshelligkeit.
-- Punkt-Pipette -> Mischen aus 1.10.6 bleibt erhalten.
-- Foto öffnen und alle übrigen stabilen Funktionen bleiben unverändert.
+Weitere Funktion aus der PC-Version: Flächenberater erweitert
 
-Orientierung: PC AtelierAI 2.6.96.
+Neu:
+- Nach der Flächenanalyse bleiben die vier Hauptfarben erhalten.
+- Jede Hauptfarbe kann „Im Bild markieren“.
+- Die Markierung gilt nur innerhalb des gewählten Kreises/Rechtecks.
+- „Bereich vergrößern“ zoomt auf den zu dieser Hauptfarbe passenden Bereich.
+- „Farbmarkierung aus“ entfernt nur die Markierung, die Flächenanalyse bleibt erhalten.
+- „Flächenanalyse löschen“ setzt den gesamten Flächenberater zurück.
+- Direkte Studio-Mischung jeder Hauptfarbe bleibt erhalten.
+
+Orientierung an AtelierAI PC 2.6.96:
+select_surface_cluster / zoom_surface_cluster / clear_surface_selection.
+
+Alle stabilen Funktionen von 1.11 bleiben erhalten.
