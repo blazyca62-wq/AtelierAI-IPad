@@ -355,7 +355,7 @@
 
       <div class="section" id="colorJourneyPanel">
         <h3>Farbreise – Grundfarbe zur Zielfarbe</h3>
-        <p>Die erste aufgenommene Farbe ist deine Grundfarbe. Danach nimmst du die Zielfarbe auf. AtelierAI berechnet, welche Farbe bzw. kleine Mischung du der Grundfarbe beimischen solltest, um die Zielfarbe möglichst gut zu erreichen.</p>
+        <p>Die erste Farbe ist deine vorhandene Grundfarbe. Danach nimmst du die Zielfarbe auf. AtelierAI berechnet, welche Farbe oder kleine Farbkombination du der Grundfarbe beimischen solltest.</p>
 
         <div class="grid2">
           <button id="journeyTakeStartBtn">Aktuelle Farbe als Grundfarbe</button>
@@ -374,7 +374,7 @@
         </div>
 
         <div id="journeyInfo" class="tiny" style="margin-top:7px;">
-          Farbreise öffnen, Pipette einschalten: erster Tipp ins Bild = Grundfarbe, zweiter Tipp = Zielfarbe.
+          Pipette einschalten: erster Tipp ins Bild = Grundfarbe, zweiter Tipp = Zielfarbe.
         </div>
 
         <div id="journeyResults" style="margin-top:9px;"></div>
@@ -783,7 +783,7 @@
   let lastAverageColor = null;
   let lastSmartColor = null;
 
-  // Farbreise: Grundfarbe bleibt gespeichert, während anschließend
+  // Farbreise: Startfarbe bleibt gespeichert, während anschließend
   // mit der Pipette die gewünschte Zielfarbe aufgenommen wird.
   let journeyStartColor=null;
   let journeyTargetColor=null;
@@ -1553,103 +1553,78 @@
   }
 
   function renderColorJourney(){
-    if(journeyStartColor){
-      journeyStartSwatch.style.background=rgbHex(adaptiveDisplayColor(journeyStartColor));
-    }else{
-      journeyStartSwatch.style.background='#808080';
-    }
-    if(journeyTargetColor){
-      journeyTargetSwatch.style.background=rgbHex(adaptiveDisplayColor(journeyTargetColor));
-    }else{
-      journeyTargetSwatch.style.background='#808080';
-    }
+    journeyStartSwatch.style.background=journeyStartColor ? rgbHex(adaptiveDisplayColor(journeyStartColor)) : '#808080';
+    journeyTargetSwatch.style.background=journeyTargetColor ? rgbHex(adaptiveDisplayColor(journeyTargetColor)) : '#808080';
 
     if(!journeyStartColor || !journeyTargetColor){
       journeyResults.innerHTML='';
       journeyInfo.textContent=!journeyStartColor
-        ? 'Pipette einschalten und zuerst deine vorhandene Grundfarbe im Bild antippen.'
-        : 'Jetzt einfach die gewünschte Zielfarbe im Bild antippen.';
+        ? 'Pipette einschalten und zuerst die vorhandene Grundfarbe im Bild antippen.'
+        : 'Jetzt die gewünschte Zielfarbe im Bild antippen.';
       return;
     }
 
-    const base=journeyStartColor;
-    const target=journeyTargetColor;
+    const base=journeyStartColor, target=journeyTargetColor;
     const paletteKey=paintPalette.value;
     const available=selectedPaletteColors(paletteKey);
-
+    journeyInfo.innerHTML=`Grundfarbe <b>${rgbHex(base)}</b> → Zielfarbe <b>${rgbHex(target)}</b>. AtelierAI sucht die sinnvollste Zugabe aus deiner Palette.`;
     journeyResults.innerHTML='';
-    journeyInfo.innerHTML=`Grundfarbe <b>${rgbHex(base)}</b> → Zielfarbe <b>${rgbHex(target)}</b>. Gesucht wird nur das, was du der Grundfarbe hinzufügen musst.`;
 
-    if(available.length<1){
-      journeyResults.innerHTML='<div class="mix-card"><b>Keine Palettenfarbe ausgewählt.</b><div class="tiny">Bitte zuerst Farben in deiner Öl- oder Aquarellpalette markieren.</div></div>';
+    if(!available.length){
+      journeyResults.innerHTML='<div class="mix-card"><b>Keine Palettenfarbe ausgewählt.</b><div class="tiny">Bitte zuerst Farben in deiner Palette markieren.</div></div>';
       return;
     }
 
-    // Malerisches Modell: Die vorhandene Grundfarbe bleibt der größte Anteil.
-    // Wir testen 1 oder 2 Palettenfarben als kleine Zugabe (5–50 %).
-    // Ziel ist die kleinste DeltaE-Abweichung zur Zielfarbe.
+    const targetLab=rgbToLabFast(target);
     const candidates=[];
-    const addFractions=[0.05,0.08,0.12,0.16,0.20,0.25,0.30,0.36,0.42,0.50];
+    const fractions=[0.04,0.06,0.08,0.10,0.12,0.15,0.18,0.22,0.26,0.30,0.36,0.42,0.50];
 
-    function blendedWithBase(addColors, addFraction){
-      const add=addColors.length===1
-        ? addColors[0].rgb
-        : [0,1,2].map(k=>Math.round((addColors[0].rgb[k]+addColors[1].rgb[k])/2));
-      return [0,1,2].map(k=>Math.round(base[k]*(1-addFraction)+add[k]*addFraction));
+    function mixBaseWith(addRgb,f){
+      return [0,1,2].map(k=>Math.round(base[k]*(1-f)+addRgb[k]*f));
+    }
+    function addCandidate(colors,addRgb,f){
+      const rgb=mixBaseWith(addRgb,f);
+      const d=deltaE76FromLab(rgbToLabFast(rgb),targetLab);
+      candidates.push({colors,rgb,f,d});
     }
 
-    function scoreCandidate(colors,fraction){
-      const rgb=blendedWithBase(colors,fraction);
-      const d=deltaE76FromLab(rgbToLabFast(rgb),rgbToLabFast(target));
-      candidates.push({colors,fraction,rgb,d});
-    }
-
+    // One correcting palette color.
     for(const c of available){
-      for(const f of addFractions) scoreCandidate([c],f);
+      for(const f of fractions) addCandidate([c],c.rgb,f);
     }
 
-    // Also test two-color corrections, but keep computation modest on iPad.
-    const pairPool=available.slice(0,Math.min(18,available.length));
-    for(let i=0;i<pairPool.length;i++){
-      for(let j=i+1;j<pairPool.length;j++){
-        for(const f of [0.08,0.12,0.16,0.20,0.25,0.30,0.36,0.42]){
-          scoreCandidate([pairPool[i],pairPool[j]],f);
+    // Two correcting palette colors, equal share in the addition.
+    const pool=available.slice(0,Math.min(20,available.length));
+    for(let i=0;i<pool.length;i++){
+      for(let j=i+1;j<pool.length;j++){
+        const addRgb=[0,1,2].map(k=>Math.round((pool[i].rgb[k]+pool[j].rgb[k])/2));
+        for(const f of [0.06,0.10,0.15,0.20,0.26,0.32,0.40,0.50]){
+          addCandidate([pool[i],pool[j]],addRgb,f);
         }
       }
     }
 
-    candidates.sort((a,b)=>a.d-b.d || a.fraction-b.fraction);
-    const best=[];
+    candidates.sort((x,y)=>x.d-y.d || x.f-y.f);
+    const chosen=[];
+    const seen=new Set();
     for(const c of candidates){
       const key=c.colors.map(x=>x.name).sort().join('|');
-      if(best.some(x=>x.key===key)) continue;
-      best.push({...c,key});
-      if(best.length>=3) break;
+      if(seen.has(key)) continue;
+      seen.add(key);
+      chosen.push(c);
+      if(chosen.length===3) break;
     }
 
-    if(!best.length){
-      journeyResults.innerHTML='<div class="mix-card">Keine sinnvolle Zugabe gefunden.</div>';
-      return;
-    }
-
-    best.forEach((m,idx)=>{
-      const addPct=Math.round(m.fraction*100);
+    chosen.forEach((m,idx)=>{
+      const addPct=Math.round(m.f*100);
       const basePct=100-addPct;
+      const approx=Math.max(0,Math.round(100-Math.min(100,m.d*3)));
+      const names=m.colors.length===1
+        ? m.colors[0].name
+        : `${m.colors[0].name} + ${m.colors[1].name} (zu gleichen Teilen als Zugabe)`;
+
       const card=document.createElement('div');
       card.className='mix-card';
-
-      let addText='';
-      if(m.colors.length===1){
-        addText=`${m.colors[0].name}`;
-      }else{
-        addText=`½ ${m.colors[0].name} + ½ ${m.colors[1].name}`;
-      }
-
-      // Practical parts: keep base as reference and express addition simply.
-      const baseParts=Math.max(1,Math.round(basePct/5));
-      const addParts=Math.max(1,Math.round(addPct/5));
-      const approx=Math.max(0,Math.round(100-Math.min(100,m.d*3)));
-
       card.innerHTML=`
         <div class="mix-head"><b>${idx===0?'Beste Zugabe':'Alternative '+(idx+1)}</b><span>${approx}% Annäherung</span></div>
         <div class="target-grid" style="margin-top:7px;">
@@ -1657,11 +1632,9 @@
           <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${rgbHex(adaptiveDisplayColor(target))}"></div></div>
         </div>
         <div class="mix-lines" style="margin-top:8px;">
-          <b>Zu deiner Grundfarbe hinzufügen:</b><br>
-          ${addText}<br>
-          <span class="tiny">Richtwert: ca. ${addPct}% Zugabe · ${basePct}% vorhandene Grundfarbe</span>
+          <b>Zur Grundfarbe hinzufügen:</b><br>${names}<br>
+          <span class="tiny">ca. ${basePct}% Grundfarbe + ${addPct}% Zugabe</span>
         </div>
-        <div class="tiny" style="margin-top:6px;">Praktisch: etwa ${baseParts} Teile Grundfarbe + ${addParts} Teile Zugabe. Langsam beimischen und am Bild kontrollieren.</div>
       `;
       journeyResults.appendChild(card);
     });
@@ -3181,8 +3154,7 @@
     correctionBase=[...rgb]; refreshCorrection(); ideasBase=[...rgb]; refreshIdea();
     showMixes();
 
-    // Nur wenn die Farbreise gerade geöffnet ist:
-    // erster Bild-Tipp = Grundfarbe, zweiter Bild-Tipp = Zielfarbe.
+    // Farbreise: in derselben Pipetten-Sitzung erst Grundfarbe, dann Zielfarbe.
     const journeyOpen=document.getElementById('colorJourneyPanel')?.classList.contains('tool-page-active');
     if(journeyOpen){
       if(!journeyStartColor || journeyTargetColor){
@@ -3196,7 +3168,7 @@
       return;
     }
 
-    // Außerhalb der Farbreise bleibt das bewährte Verhalten unverändert.
+    // Bewährtes normales Pipettenverhalten außerhalb der Farbreise.
     if(typeof window.activateToolPage==='function'){
       window.activateToolPage('paintMixPanel');
     }
