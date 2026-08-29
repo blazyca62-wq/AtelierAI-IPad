@@ -1,42 +1,11 @@
 AtelierAI iPad 1.10
 
-Stabilitaetsstand auf Basis von 1.20.3 FARBTREU.
-Zielreferenz fuer die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.
+Vollständiger Neuaufbau des 1.10-Pakets auf Basis der funktionierenden 1.9.
 
-Unveraendert bewahrt:
-- farbtreue Bildverarbeitung
-- stabile Grossformen-Berechnung aus dem 1.19-Stand
-- Tonwerte und Farbanalyse
-- Studio-Mischungen und persoenliche Paletten
-- Lasurenvergleich mit Mehrfachlasuren
-- Auto-Ausrichtung und mehrere Messpunkte
-- synchrones Zoom/Pan
-- Raster und Speichern
+Änderung:
+- In der Farbreise kann „Bewegen“ zum Verschieben/Zoomen benutzt werden.
+- Nach Ende der Bewegung schaltet AtelierAI automatisch zurück auf die Punkt-Pipette.
+- Der Bewegen-Button bleibt dadurch nicht mehr aktiv.
+- Farbreise- und Mischlogik bleiben unverändert.
 
-Korrekturen in 1.20.6:
-- sichtbare Versionsangaben vereinheitlicht
-- PWA-Manifest auf aktuellen Versionsstand gebracht
-- Service-Worker-Cache auf 1.20.6 angehoben
-- doppelte Ausloesung der Punkt-Pipette auf dem iPad entfernt
-
-Wichtig:
-Die Farb-, Grossformen-, Tonwert-, Misch- und Lasurberechnungen wurden in diesem Stabilitaetsschritt nicht veraendert.
-
-Start:
-- START.html oeffnen. Diese Datei startet AtelierAI direkt.
-
-
-1.4: Neue Farbreise von einer aufgenommenen Startfarbe zur aufgenommenen Zielfarbe mit drei Zwischenstufen und direkter Studio-Mischung pro Stufe.
-
-1.7: Farbreise öffnet automatisch die Pipette. Zwei Bildtipps genügen. Mischvorschläge korrigiert und werden direkt angezeigt.
-
-1.8:
-- PWA-Manifest wird von index.html nicht mehr geladen, damit Safari keine alte Start-URL festhält.
-- Service Worker speichert nichts und entfernt alte Caches.
-- Farbreise am PC-Prinzip ausgerichtet:
-  Ausgangsmischung berechnen -> Teile davon verwenden -> konkrete Tubenfarben hinzufügen -> Übereinstimmung anzeigen.
-- Farbreise öffnet weiterhin automatisch die Pipette; zwei Bildtipps genügen.
-
-1.9: Nur Bedienkorrektur. Beim Öffnen der Farbreise wird die Punkt-Pipette sicher automatisch aktiviert und bleibt für die zweite Aufnahme aktiv. Mischlogik aus 1.8 unverändert.
-
-1.10: Farbreise-Bedienfix. Nach Bewegen/Zoomen innerhalb der Farbreise wird automatisch wieder die Punkt-Pipette aktiviert. Der Bewegen-Button bleibt nicht mehr eingeschaltet. Sonstige Farbreise- und Mischlogik unverändert.
+Zielreferenz für die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.

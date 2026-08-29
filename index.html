@@ -153,7 +153,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.10-20260829';
+    const wanted='atelierai-1.10-neu-20260829';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -3824,12 +3824,10 @@
     if(touches.size===0){
       gestureStart=null;
 
-      // 1.10: In der Farbreise ist „Bewegen“ nur vorübergehend.
-      // Nach Verschieben/Zoomen springt das Werkzeug automatisch zurück
-      // auf die Punkt-Pipette, damit Grund- oder Zielfarbe direkt weiter
-      // aufgenommen werden können und der Bewegen-Button nicht aktiv bleibt.
-      const journeyOpen=document.getElementById('colorJourneyPanel')?.classList.contains('tool-page-active');
-      if(journeyOpen && mode==='move'){
+      const farbreiseAktiv =
+        document.getElementById('colorJourneyPanel')?.classList.contains('tool-page-active');
+
+      if(farbreiseAktiv && mode==='move'){
         setMode('picker');
         renderColorJourney();
       }
