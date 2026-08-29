@@ -1,4 +1,4 @@
-AtelierAI iPad 1.5
+AtelierAI iPad 1.6
 
 Stabilitaetsstand auf Basis von 1.20.3 FARBTREU.
 Zielreferenz fuer die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.
@@ -29,3 +29,5 @@ Start:
 1.4: Neue Farbreise von einer aufgenommenen Startfarbe zur aufgenommenen Zielfarbe mit drei Zwischenstufen und direkter Studio-Mischung pro Stufe.
 
 1.5: Farbreise verbessert: zwei Bildtipps für Start/Ziel und direkte Studio-Mischung aus der gewählten Palette.
+
+1.6: Farbreise als echte Mischkorrektur: Grundfarbe bleibt Basis; AtelierAI berechnet die beste kleine Zugabe aus der gewählten Palette zur Zielfarbe.
