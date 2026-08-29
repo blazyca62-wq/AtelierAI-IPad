@@ -8,7 +8,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.4</title>
+  <title>AtelierAI iPad 1.5</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -153,7 +153,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.4</div>
+    <div class="title">AtelierAI · iPad 1.5</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -355,7 +355,7 @@
 
       <div class="section" id="colorJourneyPanel">
         <h3>Farbreise zur Zielfarbe</h3>
-        <p>Zeigt den Weg von deiner jetzigen Farbe zur gewünschten Zielfarbe in vier gut unterscheidbaren Malstufen. Jede Zwischenstufe kann direkt als Studio-Mischung berechnet werden.</p>
+        <p>Zeigt den Weg von deiner jetzigen Farbe zur gewünschten Zielfarbe. Wenn die Farbreise geöffnet ist, nimmt die Pipette zuerst die Startfarbe und danach direkt die Zielfarbe auf – ohne zur Mischseite zu springen. Zu jeder Stufe wird sofort eine echte Studio-Mischung aus deiner gewählten Palette angezeigt.</p>
 
         <div class="grid2">
           <button id="journeyTakeStartBtn">Aktuelle Farbe als Start</button>
@@ -1567,8 +1567,8 @@
     if(!journeyStartColor || !journeyTargetColor){
       journeyResults.innerHTML='';
       journeyInfo.textContent=!journeyStartColor
-        ? 'Zuerst die jetzige Farbe mit der Pipette aufnehmen und „Aktuelle Farbe als Start“ tippen.'
-        : 'Jetzt die gewünschte Zielfarbe mit der Pipette aufnehmen und „Aktuelle Farbe als Ziel“ tippen.';
+        ? 'Pipette einschalten und die Startfarbe im Bild antippen. Danach bleibt die Farbreise geöffnet.'
+        : 'Jetzt einfach die gewünschte Zielfarbe im Bild antippen.';
       return;
     }
 
@@ -1588,17 +1588,43 @@
       const card=document.createElement('div');
       card.className='mix-card';
       const pct=Math.round(step.amount*100);
+      let recipeHtml='';
+      let bestMix=null;
+      if(idx===0){
+        recipeHtml='<div class="tiny" style="margin-top:6px;">Deine vorhandene Ausgangsfarbe.</div>';
+      }else{
+        const paletteKey=paintPalette.value;
+        const available=selectedPaletteColors(paletteKey);
+        if(available.length>=2){
+          const mixes=chooseMixes(rgb,paletteKey);
+          if(mixes && mixes.length){
+            bestMix=mixes[0];
+            recipeHtml=`
+              <div class="mix-lines" style="margin-top:7px;">
+                <b>Studio-Mischung:</b><br>
+                ${bestMix.names.map((n,i)=>`${bestMix.parts[i]} Teil${bestMix.parts[i]!==1?'e':''} ${n}`).join('<br>')}
+                <br><span class="tiny">${bestMix.score}% Annäherung · ${bestMix.watercolor?'Aquarell':'Öl'}</span>
+              </div>
+              <button class="journeyMixBtn" style="width:100%;margin-top:7px;">Weitere Mischvorschläge</button>`;
+          }else{
+            recipeHtml='<div class="tiny" style="margin-top:7px;">Für diese Stufe konnte keine Mischung berechnet werden.</div>';
+          }
+        }else{
+          recipeHtml='<div class="tiny" style="margin-top:7px;">Bitte zuerst mindestens zwei Farben in deiner Palette markieren.</div>';
+        }
+      }
+
       card.innerHTML=`
         <div class="mix-head"><b>${step.name}</b><span>${pct}% zum Ziel</span></div>
         <div class="swatch-line">
           <div class="small-swatch" style="background:${rgbHex(adaptiveDisplayColor(rgb))}"></div>
-          <span class="tiny">${rgbHex(rgb)} · RGB ${rgb.join(', ')}</span>
+          <span class="tiny">${rgbHex(rgb)}</span>
         </div>
-        ${idx===0 ? '<div class="tiny" style="margin-top:6px;">Deine vorhandene Ausgangsfarbe.</div>' :
-          '<button class="journeyMixBtn" style="width:100%;margin-top:7px;">Diese Stufe mischen</button>'}
+        ${recipeHtml}
       `;
-      if(idx>0){
-        card.querySelector('.journeyMixBtn').addEventListener('click',()=>{
+      const mixBtn=card.querySelector('.journeyMixBtn');
+      if(mixBtn){
+        mixBtn.addEventListener('click',()=>{
           setMixTarget(rgb,`Farbreise – ${step.name}`);
           showStudioMixPage();
         });
@@ -3121,7 +3147,23 @@
     correctionBase=[...rgb]; refreshCorrection(); ideasBase=[...rgb]; refreshIdea();
     showMixes();
 
-    // Punkt-Pipette: nach erfolgreicher Farbaufnahme sofort zum Mischen.
+    // Farbreise-Sonderfall:
+    // Solange die Farbreise geöffnet ist, bleibt man dort.
+    // Erster Pipetten-Tipp = Startfarbe, zweiter Tipp = Zielfarbe.
+    const journeyOpen = document.getElementById('colorJourneyPanel')?.classList.contains('tool-page-active');
+    if(journeyOpen){
+      if(!journeyStartColor){
+        journeyStartColor=[...rgb];
+        journeyTargetColor=null;
+        journeyInfo.textContent='Startfarbe aufgenommen. Jetzt einfach die Zielfarbe im Bild antippen.';
+      }else{
+        journeyTargetColor=[...rgb];
+      }
+      renderColorJourney();
+      return;
+    }
+
+    // Normale Punkt-Pipette: nach erfolgreicher Farbaufnahme sofort zum Mischen.
     if(typeof window.activateToolPage==='function'){
       window.activateToolPage('paintMixPanel');
     }
