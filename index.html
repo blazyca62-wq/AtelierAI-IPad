@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.9</title>
+  <title>AtelierAI iPad 1.10</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -153,7 +153,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.9-20260829';
+    const wanted='atelierai-1.10-20260829';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -170,7 +170,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.9</div>
+    <div class="title">AtelierAI · iPad 1.10</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -3821,8 +3821,19 @@
 
   function endPointer(e){
     touches.delete(e.pointerId);
-    if(touches.size===0) gestureStart=null;
-    else if(touches.size===1&&mode==='move'){
+    if(touches.size===0){
+      gestureStart=null;
+
+      // 1.10: In der Farbreise ist „Bewegen“ nur vorübergehend.
+      // Nach Verschieben/Zoomen springt das Werkzeug automatisch zurück
+      // auf die Punkt-Pipette, damit Grund- oder Zielfarbe direkt weiter
+      // aufgenommen werden können und der Bewegen-Button nicht aktiv bleibt.
+      const journeyOpen=document.getElementById('colorJourneyPanel')?.classList.contains('tool-page-active');
+      if(journeyOpen && mode==='move'){
+        setMode('picker');
+        renderColorJourney();
+      }
+    }else if(touches.size===1&&mode==='move'){
       const p=[...touches.values()][0];
       gestureStart={type:'pan',startX:p.x,startY:p.y,offsetX,offsetY};
     }

@@ -1,4 +1,4 @@
-AtelierAI iPad 1.9
+AtelierAI iPad 1.10
 
 Stabilitaetsstand auf Basis von 1.20.3 FARBTREU.
 Zielreferenz fuer die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.
@@ -38,3 +38,5 @@ Start:
 - Farbreise öffnet weiterhin automatisch die Pipette; zwei Bildtipps genügen.
 
 1.9: Nur Bedienkorrektur. Beim Öffnen der Farbreise wird die Punkt-Pipette sicher automatisch aktiviert und bleibt für die zweite Aufnahme aktiv. Mischlogik aus 1.8 unverändert.
+
+1.10: Farbreise-Bedienfix. Nach Bewegen/Zoomen innerhalb der Farbreise wird automatisch wieder die Punkt-Pipette aktiviert. Der Bewegen-Button bleibt nicht mehr eingeschaltet. Sonstige Farbreise- und Mischlogik unverändert.
