@@ -8,7 +8,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.6</title>
+  <title>AtelierAI iPad 1.7</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -149,25 +149,11 @@
     }
 
 </style>
-<script>
-(async function(){
-  try{
-    if('serviceWorker' in navigator){
-      const regs=await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r=>r.unregister()));
-    }
-    if('caches' in window){
-      const keys=await caches.keys();
-      await Promise.all(keys.map(k=>caches.delete(k)));
-    }
-  }catch(e){}
-})();
-</script>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.6</div>
+    <div class="title">AtelierAI · iPad 1.7</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -369,7 +355,7 @@
 
       <div class="section" id="colorJourneyPanel">
         <h3>Farbreise – Grundfarbe zur Zielfarbe</h3>
-        <p>Die erste Farbe ist deine vorhandene Grundfarbe. Danach nimmst du die Zielfarbe auf. AtelierAI berechnet, welche Farbe oder kleine Farbkombination du der Grundfarbe beimischen solltest.</p>
+        <p>Erster Tipp: vorhandene Grundfarbe. Zweiter Tipp: Zielfarbe. AtelierAI zeigt danach direkt, welche Farbe oder Farbkombination du der Grundfarbe beimischen solltest.</p>
 
         <div class="grid2">
           <button id="journeyTakeStartBtn">Aktuelle Farbe als Grundfarbe</button>
@@ -388,7 +374,7 @@
         </div>
 
         <div id="journeyInfo" class="tiny" style="margin-top:7px;">
-          Pipette einschalten: erster Tipp ins Bild = Grundfarbe, zweiter Tipp = Zielfarbe.
+          Farbreise öffnen und direkt zweimal ins Bild tippen: zuerst Grundfarbe, dann Zielfarbe.
         </div>
 
         <div id="journeyResults" style="margin-top:9px;"></div>
@@ -1573,19 +1559,21 @@
     if(!journeyStartColor || !journeyTargetColor){
       journeyResults.innerHTML='';
       journeyInfo.textContent=!journeyStartColor
-        ? 'Pipette einschalten und zuerst die vorhandene Grundfarbe im Bild antippen.'
-        : 'Jetzt die gewünschte Zielfarbe im Bild antippen.';
+        ? 'Direkt ins Bild tippen: zuerst die vorhandene Grundfarbe.'
+        : 'Grundfarbe gespeichert. Jetzt direkt die Zielfarbe antippen.';
       return;
     }
 
-    const base=journeyStartColor, target=journeyTargetColor;
+    const base=[...journeyStartColor];
+    const target=[...journeyTargetColor];
     const paletteKey=paintPalette.value;
     const available=selectedPaletteColors(paletteKey);
-    journeyInfo.innerHTML=`Grundfarbe <b>${rgbHex(base)}</b> → Zielfarbe <b>${rgbHex(target)}</b>. AtelierAI sucht die sinnvollste Zugabe aus deiner Palette.`;
-    journeyResults.innerHTML='';
 
-    if(!available.length){
-      journeyResults.innerHTML='<div class="mix-card"><b>Keine Palettenfarbe ausgewählt.</b><div class="tiny">Bitte zuerst Farben in deiner Palette markieren.</div></div>';
+    journeyResults.innerHTML='';
+    journeyInfo.innerHTML=`Grundfarbe <b>${rgbHex(base)}</b> → Zielfarbe <b>${rgbHex(target)}</b>`;
+
+    if(!available || available.length<1){
+      journeyResults.innerHTML='<div class="mix-card"><b>Keine Palettenfarben aktiv.</b><br><span class="tiny">Bitte in „Meine Farben auswählen“ deine vorhandenen Farben markieren.</span></div>';
       return;
     }
 
@@ -1593,58 +1581,76 @@
     const candidates=[];
     const fractions=[0.04,0.06,0.08,0.10,0.12,0.15,0.18,0.22,0.26,0.30,0.36,0.42,0.50];
 
-    function mixBaseWith(addRgb,f){
+    function blendBase(addRgb, f){
       return [0,1,2].map(k=>Math.round(base[k]*(1-f)+addRgb[k]*f));
     }
-    function addCandidate(colors,addRgb,f){
-      const rgb=mixBaseWith(addRgb,f);
-      const d=deltaE76FromLab(rgbToLabFast(rgb),targetLab);
-      candidates.push({colors,rgb,f,d});
+
+    function pushCandidate(names, addRgb, f){
+      const rgb=blendBase(addRgb,f);
+      const d=deltaE76FromLab(rgbToLabFast(rgb), targetLab);
+      candidates.push({names,rgb,f,d});
     }
 
-    for(const c of available){
-      for(const f of fractions) addCandidate([c],c.rgb,f);
+    // selectedPaletteColors liefert [Name, RGB] bzw. bei Aquarell [Name, RGB, Palette]
+    for(const entry of available){
+      const name=entry[0], rgb=entry[1];
+      if(!rgb) continue;
+      for(const f of fractions) pushCandidate([name], rgb, f);
     }
 
+    // Zwei Farben als gemeinsame Korrektur-Zugabe
     const pool=available.slice(0,Math.min(20,available.length));
     for(let i=0;i<pool.length;i++){
       for(let j=i+1;j<pool.length;j++){
-        const addRgb=[0,1,2].map(k=>Math.round((pool[i].rgb[k]+pool[j].rgb[k])/2));
+        const rgb1=pool[i][1], rgb2=pool[j][1];
+        if(!rgb1 || !rgb2) continue;
+        const addRgb=[0,1,2].map(k=>Math.round((rgb1[k]+rgb2[k])/2));
         for(const f of [0.06,0.10,0.15,0.20,0.26,0.32,0.40,0.50]){
-          addCandidate([pool[i],pool[j]],addRgb,f);
+          pushCandidate([pool[i][0],pool[j][0]], addRgb, f);
         }
       }
     }
 
     candidates.sort((x,y)=>x.d-y.d || x.f-y.f);
+
     const chosen=[];
     const seen=new Set();
     for(const c of candidates){
-      const key=c.colors.map(x=>x.name).sort().join('|');
+      const key=c.names.slice().sort().join('|');
       if(seen.has(key)) continue;
       seen.add(key);
       chosen.push(c);
-      if(chosen.length===3) break;
+      if(chosen.length>=3) break;
+    }
+
+    if(!chosen.length){
+      journeyResults.innerHTML='<div class="mix-card"><b>Keine passende Zugabe gefunden.</b></div>';
+      return;
     }
 
     chosen.forEach((m,idx)=>{
       const addPct=Math.round(m.f*100);
       const basePct=100-addPct;
       const approx=Math.max(0,Math.round(100-Math.min(100,m.d*3)));
-      const names=m.colors.length===1
-        ? m.colors[0].name
-        : `${m.colors[0].name} + ${m.colors[1].name} (zu gleichen Teilen als Zugabe)`;
+
+      let recipe;
+      if(m.names.length===1){
+        recipe=`${m.names[0]}`;
+      }else{
+        recipe=`½ ${m.names[0]} + ½ ${m.names[1]}`;
+      }
 
       const card=document.createElement('div');
       card.className='mix-card';
       card.innerHTML=`
         <div class="mix-head"><b>${idx===0?'Beste Zugabe':'Alternative '+(idx+1)}</b><span>${approx}% Annäherung</span></div>
-        <div class="target-grid" style="margin-top:7px;">
-          <div><div class="tiny">Erwartetes Ergebnis</div><div class="mix-swatch" style="background:${rgbHex(adaptiveDisplayColor(m.rgb))}"></div></div>
+        <div class="mix-swatches">
+          <div><div class="tiny">Ergebnis</div><div class="mix-swatch" style="background:${rgbHex(adaptiveDisplayColor(m.rgb))}"></div></div>
           <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${rgbHex(adaptiveDisplayColor(target))}"></div></div>
         </div>
-        <div class="mix-lines" style="margin-top:8px;">
-          <b>Zur Grundfarbe hinzufügen:</b><br>${names}<br>
+        <div class="mix-lines">
+          <b>Zur Grundfarbe beimischen:</b><br>
+          ${recipe}<br>
           <span class="tiny">ca. ${basePct}% Grundfarbe + ${addPct}% Zugabe</span>
         </div>
       `;
@@ -3166,12 +3172,13 @@
     correctionBase=[...rgb]; refreshCorrection(); ideasBase=[...rgb]; refreshIdea();
     showMixes();
 
+    // Farbreise: ohne Umschalten zwei Farben nacheinander aufnehmen.
     const journeyOpen=document.getElementById('colorJourneyPanel')?.classList.contains('tool-page-active');
     if(journeyOpen){
       if(!journeyStartColor || journeyTargetColor){
         journeyStartColor=[...rgb];
         journeyTargetColor=null;
-        journeyInfo.textContent='Grundfarbe aufgenommen. Jetzt die Zielfarbe im Bild antippen.';
+        journeyInfo.textContent='Grundfarbe gespeichert. Jetzt direkt die Zielfarbe antippen.';
       }else{
         journeyTargetColor=[...rgb];
       }
@@ -3179,6 +3186,7 @@
       return;
     }
 
+    // Außerhalb der Farbreise bleibt das bewährte Verhalten unverändert.
     if(typeof window.activateToolPage==='function'){
       window.activateToolPage('paintMixPanel');
     }
@@ -3605,6 +3613,12 @@
       if(btn) btn.classList.add('active');
       active=sec;
       side.scrollTop=0;
+
+      // Farbreise ist sofort aufnahmebereit: kein zusätzlicher Pipetten-Klick.
+      if(sec.id==='colorJourneyPanel'){
+        setMode('picker');
+        renderColorJourney();
+      }
     }
 
     window.activateToolPage=function(id){

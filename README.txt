@@ -1,4 +1,4 @@
-AtelierAI iPad 1.6
+AtelierAI iPad 1.7
 
 Stabilitaetsstand auf Basis von 1.20.3 FARBTREU.
 Zielreferenz fuer die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.
@@ -28,4 +28,4 @@ Start:
 
 1.4: Neue Farbreise von einer aufgenommenen Startfarbe zur aufgenommenen Zielfarbe mit drei Zwischenstufen und direkter Studio-Mischung pro Stufe.
 
-1.6 CACHEFEST: aus 1.4 neu gebaut; alte Service Worker/Caches werden beim Start entfernt.
+1.7: Farbreise öffnet automatisch die Pipette. Zwei Bildtipps genügen. Mischvorschläge korrigiert und werden direkt angezeigt.
