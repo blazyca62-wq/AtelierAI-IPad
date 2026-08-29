@@ -28,4 +28,4 @@ Start:
 
 1.4: Neue Farbreise von einer aufgenommenen Startfarbe zur aufgenommenen Zielfarbe mit drei Zwischenstufen und direkter Studio-Mischung pro Stufe.
 
-1.5: Farbreise zeigt echte Studio-Mischrezepte direkt in jeder Stufe. Bei geöffneter Farbreise bleibt die Pipette im Farbreise-Workflow: erster Tipp Startfarbe, zweiter Tipp Zielfarbe.
+1.5: Farbreise verbessert: zwei Bildtipps für Start/Ziel und direkte Studio-Mischung aus der gewählten Palette.

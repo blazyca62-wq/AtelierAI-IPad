@@ -1,17 +1,3733 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<title>AtelierAI iPad 1.5</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#f2f1ed" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <title>AtelierAI iPad 1.5</title>
+  <style>
+    :root{
+      --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
+      --line:#d8d6d0; --btn:#2f2f2f; --btnText:#fff;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{margin:0;height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;color:var(--text);overflow:hidden;}
+    body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+    .app{height:100%;display:flex;flex-direction:column;gap:10px;padding:12px;}
+    .topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 12px;}
+    .title{font-weight:700;font-size:20px;margin-right:auto;}
+    button,.filelabel{
+      appearance:none;border:0;border-radius:12px;background:var(--btn);color:var(--btnText);
+      padding:12px 16px;font-size:16px;font-weight:600;cursor:pointer;
+    }
+    button.secondary{background:#e9e7e1;color:#202020;}
+    button.active{outline:3px solid #9b9b9b;}
+    input[type=file]{display:none;}
+    .workspace{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:10px;}
+    .viewer{position:relative;overflow:hidden;background:#cbc8c0;border:1px solid var(--line);border-radius:18px;touch-action:none;}
+    canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+    .placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;color:#5d5b57;font-size:20px;pointer-events:none;}
+    .side{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:16px;overflow:auto;}
+    .section h3{margin:0 0 8px;font-size:16px;}
+    .section p{margin:0;color:var(--muted);line-height:1.35;font-size:14px;}
+    .colorbox{height:70px;border-radius:14px;border:1px solid var(--line);background:#fff;}
+    .rgb{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;line-height:1.5;}
+    .mode,.paintmode{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .hint{position:absolute;left:14px;bottom:14px;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);border:1px solid rgba(0,0,0,.08);padding:8px 10px;border-radius:10px;font-size:13px;color:#444;pointer-events:none;}
+    .toneRow,.formsRow{display:grid;grid-template-columns:70px 1fr 42px;align-items:center;gap:8px;margin:10px 0;}
+    .toneRow label,.formsRow label{font-size:14px;font-weight:600;}
+    input[type=range]{width:100%;}
+    .toneValue,.formsValue{text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:#444;}
+    .toneToggle{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+    .toneToggle button{padding:10px 8px;font-size:14px;}
+    .formsButtons{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px;}
+    .formsButtons button{padding:10px 6px;font-size:14px;}
+    @media (max-width: 900px){
+      .workspace{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;}
+      .side{max-height:330px;}
+    }
+  
+    .analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .smart-swatch{height:54px;border:1px solid #666;border-radius:8px;background:#808080;margin:6px 0}
+    .family-row{display:grid;grid-template-columns:72px 1fr 48px;gap:8px;align-items:center;margin:7px 0}
+    .family-row input{width:100%}
+    .family-value{text-align:right;font-variant-numeric:tabular-nums}
+    .small-note{font-size:12px;opacity:.78;line-height:1.35}
+    .smart-data{font-size:13px;line-height:1.45;word-break:break-word}
+
+
+    .mix-card{border:1px solid #bbb;border-radius:10px;padding:10px;margin:10px 0;background:#fff}
+    .mix-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+    .mix-swatches{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .mix-swatch{height:44px;border:1px solid #777;border-radius:8px}
+    .mix-lines{font-size:13px;line-height:1.4;margin-top:8px}
+    .palette-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .picker-circle{position:absolute;border:2px solid #fff;box-shadow:0 0 0 1px #000;border-radius:50%;pointer-events:none;display:none;z-index:9}
+    .range-row{display:grid;grid-template-columns:92px 1fr 48px;gap:8px;align-items:center;margin:7px 0}
+    .target-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    .target-box{height:52px;border:1px solid #777;border-radius:8px}
+    .tiny{font-size:11px;opacity:.75}
+
+
+    .palette-manager{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:50;padding:18px;overflow:auto}
+    .palette-manager-card{max-width:620px;margin:20px auto;background:#fff;border-radius:14px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.28)}
+    .palette-checklist{max-height:55vh;overflow:auto;border:1px solid #ddd;border-radius:9px;margin-top:8px}
+    .palette-item{display:grid;grid-template-columns:28px 34px 1fr;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid #eee}
+    .palette-dot{width:28px;height:28px;border:1px solid #888;border-radius:50%}
+    .custom-add{display:grid;grid-template-columns:1fr 54px auto;gap:7px}
+    .custom-add input{min-width:0;padding:8px;border:1px solid #aaa;border-radius:7px}
+    .custom-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #eee}
+
+
+    .pc-card{border:1px solid #d8d8d8;border-radius:10px;padding:9px;margin-top:8px;background:#fafafa}
+    .swatch-line{display:flex;align-items:center;gap:8px;margin:6px 0}
+    .small-swatch{width:44px;height:34px;border-radius:7px;border:1px solid #777;flex:0 0 auto}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .control-line{display:grid;grid-template-columns:92px 1fr 42px;gap:6px;align-items:center;margin:7px 0}
+
+
+    .section.accordion { padding:0; overflow:hidden; }
+    .section.accordion > .accordion-head{
+      width:100%; display:flex; align-items:center; justify-content:space-between;
+      gap:8px; padding:11px 12px; background:#f6f6f6; border:0;
+      border-radius:10px; text-align:left; color:inherit; font:inherit;
+    }
+    .section.accordion > .accordion-head .acc-title{font-weight:700;font-size:15px}
+    .section.accordion > .accordion-head .acc-arrow{font-size:18px;line-height:1;transition:transform .15s ease}
+    .section.accordion.open > .accordion-head .acc-arrow{transform:rotate(90deg)}
+    .section.accordion > .accordion-body{display:none;padding:0 12px 12px}
+    .section.accordion.open > .accordion-body{display:block}
+    .section.accordion.open > .accordion-head{margin-bottom:7px}
+
+
+    .toolnav-wrap{
+      position:sticky; top:0; z-index:30; background:#f3f3f3;
+      padding:7px 0 8px; border-bottom:1px solid #ccc; margin-bottom:8px;
+    }
+    .toolnav{
+      display:flex; gap:6px; overflow-x:auto; overflow-y:hidden;
+      -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:0 3px 3px;
+    }
+    .toolnav::-webkit-scrollbar{display:none}
+    .toolnav button{
+      flex:0 0 auto; min-height:42px; padding:8px 11px; border-radius:9px;
+      white-space:nowrap; font-size:14px;
+    }
+    aside.side > .section.tool-page{display:none !important}
+    aside.side > .section.tool-page.tool-page-active{display:block !important}
+    aside.side > .section.tool-page .accordion-head{display:none !important}
+    aside.side > .section.tool-page .accordion-body{display:block !important;padding:0 !important}
+    aside.side > .section.tool-page{
+      padding:10px !important; overflow:visible !important;
+    }
+    .tool-page-title{font-weight:700;font-size:17px;margin:0 0 9px}
+
+
+    aside.side{
+      overflow-y:auto !important;
+      overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
+    }
+    @media (max-width: 900px){
+      .toolnav-wrap{top:0}
+      .toolnav button{min-height:46px;font-size:15px}
+    }
+
+
+  /* 1.20.8c: reine Anzeige-Korrektur. Keine RGB-Werte, Pipetten oder Mischberechnungen verändert. */
+  
+
+
+    /* 1.20.8h: größere Touch-Fläche für Ähnlichkeitsregler */
+    #pickerColorTolerance, #surfaceColorTolerance{
+      min-height:38px;
+      touch-action:pan-x;
+    }
+
+</style>
 </head>
 <body>
-<p>AtelierAI iPad 1.5 wird gestartet …</p>
+<div class="app">
+  <div class="topbar">
+    <div class="title">AtelierAI · iPad 1.5</div>
+    <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
+    <button id="fitBtn" class="secondary">Einpassen</button>
+    <button id="resetBtn" class="secondary">Zurücksetzen</button>
+  </div>
+
+  <div class="workspace">
+    <div class="viewer" id="viewer">
+      <canvas id="canvas"></canvas><div id="pickerCircle" class="picker-circle"></div>
+      <div class="placeholder" id="placeholder">Foto öffnen<br>Mit zwei Fingern zoomen und verschieben.</div>
+      <div class="hint" id="hint">Modus: Verschieben / Zoom</div>
+    </div>
+
+    <aside class="side">
+      <div id="globalViewControls" class="pc-card" style="position:sticky;top:0;z-index:20;margin-bottom:8px;">
+        <div class="grid2">
+          <button id="globalMoveBtn" class="secondary">Verschieben</button>
+          <button id="globalFitBtn" class="secondary">Einpassen</button>
+        </div>
+        <div class="control-line" style="margin-top:6px;">
+          <label>Bild-Zoom</label>
+          <input id="globalZoom" type="range" min="25" max="600" value="100">
+          <span id="globalZoomVal">100 %</span>
+        </div>
+        <div class="tiny">Gilt in allen Werkzeugen · Zwei Finger zum Zoomen</div>
+      </div>
+      <div class="section" id="toolPanel">
+        <h3>Werkzeug</h3>
+        <div class="mode">
+          <button id="moveMode" class="active">Bewegen</button>
+          <button id="pickerMode" class="secondary">Pipette (Punkt)</button>
+        </div>
+      </div>
+
+      <div class="section" id="formsPanel">
+        <h3>Großformen</h3>
+        <button id="formsOriginal" class="secondary" style="width:100%;margin-bottom:8px;">Zurück zum Original</button>
+        <div class="formsButtons">
+          <button class="formBtn secondary" data-level="1">1</button>
+          <button class="formBtn secondary" data-level="2">2</button>
+          <button class="formBtn secondary" data-level="3">3</button>
+          <button class="formBtn secondary" data-level="4">4</button>
+          <button class="formBtn secondary" data-level="5">5</button>
+        </div>
+        <div class="formsRow">
+          <label>Stufe</label>
+          <input id="formsSlider" type="range" min="0" max="5" value="0" step="1">
+          <div class="formsValue" id="formsValue">Aus</div>
+        </div>
+        <p>1 = viele ruhige Malflächen, 5 = stärkere Vereinfachung mit weniger großen Farbflächen. Ähnliche Farben werden zu großen zusammenhängenden Malflächen vereinigt. Kleine Farbinseln verschwinden, wichtige Kanten bleiben erhalten.</p>
+      </div>
+
+      <div class="section" id="tonesPanel">
+        <h3>Tonwerte</h3>
+        <div class="toneToggle">
+          <button id="toneAll" class="active">Alle</button>
+          <button id="toneOnly" class="secondary">Nur Tonwert</button>
+          <button id="toneOff" class="secondary">Original</button>
+        </div>
+
+        <div class="toneRow">
+          <label>Hell</label>
+          <input id="lightSlider" type="range" min="0" max="100" value="100">
+          <div class="toneValue" id="lightValue">100</div>
+        </div>
+        <div class="toneRow">
+          <label>Mittel</label>
+          <input id="midSlider" type="range" min="0" max="100" value="100">
+          <div class="toneValue" id="midValue">100</div>
+        </div>
+        <div class="toneRow">
+          <label>Dunkel</label>
+          <input id="darkSlider" type="range" min="0" max="100" value="100">
+          <div class="toneValue" id="darkValue">100</div>
+        </div>
+
+        <div class="paintmode">
+          <button id="waterMode" class="active">Aquarell</button>
+          <button id="oilMode" class="secondary">Öl</button>
+        </div>
+      </div>
+
+      <div class="section" id="colorAnalysisPanel">
+        <h3>Farbanalyse</h3>
+        <div class="mode" style="margin-bottom:8px;">
+          <button id="smartPickerBtn" class="secondary" style="display:none">Smart-Pipette</button>
+          <button id="familiesReset" class="secondary">Farben 100 %</button>
+        </div>
+        <p style="margin-bottom:8px;">Smart-Pipette: einen kleinen Bereich im Bild aufnehmen. Glanzlichter, extreme Schatten und starke Farbausreißer werden abgeschwächt.</p>
+        <div class="colorbox" id="smartColorBox" style="height:58px;background:#808080;"></div>
+        <div class="rgb" id="smartColorText" style="margin-top:6px;">Smart-Farbe: –</div>
+
+        <h3 style="margin-top:14px;">Farbfamilien</h3>
+        <div class="family-row"><label>Rot</label><input class="familySlider" data-family="red" type="range" min="0" max="100" value="100"><span class="family-value">100%</span></div>
+        <div class="family-row"><label>Orange</label><input class="familySlider" data-family="orange" type="range" min="0" max="100" value="100"><span class="family-value">100%</span></div>
+        <div class="family-row"><label>Gelb</label><input class="familySlider" data-family="yellow" type="range" min="0" max="100" value="100"><span class="family-value">100%</span></div>
+        <div class="family-row"><label>Grün</label><input class="familySlider" data-family="green" type="range" min="0" max="100" value="100"><span class="family-value">100%</span></div>
+        <div class="family-row"><label>Türkis</label><input class="familySlider" data-family="cyan" type="range" min="0" max="100" value="100"><span class="family-value">100%</span></div>
+        <div class="family-row"><label>Blau</label><input class="familySlider" data-family="blue" type="range" min="0" max="100" value="100"><span class="family-value">100%</span></div>
+        <div class="family-row"><label>Violett</label><input class="familySlider" data-family="violet" type="range" min="0" max="100" value="100"><span class="family-value">100%</span></div>
+        <div class="family-row"><label>Magenta</label><input class="familySlider" data-family="magenta" type="range" min="0" max="100" value="100"><span class="family-value">100%</span></div>
+      </div>
+
+      
+      <div class="section" id="paintMixPanel">
+        <div class="tiny" style="margin-bottom:7px;">Bild oben: jederzeit zoomen und verschieben.</div>
+        <h3>Malfarben & Mischungen</h3>
+        <div class="palette-grid">
+          <button id="mediumOilBtn" class="active">Öl</button>
+          <button id="mediumWaterBtn" class="secondary">Aquarell</button>
+        </div>
+
+        <label style="display:block;margin-top:10px;">Palette</label>
+        <select id="paintPalette" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;">
+          <option value="artisan">Winsor & Newton Artisan</option>
+          <option value="horadam">Schmincke Horadam</option>
+          <option value="akademie">Schmincke Akademie</option>
+        </select>
+
+        <label style="display:block;margin-top:9px;">Pipettenquelle</label>
+        <select id="pickerSource" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;">
+          <option value="visible">Sichtbares Bild</option>
+          <option value="original">Originalbild</option>
+        </select>
+        <div class="tiny" style="margin-top:4px;">PC-Standard: Sichtbares/bearbeitetes Bild.</div>
+
+        <div class="mode" style="margin-top:8px;">
+          <button id="managePaletteBtn" class="secondary">Meine Farben auswählen</button>
+        </div>
+        <div id="ownedSummary" class="tiny" style="margin-top:6px;">Noch keine persönliche Auswahl gespeichert.</div>
+
+        <div id="paletteManager" class="palette-manager" style="display:none;">
+          <div class="palette-manager-card">
+            <div class="mix-head"><b>Meine Malfarben</b><button id="closePaletteBtn" class="secondary">Schließen</button></div>
+            <input id="paletteSearch" type="search" placeholder="Farbe suchen…" style="width:100%;padding:9px;border:1px solid #aaa;border-radius:8px;margin:6px 0;">
+            <div class="mode">
+              <button id="selectAllColors" class="secondary">Alle</button>
+              <button id="selectNoColors" class="secondary">Keine</button>
+              <button id="selectBasicColors" class="secondary">Grundpalette</button>
+            </div>
+            <div class="mode" style="margin-top:6px;">
+              <button id="saveStandardPalette" class="secondary">Als Standard speichern</button>
+              <button id="loadStandardPalette" class="secondary">Standard laden</button>
+              <button id="deleteStandardPalette" class="secondary">Standard löschen</button>
+            </div>
+            <div id="standardPaletteInfo" class="tiny" style="margin:6px 0;">Noch keine persönliche Standardpalette gespeichert.</div>
+            <div id="paletteChecklist" class="palette-checklist"></div>
+            <hr>
+            <h3>Eigene Palette</h3>
+            <div class="custom-add">
+              <input id="customColorName" placeholder="Name der Farbe">
+              <input id="customColorValue" type="color" value="#808080">
+              <button id="addCustomColor">Hinzufügen</button>
+            </div>
+            <div id="customColorsList"></div>
+          </div>
+        </div>
+
+        <div class="range-row">
+          <label>Pipettenkreis</label>
+          <input id="pickerRadius" type="range" min="4" max="120" value="14">
+          <span id="pickerRadiusVal">14</span>
+        </div>
+
+        <div class="mode" style="margin-bottom:8px;">
+          <button id="areaPickerBtn" class="secondary">Kreis-Pipette</button>
+          <button id="smartAreaPickerBtn" class="secondary">Maler-Pipette</button>
+        </div>
+
+        <div class="target-grid">
+          <div>
+            <div class="tiny">Durchschnitt</div>
+            <div id="avgTargetBox" class="target-box" style="background:#808080"></div>
+          </div>
+          <div>
+            <div class="tiny">Smart-Malfarbe</div>
+            <div id="smartTargetBox" class="target-box" style="background:#808080"></div>
+          </div>
+        </div>
+        <div id="targetInfo" class="rgb" style="margin-top:6px;">Noch keine Bereichsfarbe aufgenommen.</div>
+
+        <div class="control-line" style="margin-top:8px;">
+          <label>Farbähnlichkeit</label>
+          <input id="pickerColorTolerance" type="range" min="5" max="30" value="12">
+          <span id="pickerColorToleranceVal">12</span>
+        </div>
+        <div class="grid2">
+          <button id="pickerShowOnlyBtn" class="secondary">Nur diese Farbe zeigen</button>
+          <button id="pickerShowAllBtn" class="secondary">Alle Farben zeigen</button>
+        </div>
+
+        <div class="mode" style="margin-top:10px;">
+          <button id="calcMixesBtn">Studio-Mischung berechnen</button>
+        </div>
+
+        <div class="tiny" style="margin-top:6px;">Studio-Mischung · bis zu 5 Farben</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Punkt)</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Punkt- und Maler-Pipette berechnen die Studio-Mischung automatisch.</div><div id="mixResults"></div>
+      </div>
+
+
+
+      <div class="section" id="colorJourneyPanel">
+        <h3>Farbreise zur Zielfarbe</h3>
+        <p>Zeigt den Weg von deiner jetzigen Farbe zur gewünschten Zielfarbe in vier gut unterscheidbaren Malstufen. Jede Zwischenstufe kann direkt als Studio-Mischung berechnet werden.</p>
+
+        <div class="grid2">
+          <button id="journeyTakeStartBtn">Aktuelle Farbe als Start</button>
+          <button id="journeyTakeTargetBtn" class="secondary">Aktuelle Farbe als Ziel</button>
+        </div>
+
+        <div class="target-grid" style="margin-top:9px;">
+          <div>
+            <div class="tiny">Startfarbe</div>
+            <div id="journeyStartSwatch" class="target-box" style="background:#808080"></div>
+          </div>
+          <div>
+            <div class="tiny">Zielfarbe</div>
+            <div id="journeyTargetSwatch" class="target-box" style="background:#808080"></div>
+          </div>
+        </div>
+
+        <div id="journeyInfo" class="tiny" style="margin-top:7px;">
+          Farbreise öffnen, Pipette einschalten: erster Tipp ins Bild = Startfarbe, zweiter Tipp = Zielfarbe.
+        </div>
+
+        <div id="journeyResults" style="margin-top:9px;"></div>
+        <button id="journeyResetBtn" class="secondary" style="width:100%;margin-top:7px;">Farbreise löschen</button>
+      </div>
+
+
+      <div class="section" id="surfaceAdvisorPanel">
+        <h3>Flächenberater</h3>
+        <p>Bereich antippen → vier Hauptfarben bestimmen. Wenn vorher „Nur diese Farbe zeigen“ aktiv ist, werden daraus vier Nuancen genau dieser Farbfamilie bestimmt. Jede Farbe kann direkt gemischt werden.</p>
+        <div class="grid2">
+          <button id="surfaceCircleBtn">Kreis analysieren</button>
+          <button id="surfaceRectBtn" class="secondary">Rechteck analysieren</button>
+        </div>
+        <div class="control-line"><label>Größe</label><input id="surfaceSize" type="range" min="24" max="180" value="84"><span id="surfaceSizeVal">84</span></div>
+        <div class="control-line"><label>Farbähnlichkeit</label><input id="surfaceColorTolerance" type="range" min="5" max="30" value="12"><span id="surfaceColorToleranceVal">12</span></div>
+        <div class="grid2">
+          <button id="surfaceClearMarkBtn" class="secondary">Alle Farben zeigen</button>
+          <button id="surfaceResetBtn" class="secondary">Flächenanalyse löschen</button>
+        </div>
+        <div id="surfaceResults" class="pc-card"><span class="tiny">Noch kein Bereich analysiert.</span></div>
+      </div>
+
+
+      <div class="section" id="glazePanel">
+        <h3>Lasurenvergleich – Original ↔ Gemälde</h3>
+        <p>Originalfoto = Ziel. Gemäldefoto = aktueller Stand. Beide Bilder können groß betrachtet werden; mehrere Messpunkte bleiben gespeichert.</p>
+
+        <div class="palette-grid">
+          <button id="glazeWaterBtn" class="active">Aquarell</button>
+          <button id="glazeOilBtn" class="secondary">Öl</button>
+        </div>
+
+        <label style="display:block;margin-top:9px;">Palette</label>
+        <select id="glazePalette" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;">
+          <option value="watercolor" selected>Meine Aquarellfarben · Horadam + Akademie</option>
+          <option value="horadam">Nur Schmincke Horadam</option>
+          <option value="akademie">Nur Schmincke Akademie</option>
+          <option value="artisan">Winsor & Newton Artisan</option>
+        </select>
+        <div id="glazePaletteStatus" class="tiny" style="margin-top:5px;font-weight:600;">Palette wird geprüft…</div>
+        <div class="tiny" style="margin-top:3px;">Bei „Meine Aquarellfarben“ dürfen Horadam- und Akademie-Farben gemeinsam in einem Vorschlag verwendet werden.</div>
+
+        <div class="pc-card" style="margin-top:9px;">
+          <div class="grid2">
+            <label class="secondary" style="display:flex;align-items:center;justify-content:center;padding:9px;border-radius:8px;cursor:pointer;">
+              Originalfoto laden
+              <input id="glazeOriginalInput" type="file" accept="image/*" style="display:none">
+            </label>
+            <label class="secondary" style="display:flex;align-items:center;justify-content:center;padding:9px;border-radius:8px;cursor:pointer;">
+              Gemälde laden
+              <input id="glazePaintingInput" type="file" accept="image/*" style="display:none">
+            </label>
+          </div>
+
+          <button id="glazeAutoAlignBtn" class="secondary" style="width:100%;margin-top:7px;">Gemälde automatisch ausrichten</button>
+          <button id="glazeOpenFullscreenBtn" style="width:100%;margin-top:7px;font-weight:700;">Großen Lasurenvergleich öffnen</button>
+          <div id="glazeAlignInfo" class="tiny" style="margin-top:5px;">Noch nicht ausgerichtet.</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+            <div>
+              <div class="tiny">Original / Ziel</div>
+              <div style="position:relative;background:#ddd;border-radius:8px;overflow:hidden;height:140px;">
+                <canvas id="glazeOriginalCanvas" style="width:100%;height:100%;display:block;touch-action:none;"></canvas>
+              </div>
+            </div>
+            <div>
+              <div class="tiny">Aktuelles Gemälde</div>
+              <div style="position:relative;background:#ddd;border-radius:8px;overflow:hidden;height:140px;">
+                <canvas id="glazePaintingCanvas" style="width:100%;height:100%;display:block;touch-action:none;"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:7px;">
+            <button id="glazeCompareBiggerBtn" class="secondary">Bilder größer / kleiner</button>
+            <button id="glazeClearPointsBtn" class="secondary">Messpunkte löschen</button>
+          </div>
+
+          <div class="control-line" style="margin-top:8px;">
+            <label>Messradius</label>
+            <input id="glazeSampleRadius" type="range" min="1" max="30" value="8">
+            <span id="glazeSampleRadiusVal">8 px</span>
+          </div>
+
+          <div class="tiny" style="margin-top:4px;">Im Gemälde antippen: Jeder Tipp erzeugt einen neuen Messpunkt. Die entsprechende Stelle im Original wird automatisch verglichen.</div>
+          <div id="glazePointsList" style="margin-top:7px;"></div>
+
+          <div class="mix-swatches" style="margin-top:7px;">
+            <div><div class="tiny">Aktiver Punkt – Gemälde</div><div id="glazeBaseSwatch" class="mix-swatch" style="background:#808080"></div></div>
+            <div><div class="tiny">Aktiver Punkt – Original</div><div id="glazeTargetSwatch" class="mix-swatch" style="background:#808080"></div></div>
+          </div>
+          <div id="glazeColorInfo" class="tiny" style="margin-top:7px;">Bitte Originalfoto und Gemälde laden.</div>
+        </div>
+
+        <div class="control-line">
+          <label>Max. Lasurstärke</label>
+          <input id="glazeMaxStrength" type="range" min="5" max="35" value="18">
+          <span id="glazeMaxStrengthVal">18 %</span>
+        </div>
+
+        <button id="glazeCalcBtn" style="width:100%;">Lasur für aktiven Punkt berechnen</button>
+        <button id="glazeCalcAllBtn" class="secondary" style="width:100%;margin-top:7px;">Lasuren für alle Messpunkte berechnen</button>
+        <div class="tiny" style="margin-top:6px;">Einfach vor komplex: 1, 2 oder 3 aufeinanderfolgende Lasuren. Mehrere Farben werden gewählt, wenn sie sichtbar besser treffen.</div>
+
+        <div id="glazeResults" class="pc-card" style="margin-top:8px;">
+          <span class="tiny">Noch kein Messpunkt ausgewählt.</span>
+        </div>
+      </div>
+
+      <div class="section" id="correctionStudioPanel">
+        <h3>Korrekturatelier</h3>
+        <p>Aufgenommene Farbe malerisch korrigieren und anschließend neu mischen.</p>
+        <div class="swatch-line"><div id="corrOriginal" class="small-swatch" style="background:#808080"></div><span class="tiny">Ausgangsfarbe</span></div>
+        <div class="swatch-line"><div id="corrResult" class="small-swatch" style="background:#808080"></div><span id="corrInfo" class="tiny">Noch keine Farbe übernommen.</span></div>
+        <div class="control-line"><label>Helligkeit</label><input id="corrLight" type="range" min="-50" max="50" value="0"><span id="corrLightVal">0</span></div>
+        <div class="control-line"><label>Wärme</label><input id="corrWarm" type="range" min="-50" max="50" value="0"><span id="corrWarmVal">0</span></div>
+        <div class="control-line"><label>Sättigung</label><input id="corrSat" type="range" min="-50" max="50" value="0"><span id="corrSatVal">0</span></div>
+        <div class="grid2">
+          <button id="corrTakeBtn">Pipettenfarbe übernehmen</button>
+          <button id="corrMixBtn">Korrigierte Farbe mischen</button>
+        </div>
+        <button id="corrResetBtn" class="secondary" style="width:100%;margin-top:7px;">Korrektur zurücksetzen</button>
+      </div>
+
+      <div class="section" id="mixPalettePanel">
+        <h3>Mischpalette</h3>
+        <p>AtelierAI prüft die aktiven Tubenfarben paarweise und sucht für jedes Paar automatisch das beste Mischverhältnis zur Zielfarbe.</p>
+<button id="pairCalcBtn" style="width:100%;">Beste Zweiermischungen finden</button>
+        <div id="pairResults" class="pc-card"><span class="tiny">Noch keine Mischpalette berechnet.</span></div>
+
+        <div id="pairEditBox" class="pc-card" style="display:none;margin-top:9px;">
+          <b>Mischung weiter korrigieren</b>
+          <div class="swatch-line" style="margin-top:7px;">
+            <div id="pairEditBase" class="small-swatch" style="background:#808080"></div>
+            <div id="pairEditResult" class="small-swatch" style="background:#808080"></div>
+            <span id="pairEditInfo" class="tiny"></span>
+          </div>
+          <div class="control-line"><label>Verhältnis</label><input id="pairEditRatio" type="range" min="0" max="100" value="50"><span id="pairEditRatioVal">50 : 50</span></div>
+          <div class="control-line"><label>Helligkeit</label><input id="pairEditLight" type="range" min="-100" max="100" value="0"><span id="pairEditLightVal">Original</span></div>
+          <div class="control-line"><label>Korrekturfarbe</label><input id="pairEditAmount" type="range" min="5" max="50" value="20"><span id="pairEditAmountVal">20 %</span></div>
+          <div class="tiny" style="margin:7px 0 4px;"><b>Heller machen</b></div>
+          <div id="pairEditLighter"></div>
+          <div class="tiny" style="margin:8px 0 4px;"><b>Dunkler machen</b></div>
+          <div id="pairEditDarker"></div>
+          <div id="pairEditRecipe" class="tiny" style="margin-top:8px;"></div>
+          <button id="pairEditReset" class="secondary" style="width:100%;margin-top:8px;">Zurücksetzen</button>
+        </div>
+      </div>
+
+
+      <div class="section" id="colorIdeasPanel" style="display:none !important;">
+        <h3>Farbideen</h3>
+        <p>Eine aufgenommene Farbe variieren, ohne die Grundfarbe aus dem Blick zu verlieren.</p>
+        <div class="swatch-line"><div id="ideaBase" class="small-swatch" style="background:#808080"></div><div id="ideaResult" class="small-swatch" style="background:#808080"></div><span id="ideaInfo" class="tiny">Pipettenfarbe übernehmen.</span></div>
+        <div class="control-line"><label>Heller</label><input id="ideaLight" type="range" min="-40" max="40" value="0"><span id="ideaLightVal">0</span></div>
+        <div class="control-line"><label>Warm/Kalt</label><input id="ideaWarm" type="range" min="-40" max="40" value="0"><span id="ideaWarmVal">0</span></div>
+        <div class="control-line"><label>Sättigung</label><input id="ideaSat" type="range" min="-40" max="40" value="0"><span id="ideaSatVal">0</span></div>
+        <div class="grid2">
+          <button id="ideaTakeBtn">Farbe übernehmen</button>
+          <button id="ideaMixBtn">Idee mischen</button>
+        </div>
+        <button id="ideaResetBtn" class="secondary" style="width:100%;margin-top:7px;">Farbidee zurücksetzen</button>
+      </div>
+<div class="section" id="gridSavePanel">
+        <h3>Raster & Speichern</h3>
+        <div class="grid2">
+          <button id="gridToggleBtn" class="secondary">Raster ein</button>
+          <button id="saveViewBtn">Bild speichern</button>
+        </div>
+        <div class="control-line"><label>Raster</label><input id="gridDensity" type="range" min="2" max="20" value="8"><span id="gridDensityVal">8</span></div>
+      </div>
+
+      <div class="section" id="sampleColorPanel">
+        <h3>Aufgenommene Farbe</h3>
+        <div class="colorbox" id="colorBox"></div>
+      <div class="rgb" id="colorText" style="margin-top:7px;">RGB: –<br>HEX: –</div></div>
+    </aside>
+  </div>
+</div>
+
+
+  <div id="glazeFullscreen" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(20,20,20,.97);padding:14px;box-sizing:border-box;">
+    <div style="height:100%;display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <b style="color:white;font-size:18px;">Lasurenvergleich – Original ↔ Gemälde</b>
+        <button id="glazeFsAutoAlign" style="margin-left:auto;">Automatisch ausrichten</button>
+        <button id="glazeFsFit" class="secondary">Einpassen</button>
+        <button id="glazeFsClear" class="secondary">Messpunkte löschen</button>
+        <button id="glazeFsClose" class="secondary">Schließen</button>
+      </div>
+      <div id="glazeFsAlignInfo" class="tiny" style="color:#ddd;">Noch nicht ausgerichtet.</div>
+      <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="min-width:0;min-height:0;display:flex;flex-direction:column;">
+          <div class="tiny" style="color:white;margin-bottom:4px;">Original / Ziel</div>
+          <div style="flex:1;min-height:0;background:#222;border:1px solid #555;border-radius:10px;overflow:hidden;position:relative;">
+            <canvas id="glazeFsOriginalCanvas" style="width:100%;height:100%;display:block;touch-action:none;"></canvas>
+          </div>
+        </div>
+        <div style="min-width:0;min-height:0;display:flex;flex-direction:column;">
+          <div class="tiny" style="color:white;margin-bottom:4px;">Aktuelles Gemälde – hier Messpunkte setzen · beide Bilder synchron zoomen/verschieben</div>
+          <div style="flex:1;min-height:0;background:#222;border:1px solid #555;border-radius:10px;overflow:hidden;position:relative;">
+            <canvas id="glazeFsPaintingCanvas" style="width:100%;height:100%;display:block;touch-action:none;"></canvas>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;color:white;">
+        <span class="tiny">Messradius</span>
+        <input id="glazeFsRadius" type="range" min="1" max="30" value="8" style="flex:1;max-width:280px;">
+        <span id="glazeFsRadiusVal" class="tiny">8 px</span>
+        <span id="glazeFsPointInfo" class="tiny" style="margin-left:auto;">Noch kein Messpunkt.</span>
+      </div>
+    </div>
+  </div>
+
 <script>
-location.replace('./AtelierAI_1_5.html?v=1501');
+(() => {
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const viewer = document.getElementById('viewer');
+  const fileInput = document.getElementById('fileInput');
+  const placeholder = document.getElementById('placeholder');
+  const fitBtn = document.getElementById('fitBtn');
+  const globalMoveBtn=document.getElementById('globalMoveBtn');
+  const globalFitBtn=document.getElementById('globalFitBtn');
+  const globalZoom=document.getElementById('globalZoom');
+  const globalZoomVal=document.getElementById('globalZoomVal');
+  const resetBtn = document.getElementById('resetBtn');
+  const moveMode = document.getElementById('moveMode');
+  const pickerMode = document.getElementById('pickerMode');
+  const colorBox = document.getElementById('colorBox');
+  const colorText = document.getElementById('colorText');
+  const hint = document.getElementById('hint');
+  const smartPickerBtn = document.getElementById('smartPickerBtn');
+  const familiesReset = document.getElementById('familiesReset');
+  const smartColorBox = document.getElementById('smartColorBox');
+  const smartColorText = document.getElementById('smartColorText');
+  const familySliders = [...document.querySelectorAll('.familySlider')];
+  const familyValues = {red:100,orange:100,yellow:100,green:100,cyan:100,blue:100,violet:100,magenta:100};
+  const pickerCircle = document.getElementById('pickerCircle');
+  const pickerRadius = document.getElementById('pickerRadius');
+  const pickerRadiusVal = document.getElementById('pickerRadiusVal');
+  const areaPickerBtn = document.getElementById('areaPickerBtn');
+  const smartAreaPickerBtn = document.getElementById('smartAreaPickerBtn');
+  const mediumOilBtn = document.getElementById('mediumOilBtn');
+  const mediumWaterBtn = document.getElementById('mediumWaterBtn');
+  const paintPalette = document.getElementById('paintPalette');
+  const avgTargetBox = document.getElementById('avgTargetBox');
+  const smartTargetBox = document.getElementById('smartTargetBox');
+  const targetInfo = document.getElementById('targetInfo');
+  const calcMixesBtn = document.getElementById('calcMixesBtn');
+  const pickerColorTolerance=document.getElementById('pickerColorTolerance');
+  const pickerColorToleranceVal=document.getElementById('pickerColorToleranceVal');
+  const pickerShowOnlyBtn=document.getElementById('pickerShowOnlyBtn');
+  const pickerShowAllBtn=document.getElementById('pickerShowAllBtn');
+  const mixResults = document.getElementById('mixResults');
+  const journeyTakeStartBtn=document.getElementById('journeyTakeStartBtn');
+  const journeyTakeTargetBtn=document.getElementById('journeyTakeTargetBtn');
+  const journeyStartSwatch=document.getElementById('journeyStartSwatch');
+  const journeyTargetSwatch=document.getElementById('journeyTargetSwatch');
+  const journeyInfo=document.getElementById('journeyInfo');
+  const journeyResults=document.getElementById('journeyResults');
+  const journeyResetBtn=document.getElementById('journeyResetBtn');
+  const managePaletteBtn=document.getElementById('managePaletteBtn');
+  const paletteManager=document.getElementById('paletteManager');
+  const closePaletteBtn=document.getElementById('closePaletteBtn');
+  const paletteSearch=document.getElementById('paletteSearch');
+  const paletteChecklist=document.getElementById('paletteChecklist');
+  const selectAllColors=document.getElementById('selectAllColors');
+  const selectNoColors=document.getElementById('selectNoColors');
+  const ownedSummary=document.getElementById('ownedSummary');
+  const customColorName=document.getElementById('customColorName');
+  const customColorValue=document.getElementById('customColorValue');
+  const addCustomColor=document.getElementById('addCustomColor');
+  const customColorsList=document.getElementById('customColorsList');
+  const selectBasicColors=document.getElementById('selectBasicColors');
+  const saveStandardPalette=document.getElementById('saveStandardPalette');
+  const loadStandardPalette=document.getElementById('loadStandardPalette');
+  const deleteStandardPalette=document.getElementById('deleteStandardPalette');
+  const standardPaletteInfo=document.getElementById('standardPaletteInfo');
+
+  const pickerSource=document.getElementById('pickerSource');
+  const surfaceCircleBtn=document.getElementById('surfaceCircleBtn');
+  const surfaceRectBtn=document.getElementById('surfaceRectBtn');
+  const surfaceResetBtn=document.getElementById('surfaceResetBtn');
+  const surfaceClearMarkBtn=document.getElementById('surfaceClearMarkBtn');
+  const surfaceSize=document.getElementById('surfaceSize');
+  const surfaceSizeVal=document.getElementById('surfaceSizeVal');
+  const surfaceColorTolerance=document.getElementById('surfaceColorTolerance');
+  const surfaceColorToleranceVal=document.getElementById('surfaceColorToleranceVal');
+  const surfaceResults=document.getElementById('surfaceResults');
+  const corrOriginal=document.getElementById('corrOriginal');
+  const corrResult=document.getElementById('corrResult');
+  const corrInfo=document.getElementById('corrInfo');
+  const glazeWaterBtn=document.getElementById('glazeWaterBtn');
+  const glazeOilBtn=document.getElementById('glazeOilBtn');
+  const glazePalette=document.getElementById('glazePalette');
+  const glazePaletteStatus=document.getElementById('glazePaletteStatus');
+  const glazeOriginalInput=document.getElementById('glazeOriginalInput');
+  const glazePaintingInput=document.getElementById('glazePaintingInput');
+  const glazeOriginalCanvas=document.getElementById('glazeOriginalCanvas');
+  const glazePaintingCanvas=document.getElementById('glazePaintingCanvas');
+  const glazeAutoAlignBtn=document.getElementById('glazeAutoAlignBtn');
+  const glazeAlignInfo=document.getElementById('glazeAlignInfo');
+  const glazeCompareBiggerBtn=document.getElementById('glazeCompareBiggerBtn');
+  const glazeClearPointsBtn=document.getElementById('glazeClearPointsBtn');
+  const glazePointsList=document.getElementById('glazePointsList');
+  const glazeSampleRadius=document.getElementById('glazeSampleRadius');
+  const glazeSampleRadiusVal=document.getElementById('glazeSampleRadiusVal');
+  const glazeBaseSwatch=document.getElementById('glazeBaseSwatch');
+  const glazeTargetSwatch=document.getElementById('glazeTargetSwatch');
+  const glazeColorInfo=document.getElementById('glazeColorInfo');
+  const glazeMaxStrength=document.getElementById('glazeMaxStrength');
+  const glazeMaxStrengthVal=document.getElementById('glazeMaxStrengthVal');
+  const glazeCalcBtn=document.getElementById('glazeCalcBtn');
+  const glazeCalcAllBtn=document.getElementById('glazeCalcAllBtn');
+  const glazeResults=document.getElementById('glazeResults');
+  const glazeOpenFullscreenBtn=document.getElementById('glazeOpenFullscreenBtn');
+  const glazeFullscreen=document.getElementById('glazeFullscreen');
+  const glazeFsOriginalCanvas=document.getElementById('glazeFsOriginalCanvas');
+  const glazeFsPaintingCanvas=document.getElementById('glazeFsPaintingCanvas');
+  const glazeFsAutoAlign=document.getElementById('glazeFsAutoAlign');
+  const glazeFsFit=document.getElementById('glazeFsFit');
+  const glazeFsClear=document.getElementById('glazeFsClear');
+  const glazeFsClose=document.getElementById('glazeFsClose');
+  const glazeFsAlignInfo=document.getElementById('glazeFsAlignInfo');
+  const glazeFsRadius=document.getElementById('glazeFsRadius');
+  const glazeFsRadiusVal=document.getElementById('glazeFsRadiusVal');
+  const glazeFsPointInfo=document.getElementById('glazeFsPointInfo');
+
+  const corrLight=document.getElementById('corrLight');
+  const corrWarm=document.getElementById('corrWarm');
+  const corrSat=document.getElementById('corrSat');
+  const corrLightVal=document.getElementById('corrLightVal');
+  const corrWarmVal=document.getElementById('corrWarmVal');
+  const corrSatVal=document.getElementById('corrSatVal');
+  const corrTakeBtn=document.getElementById('corrTakeBtn');
+  const corrMixBtn=document.getElementById('corrMixBtn');
+  const corrResetBtn=document.getElementById('corrResetBtn');
+  const pairCalcBtn=document.getElementById('pairCalcBtn');
+  const pairResults=document.getElementById('pairResults');
+  const pairEditBox=document.getElementById('pairEditBox');
+  const pairEditBase=document.getElementById('pairEditBase');
+  const pairEditResult=document.getElementById('pairEditResult');
+  const pairEditInfo=document.getElementById('pairEditInfo');
+  const pairEditRatio=document.getElementById('pairEditRatio');
+  const pairEditRatioVal=document.getElementById('pairEditRatioVal');
+  const pairEditLight=document.getElementById('pairEditLight');
+  const pairEditLightVal=document.getElementById('pairEditLightVal');
+  const pairEditAmount=document.getElementById('pairEditAmount');
+  const pairEditAmountVal=document.getElementById('pairEditAmountVal');
+  const pairEditLighter=document.getElementById('pairEditLighter');
+  const pairEditDarker=document.getElementById('pairEditDarker');
+  const pairEditRecipe=document.getElementById('pairEditRecipe');
+  const pairEditReset=document.getElementById('pairEditReset');
+  const gridToggleBtn=document.getElementById('gridToggleBtn');
+  const gridDensity=document.getElementById('gridDensity');
+  const gridDensityVal=document.getElementById('gridDensityVal');
+  const saveViewBtn=document.getElementById('saveViewBtn');
+
+  const ideaBase=document.getElementById('ideaBase');
+  const ideaResult=document.getElementById('ideaResult');
+  const ideaInfo=document.getElementById('ideaInfo');
+  const ideaLight=document.getElementById('ideaLight');
+  const ideaWarm=document.getElementById('ideaWarm');
+  const ideaSat=document.getElementById('ideaSat');
+  const ideaLightVal=document.getElementById('ideaLightVal');
+  const ideaWarmVal=document.getElementById('ideaWarmVal');
+  const ideaSatVal=document.getElementById('ideaSatVal');
+  const ideaTakeBtn=document.getElementById('ideaTakeBtn');
+  const ideaMixBtn=document.getElementById('ideaMixBtn');
+  const ideaResetBtn=document.getElementById('ideaResetBtn');
+
+
+
+  const lightSlider = document.getElementById('lightSlider');
+  const midSlider = document.getElementById('midSlider');
+  const darkSlider = document.getElementById('darkSlider');
+  const lightValue = document.getElementById('lightValue');
+  const midValue = document.getElementById('midValue');
+  const darkValue = document.getElementById('darkValue');
+
+  const toneAll = document.getElementById('toneAll');
+  const toneOnly = document.getElementById('toneOnly');
+  const toneOff = document.getElementById('toneOff');
+  const waterMode = document.getElementById('waterMode');
+  const oilMode = document.getElementById('oilMode');
+
+  const formsOriginal = document.getElementById('formsOriginal');
+  const formsSlider = document.getElementById('formsSlider');
+  const formsValue = document.getElementById('formsValue');
+  const formBtns = [...document.querySelectorAll('.formBtn')];
+
+  let img = new Image();
+  let loaded = false;
+  let scale = 1, offsetX = 0, offsetY = 0;
+  let mode = 'move';
+  let paintMode = 'water';
+  let toneView = 'all';
+  let formLevel = 0;
+  let touches = new Map();
+  let gestureStart = null;
+  let smartPickerArmed = false;
+  let smartStart = null;
+  let areaPickerMode = null;
+  let lastAverageColor = null;
+  let lastSmartColor = null;
+
+  // Farbreise: Startfarbe bleibt gespeichert, während anschließend
+  // mit der Pipette die gewünschte Zielfarbe aufgenommen wird.
+  let journeyStartColor=null;
+  let journeyTargetColor=null;
+  let paintMedium = 'oil';
+
+  let surfaceMode=null;
+  let correctionBase=null;
+  let gridEnabled=false;
+  let surfacePreview=null;
+  let surfaceHoverImage=null;
+  let surfaceClusters=[];
+  let surfaceSelectedIndex=null;
+  let surfaceMarkCanvas=null;
+
+  let glazeMedium='water';
+  let glazeBase=null;
+  let glazeTarget=null;
+  let glazeOriginalImg=null;
+  let glazePaintingImg=null;
+  let glazePoint=null;
+  let glazePoints=[];
+  let glazeActivePoint=-1;
+  let glazeLargeCompare=false;
+  let glazeAlign={scale:1,rotation:0,dx:0,dy:0,score:null};
+  let glazeFsView={zoom:1,panX:0,panY:0};
+  let glazeFsGesture=null;
+  let glazeFsTouches=new Map();
+
+  let ideasBase=null;
+
+
+  let sourceCanvas = document.createElement('canvas');
+  let sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+  let formCanvas = document.createElement('canvas');
+  let formCtx = formCanvas.getContext('2d', { willReadFrequently: true });
+  let processedCanvas = document.createElement('canvas');
+  let processedCtx = processedCanvas.getContext('2d', { willReadFrequently: true });
+
+
+  function rgbToHsl(r,g,b){
+    r/=255; g/=255; b/=255;
+    const max=Math.max(r,g,b), min=Math.min(r,g,b);
+    let h=0,s=0,l=(max+min)/2;
+    if(max!==min){
+      const d=max-min;
+      s=l>.5 ? d/(2-max-min) : d/(max+min);
+      switch(max){
+        case r: h=(g-b)/d+(g<b?6:0); break;
+        case g: h=(b-r)/d+2; break;
+        case b: h=(r-g)/d+4; break;
+      }
+      h*=60;
+    }
+    return [h,s*100,l*100];
+  }
+
+  function familyForHue(h){
+    if(h>=345 || h<15) return 'red';
+    if(h<45) return 'orange';
+    if(h<75) return 'yellow';
+    if(h<165) return 'green';
+    if(h<195) return 'cyan';
+    if(h<255) return 'blue';
+    if(h<315) return 'violet';
+    return 'magenta';
+  }
+
+  function applyFamilyVisibility(imageData){
+    const d=imageData.data;
+    for(let i=0;i<d.length;i+=4){
+      const r=d[i], g=d[i+1], b=d[i+2];
+      const [h,s]=rgbToHsl(r,g,b);
+      if(s<8) continue;
+      const family=familyForHue(h);
+      const amount=(familyValues[family] ?? 100)/100;
+      if(amount>=0.999) continue;
+      const lum=luminance(r,g,b);
+      d[i]=Math.round(lum+(r-lum)*amount);
+      d[i+1]=Math.round(lum+(g-lum)*amount);
+      d[i+2]=Math.round(lum+(b-lum)*amount);
+    }
+    return imageData;
+  }
+
+  function median(values){
+    const a=values.slice().sort((x,y)=>x-y);
+    const m=Math.floor(a.length/2);
+    return a.length%2 ? a[m] : (a[m-1]+a[m])/2;
+  }
+
+  // Farbtreue Mittelung:
+  // RGB-Fotos liegen in sRGB. Ein direktes arithmetisches Mitteln der
+  // 8-Bit-sRGB-Werte macht gemischte Messbereiche sichtbar zu dunkel.
+  // Deshalb für Mittelwerte zuerst in lineares Licht umrechnen und danach
+  // wieder nach sRGB zurückwandeln.
+  function srgb8ToLinear(v){
+    const c=Math.max(0,Math.min(255,v))/255;
+    return c<=0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4);
+  }
+  function linearToSrgb8(v){
+    const c=Math.max(0,Math.min(1,v));
+    const s=c<=0.0031308 ? 12.92*c : 1.055*Math.pow(c,1/2.4)-0.055;
+    return Math.round(Math.max(0,Math.min(1,s))*255);
+  }
+  function linearAverageRGB(samples, weights=null){
+    if(!samples || !samples.length) return [0,0,0];
+    let sum=[0,0,0], sw=0;
+    for(let i=0;i<samples.length;i++){
+      const w=weights ? weights[i] : 1;
+      sw+=w;
+      sum[0]+=srgb8ToLinear(samples[i][0])*w;
+      sum[1]+=srgb8ToLinear(samples[i][1])*w;
+      sum[2]+=srgb8ToLinear(samples[i][2])*w;
+    }
+    if(sw<=0) return [0,0,0];
+    return sum.map(v=>linearToSrgb8(v/sw));
+  }
+
+  // Malerische Helligkeitskorrektur für größere Messflächen.
+  // Flächenmittel wirken visuell oft dunkler als die Farbe, die man
+  // beim Malen tatsächlich ansetzen würde. Die Anhebung arbeitet
+  // luminanzabhängig: Schatten/Mitteltöne werden deutlicher angehoben,
+  // helle Farben fast gar nicht. Punkt-Pipette bleibt unverändert.
+  function painterAreaLift(rgb){
+    const lum=luminance(rgb[0],rgb[1],rgb[2]);
+    const t=Math.max(0,Math.min(1,(220-lum)/220));
+    const gamma=1-(0.13*t); // bis ca. Gamma 0.87 in dunklen Bereichen
+    return rgb.map(v=>{
+      const n=Math.max(0,Math.min(1,v/255));
+      return Math.round(Math.pow(n,gamma)*255);
+    });
+  }
+
+  function robustSmartColor(samples){
+    if(!samples.length) return null;
+    const raw=linearAverageRGB(samples);
+    if(samples.length<7) return {smart:raw,count:samples.length,filtered:samples.length};
+    const med=[0,1,2].map(ch=>median(samples.map(p=>p[ch])));
+    const rows=samples.map(p=>{
+      const dist=Math.sqrt(.30*(p[0]-med[0])**2+.59*(p[1]-med[1])**2+.11*(p[2]-med[2])**2);
+      const lum=luminance(p[0],p[1],p[2]);
+      return {p,dist,lum};
+    });
+    const md=median(rows.map(x=>x.dist));
+    const mad=median(rows.map(x=>Math.abs(x.dist-md)));
+    const limit=Math.max(10, md+Math.max(12,3.5*mad));
+    let kept=rows.filter(x=>!(((x.lum>247)||(x.lum<8)) && x.dist>limit) && x.dist<=limit*1.45);
+    if(kept.length<Math.max(3,Math.floor(samples.length*.25))) kept=rows;
+    const weights=kept.map(x=>1/(1+Math.pow(x.dist/Math.max(10,limit),2)));
+    const smart=linearAverageRGB(kept.map(x=>x.p),weights);
+    return {smart,count:samples.length,filtered:kept.length};
+  }
+
+  function showSmartColor(result){
+    if(!result) return;
+    const [r,g,b]=result.smart;
+    const hex='#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();
+    smartColorBox.style.background=`rgb(${r},${g},${b})`;
+    smartColorText.innerHTML=`RGB: ${r}, ${g}, ${b}<br>HEX: ${hex}<br>${result.filtered} von ${result.count} Messpunkten verwendet`;
+  }
+
+  function sampleSmartAt(clientX,clientY,radiusPx=10){
+    if(!loaded) return;
+    const p=canvasPoint(clientX,clientY);
+    const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
+    if(ix<0||iy<0||ix>=img.width||iy>=img.height) return;
+    const radius=Math.max(2,Math.round(radiusPx/Math.max(scale,0.01)));
+    const x0=Math.max(0,Math.floor(ix-radius)), y0=Math.max(0,Math.floor(iy-radius));
+    const x1=Math.min(img.width,Math.ceil(ix+radius)), y1=Math.min(img.height,Math.ceil(iy+radius));
+    const w=Math.max(1,x1-x0), h=Math.max(1,y1-y0);
+    const data=readImageDataSRGB(sourceContextForPicker(),x0,y0,w,h).data;
+    const samples=[];
+    const step=Math.max(1,Math.floor(Math.sqrt((w*h)/700)));
+    for(let y=0;y<h;y+=step){
+      for(let x=0;x<w;x+=step){
+        const i=(y*w+x)*4;
+        if(data[i+3]>20) samples.push([data[i],data[i+1],data[i+2]]);
+      }
+    }
+    showSmartColor(robustSmartColor(samples));
+  }
+
+
+  const PALETTES = {"artisan":[["Lemon Yellow",[255,221,0]],["Cadmium Yellow Light",[250,197,0]],["Cadmium Yellow Pale Hue",[247,194,9]],["Cadmium Yellow Medium",[244,176,29]],["Cadmium Yellow Hue",[241,174,26]],["Cadmium Yellow Deep Hue",[240,140,29]],["Cadmium Orange Hue",[235,92,59]],["Cadmium Red Light",[228,43,53]],["Cadmium Red Medium",[224,37,49]],["Cadmium Red Hue",[222,14,46]],["Cadmium Red Dark",[185,37,59]],["Cadmium Red Deep Hue",[198,18,45]],["Permanent Rose",[238,17,73]],["Permanent Alizarin Crimson",[199,17,49]],["Magenta",[222,0,116]],["Dioxazine Purple",[82,48,129]],["Cerulean Blue",[0,126,139]],["Cerulean Blue Hue",[0,157,184]],["Cobalt Blue",[0,111,178]],["Cobalt Blue Hue",[31,93,167]],["French Ultramarine",[0,77,151]],["Phthalo Blue (Red Shade)",[31,65,98]],["Prussian Blue",[27,42,65]],["Phthalo Green (Yellow Shade)",[0,123,72]],["Viridian Hue",[0,174,117]],["Phthalo Green (Blue Shade)",[0,107,65]],["Permanent Sap Green",[54,112,60]],["Olive Green",[54,64,34]],["Naples Yellow Hue",[237,179,100]],["Yellow Ochre",[210,123,39]],["Raw Sienna",[211,113,30]],["Indian Red",[155,58,51]],["Burnt Sienna",[132,53,46]],["Burnt Umber",[91,56,49]],["Raw Umber",[69,59,49]],["Payne's Gray",[37,58,57]],["Ivory Black",[35,31,31]],["Lamp Black",[32,29,29]],["Titanium White",[245,245,241]],["Zinc White (Mixing White)",[250,250,247]]],"horadam":[["Titan-Deckweiß",[244,243,237]],["Permanent chinesisch Weiß",[244,243,237]],["Titangelb",[220,178,55]],["Zitronengelb",[220,178,55]],["Kadmiumgelb zitron",[220,178,55]],["Chromgelbton zitron",[220,178,55]],["Vanadiumgelb",[220,178,55]],["Kadmiumgelb hell",[220,178,55]],["Reingelb",[220,178,55]],["Aureolinton",[128,128,128]],["Kadmiumgelb mittel",[220,178,55]],["Chromgelbton hell",[220,178,55]],["Lasurgelb",[220,178,55]],["Turners Gelb",[220,178,55]],["Chinacridongoldton",[194,151,61]],["Chromgelbton dunkel",[220,178,55]],["Kadmiumgelb dunkel",[220,178,55]],["Indischgelb",[220,178,55]],["Gelborange",[220,178,55]],["Kadmiumorange hell",[226,105,44]],["Chromorangeton",[226,105,44]],["Kadmiumorange dunkel",[226,105,44]],["Lasurorange",[226,105,44]],["Saturnrot",[184,55,57]],["Kadmiumrot Orange",[226,105,44]],["Permanentrot Orange",[226,105,44]],["Permanentrot",[184,55,57]],["Kadmiumrot hell",[184,55,57]],["Geranienrot",[184,55,57]],["Zinnoberrot",[184,55,57]],["Zinnoberrot hell",[184,55,57]],["Scharlachrot",[184,55,57]],["Kadmiumrot mittel",[184,55,57]],["Chinacridon Hellrot",[184,55,57]],["Lasurdunkelrot",[184,55,57]],["Kadmiumrot dunkel",[184,55,57]],["Dunkelrot",[184,55,57]],["Perylenrot tief",[184,55,57]],["Alizarin-Karmesin",[128,128,128]],["Rubinrot dunkel",[184,55,57]],["Krapplack dunkel",[128,128,128]],["Krapprot tief",[184,55,57]],["Bordeauxrot",[184,55,57]],["Krapplack Rosa",[204,87,120]],["Permanent Karmin",[184,55,57]],["Rubinrot",[184,55,57]],["Magenta",[177,48,119]],["Purpur Magenta",[177,48,119]],["Chinacridon Magenta",[177,48,119]],["Chinacridon Violett",[107,69,135]],["Potters Pink",[204,87,120]],["Perylenviolett",[107,69,135]],["Chinacridon Purpur",[177,48,119]],["Manganviolett",[107,69,135]],["Schmincke Violett",[107,69,135]],["Kobaltviolettton",[107,69,135]],["Ultramarinviolett",[107,69,135]],["Delftblau",[53,83,144]],["Indigo",[53,83,144]],["Tiefblau",[53,83,144]],["Phthalo Saphirblau",[53,83,144]],["Kobaltblau dunkel",[53,83,144]],["Franz. Ultramarin",[53,83,144]],["Ultramarin feinst",[53,83,144]],["Ultramarinblau",[53,83,144]],["Kobaltblau hell",[53,83,144]],["Kobaltblauton",[53,83,144]],["Bergblau",[53,83,144]],["Kobalt Azur",[128,128,128]],["Preußischblau",[53,83,144]],["Pariserblau",[53,83,144]],["Phthaloblau",[53,83,144]],["Coelinblauton",[53,83,144]],["Heliocoelin",[49,133,155]],["Kobaltcoelin",[49,133,155]],["Heliotürkis",[49,133,155]],["Kobalttürkis",[49,133,155]],["Kobaltgrün Türkis",[49,133,155]],["Preußischgrün",[61,112,76]],["Smaragdgrün",[61,112,76]],["Chromoxidgrün feurig",[61,112,76]],["Phthalogrün",[61,112,76]],["Heliogrün",[61,112,76]],["Permanentgrün Oliv",[61,112,76]],["Saftgrün",[61,112,76]],["Permanentgrün",[61,112,76]],["Maigrün",[61,112,76]],["Kobaltgrün rein",[61,112,76]],["Kobaltgrün tief",[61,112,76]],["Hookersgrün",[61,112,76]],["Grünoliv",[61,112,76]],["Chromoxidgrün stumpf",[61,112,76]],["Olivgrün gelblich",[220,178,55]],["Grüne Erde",[61,112,76]],["Lasurgoldgrün",[61,112,76]],["Rutilgelb",[220,178,55]],["Jaune brillant tief",[128,128,128]],["Neapelgelb",[220,178,55]],["Siena natur",[126,85,57]],["Lichter Ocker natur",[220,178,55]],["Titangoldocker",[220,178,55]],["Lichter Ocker",[220,178,55]],["Lasur Ocker",[220,178,55]],["Umbra natur",[126,85,57]],["Neapelgelb rötlich",[220,178,55]],["Spinellbraun",[126,85,57]],["Goldbraun",[126,85,57]],["Lasur Siena",[126,85,57]],["Kastanienbraun",[126,85,57]],["Siena gebrannt",[126,85,57]],["Englisch-Venezianisch Rot",[184,55,57]],["Krappbraun",[126,85,57]],["Lasurbraun",[126,85,57]],["Mahagonibraun",[126,85,57]],["Caput mortuum",[128,128,128]],["Eisenoxidbraun",[126,85,57]],["Lasur Umbra",[126,85,57]],["Umbra gebrannt",[126,85,57]],["Umbra grünlich",[61,112,76]],["Vandyckbraun",[126,85,57]],["Sepiabraun",[126,85,57]],["Sepiabraun rötlich",[126,85,57]],["Neutraltinte",[128,128,128]],["Neutralgrau",[105,108,112]],["Paynesgrau bläulich",[105,108,112]],["Perylengrün",[61,112,76]],["Schmincke Paynesgrau",[105,108,112]],["Lampenschwarz",[35,35,35]],["Elfenbeinschwarz",[35,35,35]],["Hämatitschwarz",[35,35,35]],["Anthrazit",[128,128,128]],["Graphitgrau",[105,108,112]],["Eisenoxidschwarz",[35,35,35]],["Silber",[170,173,177]],["Gold",[194,151,61]],["Brillant Opernrosa",[204,87,120]],["Brillant Purpur",[177,48,119]],["Brillant Rotviolett",[184,55,57]],["Brillant Blauviolett",[107,69,135]]],"akademie":[["Deckweiß",[244,243,237]],["Hellgelb zitron",[220,178,55]],["Kadmiumgelbton",[220,178,55]],["Indischgelb",[220,178,55]],["Orange",[226,105,44]],["Kadmiumrotton",[184,55,57]],["Brillantrot",[184,55,57]],["Dunkelrot",[184,55,57]],["Karmin",[184,55,57]],["Magenta",[177,48,119]],["Violett",[107,69,135]],["Blauviolett",[107,69,135]],["Lavendelviolett",[107,69,135]],["Dunkelblau",[53,83,144]],["Indigo",[53,83,144]],["Ultramarin",[53,83,144]],["Preußischblau",[53,83,144]],["Kobaltblauton",[53,83,144]],["Cyan",[49,133,155]],["Kobalttürkiston",[49,133,155]],["Brillantgrün",[61,112,76]],["Laubgrün",[61,112,76]],["Dunkelgrün",[61,112,76]],["Permanentgrün",[61,112,76]],["Oliv Gelbgrün",[220,178,55]],["Maigrün",[61,112,76]],["Lichter Ocker",[220,178,55]],["Neapelgelb",[220,178,55]],["Goldrosa",[204,87,120]],["Englischrot",[184,55,57]],["Siena gebrannt",[126,85,57]],["Umbra gebrannt",[126,85,57]],["Vandyckbraun",[126,85,57]],["Sepia",[126,85,57]],["Paynesgrau",[105,108,112]],["Hellgrau",[105,108,112]],["Schwarz",[35,35,35]],["Neongelb",[220,178,55]],["Neonorange",[226,105,44]],["Neonpink",[204,87,120]]]};
+
+
+  const OWNED_KEY='atelierai_owned_colors_v141';
+  const CUSTOM_KEY='atelierai_custom_colors_v141';
+  const STANDARD_ARTISAN_KEY='atelierai_standard_artisan_pc_v1';
+  const BASIC_ARTISAN_NAMES=new Set(['Titanium White','Lemon Yellow','Cadmium Yellow Hue','Cadmium Red Hue',
+    'Permanent Rose','French Ultramarine','Phthalo Blue (Red Shade)','Phthalo Green (Blue Shade)',
+    'Yellow Ochre','Burnt Sienna','Burnt Umber','Ivory Black']);
+  function loadOwned(){
+    try{return JSON.parse(localStorage.getItem(OWNED_KEY)||'{}')}catch(e){return {}}
+  }
+  function saveOwned(o){localStorage.setItem(OWNED_KEY,JSON.stringify(o))}
+  function loadCustom(){
+    try{return JSON.parse(localStorage.getItem(CUSTOM_KEY)||'[]')}catch(e){return []}
+  }
+  function saveCustom(c){localStorage.setItem(CUSTOM_KEY,JSON.stringify(c))}
+  function currentCatalogueKey(){return paintPalette.value}
+  function paletteId(key,name){return key+'::'+name}
+  function selectedPaletteColorsSingle(key){
+    const owned=loadOwned();
+    const base=(PALETTES[key]||[]).filter(x=>owned[paletteId(key,x[0])]===true);
+    const custom=loadCustom().filter(x=>x.enabled!==false).map(x=>[x.name,x.rgb]);
+    return base.concat(custom);
+  }
+
+  function selectedPaletteColors(key){
+    if(key==='watercolor'){
+      const h=selectedPaletteColorsSingle('horadam').map(([name,rgb])=>[name,rgb,'Horadam']);
+      const a=selectedPaletteColorsSingle('akademie').map(([name,rgb])=>[name,rgb,'Akademie']);
+      return h.concat(a);
+    }
+    return selectedPaletteColorsSingle(key);
+  }
+
+  function updateOwnedSummary(){
+    const key=currentCatalogueKey(), owned=loadOwned();
+    const n=(PALETTES[key]||[]).filter(x=>owned[paletteId(key,x[0])]===true).length;
+    const custom=loadCustom().filter(x=>x.enabled!==false).length;
+    ownedSummary.textContent=(key==='artisan')?`${n} von 40 Farben aktiv${custom?` + ${custom} eigene`:''}`:
+      `Ausgewählt: ${n} Herstellerfarben${custom?` + ${custom} eigene`:''}. Mischungen benutzen nur diese Farben.`;
+  }
+
+  function applyBasicArtisanPalette(){
+    if(currentCatalogueKey()!=='artisan') return;
+    const o=loadOwned();
+    (PALETTES.artisan||[]).forEach(([n])=>o[paletteId('artisan',n)]=BASIC_ARTISAN_NAMES.has(n));
+    saveOwned(o);renderPaletteChecklist();updateOwnedSummary();
+  }
+  function saveStandardArtisanPalette(){
+    const o=loadOwned();
+    const ids=(PALETTES.artisan||[]).filter(([n])=>o[paletteId('artisan',n)]===true).map(([n])=>n);
+    localStorage.setItem(STANDARD_ARTISAN_KEY,JSON.stringify({format:'atelier-ai-standard-palette',version:1,
+      palette_name:'Winsor & Newton Artisan',selected_ids:ids,updated_at:new Date().toISOString()}));
+    updateStandardPaletteInfo();
+  }
+  function loadStandardArtisanPalette(){
+    try{
+      const d=JSON.parse(localStorage.getItem(STANDARD_ARTISAN_KEY)||'null');
+      if(!d||!Array.isArray(d.selected_ids))return;
+      const s=new Set(d.selected_ids),o=loadOwned();
+      (PALETTES.artisan||[]).forEach(([n])=>o[paletteId('artisan',n)]=s.has(n));
+      saveOwned(o);renderPaletteChecklist();updateOwnedSummary();updateStandardPaletteInfo();
+    }catch(e){}
+  }
+  function deleteStandardArtisanPalette(){localStorage.removeItem(STANDARD_ARTISAN_KEY);updateStandardPaletteInfo();}
+  function updateStandardPaletteInfo(){
+    try{
+      const d=JSON.parse(localStorage.getItem(STANDARD_ARTISAN_KEY)||'null');
+      standardPaletteInfo.textContent=d&&Array.isArray(d.selected_ids)
+       ?`Persönliche Standardpalette: ${d.selected_ids.length} Farben gespeichert.`
+       :'Noch keine persönliche Standardpalette gespeichert.';
+    }catch(e){standardPaletteInfo.textContent='Noch keine persönliche Standardpalette gespeichert.'}
+  }
+
+  function renderPaletteChecklist(){
+    const key=currentCatalogueKey(), q=(paletteSearch.value||'').trim().toLowerCase(), owned=loadOwned();
+    paletteChecklist.innerHTML='';
+    (PALETTES[key]||[]).filter(x=>!q||x[0].toLowerCase().includes(q)).forEach(([name,rgb])=>{
+      const row=document.createElement('label'); row.className='palette-item';
+      const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=owned[paletteId(key,name)]===true;
+      const dot=document.createElement('span'); dot.className='palette-dot'; dot.style.background=rgbHex(paletteMixRgb(name,rgb,key));
+      const txt=document.createElement('span'); txt.textContent=name;
+      cb.addEventListener('change',()=>{const o=loadOwned();o[paletteId(key,name)]=cb.checked;saveOwned(o);updateOwnedSummary();});
+      row.append(cb,dot,txt);paletteChecklist.appendChild(row);
+    });
+    renderCustomColors();
+  }
+  function renderCustomColors(){
+    const c=loadCustom(); customColorsList.innerHTML='';
+    c.forEach((x,i)=>{
+      const row=document.createElement('div');row.className='custom-row';
+      row.innerHTML=`<span><span class="palette-dot" style="display:inline-block;vertical-align:middle;margin-right:8px;background:${rgbHex(x.rgb)}"></span>${x.name}</span>`;
+      const b=document.createElement('button');b.className='secondary';b.textContent='Löschen';
+      b.addEventListener('click',()=>{const a=loadCustom();a.splice(i,1);saveCustom(a);renderCustomColors();updateOwnedSummary();});
+      row.appendChild(b);customColorsList.appendChild(row);
+    });
+  }
+  function adaptiveDisplayColor(c){
+    // Anzeige-Korrektur nur für Farbfelder:
+    // helle und sehr dunkle Farben bleiben nahezu unverändert,
+    // nur mittlere Töne werden sanft aufgehellt.
+    if(!c) return c;
+    const y=0.2126*c[0]+0.7152*c[1]+0.0722*c[2];
+    const mid=Math.max(0,1-Math.abs(y-135)/95);
+    const light=(y>175) ? Math.min(1,(y-175)/65) : 0;
+    const strength=Math.min(0.24,0.22*mid + 0.07*light);
+    return c.map(v=>Math.round(v+(255-v)*strength));
+  }
+
+  function rgbHex(rgb){
+    return '#'+rgb.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('').toUpperCase();
+  }
+
+
+  // Aquarell-Palettenkorrektur:
+  // Die frühen iPad-Versionen enthielten grobe Familien-Platzhalterwerte
+  // (viele Gelb-/Rot-/Blau-Farben mit identischem RGB). Für Mischvorschläge
+  // werden die Herstellerfarben deshalb anhand ihres tatsächlichen Farbnamens
+  // differenziert. Das ersetzt die Platzhalter, ohne die gespeicherte Auswahl
+  // des Nutzers zu verändern.
+  function watercolorRepresentativeRgb(name, fallback){
+    const n=(name||'').toLowerCase();
+
+    const rules=[
+      // Weiß / Grau / Schwarz
+      [/titan.*weiß|deckweiß/, [248,247,242]],
+      [/chinesisch.*weiß/, [251,250,246]],
+      [/lampen.*schwarz|elfenbein.*schwarz|eisenoxid.*schwarz|hämatit.*schwarz/, [31,31,32]],
+      [/anthrazit|graphitgrau/, [75,79,83]],
+      [/neutralgrau|paynesgrau|payne.*grau/, [70,78,87]],
+      [/neutraltinte/, [76,70,76]],
+
+      // Rosa / Karmin / Magenta / Purpur – wichtig für Haut und Wangen
+      [/potters pink/, [184,111,111]],
+      [/krapplack rosa/, [203,83,112]],
+      [/goldrosa/, [218,122,119]],
+      [/brillant opernrosa|neonpink/, [238,66,137]],
+      [/chinacridon hellrot/, [225,62,72]],
+      [/rubinrot dunkel/, [145,38,59]],
+      [/rubinrot/, [196,45,72]],
+      [/permanent karmin|karmin/, [178,37,64]],
+      [/alizarin.*karmesin/, [145,37,54]],
+      [/krapplack dunkel/, [137,42,61]],
+      [/krapprot tief/, [160,38,59]],
+      [/lasurdunkelrot/, [139,37,48]],
+      [/bordeauxrot/, [122,38,57]],
+      [/perylenrot tief/, [157,36,43]],
+      [/dunkelrot/, [151,41,47]],
+      [/permanentrot/, [207,48,49]],
+      [/geranienrot/, [220,45,55]],
+      [/scharlachrot/, [224,51,45]],
+      [/zinnoberrot/, [221,69,48]],
+      [/kadmiumrot.*orange/, [229,83,43]],
+      [/kadmiumrot.*hell/, [222,61,48]],
+      [/kadmiumrot.*mittel/, [199,48,44]],
+      [/kadmiumrot.*dunkel/, [158,45,44]],
+      [/saturnrot/, [214,64,51]],
+      [/magenta/, [190,40,119]],
+      [/purpur magenta/, [167,42,112]],
+      [/chinacridon magenta/, [182,39,111]],
+      [/chinacridon purpur/, [137,49,109]],
+      [/brillant purpur/, [196,61,131]],
+      [/brillant rotviolett/, [170,56,105]],
+
+      // Violett
+      [/chinacridon violett/, [111,53,118]],
+      [/perylenviolett/, [91,46,75]],
+      [/manganviolett/, [121,72,142]],
+      [/schmincke violett/, [102,57,130]],
+      [/kobaltviolett/, [119,78,145]],
+      [/ultramarinviolett/, [89,71,148]],
+      [/blauviolett/, [83,67,145]],
+      [/lavendelviolett/, [142,125,170]],
+      [/violett/, [105,63,139]],
+
+      // Gelb
+      [/zitronengelb|kadmiumgelb zitron|chromgelbton zitron|hellgelb zitron/, [238,218,46]],
+      [/vanadiumgelb/, [239,210,41]],
+      [/reingelb/, [239,194,35]],
+      [/aureolin/, [222,183,53]],
+      [/kadmiumgelb hell/, [239,190,35]],
+      [/kadmiumgelb mittel|kadmiumgelbton/, [231,165,34]],
+      [/chromgelbton hell/, [236,180,37]],
+      [/lasurgelb/, [231,186,47]],
+      [/turners gelb/, [236,188,65]],
+      [/chinacridongold/, [190,133,49]],
+      [/chromgelbton dunkel|kadmiumgelb dunkel/, [222,142,34]],
+      [/indischgelb/, [226,157,43]],
+      [/titangelb/, [231,190,79]],
+      [/rutilgelb/, [198,170,93]],
+      [/jaune brillant/, [232,196,134]],
+      [/neapelgelb rötlich/, [218,164,113]],
+      [/neapelgelb/, [228,194,121]],
+      [/lichter ocker natur/, [190,147,82]],
+      [/titangoldocker/, [185,139,68]],
+      [/lichter ocker/, [194,145,73]],
+      [/lasur ocker/, [188,132,57]],
+      [/oliv.*gelbgrün|olivgrün gelblich/, [157,149,55]],
+
+      // Orange
+      [/gelborange/, [230,137,36]],
+      [/kadmiumorange hell/, [231,104,43]],
+      [/chromorangeton/, [220,92,42]],
+      [/kadmiumorange dunkel/, [207,76,38]],
+      [/lasurorange/, [222,91,40]],
+      [/orange/, [226,103,43]],
+      [/neonorange/, [245,104,45]],
+
+      // Braun / Erden
+      [/siena natur/, [170,121,73]],
+      [/umbra natur/, [112,91,69]],
+      [/spinellbraun/, [112,68,55]],
+      [/goldbraun/, [153,94,51]],
+      [/lasur siena/, [160,87,50]],
+      [/kastanienbraun/, [113,58,48]],
+      [/siena gebrannt/, [139,72,48]],
+      [/englisch.*rot|englischrot/, [158,62,50]],
+      [/krappbraun/, [113,56,53]],
+      [/lasurbraun/, [103,66,50]],
+      [/mahagonibraun/, [104,53,48]],
+      [/caput mortuum/, [91,53,65]],
+      [/eisenoxidbraun/, [105,67,53]],
+      [/lasur umbra/, [91,72,55]],
+      [/umbra gebrannt/, [91,65,52]],
+      [/vandyckbraun/, [79,62,50]],
+      [/sepiabraun rötlich/, [88,62,55]],
+      [/sepiabraun|sepia/, [77,65,56]],
+
+      // Blau
+      [/delftblau/, [39,69,111]],
+      [/indigo/, [42,57,84]],
+      [/tiefblau/, [39,60,102]],
+      [/phthalo saphirblau/, [27,70,119]],
+      [/kobaltblau dunkel/, [43,74,126]],
+      [/franz.*ultramarin/, [50,70,137]],
+      [/ultramarin feinst/, [55,76,148]],
+      [/ultramarinblau|ultramarin/, [57,78,151]],
+      [/kobaltblau hell/, [66,105,165]],
+      [/kobaltblauton/, [61,100,160]],
+      [/bergblau/, [77,123,166]],
+      [/kobalt azur/, [74,134,179]],
+      [/preußischblau/, [33,58,92]],
+      [/pariserblau/, [30,68,104]],
+      [/phthaloblau/, [27,82,126]],
+      [/coelinblauton/, [67,139,170]],
+      [/heliocoelin/, [47,137,161]],
+      [/kobaltcoelin/, [72,145,170]],
+      [/cyan/, [35,142,173]],
+
+      // Türkis
+      [/heliotürkis/, [37,145,152]],
+      [/kobalttürkis/, [64,151,154]],
+      [/kobaltgrün türkis/, [50,137,128]],
+
+      // Grün
+      [/preußischgrün/, [47,93,68]],
+      [/smaragdgrün/, [35,134,78]],
+      [/chromoxidgrün feurig/, [58,125,71]],
+      [/phthalogrün/, [25,110,78]],
+      [/heliogrün/, [35,124,78]],
+      [/permanentgrün oliv/, [89,105,56]],
+      [/saftgrün/, [84,115,65]],
+      [/permanentgrün/, [57,127,70]],
+      [/maigrün/, [116,151,62]],
+      [/kobaltgrün rein/, [61,135,96]],
+      [/kobaltgrün tief/, [50,108,80]],
+      [/hookersgrün/, [57,101,61]],
+      [/grünoliv/, [76,88,50]],
+      [/chromoxidgrün stumpf/, [73,95,66]],
+      [/grüne erde/, [92,111,78]],
+      [/lasurgoldgrün/, [107,119,51]],
+      [/umbra grünlich/, [78,84,61]],
+      [/perylengrün/, [42,69,61]],
+      [/brillantgrün/, [45,142,76]],
+      [/laubgrün/, [73,121,67]],
+      [/dunkelgrün/, [42,84,58]]
+    ];
+    for(const [rx,rgb] of rules) if(rx.test(n)) return rgb;
+    return fallback;
+  }
+
+  function paletteMixRgb(name,rgb,paletteKey){
+    return paletteKey==='watercolor'||paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie'
+      ? watercolorRepresentativeRgb(name,rgb)
+      : rgb;
+  }
+
+  function opticalDensityMix(items,parts,paletteKey){
+    const total=parts.reduce((a,b)=>a+b,0)||1;
+    const out=[0,1,2].map(ch=>{
+      let od=0;
+      for(let i=0;i<items.length;i++){
+        const rgb=paletteMixRgb(items[i].name,items[i].rgb,paletteKey);
+        const norm=Math.max(.015,Math.min(.995,rgb[ch]/255));
+        od+=(-Math.log(norm))*(parts[i]/total);
+      }
+      return Math.round(255*Math.exp(-od));
+    });
+    return out;
+  }
+
+  function perceptualMixScore(target,rgb,items,paletteKey){
+    const d=deltaE76FromLab(rgbToLabFast(target),rgbToLabFast(rgb));
+    let penalty=0;
+    if(paletteKey==='watercolor'||paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie'){
+      const [th,ts,tv]=rgbToHsv(target);
+      // Bei klar rosigen/roten/magentafarbenen Zielen vermeiden wir,
+      // dass gelb-ocker-dominierte Rezepte mathematisch "gewinnen".
+      const rosy=(th>=330||th<=28) && ts>=0.12;
+      if(rosy){
+        const warmEarth=items.filter(x=>/ocker|siena|umbra|neapel|gold|gelb|orange/i.test(x.name)).length;
+        const rosePigment=items.filter(x=>/rosa|pink|karmin|krap|magenta|rot|rubin|purpur|alizarin|potters/i.test(x.name)).length;
+        if(warmEarth && !rosePigment) penalty+=18;
+        else if(warmEarth>rosePigment) penalty+=7;
+      }
+      // Zu viele Pigmente ergeben bei Aquarell schnell stumpfe Mischungen.
+      if(items.length>2) penalty+=(items.length-2)*2.5;
+    }
+    return d+penalty;
+  }
+
+  function watercolorSimilarityPct(target,rgb,items,paletteKey){
+    const d=perceptualMixScore(target,rgb,items,paletteKey);
+    return Math.max(0,Math.min(100,Math.round(100-d*1.35)));
+  }
+
+  function colorDistance(a,b){
+    return Math.sqrt(.30*(a[0]-b[0])**2+.59*(a[1]-b[1])**2+.11*(a[2]-b[2])**2);
+  }
+
+  function mixRgb(parts, colors){
+    let total=parts.reduce((a,b)=>a+b,0);
+    return [0,1,2].map(ch=>Math.round(parts.reduce((s,p,i)=>s+p*colors[i][ch],0)/total));
+  }
+
+  function similarityPct(a,b){
+    const d=colorDistance(a,b);
+    const pct=100-(d/255*100);
+    return Math.max(0,Math.min(100,Math.round(pct)));
+  }
+
+  function chooseMixes(target, paletteKey){
+    const pal=selectedPaletteColors(paletteKey);
+    if(pal.length<2)return[];
+    const isWater=paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie';
+    const candidates=pal.map(([name,rgb,series])=>({name,rgb,series}));
+
+    function candidateRgb(c){
+      return isWater ? paletteMixRgb(c.name,c.rgb,paletteKey) : c.rgb;
+    }
+    function mixFor(items,parts){
+      if(isWater) return opticalDensityMix(items,parts,paletteKey);
+      const total=parts.reduce((a,b)=>a+b,0)||1;
+      return [0,1,2].map(ch=>Math.round(items.reduce((sum,c,i)=>sum+candidateRgb(c)[ch]*parts[i],0)/total));
+    }
+    function studioCost(rgb,items){
+      const lab=deltaE76FromLab(rgbToLabFast(target),rgbToLabFast(rgb));
+      if(!isWater)return lab;
+      const [th,ts]=rgbToHsv(target),[mh,ms]=rgbToHsv(rgb);
+      let cost=lab;
+      if(ts>.08&&ms>.08){
+        let hd=Math.abs(th-mh)%360;if(hd>180)hd=360-hd;
+        if(hd>25)cost+=(hd-25)*.10;
+      }
+      // Malerische Plausibilität bei rosigen/hautfarbenen Zielen.
+      const rosy=(th>=325||th<=35)&&ts>=.07;
+      if(rosy){
+        const earth=items.filter(x=>/ocker|siena|umbra|neapel|gold|gelb|orange/i.test(x.name)).length;
+        const rose=items.filter(x=>/rosa|pink|karmin|krap|magenta|rot|rubin|purpur|alizarin|potters/i.test(x.name)).length;
+        const cg=items.filter(x=>/cyan|türkis|grün/i.test(x.name)).length;
+        if(earth&&!rose)cost+=10;
+        if(cg&&earth>=rose)cost+=5*cg;
+      }
+      // Mehr Farben nur leicht bestrafen; Studio darf bis 5 suchen.
+      cost+=Math.max(0,items.length-3)*.6;
+      return cost;
+    }
+    function pct(cost){return Math.max(0,Math.min(100,Math.round(100-cost*1.55)));}
+
+    // PC-Prinzip: Studio, maximale Genauigkeit bis 5 Farben, force_best.
+    const nearest=[...candidates].sort((a,b)=>
+      studioCost(candidateRgb(a),[a])-studioCost(candidateRgb(b),[b])
+    ).slice(0,Math.min(18,candidates.length));
+
+    let beam=nearest.map(c=>{
+      const items=[c],parts=[10],rgb=candidateRgb(c);
+      const cost=studioCost(rgb,items);
+      return {items,parts,rgb,cost};
+    }).sort((a,b)=>a.cost-b.cost).slice(0,30);
+
+    const allBest=[...beam.slice(0,8)];
+    const alternatives=[];
+
+    for(let count=2;count<=5;count++){
+      const next=[];
+      for(const state of beam){
+        const used=new Set(state.items.map(x=>x.name+'|'+(x.series||'')));
+        for(const c of nearest){
+          if(used.has(c.name+'|'+(c.series||'')))continue;
+          // Praxisnahe Anteile, aber genügend fein für Studio.
+          for(const add of [1,2,3,4,5,6,8,10]){
+            const items=state.items.concat([c]);
+            const parts=state.parts.concat([add]);
+            const rgb=mixFor(items,parts);
+            const cost=studioCost(rgb,items);
+            next.push({items,parts,rgb,cost});
+          }
+        }
+      }
+      next.sort((a,b)=>a.cost-b.cost);
+      const seen=new Set(),trim=[];
+      for(const x of next){
+        const key=x.rgb.map(v=>Math.round(v/3)).join(',')+'|'+x.items.map(i=>i.name+'@'+(i.series||'')).sort().join('/');
+        if(seen.has(key))continue;
+        seen.add(key);trim.push(x);
+        if(trim.length>=48)break;
+      }
+      if(!trim.length)break;
+      beam=trim;
+      allBest.push(...beam.slice(0,10));
+      alternatives.push({color_count:count,match_percent:pct(beam[0].cost)});
+    }
+
+    allBest.sort((a,b)=>a.cost-b.cost);
+    const chosen=[],seenRecipes=new Set();
+    for(const x of allBest){
+      const sig=x.items.map(i=>i.name+'@'+(i.series||'')).sort().join('|');
+      if(seenRecipes.has(sig))continue;
+      seenRecipes.add(sig);
+      const total=x.parts.reduce((a,b)=>a+b,0)||1;
+      // auf gut lesbare Teile 1..10 normalisieren
+      const scaled=x.parts.map(v=>Math.max(1,Math.round(v/total*10)));
+      chosen.push({
+        sig,
+        names:x.items.map(i=>(isWater&&i.series)?`${i.name} (${i.series})`:i.name),
+        parts:scaled,
+        rgb:x.rgb,
+        score:pct(x.cost),
+        alternatives,
+        watercolor:isWater
+      });
+      if(chosen.length===3)break;
+    }
+    return chosen;
+  }
+
+  function showMixes(){
+    const target=lastSmartColor || lastAverageColor;
+    if(!target){
+      targetInfo.textContent='Bitte zuerst mit Pipette, Maler-Pipette oder Flächenberater eine Farbe aufnehmen.';
+      return;
+    }
+    const paletteKey=paintPalette.value;
+    const available=selectedPaletteColors(paletteKey);
+    if(available.length<2){
+      mixResults.innerHTML='<div class="mix-card"><b>Bitte zuerst mindestens zwei Farben markieren.</b><br><span class="tiny">„Meine Farben auswählen“ öffnen. AtelierAI verwendet danach nur deine vorhandenen Farben.</span></div>';
+      return;
+    }
+    const mixes=chooseMixes(target,paletteKey);
+    mixResults.innerHTML='';
+    mixes.forEach((m,idx)=>{
+      const card=document.createElement('div');
+      card.className='mix-card';
+      const targetHex=rgbHex(adaptiveDisplayColor(target)), mixHex=rgbHex(adaptiveDisplayColor(m.rgb));
+      card.innerHTML=`
+        <div class="mix-head"><b>Vorschlag ${idx+1}</b><span>${m.score}% Annäherung</span></div>
+        <div class="mix-swatches">
+          <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${targetHex}"></div></div>
+          <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex}"></div></div>
+        </div>
+        <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i]} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · Studio-Mischung · bis 5 Farben':'Mischqualität: Studio · bis 5 Farben'}</span></div>
+      `;
+      mixResults.appendChild(card);
+    });
+  }
+
+  function setMedium(m){
+    paintMedium=m;
+    mediumOilBtn.classList.toggle('active',m==='oil');
+    mediumOilBtn.classList.toggle('secondary',m!=='oil');
+    mediumWaterBtn.classList.toggle('active',m==='water');
+    mediumWaterBtn.classList.toggle('secondary',m!=='water');
+    if(m==='oil'){
+      paintPalette.value='artisan';
+      [...paintPalette.options].forEach(o=>o.disabled=(o.value!=='artisan'));
+    }else{
+      [...paintPalette.options].forEach(o=>o.disabled=(o.value==='artisan'));
+      if(paintPalette.value==='artisan') paintPalette.value='horadam';
+    }
+    mixResults.innerHTML='';
+    setTimeout(updateOwnedSummary,0);
+  }
+
+  function updatePickerCircle(clientX,clientY,show=true){
+    if(!pickerCircle) return;
+    if(!show){ pickerCircle.style.display='none'; return; }
+    const rect=canvas.getBoundingClientRect();
+    const radius=Number(pickerRadius.value);
+    pickerCircle.style.display='block';
+    pickerCircle.style.width=(radius*2)+'px';
+    pickerCircle.style.height=(radius*2)+'px';
+    pickerCircle.style.left=(clientX-rect.left-radius)+'px';
+    pickerCircle.style.top=(clientY-rect.top-radius)+'px';
+  }
+
+  function sampleCircle(clientX,clientY,smart=false){
+    if(!loaded) return;
+    const p=canvasPoint(clientX,clientY);
+    const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
+    if(ix<0||iy<0||ix>=img.width||iy>=img.height) return;
+    const radiusScreen=Number(pickerRadius.value);
+    const radius=Math.max(2,Math.round(radiusScreen/Math.max(scale,0.01)));
+    const x0=Math.max(0,Math.floor(ix-radius)), y0=Math.max(0,Math.floor(iy-radius));
+    const x1=Math.min(img.width,Math.ceil(ix+radius)), y1=Math.min(img.height,Math.ceil(iy+radius));
+    const w=Math.max(1,x1-x0), h=Math.max(1,y1-y0);
+    const data=readImageDataSRGB(sourceContextForPicker(),x0,y0,w,h).data;
+    const samples=[];
+    const step=Math.max(1,Math.floor(Math.sqrt((w*h)/900)));
+    for(let y=0;y<h;y+=step){
+      for(let x=0;x<w;x+=step){
+        const dx=(x+x0-ix), dy=(y+y0-iy);
+        if(dx*dx+dy*dy>radius*radius) continue;
+        const i=(y*w+x)*4;
+        if(data[i+3]>20) samples.push([data[i],data[i+1],data[i+2]]);
+      }
+    }
+    if(!samples.length) return;
+    const avg=linearAverageRGB(samples);
+    const robust=robustSmartColor(samples);
+    lastAverageColor=avg;
+    lastSmartColor=robust ? robust.smart : avg;
+    avgTargetBox.style.background=rgbHex(adaptiveDisplayColor(avg));
+    smartTargetBox.style.background=rgbHex(adaptiveDisplayColor(lastSmartColor));
+    targetInfo.innerHTML=`Durchschnitt ${rgbHex(avg)} · RGB ${avg.join(', ')}<br>`+
+      `Smart ${rgbHex(lastSmartColor)} · RGB ${lastSmartColor.join(', ')}<br>`+
+      `<span class="tiny">${smart ? 'Smart-Malfarbe aktiv' : 'Kreis-Durchschnitt aufgenommen'} · ${samples.length} Messpunkte</span>`;
+    // also update the existing smart color display for consistency
+    if(robust) showSmartColor(robust);
+    correctionBase=[...lastSmartColor]; refreshCorrection(); ideasBase=[...lastSmartColor]; refreshIdea();
+    showMixes();
+  }
+
+
+  function targetArray(){
+    if(lastSmartColor) return [...lastSmartColor];
+    if(lastAverageColor) return [...lastAverageColor];
+    return null;
+  }
+
+  function showStudioMixPage(){
+    showMixes();
+    if(typeof window.activateToolPage==='function'){
+      window.activateToolPage('paintMixPanel');
+    }
+    setTimeout(()=>{
+      if(mixResults && typeof mixResults.scrollIntoView==='function'){
+        mixResults.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+    },30);
+  }
+
+  function setMixTarget(rgb, label='Zielfarbe'){
+    if(!rgb) return;
+    lastAverageColor=[...rgb];
+    lastSmartColor=[...rgb];
+    const hx=rgbHex(rgb);
+    const displayHx=rgbHex(adaptiveDisplayColor(rgb));
+    avgTargetBox.style.background=displayHx;
+    smartTargetBox.style.background=displayHx;
+    targetInfo.innerHTML=`${label} ${hx} · RGB ${rgb.join(', ')}`;
+  }
+
+
+  function journeyBlend(a,b,amount){
+    // Weiche Zwischenfarben in sRGB; nur Anzeige/Zielwerte der Farbreise.
+    // Die eigentliche Tubenmischung wird weiterhin von der bestehenden
+    // Studio-Mischung berechnet.
+    return [0,1,2].map(i=>Math.round(a[i]+(b[i]-a[i])*amount));
+  }
+
+  function journeyCurrentColor(){
+    return targetArray();
+  }
+
+  function renderColorJourney(){
+    if(journeyStartColor){
+      journeyStartSwatch.style.background=rgbHex(adaptiveDisplayColor(journeyStartColor));
+    }else{
+      journeyStartSwatch.style.background='#808080';
+    }
+    if(journeyTargetColor){
+      journeyTargetSwatch.style.background=rgbHex(adaptiveDisplayColor(journeyTargetColor));
+    }else{
+      journeyTargetSwatch.style.background='#808080';
+    }
+
+    if(!journeyStartColor || !journeyTargetColor){
+      journeyResults.innerHTML='';
+      journeyInfo.textContent=!journeyStartColor
+        ? 'Zuerst die jetzige Farbe mit der Pipette aufnehmen und „Aktuelle Farbe als Start“ tippen.'
+        : 'Jetzt die gewünschte Zielfarbe mit der Pipette aufnehmen und „Aktuelle Farbe als Ziel“ tippen.';
+      return;
+    }
+
+    const steps=[
+      {name:'Start', amount:0},
+      {name:'Stufe 1', amount:0.25},
+      {name:'Stufe 2', amount:0.50},
+      {name:'Stufe 3', amount:0.75},
+      {name:'Ziel', amount:1}
+    ];
+
+    journeyInfo.innerHTML=`Von <b>${rgbHex(journeyStartColor)}</b> zu <b>${rgbHex(journeyTargetColor)}</b>. Malerisch kannst du dich Stufe für Stufe annähern.`;
+    journeyResults.innerHTML='';
+
+    steps.forEach((step,idx)=>{
+      const rgb=journeyBlend(journeyStartColor,journeyTargetColor,step.amount);
+      const card=document.createElement('div');
+      card.className='mix-card';
+      const pct=Math.round(step.amount*100);
+      let recipe='';
+      if(idx===0){
+        recipe='<div class="tiny" style="margin-top:6px;">Deine vorhandene Ausgangsfarbe.</div>';
+      }else{
+        const paletteKey=paintPalette.value;
+        const available=selectedPaletteColors(paletteKey);
+        if(available.length>=2){
+          const suggestions=chooseMixes(rgb,paletteKey);
+          if(suggestions && suggestions.length){
+            const m=suggestions[0];
+            recipe=`
+              <div class="mix-lines" style="margin-top:7px;">
+                <b>Mischung aus deiner Palette:</b><br>
+                ${m.names.map((name,i)=>`${m.parts[i]} Teil${m.parts[i]!==1?'e':''} ${name}`).join('<br>')}
+                <br><span class="tiny">${m.score}% Annäherung</span>
+              </div>`;
+          }else{
+            recipe='<div class="tiny" style="margin-top:7px;">Keine passende Mischung gefunden.</div>';
+          }
+        }else{
+          recipe='<div class="tiny" style="margin-top:7px;">Bitte mindestens zwei Palettenfarben auswählen.</div>';
+        }
+      }
+
+      card.innerHTML=`
+        <div class="mix-head"><b>${step.name}</b><span>${pct}% zum Ziel</span></div>
+        <div class="swatch-line">
+          <div class="small-swatch" style="background:${rgbHex(adaptiveDisplayColor(rgb))}"></div>
+          <span class="tiny">${rgbHex(rgb)}</span>
+        </div>
+        ${recipe}
+      `;
+      journeyResults.appendChild(card);
+    });
+  }
+
+  function resetColorJourney(){
+    journeyStartColor=null;
+    journeyTargetColor=null;
+    renderColorJourney();
+  }
+
+  function readImageDataSRGB(context,x,y,w,h){
+    try{
+      return context.getImageData(x,y,w,h,{colorSpace:'srgb'});
+    }catch(e){
+      return context.getImageData(x,y,w,h);
+    }
+  }
+
+  function sourceContextForPicker(){
+    return pickerSource && pickerSource.value==='original' ? sourceCtx : processedCtx;
+  }
+
+  function drawGridOverlay(targetCtx, w, h, density){
+    const n=Math.max(2,Number(density)||8);
+    targetCtx.save();
+
+    // Quadratisches, exakt zentriertes Raster:
+    // Die Kästchen haben immer dieselbe Breite und Höhe.
+    // Das Raster ist auf die Bildmitte ausgerichtet, sodass an den
+    // gegenüberliegenden Bildrändern jeweils gleich viel Kästchenanteil
+    // abgeschnitten wird.
+    const cell=Math.min(w,h)/n;
+    const cx=w/2, cy=h/2;
+
+    targetCtx.globalCompositeOperation='difference';
+    targetCtx.strokeStyle='rgba(255,255,255,.88)';
+    targetCtx.lineWidth=Math.max(1, Math.min(w,h)/1200);
+
+    const firstX=cx-Math.ceil(cx/cell)*cell;
+    for(let x=firstX; x<=w+0.001; x+=cell){
+      const px=Math.round(x)+0.5;
+      if(px<=0.5 || px>=w+0.5) continue;
+      targetCtx.beginPath();
+      targetCtx.moveTo(px,0);
+      targetCtx.lineTo(px,h);
+      targetCtx.stroke();
+    }
+
+    const firstY=cy-Math.ceil(cy/cell)*cell;
+    for(let y=firstY; y<=h+0.001; y+=cell){
+      const py=Math.round(y)+0.5;
+      if(py<=0.5 || py>=h+0.5) continue;
+      targetCtx.beginPath();
+      targetCtx.moveTo(0,py);
+      targetCtx.lineTo(w,py);
+      targetCtx.stroke();
+    }
+    targetCtx.restore();
+  }
+
+  function rgbToHsv(rgb){
+    let [r,g,b]=rgb.map(v=>v/255), mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+    let h=0;
+    if(d){ if(mx===r)h=((g-b)/d)%6; else if(mx===g)h=(b-r)/d+2; else h=(r-g)/d+4; h*=60;if(h<0)h+=360; }
+    return [h,mx===0?0:d/mx,mx];
+  }
+  function hsvToRgb(h,s,v){
+    const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;let q=[0,0,0];
+    if(h<60)q=[c,x,0]; else if(h<120)q=[x,c,0]; else if(h<180)q=[0,c,x]; else if(h<240)q=[0,x,c]; else if(h<300)q=[x,0,c]; else q=[c,0,x];
+    return q.map(z=>Math.round((z+m)*255));
+  }
+
+  function glazeClamp(v){return Math.max(0,Math.min(255,Math.round(v)));}
+
+  function glazeApply(base,paint,strength,medium){
+    let a=Math.max(0,Math.min(1,strength/100));
+    // Aquarell bleibt bewusst sanfter als eine reine Bildschirm-Überblendung.
+    // Öl darf etwas stärker wirken.
+    const effective=medium==='water' ? a*0.72 : a*0.88;
+    return [0,1,2].map(i=>glazeClamp(base[i]*(1-effective)+paint[i]*effective));
+  }
+
+  function glazeDistance(a,b){
+    const la=rgbToLabFast(a), lb=rgbToLabFast(b);
+    return deltaE76FromLab(la,lb);
+  }
+
+  function glazeMatchPercent(rgb,target){
+    return Math.max(0,Math.min(100,Math.round((1-glazeDistance(rgb,target)/100)*100)));
+  }
+
+  function glazeActiveColors(){
+    return selectedPaletteColors(glazePalette.value);
+  }
+
+  function refreshGlazePaletteStatus(){
+    const key=glazePalette.value;
+    const total=key==='watercolor'
+      ? (PALETTES.horadam||[]).length+(PALETTES.akademie||[]).length
+      : (PALETTES[key]||[]).length;
+    const active=selectedPaletteColors(key).length;
+    const names={watercolor:'Meine Aquarellfarben · Horadam + Akademie',horadam:'Schmincke Horadam',akademie:'Schmincke Akademie',artisan:'Winsor & Newton Artisan'};
+    glazePaletteStatus.textContent=`${names[key]||key} – ${active} von ${total} Farben aktiv`;
+  }
+
+  function refreshGlazeColors(){
+    glazeBaseSwatch.style.background=glazeBase?rgbHex(glazeBase):'#808080';
+    glazeTargetSwatch.style.background=glazeTarget?rgbHex(glazeTarget):'#808080';
+    if(glazeBase && glazeTarget){
+      glazeColorInfo.innerHTML=`Gemälde ${rgbHex(glazeBase)} · RGB ${glazeBase.join(', ')}<br>`+
+        `Original ${rgbHex(glazeTarget)} · RGB ${glazeTarget.join(', ')}`;
+    }else if(glazeOriginalImg && glazePaintingImg){
+      glazeColorInfo.textContent='Beide Bilder geladen. Im Gemälde beliebig viele Stellen antippen.';
+    }else{
+      glazeColorInfo.textContent='Bitte Originalfoto und Gemälde laden.';
+    }
+  }
+
+  function rotateGlazeNorm(p,deg){
+    const a=deg*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a);
+    const x=p.x-.5,y=p.y-.5;
+    return {x:.5+x*ca-y*sa,y:.5+x*sa+y*ca};
+  }
+
+  function paintingToOriginalNorm(p){
+    const r=rotateGlazeNorm(p,glazeAlign.rotation||0);
+    return {
+      x:.5+(r.x-.5)*glazeAlign.scale+glazeAlign.dx,
+      y:.5+(r.y-.5)*glazeAlign.scale+glazeAlign.dy
+    };
+  }
+
+  function originalToPaintingNorm(p){
+    const q={
+      x:.5+(p.x-glazeAlign.dx-.5)/glazeAlign.scale,
+      y:.5+(p.y-glazeAlign.dy-.5)/glazeAlign.scale
+    };
+    return rotateGlazeNorm(q,-(glazeAlign.rotation||0));
+  }
+
+
+  function drawTinyMarker(c,px,py,idx,active,dpr=1){
+    c.save();
+    const r=active?5*dpr:4*dpr;
+    c.strokeStyle=active?'#ffd21f':'#ffffff';
+    c.lineWidth=Math.max(1.2,1.5*dpr);
+    c.shadowColor='rgba(0,0,0,.9)';
+    c.shadowBlur=2*dpr;
+    c.beginPath();
+    c.moveTo(px-r,py); c.lineTo(px+r,py);
+    c.moveTo(px,py-r); c.lineTo(px,py+r);
+    c.stroke();
+    c.fillStyle=active?'#ffd21f':'#fff';
+    c.beginPath(); c.arc(px,py,1.4*dpr,0,Math.PI*2); c.fill();
+    c.restore();
+  }
+
+  function drawGlazePreview(canvas,image,which){
+    const rect=canvas.getBoundingClientRect();
+    const dpr=window.devicePixelRatio||1;
+    const w=Math.max(2,Math.round(rect.width*dpr));
+    const h=Math.max(2,Math.round(rect.height*dpr));
+    if(canvas.width!==w) canvas.width=w;
+    if(canvas.height!==h) canvas.height=h;
+    const c=canvas.getContext('2d');
+    c.clearRect(0,0,w,h);
+    if(!image) return;
+
+    const fit=Math.min(w/image.width,h/image.height);
+    const dw=image.width*fit, dh=image.height*fit;
+    const ox=(w-dw)/2, oy=(h-dh)/2;
+
+    if(which==='painting'){
+      const refW=dw*glazeAlign.scale, refH=dh*glazeAlign.scale;
+      const cx=ox+dw/2+glazeAlign.dx*dw;
+      const cy=oy+dh/2+glazeAlign.dy*dh;
+      c.save();
+      c.translate(cx,cy);
+      c.rotate((glazeAlign.rotation||0)*Math.PI/180);
+      c.drawImage(image,-refW/2,-refH/2,refW,refH);
+      c.restore();
+    }else{
+      c.drawImage(image,ox,oy,dw,dh);
+    }
+
+    glazePoints.forEach((pt,idx)=>{
+      const q=pt.originalPoint;
+      drawTinyMarker(c,ox+q.x*dw,oy+q.y*dh,idx,idx===glazeActivePoint,dpr);
+    });
+  }
+
+  function redrawGlazePreviews(){
+    drawGlazePreview(glazeOriginalCanvas,glazeOriginalImg,'original');
+    drawGlazePreview(glazePaintingCanvas,glazePaintingImg,'painting');
+    if(typeof redrawGlazeFullscreen==='function') redrawGlazeFullscreen();
+  }
+
+
+  function drawGlazeFullscreenCanvas(canvas,image,which){
+    const rect=canvas.getBoundingClientRect();
+    const dpr=window.devicePixelRatio||1;
+    const w=Math.max(2,Math.round(rect.width*dpr));
+    const h=Math.max(2,Math.round(rect.height*dpr));
+    if(canvas.width!==w) canvas.width=w;
+    if(canvas.height!==h) canvas.height=h;
+    const c=canvas.getContext('2d');
+    c.fillStyle='#1b1b1b'; c.fillRect(0,0,w,h);
+    if(!image) return;
+
+    const baseFit=Math.min(w/image.width,h/image.height);
+    const fit=baseFit*glazeFsView.zoom;
+    const dw=image.width*fit,dh=image.height*fit;
+    const ox=(w-dw)/2+glazeFsView.panX*dpr;
+    const oy=(h-dh)/2+glazeFsView.panY*dpr;
+
+    if(which==='painting'){
+      const refW=dw*glazeAlign.scale,refH=dh*glazeAlign.scale;
+      const cx=ox+dw/2+glazeAlign.dx*dw;
+      const cy=oy+dh/2+glazeAlign.dy*dh;
+      c.save();
+      c.translate(cx,cy);
+      c.rotate((glazeAlign.rotation||0)*Math.PI/180);
+      c.drawImage(image,-refW/2,-refH/2,refW,refH);
+      c.restore();
+    }else{
+      c.drawImage(image,ox,oy,dw,dh);
+    }
+
+    glazePoints.forEach((pt,idx)=>{
+      const q=pt.originalPoint;
+      drawTinyMarker(c,ox+q.x*dw,oy+q.y*dh,idx,idx===glazeActivePoint,dpr);
+    });
+  }
+
+  function redrawGlazeFullscreen(){
+    if(glazeFullscreen.style.display==='none') return;
+    drawGlazeFullscreenCanvas(glazeFsOriginalCanvas,glazeOriginalImg,'original');
+    drawGlazeFullscreenCanvas(glazeFsPaintingCanvas,glazePaintingImg,'painting');
+    glazeFsAlignInfo.textContent=glazeAlignInfo.textContent;
+    glazeFsPointInfo.textContent=glazeActivePoint>=0?`Aktiver Messpunkt: ${glazeActivePoint+1} · insgesamt ${glazePoints.length}`:`Messpunkte: ${glazePoints.length}`;
+  }
+
+  function openGlazeFullscreen(){
+    glazeFullscreen.style.display='block';
+    glazeFsView={zoom:1,panX:0,panY:0};
+    glazeFsRadius.value=glazeSampleRadius.value;
+    glazeFsRadiusVal.textContent=glazeFsRadius.value+' px';
+    setTimeout(redrawGlazeFullscreen,30);
+  }
+
+  function fullscreenOriginalPoint(clientX,clientY){
+    if(!glazePaintingImg) return null;
+    const canvas=glazeFsPaintingCanvas;
+    const rect=canvas.getBoundingClientRect();
+    const dpr=window.devicePixelRatio||1;
+    const w=canvas.width,h=canvas.height;
+    const sx=(clientX-rect.left)*dpr, sy=(clientY-rect.top)*dpr;
+    const fit=Math.min(w/glazePaintingImg.width,h/glazePaintingImg.height)*glazeFsView.zoom;
+    const dw=glazePaintingImg.width*fit,dh=glazePaintingImg.height*fit;
+    const ox=(w-dw)/2+glazeFsView.panX*dpr;
+    const oy=(h-dh)/2+glazeFsView.panY*dpr;
+    return {x:(sx-ox)/dw,y:(sy-oy)/dh};
+  }
+
+  function addGlazePointFromOriginalNorm(originalPoint){
+    if(!glazePaintingImg||!glazeOriginalImg) return;
+    if(!originalPoint||originalPoint.x<0||originalPoint.y<0||originalPoint.x>1||originalPoint.y>1) return;
+    const paintingPoint=originalToPaintingNorm(originalPoint);
+    if(paintingPoint.x<0||paintingPoint.y<0||paintingPoint.x>1||paintingPoint.y>1){
+      glazeFsPointInfo.textContent='Stelle liegt außerhalb des ausgerichteten Gemäldes.';
+      return;
+    }
+    const rad=Number(glazeFsRadius.value||glazeSampleRadius.value);
+    const base=sampleImageNormalized(glazePaintingImg,paintingPoint,rad);
+    const target=sampleImageNormalized(glazeOriginalImg,originalPoint,rad*(glazeOriginalImg.width/glazePaintingImg.width));
+    if(!base||!target) return;
+    glazePoints.push({originalPoint,paintingPoint,base,target});
+    glazeActivePoint=glazePoints.length-1;
+    glazePoint=originalPoint;glazeBase=[...base];glazeTarget=[...target];
+    renderGlazePoints();refreshGlazeColors();redrawGlazePreviews();redrawGlazeFullscreen();
+    glazeResults.innerHTML='<span class="tiny">Punkt '+glazePoints.length+' aufgenommen.</span>';
+  }
+
+  function loadGlazeImage(file,which){
+    if(!file) return;
+    const url=URL.createObjectURL(file);
+    const im=new Image();
+    im.onload=()=>{
+      if(which==='original') glazeOriginalImg=im;
+      else glazePaintingImg=im;
+      glazePoints=[]; glazeActivePoint=-1; glazePoint=null; glazeBase=null; glazeTarget=null;
+      glazeAlign={scale:1,rotation:0,dx:0,dy:0,score:null};
+      renderGlazePoints();
+      redrawGlazePreviews(); refreshGlazeColors();
+      glazeAlignInfo.textContent='Noch nicht ausgerichtet.';
+      glazeResults.innerHTML='<span class="tiny">Bild geladen. Beide Bilder laden, automatisch ausrichten und Messpunkte setzen.</span>';
+      URL.revokeObjectURL(url);
+    };
+    im.src=url;
+  }
+
+  function imageGrayThumb(image,size=96){
+    const c=document.createElement('canvas');
+    c.width=size;c.height=size;
+    const cc=c.getContext('2d',{willReadFrequently:true});
+    cc.fillStyle='#fff';cc.fillRect(0,0,size,size);
+    const fit=Math.min(size/image.width,size/image.height);
+    const dw=image.width*fit,dh=image.height*fit,ox=(size-dw)/2,oy=(size-dh)/2;
+    cc.drawImage(image,ox,oy,dw,dh);
+    const d=cc.getImageData(0,0,size,size).data;
+    const out=new Float32Array(size*size);
+    for(let i=0,j=0;i<d.length;i+=4,j++) out[j]=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    return out;
+  }
+
+  function alignScore(ref,mov,size,scale,rotation,dx,dy){
+    let err=0,n=0;
+    const a=-(rotation||0)*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a);
+    for(let y=9;y<size-9;y+=2){
+      for(let x=9;x<size-9;x+=2){
+        const qx=(x-size/2-dx)/scale;
+        const qy=(y-size/2-dy)/scale;
+        const ux=qx*ca-qy*sa+size/2;
+        const uy=qx*sa+qy*ca+size/2;
+        const ix=Math.round(ux),iy=Math.round(uy);
+        if(ix<1||iy<1||ix>=size-1||iy>=size-1)continue;
+        const av=ref[y*size+x],bv=mov[iy*size+ix],diff=av-bv;
+        const ax=Math.abs(ref[y*size+x+1]-ref[y*size+x-1]);
+        const ay=Math.abs(ref[(y+1)*size+x]-ref[(y-1)*size+x]);
+        const wt=1+Math.min(3,(ax+ay)/25);
+        err+=diff*diff*wt;n+=wt;
+      }
+    }
+    return n?err/n:Infinity;
+  }
+
+  function autoAlignGlaze(){
+    if(!glazeOriginalImg||!glazePaintingImg){
+      glazeAlignInfo.textContent='Bitte zuerst beide Bilder laden.';
+      return;
+    }
+    glazeAutoAlignBtn.disabled=true;
+    if(glazeFsAutoAlign)glazeFsAutoAlign.disabled=true;
+    glazeAlignInfo.textContent='Ausrichtung wird berechnet…';
+    if(glazeFsAlignInfo)glazeFsAlignInfo.textContent='Ausrichtung wird berechnet…';
+
+    setTimeout(()=>{
+      const size=84;
+      const ref=imageGrayThumb(glazeOriginalImg,size);
+      const mov=imageGrayThumb(glazePaintingImg,size);
+      let best={score:Infinity,scale:1,rotation:0,dx:0,dy:0};
+
+      // Grobsuche: leichte Drehung + Größe + Verschiebung.
+      for(let rotation=-8;rotation<=8;rotation+=2){
+        for(let scale=.86;scale<=1.1401;scale+=.04){
+          for(let dy=-14;dy<=14;dy+=4){
+            for(let dx=-14;dx<=14;dx+=4){
+              const score=alignScore(ref,mov,size,scale,rotation,dx,dy);
+              if(score<best.score)best={score,scale,rotation,dx,dy};
+            }
+          }
+        }
+      }
+
+      const coarse={...best};
+      // Feinsuche um den besten Bereich.
+      for(let rotation=coarse.rotation-2;rotation<=coarse.rotation+2.001;rotation+=.5){
+        for(let scale=Math.max(.80,coarse.scale-.04);scale<=Math.min(1.20,coarse.scale+.04)+.001;scale+=.01){
+          for(let dy=coarse.dy-4;dy<=coarse.dy+4;dy+=1){
+            for(let dx=coarse.dx-4;dx<=coarse.dx+4;dx+=1){
+              const score=alignScore(ref,mov,size,scale,rotation,dx,dy);
+              if(score<best.score)best={score,scale,rotation,dx,dy};
+            }
+          }
+        }
+      }
+
+      glazeAlign={
+        scale:best.scale,
+        rotation:best.rotation,
+        dx:best.dx/size,
+        dy:best.dy/size,
+        score:best.score
+      };
+
+      glazePoints=[];glazeActivePoint=-1;glazePoint=null;glazeBase=null;glazeTarget=null;
+      renderGlazePoints();refreshGlazeColors();redrawGlazePreviews();redrawGlazeFullscreen();
+
+      const quality=best.score<350?'sehr gut':best.score<900?'gut':best.score<1800?'mittel':'unsicher';
+      glazeAlignInfo.textContent=`Automatisch ausgerichtet · Qualität: ${quality} · Größe ${Math.round(best.scale*100)} % · Drehung ${best.rotation.toFixed(1)}° · Verschiebung ${Math.round(best.dx)} / ${Math.round(best.dy)} px`;
+      if(glazeFsAlignInfo)glazeFsAlignInfo.textContent=glazeAlignInfo.textContent;
+      glazeAutoAlignBtn.disabled=false;
+      if(glazeFsAutoAlign)glazeFsAutoAlign.disabled=false;
+      glazeResults.innerHTML='<span class="tiny">Ausrichtung fertig. Jetzt mehrere Stellen aufnehmen.</span>';
+    },30);
+  }
+
+  function sampleImageNormalized(image,point,radiusPx){
+    if(!image||!point||point.x<0||point.y<0||point.x>1||point.y>1) return null;
+    const c=document.createElement('canvas');
+    c.width=image.width;c.height=image.height;
+    const cc=c.getContext('2d',{willReadFrequently:true});
+    cc.drawImage(image,0,0);
+    const cx=Math.round(point.x*image.width), cy=Math.round(point.y*image.height);
+    const r=Math.max(1,Math.round(radiusPx));
+    const x0=Math.max(0,cx-r), y0=Math.max(0,cy-r);
+    const x1=Math.min(image.width,cx+r+1), y1=Math.min(image.height,cy+r+1);
+    const w=Math.max(1,x1-x0), h=Math.max(1,y1-y0);
+    const d=cc.getImageData(x0,y0,w,h).data;
+    const vals=[];
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const dx=x+x0-cx,dy=y+y0-cy;
+      if(dx*dx+dy*dy>r*r)continue;
+      const i=(y*w+x)*4;if(d[i+3]>20) vals.push([d[i],d[i+1],d[i+2]]);
+    }
+    if(!vals.length)return null;
+    // Robust average: remove darkest/lightest 10% by luminance.
+    vals.sort((a,b)=>(a[0]+a[1]+a[2])-(b[0]+b[1]+b[2]));
+    const cut=Math.floor(vals.length*.10), use=vals.slice(cut,Math.max(cut+1,vals.length-cut));
+    return [0,1,2].map(ch=>Math.round(use.reduce((sum,v)=>sum+v[ch],0)/use.length));
+  }
+
+  function activateGlazePoint(index){
+    if(index<0||index>=glazePoints.length)return;
+    glazeActivePoint=index;
+    const pt=glazePoints[index];
+    glazePoint=pt.originalPoint;
+    glazeBase=[...pt.base];
+    glazeTarget=[...pt.target];
+    refreshGlazeColors();renderGlazePoints();redrawGlazePreviews();redrawGlazeFullscreen();
+    glazeResults.innerHTML='<span class="tiny">Messpunkt '+(index+1)+' aktiv. Lasur kann berechnet werden.</span>';
+  }
+
+  function renderGlazePoints(){
+    glazePointsList.innerHTML='';
+    if(!glazePoints.length){
+      glazePointsList.innerHTML='<div class="tiny">Noch keine Messpunkte.</div>';
+      return;
+    }
+    glazePoints.forEach((pt,i)=>{
+      const row=document.createElement('div');
+      row.className='mix-card';
+      row.style.padding='7px';
+      row.style.cursor='pointer';
+      const resultText=pt.glazeResult
+        ? `<div class="tiny" style="margin-top:3px;"><b>${pt.glazeResult.recipe}</b> · ${pt.glazeResult.match}%</div>`
+        : '';
+      row.innerHTML=`<div class="mix-head"><b>Punkt ${i+1}</b><span>${i===glazeActivePoint?'aktiv':''}</span></div>
+        <div class="tiny">Gemälde ${rgbHex(pt.base)} → Original ${rgbHex(pt.target)}</div>${resultText}`;
+      row.addEventListener('click',()=>activateGlazePoint(i));
+      glazePointsList.appendChild(row);
+    });
+  }
+
+  function pickGlazeComparisonPoint(clientX,clientY){
+    if(!glazePaintingImg||!glazeOriginalImg){
+      glazeColorInfo.textContent='Bitte zuerst Originalfoto und Gemälde laden.';
+      return;
+    }
+    const r=glazePaintingCanvas.getBoundingClientRect();
+    const dpr=window.devicePixelRatio||1;
+    const cw=glazePaintingCanvas.width,ch=glazePaintingCanvas.height;
+    const sx=(clientX-r.left)*dpr, sy=(clientY-r.top)*dpr;
+
+    // Because the painting preview is displayed in aligned/original coordinates,
+    // a tap directly specifies the original normalized location.
+    const fit=Math.min(cw/glazePaintingImg.width,ch/glazePaintingImg.height);
+    const dw=glazePaintingImg.width*fit,dh=glazePaintingImg.height*fit;
+    const ox=(cw-dw)/2,oy=(ch-dh)/2;
+    const originalPoint={x:(sx-ox)/dw,y:(sy-oy)/dh};
+    if(originalPoint.x<0||originalPoint.y<0||originalPoint.x>1||originalPoint.y>1)return;
+
+    const paintingPoint=originalToPaintingNorm(originalPoint);
+    if(paintingPoint.x<0||paintingPoint.y<0||paintingPoint.x>1||paintingPoint.y>1){
+      glazeColorInfo.textContent='Diese Stelle liegt nach der Ausrichtung außerhalb des Gemäldefotos.';
+      return;
+    }
+
+    const rad=Number(glazeSampleRadius.value);
+    const base=sampleImageNormalized(glazePaintingImg,paintingPoint,rad);
+    const target=sampleImageNormalized(glazeOriginalImg,originalPoint,rad*(glazeOriginalImg.width/glazePaintingImg.width));
+    if(!base||!target)return;
+
+    const pt={originalPoint,paintingPoint,base,target};
+    glazePoints.push(pt);
+    glazeActivePoint=glazePoints.length-1;
+    glazePoint=originalPoint;glazeBase=[...base];glazeTarget=[...target];
+    renderGlazePoints();redrawGlazePreviews();refreshGlazeColors();
+    glazeResults.innerHTML='<span class="tiny">Punkt '+glazePoints.length+' aufgenommen. Weitere Punkte können sofort hinzugefügt werden.</span>';
+  }
+
+  function setGlazeMedium(m){
+    glazeMedium=m;
+    glazeWaterBtn.classList.toggle('active',m==='water');
+    glazeWaterBtn.classList.toggle('secondary',m!=='water');
+    glazeOilBtn.classList.toggle('active',m==='oil');
+    glazeOilBtn.classList.toggle('secondary',m!=='oil');
+    [...glazePalette.options].forEach(o=>{
+      if(m==='oil') o.disabled=o.value!=='artisan';
+      else o.disabled=o.value==='artisan';
+    });
+    if(m==='oil') glazePalette.value='artisan';
+    else if(glazePalette.value==='artisan') glazePalette.value='horadam';
+
+    // Praxisnah sanfter Startwert.
+    glazeMaxStrength.value=m==='water'?'18':'22';
+    glazeMaxStrengthVal.textContent=glazeMaxStrength.value+' %';
+    glazeResults.innerHTML='<span class="tiny">Originalfoto und Gemälde vergleichen.</span>';
+  }
+
+  function bestSingleGlazes(colors,maxStrength){
+    const out=[];
+    if(!glazeBase||!glazeTarget) return out;
+    const step=2;
+    for(const [name,rgb,series] of colors){
+      let best=null;
+      for(let strength=2;strength<=maxStrength;strength+=step){
+        const result=glazeApply(glazeBase,rgb,strength,glazeMedium);
+        const d=glazeDistance(result,glazeTarget);
+        if(!best||d<best.d) best={type:1,name1:name,rgb1:rgb,s1:strength,result,d};
+      }
+      if(best) out.push(best);
+    }
+    return out.sort((a,b)=>a.d-b.d);
+  }
+
+  function bestDoubleGlazes(colors,maxStrength,singleBest){
+    // Nur die stärksten Einzelkandidaten kombinieren, damit es auf dem iPad flüssig bleibt.
+    const pool=singleBest.slice(0,Math.min(16,singleBest.length));
+    const out=[];
+    const strengths=[];
+    for(let v=4;v<=maxStrength;v+=4) strengths.push(v);
+
+    for(let i=0;i<pool.length;i++){
+      for(let j=0;j<pool.length;j++){
+        if(i===j) continue;
+        const a=pool[i], b=pool[j];
+        let best=null;
+        for(const s1 of strengths){
+          const first=glazeApply(glazeBase,a.rgb1,s1,glazeMedium);
+          for(const s2 of strengths){
+            const result=glazeApply(first,b.rgb1,s2,glazeMedium);
+            const d=glazeDistance(result,glazeTarget);
+            if(!best||d<best.d){
+              best={
+                type:2,
+                name1:a.name1,rgb1:a.rgb1,s1,
+                name2:b.name1,rgb2:b.rgb1,s2,
+                first,result,d
+              };
+            }
+          }
+        }
+        if(best)out.push(best);
+      }
+    }
+    return out.sort((a,b)=>a.d-b.d);
+  }
+
+  function bestTripleGlazes(colors,maxStrength,singleBest,doubleBest){
+    // Drei Lasuren nur aus den überzeugendsten bisherigen Kandidaten aufbauen.
+    // Dadurch bleibt die Suche trotz großer persönlicher Palette praktikabel.
+    const singles=singleBest.slice(0,Math.min(12,singleBest.length));
+    const doubles=doubleBest.slice(0,Math.min(14,doubleBest.length));
+    const strengths=[];
+    for(let v=4;v<=maxStrength;v+=4) strengths.push(v);
+
+    const out=[];
+    for(const d2 of doubles){
+      for(const c of singles){
+        // Nicht dreimal dieselbe Farbe; gleiche Farbe als zweite Verstärkung ist okay,
+        // aber drei identische Schritte bringen keinen praktischen Mehrwert.
+        const sameCount=[d2.name1,d2.name2].filter(n=>n===c.name1).length;
+        if(sameCount>=2)continue;
+
+        let best=null;
+        for(const s3 of strengths){
+          const result=glazeApply(d2.result,c.rgb1,s3,glazeMedium);
+          const dist=glazeDistance(result,glazeTarget);
+          if(!best||dist<best.d){
+            best={
+              type:3,
+              name1:d2.name1,rgb1:d2.rgb1,s1:d2.s1,
+              name2:d2.name2,rgb2:d2.rgb2,s2:d2.s2,
+              name3:c.name1,rgb3:c.rgb1,s3,
+              first:d2.first,
+              second:d2.result,
+              result,
+              d:dist
+            };
+          }
+        }
+        if(best)out.push(best);
+      }
+    }
+    return out.sort((a,b)=>a.d-b.d);
+  }
+
+  function glazeStrengthText(v){
+    if(v<=8) return 'sehr dünn';
+    if(v<=16) return 'dünn';
+    if(v<=24) return 'mittel';
+    return 'kräftiger';
+  }
+
+  function renderGlazeCard(item,rank,bestSingleDistance){
+    const match=glazeMatchPercent(item.result,glazeTarget);
+    const card=document.createElement('div');
+    card.className='mix-card';
+    const isBest=rank===0;
+    const title=isBest?'Beste Lösung':`Alternative ${rank+1}`;
+    let recipe='';
+    let progress='';
+
+    if(item.type===1){
+      recipe=`<b>Eine Lasur</b><br>${item.name1} · ${item.s1}% Farbwirkung (${glazeStrengthText(item.s1)})`;
+      const mid=glazeApply(glazeBase,item.rgb1,item.s1,glazeMedium);
+      progress=`
+        <div class="mix-swatches" style="margin-top:7px;">
+          <div><div class="tiny">Grundfarbe</div><div class="mix-swatch" style="background:${rgbHex(glazeBase)}"></div></div>
+          <div><div class="tiny">1. Lasur</div><div class="mix-swatch" style="background:${rgbHex(mid)}"></div></div>
+          <div><div class="tiny">Ziel</div><div class="mix-swatch" style="background:${rgbHex(glazeTarget)}"></div></div>
+        </div>`;
+    }else if(item.type===2){
+      recipe=`<b>Zwei Lasuren</b><br>1. ${item.name1} · ${item.s1}%<br>2. ${item.name2} · ${item.s2}%`;
+      progress=`
+        <div class="mix-swatches" style="margin-top:7px;">
+          <div><div class="tiny">Grundfarbe</div><div class="mix-swatch" style="background:${rgbHex(glazeBase)}"></div></div>
+          <div><div class="tiny">1. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.first)}"></div></div>
+          <div><div class="tiny">2. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.result)}"></div></div>
+          <div><div class="tiny">Ziel</div><div class="mix-swatch" style="background:${rgbHex(glazeTarget)}"></div></div>
+        </div>`;
+    }else{
+      recipe=`<b>Drei Lasuren</b><br>1. ${item.name1} · ${item.s1}%<br>2. ${item.name2} · ${item.s2}%<br>3. ${item.name3} · ${item.s3}%`;
+      progress=`
+        <div class="mix-swatches" style="margin-top:7px;">
+          <div><div class="tiny">Grundfarbe</div><div class="mix-swatch" style="background:${rgbHex(glazeBase)}"></div></div>
+          <div><div class="tiny">1. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.first)}"></div></div>
+          <div><div class="tiny">2. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.second)}"></div></div>
+          <div><div class="tiny">3. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.result)}"></div></div>
+          <div><div class="tiny">Ziel</div><div class="mix-swatch" style="background:${rgbHex(glazeTarget)}"></div></div>
+        </div>`;
+    }
+
+    card.innerHTML=`
+      <div class="mix-head"><b>${title}</b><span>${match}% Annäherung</span></div>
+      <div style="margin-top:6px;">${recipe}</div>
+      ${progress}
+      <div class="tiny" style="margin-top:6px;">Berechnetes Ergebnis: ${rgbHex(item.result)} · RGB ${item.result.join(', ')}</div>
+    `;
+    return card;
+  }
+
+  function computeGlazeSuggestionFor(base,target){
+    const saveBase=glazeBase,saveTarget=glazeTarget;
+    glazeBase=base;glazeTarget=target;
+    try{
+      const colors=glazeActiveColors();
+      if(!colors.length)return null;
+      const maxStrength=Number(glazeMaxStrength.value);
+      const singles=bestSingleGlazes(colors,maxStrength);
+      if(!singles.length)return null;
+      const doubles=bestDoubleGlazes(colors,maxStrength,singles);
+      const triples=bestTripleGlazes(colors,maxStrength,singles,doubles);
+
+      const bestSingle=singles[0];
+      const bestDouble=doubles[0];
+      const bestTriple=triples[0];
+
+      // Einfach vor komplex, aber keine künstliche Begrenzung auf eine Farbe:
+      // 2 Lasuren dürfen gewinnen, wenn sie ~10% besser sind.
+      // 3 Lasuren dürfen gewinnen, wenn sie gegenüber der besten 2er-Lösung
+      // noch einmal einen klaren sichtbaren Gewinn bringen.
+      let best=bestSingle;
+      if(bestDouble && bestDouble.d < best.d*.90) best=bestDouble;
+      if(bestTriple && bestTriple.d < best.d*.90) best=bestTriple;
+
+      const match=glazeMatchPercent(best.result,target);
+      const recipe=best.type===1
+        ? `${best.name1} ${best.s1}%`
+        : best.type===2
+          ? `${best.name1} ${best.s1}% → ${best.name2} ${best.s2}%`
+          : `${best.name1} ${best.s1}% → ${best.name2} ${best.s2}% → ${best.name3} ${best.s3}%`;
+      return {best,match,recipe};
+    }finally{
+      glazeBase=saveBase;glazeTarget=saveTarget;
+    }
+  }
+
+  function calculateAllGlazePoints(){
+    if(!glazePoints.length){
+      glazeResults.innerHTML='<b>Bitte zuerst Messpunkte setzen.</b>';
+      return;
+    }
+    if(!glazeActiveColors().length){
+      glazeResults.innerHTML='<b>Bitte zuerst vorhandene Farben in der Palette aktivieren.</b>';
+      return;
+    }
+    glazeCalcAllBtn.disabled=true;
+    glazeResults.innerHTML='<span class="tiny">Lasuren für alle Messpunkte werden berechnet…</span>';
+    let index=0;
+    const next=()=>{
+      if(index>=glazePoints.length){
+        glazeCalcAllBtn.disabled=false;
+        renderGlazePoints();
+        glazeResults.innerHTML='<b>Alle Messpunkte berechnet.</b><br><span class="tiny">Die beste Lasur steht jetzt direkt bei jedem Punkt. Einen Punkt antippen, um die ausführlichen Alternativen zu sehen.</span>';
+        return;
+      }
+      const pt=glazePoints[index];
+      pt.glazeResult=computeGlazeSuggestionFor(pt.base,pt.target);
+      index++;
+      renderGlazePoints();
+      glazeResults.innerHTML=`<span class="tiny">Berechnung ${index} von ${glazePoints.length}…</span>`;
+      setTimeout(next,15);
+    };
+    next();
+  }
+
+  function calculateGlazes(){
+    if(!glazeTarget){
+      glazeResults.innerHTML='<b>Bitte zuerst einen Messpunkt im Gemälde auswählen.</b>';
+      return;
+    }
+    const colors=glazeActiveColors();
+    if(!colors.length){
+      glazeResults.innerHTML='<b>In dieser Palette ist noch keine vorhandene Farbe ausgewählt. Bitte zuerst deine Farben in der Palettenverwaltung aktivieren.</b>';
+      return;
+    }
+
+    const maxStrength=Number(glazeMaxStrength.value);
+    glazeResults.innerHTML='<span class="tiny">1-, 2- und 3-Lasuren-Folgen werden berechnet…</span>';
+
+    setTimeout(()=>{
+      const singles=bestSingleGlazes(colors,maxStrength);
+      if(!singles.length){
+        glazeResults.innerHTML='<b>Keine passende Lasur gefunden.</b>';
+        return;
+      }
+
+      const doubles=bestDoubleGlazes(colors,maxStrength,singles);
+      const triples=bestTripleGlazes(colors,maxStrength,singles,doubles);
+
+      const bestSingle=singles[0];
+      const bestDouble=doubles[0];
+      const bestTriple=triples[0];
+
+      // Kandidaten nach praktischer Güte auswählen.
+      // Komplexere Folgen müssen sichtbar besser sein, werden aber nicht ausgeschlossen.
+      let best=bestSingle;
+      if(bestDouble && bestDouble.d < best.d*.90)best=bestDouble;
+      if(bestTriple && bestTriple.d < best.d*.90)best=bestTriple;
+
+      const chosen=[best];
+
+      // Je eine sinnvolle Alternative aus den anderen Komplexitätsstufen.
+      const candidates=[bestSingle,bestDouble,bestTriple].filter(Boolean)
+        .sort((a,b)=>a.d-b.d);
+
+      for(const c of candidates){
+        if(chosen.length>=3)break;
+        const sig=c.type===1
+          ? `1:${c.name1}`
+          : c.type===2
+            ? `2:${c.name1}|${c.name2}`
+            : `3:${c.name1}|${c.name2}|${c.name3}`;
+        const exists=chosen.some(x=>{
+          const xs=x.type===1?`1:${x.name1}`:x.type===2?`2:${x.name1}|${x.name2}`:`3:${x.name1}|${x.name2}|${x.name3}`;
+          return xs===sig;
+        });
+        if(!exists)chosen.push(c);
+      }
+
+      // Falls noch Platz: nächstbeste andere Farbrezepte.
+      for(const arr of [singles,doubles,triples]){
+        for(const c of arr.slice(1,5)){
+          if(chosen.length>=3)break;
+          const names=c.type===1?[c.name1]:c.type===2?[c.name1,c.name2]:[c.name1,c.name2,c.name3];
+          if(!chosen.some(x=>{
+            const xn=x.type===1?[x.name1]:x.type===2?[x.name1,x.name2]:[x.name1,x.name2,x.name3];
+            return JSON.stringify(xn)===JSON.stringify(names);
+          }))chosen.push(c);
+        }
+        if(chosen.length>=3)break;
+      }
+
+      glazeResults.innerHTML='';
+      chosen.slice(0,3).forEach((item,i)=>glazeResults.appendChild(renderGlazeCard(item,i,bestSingle.d)));
+
+      if(glazeActivePoint>=0&&glazePoints[glazeActivePoint]){
+        const b=chosen[0];
+        glazePoints[glazeActivePoint].glazeResult={
+          best:b,
+          match:glazeMatchPercent(b.result,glazeTarget),
+          recipe:b.type===1
+            ? `${b.name1} ${b.s1}%`
+            : b.type===2
+              ? `${b.name1} ${b.s1}% → ${b.name2} ${b.s2}%`
+              : `${b.name1} ${b.s1}% → ${b.name2} ${b.s2}% → ${b.name3} ${b.s3}%`
+        };
+        renderGlazePoints();
+      }
+
+      const note=document.createElement('div');
+      note.className='tiny';
+      note.style.marginTop='8px';
+      note.innerHTML=glazeMedium==='water'
+        ? 'Aquarell: bis zu drei nacheinander aufgetragene, transparente Lasuren. Jede Schicht trocknen lassen. Die einfachere Folge bleibt vorne, wenn zusätzliche Lasuren kaum verbessern.'
+        : 'Öl: bis zu drei transparente Lasuren. Zwischen den Schichten ausreichend trocknen lassen; Deckkraft und Malmittel verändern das reale Ergebnis.';
+      glazeResults.appendChild(note);
+    },30);
+  }
+
+  function correctedColor(){
+    if(!correctionBase) return null;
+    let [h,sv,v]=rgbToHsv(correctionBase);
+    v=Math.max(0,Math.min(1,v+Number(corrLight.value)/100));
+    sv=Math.max(0,Math.min(1,sv+Number(corrSat.value)/100));
+    h=(h+Number(corrWarm.value)*0.55+360)%360;
+    return hsvToRgb(h,sv,v);
+  }
+  function refreshCorrection(){
+    const c=correctedColor();
+    corrLightVal.textContent=corrLight.value;
+    corrWarmVal.textContent=corrWarm.value;
+    corrSatVal.textContent=corrSat.value;
+    if(!correctionBase||!c){corrInfo.textContent='Noch keine Farbe übernommen.';return;}
+    corrOriginal.style.background=rgbHex(correctionBase);
+    corrResult.style.background=rgbHex(c);
+    corrInfo.textContent=`${rgbHex(c)} · RGB ${c.join(', ')}`;
+  }
+
+  function clusterArea(cx,cy,size,shape){
+    const srcCtx=sourceContextForPicker();
+    const w=srcCtx.canvas.width,h=srcCtx.canvas.height;
+    const half=Math.max(12,Math.round(size/2));
+    const pts=[];
+    const x0=Math.max(0,Math.floor(cx-half)),x1=Math.min(w-1,Math.ceil(cx+half));
+    const y0=Math.max(0,Math.floor(cy-half)),y1=Math.min(h-1,Math.ceil(cy+half));
+    const step=Math.max(1,Math.floor(size/40));
+
+    // Wenn „Nur diese Farbe zeigen“ aktiv ist, werden für die Flächenanalyse
+    // ausschließlich Pixel aus genau dieser sichtbaren Farbfamilie benutzt.
+    const isolatedLab=activeIsolatedColor ? rgbToLabFast(activeIsolatedColor) : null;
+    const isolatedTolerance=currentColorTolerance();
+
+    for(let y=y0;y<=y1;y+=step)for(let x=x0;x<=x1;x+=step){
+      if(shape==='circle'){const dx=x-cx,dy=y-cy;if(dx*dx+dy*dy>half*half)continue;}
+      const q=srcCtx.getImageData(x,y,1,1).data;
+      const rgb=[q[0],q[1],q[2]];
+      if(isolatedLab && deltaE76FromLab(rgbToLabFast(rgb),isolatedLab)>isolatedTolerance) continue;
+      pts.push(rgb);
+    }
+    if(pts.length<4)return[];
+
+    // Bei isolierter Farbe werden die Startpunkte nach Helligkeit verteilt.
+    // So entstehen gezielt vier malerisch brauchbare Nuancen derselben Farbe.
+    const seedPts=isolatedLab
+      ? pts.slice().sort((a,b)=>(.2126*a[0]+.7152*a[1]+.0722*a[2])-(.2126*b[0]+.7152*b[1]+.0722*b[2]))
+      : pts;
+
+    let centers=[.12,.37,.63,.88].map(f=>[...seedPts[Math.min(seedPts.length-1,Math.floor(seedPts.length*f))]]);
+    for(let it=0;it<6;it++){
+      const sums=centers.map(()=>[0,0,0,0]);
+      for(const q of pts){let bi=0,bd=Infinity;centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});sums[bi][0]+=q[0];sums[bi][1]+=q[1];sums[bi][2]+=q[2];sums[bi][3]++;}
+      centers=sums.map((a,j)=>a[3]?[a[0]/a[3],a[1]/a[3],a[2]/a[3]]:centers[j]);
+    }
+    const counts=centers.map(()=>0);
+    for(const q of pts){let bi=0,bd=Infinity;centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});counts[bi]++;}
+
+    const result=centers.map((c,i)=>({rgb:c.map(v=>Math.round(v)),pct:100*counts[i]/pts.length}));
+    return isolatedLab
+      ? result.sort((a,b)=>(.2126*b.rgb[0]+.7152*b.rgb[1]+.0722*b.rgb[2])-(.2126*a.rgb[0]+.7152*a.rgb[1]+.0722*a.rgb[2]))
+      : result.sort((a,b)=>b.pct-a.pct);
+  }
+
+
+  // Wahrnehmungsnähere Farbsuche für "Nur diese Farbe zeigen".
+  // CIELAB/Delta-E trennt ähnliche Helligkeiten und Farbtöne zuverlässiger
+  // als ein einfacher RGB-Abstand.
+  function rgbToLabFast(rgb){
+    let [r,g,b]=rgb.map(v=>v/255);
+    const lin=v=>v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);
+    r=lin(r); g=lin(g); b=lin(b);
+    let x=(r*.4124564+g*.3575761+b*.1804375)/.95047;
+    let y=(r*.2126729+g*.7151522+b*.0721750);
+    let z=(r*.0193339+g*.1191920+b*.9503041)/1.08883;
+    const f=v=>v>.008856?Math.cbrt(v):(7.787*v+16/116);
+    const fx=f(x), fy=f(y), fz=f(z);
+    return [116*fy-16,500*(fx-fy),200*(fy-fz)];
+  }
+
+  function deltaE76FromLab(a,b){
+    const d0=a[0]-b[0],d1=a[1]-b[1],d2=a[2]-b[2];
+    return Math.sqrt(d0*d0+d1*d1+d2*d2);
+  }
+
+  function currentColorTolerance(){
+    return Number(pickerColorTolerance ? pickerColorTolerance.value : 12);
+  }
+
+  let activeIsolatedColor=null;
+  let activeIsolatedLabel='Farbe';
+
+  function isolateColorAcrossImage(target,label='Farbe'){
+    activeIsolatedColor=target ? [...target] : null;
+    activeIsolatedLabel=label;
+    surfaceMarkCanvas=null;
+    if(!loaded || !target){ draw(); return; }
+
+    const src=sourceContextForPicker();
+    const w=processedCanvas.width, h=processedCanvas.height;
+    const original=src.getImageData(0,0,w,h);
+    const out=document.createElement('canvas'); out.width=w; out.height=h;
+    const oc=out.getContext('2d');
+    const isolated=oc.createImageData(w,h);
+    const d=original.data, o=isolated.data;
+    const targetLab=rgbToLabFast(target);
+    const tolerance=currentColorTolerance();
+
+    // Nicht passende Farben werden sehr hell neutral dargestellt.
+    // Passende Pixel bleiben mit ihrer echten Bildfarbe sichtbar.
+    for(let i=0;i<d.length;i+=4){
+      const lab=rgbToLabFast([d[i],d[i+1],d[i+2]]);
+      if(deltaE76FromLab(lab,targetLab)<=tolerance){
+        o[i]=d[i]; o[i+1]=d[i+1]; o[i+2]=d[i+2]; o[i+3]=255;
+      }else{
+        o[i]=247; o[i+1]=247; o[i+2]=247; o[i+3]=255;
+      }
+    }
+    oc.putImageData(isolated,0,0);
+    surfaceMarkCanvas=out;
+    draw();
+    hint.textContent=`${label}: ähnliche Farbe im ganzen Bild sichtbar`;
+  }
+
+  function surfaceInsideSelection(x,y){
+    if(!surfacePreview) return false;
+    const dx=x-surfacePreview.x, dy=y-surfacePreview.y;
+    const half=surfacePreview.size/2;
+    if(surfacePreview.shape==='circle') return dx*dx+dy*dy <= half*half;
+    return Math.abs(dx)<=half && Math.abs(dy)<=half;
+  }
+
+  function buildSurfaceMark(index){
+    surfaceSelectedIndex=index;
+    if(!loaded || !surfaceClusters[index]){ surfaceMarkCanvas=null; draw(); return; }
+    isolateColorAcrossImage(surfaceClusters[index].rgb,`Flächenberater · Hauptfarbe ${index+1}`);
+  }
+
+  function zoomSurfaceCluster(index){
+    if(!loaded || !surfaceClusters[index]) return;
+    const target=surfaceClusters[index].rgb;
+    const targetLab=rgbToLabFast(target);
+    const tolerance=currentColorTolerance();
+    const src=sourceContextForPicker();
+    const w=processedCanvas.width, h=processedCanvas.height;
+    const d=src.getImageData(0,0,w,h).data;
+
+    let minX=w,minY=h,maxX=-1,maxY=-1;
+    const step=Math.max(1,Math.floor(Math.max(w,h)/900));
+    for(let y=0;y<h;y+=step){
+      for(let x=0;x<w;x+=step){
+        const i=(y*w+x)*4;
+        const lab=rgbToLabFast([d[i],d[i+1],d[i+2]]);
+        if(deltaE76FromLab(lab,targetLab)<=tolerance){
+          if(x<minX)minX=x;if(x>maxX)maxX=x;
+          if(y<minY)minY=y;if(y>maxY)maxY=y;
+        }
+      }
+    }
+    if(maxX<minX || maxY<minY) return;
+
+    const pad=Math.max(12,Math.round(Math.min(w,h)*.025));
+    minX=Math.max(0,minX-pad); minY=Math.max(0,minY-pad);
+    maxX=Math.min(w,maxX+pad); maxY=Math.min(h,maxY+pad);
+
+    const vr=viewer.getBoundingClientRect();
+    const bw=Math.max(1,maxX-minX), bh=Math.max(1,maxY-minY);
+    const desired=Math.min(vr.width/bw,vr.height/bh)*.78;
+    scale=Math.max(.05,Math.min(24,desired));
+    const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+    offsetX=vr.width/2-cx*scale;
+    offsetY=vr.height/2-cy*scale;
+    isolateColorAcrossImage(target,`Flächenberater · Hauptfarbe ${index+1}`);
+  }
+
+  function clearSurfaceMark(){
+    surfaceSelectedIndex=null;
+    surfaceMarkCanvas=null;
+    draw();
+  }
+
+  function renderSurface(clusters){
+    const nuanceMode=!!activeIsolatedColor;
+    surfaceClusters=clusters.map(c=>({rgb:[...c.rgb],pct:c.pct}));
+    surfaceSelectedIndex=null;
+    if(!nuanceMode) surfaceMarkCanvas=null;
+    surfaceResults.innerHTML='';
+    if(nuanceMode && !clusters.length){
+      surfaceResults.innerHTML='<span class="tiny">In diesem Bereich sind zu wenige Pixel der angezeigten Farbe. Kreis etwas größer machen oder auf einen stärker sichtbaren Bereich setzen.</span>';
+      return;
+    }
+    clusters.forEach((c,i)=>{
+      const row=document.createElement('div');row.className='pc-card';
+      row.innerHTML=`
+        <div class="swatch-line">
+          <div class="small-swatch" style="background:${rgbHex(c.rgb)}"></div>
+          <div><b>${nuanceMode ? 'Nuance' : 'Hauptfarbe'} ${i+1}</b><br><span class="tiny">${Math.round(c.pct)}% · ${rgbHex(c.rgb)} · RGB ${c.rgb.join(', ')}</span></div>
+        </div>
+        <div class="grid2" style="margin-top:7px;">
+          <button class="surfaceMarkBtn secondary">Nur diese Farbe zeigen</button>
+          <button class="surfaceZoomBtn secondary">Bereich vergrößern</button>
+        </div>
+        <button class="surfaceMixBtn" style="width:100%;margin-top:6px;">Diese Farbe als Studio-Mischung</button>`;
+      row.querySelector('.surfaceMarkBtn').onclick=()=>buildSurfaceMark(i);
+      row.querySelector('.surfaceZoomBtn').onclick=()=>zoomSurfaceCluster(i);
+      row.querySelector('.surfaceMixBtn').onclick=()=>{
+        setMixTarget(c.rgb,`${nuanceMode ? 'Nuance' : 'Hauptfarbe'} ${i+1}`);
+        correctionBase=[...c.rgb]; refreshCorrection();
+        showStudioMixPage();
+      };
+      surfaceResults.appendChild(row);
+    });
+  }
+
+
+  function ideaColor(){
+    if(!ideasBase)return null;
+    let [h,sv,v]=rgbToHsv(ideasBase);
+    v=Math.max(0,Math.min(1,v+Number(ideaLight.value)/100));
+    sv=Math.max(0,Math.min(1,sv+Number(ideaSat.value)/100));
+    h=(h+Number(ideaWarm.value)*0.55+360)%360;
+    return hsvToRgb(h,sv,v);
+  }
+  function refreshIdea(){
+    ideaLightVal.textContent=ideaLight.value;
+    ideaWarmVal.textContent=ideaWarm.value;
+    ideaSatVal.textContent=ideaSat.value;
+    const c=ideaColor();
+    if(!ideasBase||!c){ideaInfo.textContent='Pipettenfarbe übernehmen.';return;}
+    ideaBase.style.background=rgbHex(ideasBase);ideaResult.style.background=rgbHex(c);
+    ideaInfo.textContent=`${rgbHex(c)} · RGB ${c.join(', ')}`;
+  }
+
+
+  let selectedPairMix=null;
+  let selectedAdjustColor=null;
+
+  function pairMixRgb(a,b,pct){
+    const f=Math.max(0,Math.min(1,Number(pct)/100));
+    return [0,1,2].map(ch=>Math.round(a[ch]*f+b[ch]*(1-f)));
+  }
+  function pairLum(rgb){return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];}
+  function pairClamp(v){return Math.max(0,Math.min(255,Math.round(v)));}
+  function pairLight(rgb,v){
+    const t=Math.max(-1,Math.min(1,Number(v)/100));
+    return rgb.map(x=>t>=0?pairClamp(x+(255-x)*t):pairClamp(x*(1+t)));
+  }
+  function pairAdd(rgb,c,amount){
+    const f=Math.max(0,Math.min(1,Number(amount)/100));
+    return [0,1,2].map(ch=>pairClamp(rgb[ch]*(1-f)+c[ch]*f));
+  }
+  function pairColorByName(name){
+    const colors=selectedPaletteColors(paintPalette.value);
+    const hit=colors.find(x=>x[0]===name);
+    return hit ? hit[1] : null;
+  }
+  function pairCandidates(base,kind){
+    const amount=Number(pairEditAmount.value);
+    const baseL=pairLum(base);
+    return selectedPaletteColors(paintPalette.value).map(c=>{
+      const rgb=pairAdd(base,c[1],amount);
+      return {name:c[0],rgb:c[1],out:rgb,delta:pairLum(rgb)-baseL};
+    }).filter(x=>kind==='lighter'?x.delta>1:x.delta<-1)
+      .sort((a,b)=>kind==='lighter'?a.delta-b.delta:b.delta-a.delta)
+      .slice(0,8);
+  }
+  function renderPairCandidates(container,items){
+    container.innerHTML='';
+    if(!items.length){container.innerHTML='<span class="tiny">Keine passende aktive Farbe.</span>';return;}
+    items.forEach(item=>{
+      const b=document.createElement('button');
+      b.type='button'; b.className='secondary';
+      b.style.cssText='width:100%;display:flex;align-items:center;gap:7px;margin:3px 0;text-align:left;';
+      b.innerHTML=`<span style="width:24px;height:24px;border-radius:5px;border:1px solid #777;background:${rgbHex(item.rgb)};display:inline-block"></span><span>${item.name}</span>`;
+      b.addEventListener('click',()=>{selectedAdjustColor=item;refreshPairEditor();});
+      container.appendChild(b);
+    });
+  }
+  function refreshPairEditor(){
+    if(!selectedPairMix)return;
+    const c1=pairColorByName(selectedPairMix.n1), c2=pairColorByName(selectedPairMix.n2);
+    if(!c1||!c2)return;
+    const ratio=Number(pairEditRatio.value), other=100-ratio;
+    let base=pairMixRgb(c1,c2,ratio);
+    base=pairLight(base,Number(pairEditLight.value));
+    let out=[...base];
+    if(selectedAdjustColor)out=pairAdd(base,selectedAdjustColor.rgb,Number(pairEditAmount.value));
+
+    pairEditBase.style.background=rgbHex(base);
+    pairEditResult.style.background=rgbHex(out);
+    pairEditInfo.textContent=`${selectedPairMix.n1} + ${selectedPairMix.n2}`;
+    pairEditRatioVal.textContent=`${ratio.toFixed(0)} : ${other.toFixed(0)}`;
+
+    const lv=Number(pairEditLight.value);
+    pairEditLightVal.textContent=Math.abs(lv)<3?'Original':(lv>0?`${Math.abs(lv)} % heller`:`${Math.abs(lv)} % dunkler`);
+    pairEditAmountVal.textContent=`${Number(pairEditAmount.value).toFixed(0)} %`;
+
+    const p1=Math.max(1,Math.round(ratio/10)), p2=Math.max(1,Math.round(other/10));
+    let txt=`${p1} Teile ${selectedPairMix.n1} · ${p2} Teile ${selectedPairMix.n2}`;
+    if(lv>3)txt+=' · langsam Titanweiß einarbeiten';
+    if(lv<-3)txt+=' · vorsichtig mit dunkler Tubenfarbe vertiefen';
+    if(selectedAdjustColor)txt+=` · + ${Number(pairEditAmount.value).toFixed(0)} % ${selectedAdjustColor.name}`;
+    pairEditRecipe.textContent=txt;
+
+    renderPairCandidates(pairEditLighter,pairCandidates(base,'lighter'));
+    renderPairCandidates(pairEditDarker,pairCandidates(base,'darker'));
+  }
+  function openPairEditor(m){
+    selectedPairMix=m; selectedAdjustColor=null;
+    pairEditRatio.value=String(m.p1);
+    pairEditLight.value='0'; pairEditAmount.value='20';
+    pairEditBox.style.display='block';
+    refreshPairEditor();
+    setTimeout(()=>pairEditBox.scrollIntoView({behavior:'smooth',block:'nearest'}),20);
+  }
+  [pairEditRatio,pairEditLight,pairEditAmount].forEach(el=>el.addEventListener('input',refreshPairEditor));
+  pairEditReset.addEventListener('click',()=>{
+    if(!selectedPairMix)return;
+    selectedAdjustColor=null;
+    pairEditRatio.value=String(selectedPairMix.p1);
+    pairEditLight.value='0'; pairEditAmount.value='20';
+    refreshPairEditor();
+  });
+
+  function calculatePairPalette(){
+    const target=targetArray();
+    if(!target){
+      pairResults.innerHTML='<span class="tiny">Bitte zuerst mit Pipette, Maler-Pipette oder Flächenberater eine Zielfarbe aufnehmen.</span>';
+      return;
+    }
+    const colors=selectedPaletteColors(paintPalette.value);
+    if(colors.length<2){
+      pairResults.innerHTML='<span class="tiny">Mindestens zwei aktive Tubenfarben nötig.</span>';
+      return;
+    }
+
+    const rows=[];
+    for(let i=0;i<colors.length;i++){
+      for(let j=i+1;j<colors.length;j++){
+        let best=null;
+        // Malerisch brauchbare Abstufungen statt nur 50:50:
+        // für jedes Farbpaar automatisch 10:90 bis 90:10 prüfen.
+        for(let pct=10;pct<=90;pct+=5){
+          const a=pct/100, b=1-a;
+          const rgb=[0,1,2].map(ch=>Math.round(colors[i][1][ch]*a+colors[j][1][ch]*b));
+          const score=similarityPct(target,rgb);
+          if(!best || score>best.score){
+            best={n1:colors[i][0],n2:colors[j][0],rgb,score,p1:pct,p2:100-pct};
+          }
+        }
+        rows.push(best);
+      }
+    }
+
+    rows.sort((x,y)=>y.score-x.score);
+    const shown=rows.slice(0,8);
+    pairResults.innerHTML='';
+    pairEditBox.style.display='none'; selectedPairMix=null; selectedAdjustColor=null;
+
+    const intro=document.createElement('div');
+    intro.className='tiny';
+    intro.style.marginBottom='8px';
+    intro.innerHTML='<b>Treffer</b> = Ähnlichkeit zur aufgenommenen Zielfarbe. Je höher, desto näher. Das Verhältnis zeigt die vorgeschlagenen Anteile der beiden Tubenfarben.';
+    pairResults.appendChild(intro);
+
+    shown.forEach((m,i)=>{
+      const el=document.createElement('div');
+      el.className='pc-card';
+      let quality = m.score>=90 ? 'sehr nah' : (m.score>=80 ? 'gut' : (m.score>=70 ? 'Annäherung' : 'nur grobe Annäherung'));
+      el.innerHTML=`
+        <div class="swatch-line">
+          <div class="small-swatch" style="background:${rgbHex(m.rgb)}"></div>
+          <div style="min-width:0">
+            <b>Treffer ${m.score} %</b> <span class="tiny">(${quality})</span><br>
+            <span class="tiny"><b>${m.p1} %</b> ${m.n1}<br><b>${m.p2} %</b> ${m.n2}</span>
+          </div>
+        </div>`;
+      el.style.cursor='pointer';
+      el.title='Antippen: Mischung weiter korrigieren';
+      el.addEventListener('click',()=>openPairEditor(m));
+      pairResults.appendChild(el);
+    });
+
+    if(shown.length && shown[0].score<70){
+      const warn=document.createElement('div');
+      warn.className='tiny';
+      warn.style.marginTop='8px';
+      warn.textContent='Kein gutes Zweierpaar gefunden. Für diese Zielfarbe ist die Studio-Mischung mit 3–5 Farben wahrscheinlich sinnvoller.';
+      pairResults.appendChild(warn);
+    }
+  }
+
+
+  function resizeCanvas(){
+    const r = viewer.getBoundingClientRect();
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    canvas.width = Math.round(r.width*dpr);
+    canvas.height = Math.round(r.height*dpr);
+    canvas.style.width = r.width+'px';
+    canvas.style.height = r.height+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    draw();
+  }
+
+  function fitImage(){
+    if(!loaded) return;
+    const r = viewer.getBoundingClientRect();
+    scale = Math.min(r.width/img.width, r.height/img.height);
+    offsetX = (r.width-img.width*scale)/2;
+    offsetY = (r.height-img.height*scale)/2;
+    draw(); syncGlobalViewControls();
+  }
+
+  function setMode(next){
+    mode = next;
+    moveMode.classList.toggle('active', mode==='move');
+    pickerMode.classList.toggle('active', mode==='picker');
+    moveMode.classList.toggle('secondary', mode!=='move');
+    pickerMode.classList.toggle('secondary', mode!=='picker');
+    hint.textContent = mode==='move' ? 'Modus: Verschieben / Zoom' : 'Modus: Pipette';
+    syncGlobalViewControls();
+  }
+
+  function setPaintMode(next){
+    paintMode = next;
+    waterMode.classList.toggle('active', paintMode==='water');
+    oilMode.classList.toggle('active', paintMode==='oil');
+    waterMode.classList.toggle('secondary', paintMode!=='water');
+    oilMode.classList.toggle('secondary', paintMode!=='oil');
+    rebuildToneImage();
+  }
+
+  function setToneView(next){
+    toneView = next;
+    [toneAll,toneOnly,toneOff].forEach(b=>{b.classList.add('secondary'); b.classList.remove('active');});
+    const map={all:toneAll,only:toneOnly,off:toneOff};
+    map[next].classList.remove('secondary'); map[next].classList.add('active');
+    rebuildToneImage();
+  }
+
+  function setFormLevel(level){
+    formLevel = +level;
+    formsSlider.value = formLevel;
+    formsValue.textContent = formLevel===0 ? 'Aus' : String(formLevel);
+    formBtns.forEach(b=>{
+      const active = +b.dataset.level===formLevel;
+      b.classList.toggle('active', active);
+      b.classList.toggle('secondary', !active);
+    });
+    rebuildForms();
+    rebuildToneImage();
+  }
+
+  function luminance(r,g,b){
+    return 0.2126*r + 0.7152*g + 0.0722*b;
+  }
+
+  function toneStrength(lum, band, sliderVal){
+    const v = sliderVal/100;
+    if(v>=0.999) return 1;
+    let t;
+    if(band==='light') t=(lum-170)/85;
+    else if(band==='mid') t=1-Math.abs(lum-128)/90;
+    else t=(85-lum)/85;
+    t=Math.max(0,Math.min(1,t));
+    return paintMode==='water' ? (t<=v?1:0) : (t>=(1-v)?1:0);
+  }
+
+  function rebuildForms(){
+    if(!loaded) return;
+
+    const w = sourceCanvas.width, h = sourceCanvas.height;
+    formCanvas.width = w; formCanvas.height = h;
+    formCtx.clearRect(0,0,w,h);
+
+    if(formLevel===0){
+      formCtx.drawImage(sourceCanvas,0,0);
+      return;
+    }
+
+    // Schnellere Großformen:
+    // Analyse auf begrenzter Arbeitsauflösung, danach kantenschonend hochskalieren.
+    const cfg = {
+      1:{step:52, spatial:4, passes:1, workLong:280},
+      2:{step:40, spatial:5, passes:1, workLong:420},
+      3:{step:28, spatial:8, passes:2, workLong:760},
+      4:{step:20, spatial:6, passes:1, workLong:900},
+      5:{step:14, spatial:4, passes:1, workLong:1100}
+    }[formLevel];
+
+    const longSide = Math.max(w,h);
+    const scaleDown = Math.min(1, cfg.workLong / longSide);
+    const ww = Math.max(32, Math.round(w*scaleDown));
+    const wh = Math.max(32, Math.round(h*scaleDown));
+
+    const work = document.createElement('canvas');
+    work.width = ww; work.height = wh;
+    const wctx = work.getContext('2d', {willReadFrequently:true});
+    wctx.imageSmoothingEnabled = true;
+    wctx.imageSmoothingQuality = 'high';
+    wctx.drawImage(sourceCanvas,0,0,w,h,0,0,ww,wh);
+
+    const src = wctx.getImageData(0,0,ww,wh);
+    const out = wctx.createImageData(ww,wh);
+
+    // 1) Farbquantisierung: ähnliche Farben zu Malflächen bündeln.
+    const q = cfg.step;
+    for(let i=0;i<src.data.length;i+=4){
+      const r=src.data[i], g=src.data[i+1], b=src.data[i+2];
+      out.data[i]   = Math.max(0,Math.min(255,Math.round(r/q)*q));
+      out.data[i+1] = Math.max(0,Math.min(255,Math.round(g/q)*q));
+      out.data[i+2] = Math.max(0,Math.min(255,Math.round(b/q)*q));
+      out.data[i+3] = src.data[i+3];
+    }
+
+    function dist3(a,b,c,d,e,f){
+      const dr=a-d,dg=b-e,db=c-f;
+      return dr*dr+dg*dg+db*db;
+    }
+
+    let cur = out;
+    const radius = cfg.spatial;
+    const threshold2 = (cfg.step*1.7)*(cfg.step*1.7);
+
+    // Stufe 1: extrem grob und sehr schnell.
+    // Keine große Nachbarschaftssuche; nur Farbflächen quantisieren.
+    if(formLevel===1){
+      wctx.putImageData(cur,0,0);
+      formCtx.imageSmoothingEnabled = false;
+      formCtx.drawImage(work,0,0,ww,wh,0,0,w,h);
+      return;
+    }
+
+    // 2) Kleine Inseln entfernen, starke Kanten respektieren.
+    for(let pass=0; pass<cfg.passes; pass++){
+      const next = wctx.createImageData(ww,wh);
+      next.data.set(cur.data);
+
+      for(let y=0;y<wh;y++){
+        for(let x=0;x<ww;x++){
+          const idx=(y*ww+x)*4;
+          const cr=cur.data[idx], cg=cur.data[idx+1], cb=cur.data[idx+2];
+
+          const counts = new Map();
+          let bestCount=0;
+          let br=cr,bg=cg,bb=cb;
+
+          const y0=Math.max(0,y-radius), y1=Math.min(wh-1,y+radius);
+          const x0=Math.max(0,x-radius), x1=Math.min(ww-1,x+radius);
+
+          // gröberes Sampling spart auf dem iPad sehr viel Rechenzeit
+          const sampleStep = formLevel===1 ? 4 : (formLevel===2 ? 3 : 2);
+
+          for(let yy=y0; yy<=y1; yy+=sampleStep){
+            for(let xx=x0; xx<=x1; xx+=sampleStep){
+              const j=(yy*ww+xx)*4;
+              const rr=cur.data[j], gg=cur.data[j+1], bb2=cur.data[j+2];
+              if(dist3(cr,cg,cb,rr,gg,bb2) > threshold2) continue;
+
+              const key=(rr<<16)|(gg<<8)|bb2;
+              const n=(counts.get(key)||0)+1;
+              counts.set(key,n);
+              if(n>bestCount){
+                bestCount=n; br=rr; bg=gg; bb=bb2;
+              }
+            }
+          }
+
+          next.data[idx]=br;
+          next.data[idx+1]=bg;
+          next.data[idx+2]=bb;
+          next.data[idx+3]=cur.data[idx+3];
+        }
+      }
+      cur=next;
+    }
+
+    wctx.putImageData(cur,0,0);
+
+    // 3) Ergebnis zurück auf Originalgröße.
+    // Glatte Skalierung nur geometrisch – keine zusätzliche Unschärfeanalyse.
+    formCtx.imageSmoothingEnabled = true;
+    formCtx.imageSmoothingQuality = 'high';
+    formCtx.drawImage(work,0,0,ww,wh,0,0,w,h);
+  }
+  function rebuildToneImage(){
+    if(!loaded) return;
+
+    const w=formCanvas.width, h=formCanvas.height;
+    processedCanvas.width=w; processedCanvas.height=h;
+
+    const src=formCtx.getImageData(0,0,w,h);
+    const out=processedCtx.createImageData(w,h);
+    const lv=+lightSlider.value, mv=+midSlider.value, dv=+darkSlider.value;
+
+    for(let i=0;i<src.data.length;i+=4){
+      const r=src.data[i], g=src.data[i+1], b=src.data[i+2], a=src.data[i+3];
+      const lum=luminance(r,g,b);
+      let band;
+      if(lum>=170) band='light';
+      else if(lum>=85) band='mid';
+      else band='dark';
+
+      const strength =
+        band==='light' ? toneStrength(lum,'light',lv) :
+        band==='mid' ? toneStrength(lum,'mid',mv) :
+        toneStrength(lum,'dark',dv);
+
+      if(toneView==='off'){
+        out.data[i]=r; out.data[i+1]=g; out.data[i+2]=b; out.data[i+3]=a;
+      }else if(toneView==='only'){
+        if(strength>0){
+          const gray=Math.round(lum);
+          out.data[i]=gray; out.data[i+1]=gray; out.data[i+2]=gray; out.data[i+3]=255;
+        }else{
+          out.data[i]=245; out.data[i+1]=245; out.data[i+2]=242; out.data[i+3]=255;
+        }
+      }else{
+        if(strength>0){
+          out.data[i]=r; out.data[i+1]=g; out.data[i+2]=b; out.data[i+3]=a;
+        }else{
+          const wash=244;
+          out.data[i]=Math.round(r*.18+wash*.82);
+          out.data[i+1]=Math.round(g*.18+wash*.82);
+          out.data[i+2]=Math.round(b*.18+wash*.82);
+          out.data[i+3]=255;
+        }
+      }
+    }
+    applyFamilyVisibility(out);
+    processedCtx.putImageData(out,0,0);
+    draw();
+  }
+
+
+  function syncGlobalViewControls(){
+    if(!loaded){globalZoomVal.textContent='–';return;}
+    const pct=Math.round(scale*100);
+    globalZoom.value=String(Math.max(25,Math.min(600,pct)));
+    globalZoomVal.textContent=`${pct} %`;
+    globalMoveBtn.classList.toggle('active',mode==='move');
+    globalMoveBtn.classList.toggle('secondary',mode!=='move');
+  }
+
+  function setGlobalZoom(percent){
+    if(!loaded)return;
+    const vr=viewer.getBoundingClientRect();
+    const cx=(vr.width/2-offsetX)/scale;
+    const cy=(vr.height/2-offsetY)/scale;
+    const ns=Math.max(.25,Math.min(6,Number(percent)/100));
+    scale=ns;
+    offsetX=vr.width/2-cx*scale;
+    offsetY=vr.height/2-cy*scale;
+    syncGlobalViewControls();
+    draw();
+  }
+
+  function draw(){
+    const r=viewer.getBoundingClientRect();
+    ctx.clearRect(0,0,r.width,r.height);
+    if(!loaded) return;
+    ctx.save();
+    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingQuality='high';
+    ctx.translate(offsetX,offsetY);
+    ctx.scale(scale,scale);
+    // Farbtreue Darstellung: Bild unverändert zeichnen.
+    if(surfaceMarkCanvas) ctx.drawImage(surfaceMarkCanvas,0,0);
+    else ctx.drawImage(processedCanvas,0,0);
+    if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value);
+    ctx.restore();
+    if(surfacePreview){
+      const sx=offsetX+surfacePreview.x*scale, sy=offsetY+surfacePreview.y*scale;
+      const sz=surfacePreview.size*scale;
+      ctx.save();
+      ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=3;
+      ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=3;
+      ctx.setLineDash([10,6]);
+      ctx.beginPath();
+      if(surfacePreview.shape==='circle') ctx.arc(sx,sy,sz/2,0,Math.PI*2);
+      else ctx.rect(sx-sz/2,sy-sz/2,sz,sz);
+      ctx.stroke(); ctx.restore();
+    }
+  }
+
+  function canvasPoint(clientX,clientY){
+    const r=canvas.getBoundingClientRect();
+    return {x:clientX-r.left,y:clientY-r.top};
+  }
+
+  function pickColor(clientX,clientY){
+    if(!loaded) return;
+    const p=canvasPoint(clientX,clientY);
+    const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
+    if(ix<0||iy<0||ix>=img.width||iy>=img.height) return;
+    const pc=sourceContextForPicker();
+    const d=readImageDataSRGB(pc,Math.floor(ix),Math.floor(iy),1,1).data;
+    const rgb=[d[0],d[1],d[2]];
+    surfaceSelectedIndex=null;
+    surfaceMarkCanvas=null;
+    const hex=rgbHex(rgb);
+    colorBox.style.background=rgbHex(adaptiveDisplayColor(rgb));
+    colorText.innerHTML=`RGB: ${rgb.join(', ')}<br>HEX: ${hex}`;
+    setMixTarget(rgb,'Pipette');
+    correctionBase=[...rgb]; refreshCorrection(); ideasBase=[...rgb]; refreshIdea();
+    showMixes();
+
+    // Nur wenn die Farbreise gerade geöffnet ist:
+    // erster Bild-Tipp = Startfarbe, zweiter Bild-Tipp = Zielfarbe.
+    const journeyOpen=document.getElementById('colorJourneyPanel')?.classList.contains('tool-page-active');
+    if(journeyOpen){
+      if(!journeyStartColor || journeyTargetColor){
+        journeyStartColor=[...rgb];
+        journeyTargetColor=null;
+        journeyInfo.textContent='Startfarbe aufgenommen. Jetzt die Zielfarbe im Bild antippen.';
+      }else{
+        journeyTargetColor=[...rgb];
+      }
+      renderColorJourney();
+      return;
+    }
+
+    // Außerhalb der Farbreise bleibt das bewährte Verhalten unverändert.
+    if(typeof window.activateToolPage==='function'){
+      window.activateToolPage('paintMixPanel');
+    }
+    setTimeout(()=>{
+      const target=document.getElementById('mixResults');
+      if(target && typeof target.scrollIntoView==='function'){
+        target.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+    },40);
+  }
+
+
+  globalMoveBtn.addEventListener('click',()=>setMode('move'));
+  globalFitBtn.addEventListener('click',()=>fitImage());
+  globalZoom.addEventListener('input',()=>setGlobalZoom(globalZoom.value));
+
+  [lightSlider,midSlider,darkSlider].forEach(sl=>{
+    sl.addEventListener('input',()=>{
+      lightValue.textContent=lightSlider.value;
+      midValue.textContent=midSlider.value;
+      darkValue.textContent=darkSlider.value;
+      rebuildToneImage();
+    });
+  });
+
+  formsOriginal.addEventListener('click',()=>setFormLevel(0));
+  formsSlider.addEventListener('input',()=>setFormLevel(formsSlider.value));
+  formBtns.forEach(b=>b.addEventListener('click',()=>setFormLevel(b.dataset.level)));
+
+
+  selectBasicColors.addEventListener('click',applyBasicArtisanPalette);
+  saveStandardPalette.addEventListener('click',saveStandardArtisanPalette);
+  loadStandardPalette.addEventListener('click',loadStandardArtisanPalette);
+  deleteStandardPalette.addEventListener('click',deleteStandardArtisanPalette);
+  updateStandardPaletteInfo();
+
+  managePaletteBtn.addEventListener('click',()=>{paletteManager.style.display='block';paletteSearch.value='';renderPaletteChecklist();});
+  closePaletteBtn.addEventListener('click',()=>{paletteManager.style.display='none';updateOwnedSummary();mixResults.innerHTML='';refreshGlazePaletteStatus();});
+  paletteSearch.addEventListener('input',renderPaletteChecklist);
+  selectAllColors.addEventListener('click',()=>{
+    const key=currentCatalogueKey(),o=loadOwned();
+    (PALETTES[key]||[]).forEach(([n])=>o[paletteId(key,n)]=true);
+    saveOwned(o);renderPaletteChecklist();updateOwnedSummary();
+  });
+  selectNoColors.addEventListener('click',()=>{
+    const key=currentCatalogueKey(),o=loadOwned();
+    (PALETTES[key]||[]).forEach(([n])=>o[paletteId(key,n)]=false);
+    saveOwned(o);renderPaletteChecklist();updateOwnedSummary();
+  });
+  addCustomColor.addEventListener('click',()=>{
+    const name=customColorName.value.trim(); if(!name)return;
+    const h=customColorValue.value;
+    const rgb=[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+    const c=loadCustom();c.push({name,rgb,enabled:true});saveCustom(c);
+    customColorName.value='';renderCustomColors();updateOwnedSummary();
+  });
+  paintPalette.addEventListener('change',()=>{updateOwnedSummary();if(paletteManager.style.display!=='none')renderPaletteChecklist();});
+  updateOwnedSummary();
+
+  function autoStudioMixAfterPick(){
+    window.setTimeout(()=>{
+      try{
+        if(typeof showMixes==='function') showMixes();
+      }catch(e){}
+    },0);
+  }
+  pickerRadius.addEventListener('input',()=>{ pickerRadiusVal.textContent=pickerRadius.value; });
+  areaPickerBtn.addEventListener('click',()=>{
+    areaPickerMode = areaPickerMode==='avg' ? null : 'avg';
+    areaPickerBtn.classList.toggle('active',areaPickerMode==='avg');
+    areaPickerBtn.classList.toggle('secondary',areaPickerMode!=='avg');
+    smartAreaPickerBtn.classList.remove('active'); smartAreaPickerBtn.classList.add('secondary');
+    hint.textContent=areaPickerMode ? 'Kreis-Pipette: im Bild antippen' : (mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette');
+  });
+  smartAreaPickerBtn.addEventListener('click',()=>{
+    areaPickerMode = areaPickerMode==='smart' ? null : 'smart';
+    smartAreaPickerBtn.classList.toggle('active',areaPickerMode==='smart');
+    smartAreaPickerBtn.classList.toggle('secondary',areaPickerMode!=='smart');
+    areaPickerBtn.classList.remove('active'); areaPickerBtn.classList.add('secondary');
+    hint.textContent=areaPickerMode ? 'Smart-Kreis: im Bild antippen' : (mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette');
+  });
+  mediumOilBtn.addEventListener('click',()=>setMedium('oil'));
+  mediumWaterBtn.addEventListener('click',()=>setMedium('water'));
+  calcMixesBtn.addEventListener('click',showMixes);
+  paintPalette.addEventListener('change',()=>{ mixResults.innerHTML=''; });
+  setMedium('oil');
+
+  familySliders.forEach(sl=>{
+    sl.addEventListener('input',()=>{
+      familyValues[sl.dataset.family]=Number(sl.value);
+      const value=sl.parentElement.querySelector('.family-value');
+      if(value) value.textContent=sl.value+'%';
+      rebuildToneImage();
+    });
+  });
+
+  familiesReset.addEventListener('click',()=>{
+    familySliders.forEach(sl=>{
+      sl.value=100;
+      familyValues[sl.dataset.family]=100;
+      const value=sl.parentElement.querySelector('.family-value');
+      if(value) value.textContent='100%';
+    });
+    rebuildToneImage();
+  });
+
+  smartPickerBtn.addEventListener('click',()=>{
+    smartPickerArmed=!smartPickerArmed;
+    smartPickerBtn.classList.toggle('active',smartPickerArmed);
+    smartPickerBtn.classList.toggle('secondary',!smartPickerArmed);
+    hint.textContent=smartPickerArmed ? 'Smart-Pipette: im Bild antippen' : (mode==='move' ? 'Modus: Verschieben / Zoom' : 'Modus: Pipette');
+  });
+
+
+
+  function syncColorTolerance(value){
+    const v=String(value);
+    pickerColorTolerance.value=v;
+    surfaceColorTolerance.value=v;
+    pickerColorToleranceVal.textContent=v;
+    surfaceColorToleranceVal.textContent=v;
+  }
+  let isolationRAF=0;
+  function refreshIsolationSmooth(){
+    if(!activeIsolatedColor) return;
+    if(isolationRAF) cancelAnimationFrame(isolationRAF);
+    isolationRAF=requestAnimationFrame(()=>{
+      isolationRAF=0;
+      isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
+    });
+  }
+  pickerColorTolerance.addEventListener('input',()=>{
+    syncColorTolerance(pickerColorTolerance.value);
+    refreshIsolationSmooth();
+  });
+  surfaceColorTolerance.addEventListener('input',()=>{
+    syncColorTolerance(surfaceColorTolerance.value);
+    refreshIsolationSmooth();
+  });
+  syncColorTolerance(12);
+
+  pickerShowOnlyBtn.addEventListener('click',()=>{
+    const t=targetArray();
+    if(t) isolateColorAcrossImage(t,'Pipettenfarbe');
+  });
+  pickerShowAllBtn.addEventListener('click',()=>{
+    surfaceSelectedIndex=null;
+    activeIsolatedColor=null;
+    surfaceMarkCanvas=null;
+    draw();
+    hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette';
+  });
+
+  surfaceSize.addEventListener('input',()=>{
+    surfaceSizeVal.textContent=surfaceSize.value;
+    if(surfacePreview){surfacePreview.size=Number(surfaceSize.value)/Math.max(scale,.05);draw();}
+  });
+  surfaceCircleBtn.addEventListener('click',()=>{
+    surfaceMode='circle'; surfaceSelectedIndex=null;
+    if(!activeIsolatedColor) surfaceMarkCanvas=null;
+    if(loaded) surfacePreview={shape:'circle',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
+    hint.textContent=activeIsolatedColor
+      ? 'Flächenberater: Kreis auf die sichtbare Farbe setzen – es werden 4 Nuancen dieser Farbe bestimmt'
+      : 'Flächenberater: Kreis ist sichtbar – gewünschte Stelle antippen';
+    draw();
+  });
+  surfaceRectBtn.addEventListener('click',()=>{
+    surfaceMode='rect'; surfaceSelectedIndex=null;
+    if(!activeIsolatedColor) surfaceMarkCanvas=null;
+    if(loaded) surfacePreview={shape:'rect',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
+    hint.textContent=activeIsolatedColor
+      ? 'Flächenberater: Bereich auf die sichtbare Farbe setzen – es werden 4 Nuancen dieser Farbe bestimmt'
+      : 'Flächenberater: Rechteck ist sichtbar – gewünschte Stelle antippen';
+    draw();
+  });
+  surfaceClearMarkBtn.addEventListener('click',clearSurfaceMark);
+  surfaceResetBtn.addEventListener('click',()=>{
+    surfaceMode=null; surfacePreview=null; surfaceClusters=[]; surfaceSelectedIndex=null; surfaceMarkCanvas=null;
+    surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>'; draw();
+  });
+
+  viewer.addEventListener('pointerdown',e=>{
+    if(!surfaceMode||!loaded)return;
+    const p=canvasPoint(e.clientX,e.clientY);
+    const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
+    if(ix<0||iy<0||ix>=img.width||iy>=img.height)return;
+    const realSize=Number(surfaceSize.value)/Math.max(scale,.05);
+    surfacePreview={shape:surfaceMode,x:ix,y:iy,size:realSize};
+    const clusters=clusterArea(ix,iy,realSize,surfaceMode);
+    renderSurface(clusters);
+    surfaceMode=null;
+    if(activeIsolatedColor){
+      isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
+      hint.textContent='Vier Nuancen der angezeigten Farbe bestimmt';
+    }else{
+      draw();
+      hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette';
+    }
+    e.preventDefault(); e.stopImmediatePropagation();
+  },true);
+
+
+  glazeWaterBtn.addEventListener('click',()=>setGlazeMedium('water'));
+  glazeOilBtn.addEventListener('click',()=>setGlazeMedium('oil'));
+  glazeOriginalInput.addEventListener('change',e=>loadGlazeImage(e.target.files&&e.target.files[0],'original'));
+  glazePaintingInput.addEventListener('change',e=>loadGlazeImage(e.target.files&&e.target.files[0],'painting'));
+  glazeAutoAlignBtn.addEventListener('click',autoAlignGlaze);
+
+  glazePaintingCanvas.addEventListener('pointerup',e=>{
+    pickGlazeComparisonPoint(e.clientX,e.clientY);
+    e.preventDefault();
+  });
+
+  glazeClearPointsBtn.addEventListener('click',()=>{
+    glazePoints=[];glazeActivePoint=-1;glazePoint=null;glazeBase=null;glazeTarget=null;
+    renderGlazePoints();refreshGlazeColors();redrawGlazePreviews();
+    glazeResults.innerHTML='<span class="tiny">Messpunkte gelöscht.</span>';
+  });
+
+
+  glazeOpenFullscreenBtn.addEventListener('click',openGlazeFullscreen);
+  glazeCompareBiggerBtn.addEventListener('click',openGlazeFullscreen);
+  glazeFsClose.addEventListener('click',()=>{glazeFullscreen.style.display='none';});
+  glazeFsFit.addEventListener('click',()=>{glazeFsView={zoom:1,panX:0,panY:0};redrawGlazeFullscreen();});
+  glazeFsAutoAlign.addEventListener('click',()=>{autoAlignGlaze();setTimeout(redrawGlazeFullscreen,80);});
+  glazeFsClear.addEventListener('click',()=>{
+    glazePoints=[];glazeActivePoint=-1;glazePoint=null;glazeBase=null;glazeTarget=null;
+    renderGlazePoints();refreshGlazeColors();redrawGlazePreviews();redrawGlazeFullscreen();
+  });
+  glazeFsRadius.addEventListener('input',()=>{
+    glazeFsRadiusVal.textContent=glazeFsRadius.value+' px';
+    glazeSampleRadius.value=glazeFsRadius.value;
+    glazeSampleRadiusVal.textContent=glazeFsRadius.value+' px';
+  });
+
+  function installGlazeFsGestures(canvas,allowPick){
+    canvas.addEventListener('pointerdown',e=>{
+      canvas.setPointerCapture?.(e.pointerId);
+      glazeFsTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(glazeFsTouches.size===1){
+        glazeFsGesture={type:'maybeTap',x:e.clientX,y:e.clientY,panX:glazeFsView.panX,panY:glazeFsView.panY,canvas,allowPick};
+      }else if(glazeFsTouches.size===2){
+        const pts=[...glazeFsTouches.values()];
+        glazeFsGesture={type:'pinch',dist:Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y),zoom:glazeFsView.zoom,
+          panX:glazeFsView.panX,panY:glazeFsView.panY};
+      }
+    });
+    canvas.addEventListener('pointermove',e=>{
+      if(!glazeFsTouches.has(e.pointerId))return;
+      glazeFsTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(glazeFsTouches.size===1&&glazeFsGesture){
+        const q=[...glazeFsTouches.values()][0],dx=q.x-glazeFsGesture.x,dy=q.y-glazeFsGesture.y;
+        if(Math.hypot(dx,dy)>8){
+          glazeFsGesture.type='pan';
+          glazeFsView.panX=glazeFsGesture.panX+dx;
+          glazeFsView.panY=glazeFsGesture.panY+dy;
+          redrawGlazeFullscreen();
+        }
+      }else if(glazeFsTouches.size===2){
+        const pts=[...glazeFsTouches.values()];
+        const dist=Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y);
+        if(glazeFsGesture?.type!=='pinch'){
+          glazeFsGesture={type:'pinch',dist,zoom:glazeFsView.zoom,panX:glazeFsView.panX,panY:glazeFsView.panY};
+        }
+        glazeFsView.zoom=Math.max(.5,Math.min(6,glazeFsGesture.zoom*dist/Math.max(1,glazeFsGesture.dist)));
+        redrawGlazeFullscreen();
+      }
+    });
+    canvas.addEventListener('pointerup',e=>{
+      const g=glazeFsGesture;
+      const wasTap=g&&g.type==='maybeTap'&&g.canvas===canvas&&g.allowPick;
+      glazeFsTouches.delete(e.pointerId);
+      if(wasTap&&glazeFsTouches.size===0){
+        addGlazePointFromOriginalNorm(fullscreenOriginalPoint(e.clientX,e.clientY));
+      }
+      if(glazeFsTouches.size===0)glazeFsGesture=null;
+    });
+    canvas.addEventListener('pointercancel',e=>{
+      glazeFsTouches.delete(e.pointerId);
+      if(!glazeFsTouches.size)glazeFsGesture=null;
+    });
+  }
+  installGlazeFsGestures(glazeFsOriginalCanvas,false);
+  installGlazeFsGestures(glazeFsPaintingCanvas,true);
+
+  glazeSampleRadius.addEventListener('input',()=>{
+    glazeSampleRadiusVal.textContent=glazeSampleRadius.value+' px';
+  });
+  glazeMaxStrength.addEventListener('input',()=>{glazeMaxStrengthVal.textContent=glazeMaxStrength.value+' %';});
+  glazeCalcBtn.addEventListener('click',calculateGlazes);
+  glazeCalcAllBtn.addEventListener('click',calculateAllGlazePoints);
+  glazePalette.addEventListener('change',()=>{
+    refreshGlazePaletteStatus();
+    glazeResults.innerHTML='<span class="tiny">Palette geändert. Es werden nur deine aktiv ausgewählten Farben verwendet.</span>';
+  });
+  window.addEventListener('resize',redrawGlazePreviews);
+  renderGlazePoints();
+  refreshGlazeColors();
+  refreshGlazePaletteStatus();
+  setGlazeMedium('water');
+
+  [corrLight,corrWarm,corrSat].forEach(x=>x.addEventListener('input',refreshCorrection));
+  corrTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){correctionBase=[...t];refreshCorrection();}});
+  corrMixBtn.addEventListener('click',()=>{const c=correctedColor();if(c){setMixTarget(c,'Korrekturatelier');showStudioMixPage();}});
+  corrResetBtn.addEventListener('click',()=>{corrLight.value=0;corrWarm.value=0;corrSat.value=0;refreshCorrection();});
+
+
+  [ideaLight,ideaWarm,ideaSat].forEach(x=>x.addEventListener('input',refreshIdea));
+  ideaTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){ideasBase=[...t];refreshIdea();}});
+  ideaMixBtn.addEventListener('click',()=>{const c=ideaColor();if(c){setMixTarget(c,'Farbidee');showStudioMixPage();}});
+  ideaResetBtn.addEventListener('click',()=>{ideaLight.value=0;ideaWarm.value=0;ideaSat.value=0;refreshIdea();});
+  journeyTakeStartBtn.addEventListener('click',()=>{
+    const c=journeyCurrentColor();
+    if(!c){
+      journeyInfo.textContent='Bitte zuerst eine Farbe mit der Pipette oder Maler-Pipette aufnehmen.';
+      return;
+    }
+    journeyStartColor=[...c];
+    renderColorJourney();
+  });
+
+  journeyTakeTargetBtn.addEventListener('click',()=>{
+    const c=journeyCurrentColor();
+    if(!c){
+      journeyInfo.textContent='Bitte zuerst die gewünschte Zielfarbe mit der Pipette aufnehmen.';
+      return;
+    }
+    journeyTargetColor=[...c];
+    renderColorJourney();
+  });
+
+  journeyResetBtn.addEventListener('click',resetColorJourney);
+
+  pairCalcBtn.addEventListener('click',calculatePairPalette);
+
+  gridToggleBtn.addEventListener('click',()=>{gridEnabled=!gridEnabled;gridToggleBtn.textContent=gridEnabled?'Raster aus':'Raster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);draw();});
+
+  gridDensity.addEventListener('input',()=>{gridDensityVal.textContent=gridDensity.value;draw();});
+  saveViewBtn.addEventListener('click',()=>{
+    if(!loaded)return;
+    const out=document.createElement('canvas');out.width=processedCanvas.width;out.height=processedCanvas.height;
+    const oc=out.getContext('2d');oc.drawImage(processedCanvas,0,0);
+    if(gridEnabled)drawGridOverlay(oc,out.width,out.height,gridDensity.value);
+    out.toBlob(blob=>{
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='AtelierAI_Bild.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+    },'image/png');
+  });
+
+
+
+  function setupCompactSidebar(){
+    const side=document.querySelector('aside.side');
+    if(!side) return;
+
+    const sections=[...side.querySelectorAll(':scope > .section')].filter(sec=>sec.id!=='colorIdeasPanel');
+    if(!sections.length) return;
+
+    // 1.9 hatte die Bereiche bereits als Accordion umgebaut.
+    // Für 1.10 holen wir den Inhalt wieder aus diesem Verhalten heraus
+    // und zeigen immer genau eine Werkzeugseite.
+    const labels={
+      toolPanel:'Werkzeug',
+      formsPanel:'Großformen',
+      tonesPanel:'Tonwerte',
+      paintMixPanel:'Mischen',
+      colorJourneyPanel:'Farbreise',
+      colorAnalysisPanel:'Farbanalyse',
+      surfaceAdvisorPanel:'Flächenberater',
+      glazePanel:'Lasuren',
+      correctionStudioPanel:'Korrektur',
+      mixPalettePanel:'Mischpalette',
+      gridSavePanel:'Raster & Speichern',
+      sampleColorPanel:'Farbe'
+    };
+
+    const nav=document.createElement('div');
+    nav.className='toolnav-wrap';
+    const strip=document.createElement('div');
+    strip.className='toolnav';
+    nav.appendChild(strip);
+    side.insertBefore(nav,side.firstChild);
+
+    let active=null;
+
+    function sectionName(sec){
+      if(labels[sec.id]) return labels[sec.id];
+      const oldTitle=sec.querySelector(':scope > h3');
+      if(oldTitle) return oldTitle.textContent.trim();
+      const accTitle=sec.querySelector(':scope > .accordion-head .acc-title');
+      if(accTitle) return accTitle.textContent.trim();
+      return 'Werkzeug';
+    }
+
+    function normalize(sec){
+      sec.classList.add('tool-page');
+      sec.classList.remove('open');
+
+      const head=sec.querySelector(':scope > .accordion-head');
+      const body=sec.querySelector(':scope > .accordion-body');
+      const name=sectionName(sec);
+
+      if(head) head.style.display='none';
+      if(body){
+        body.style.display='block';
+        body.style.padding='0';
+        // sichtbare Überschrift im Werkzeugfenster
+        if(!body.querySelector(':scope > .tool-page-title')){
+          const t=document.createElement('div');
+          t.className='tool-page-title';
+          t.textContent=name;
+          body.prepend(t);
+        }
+      } else {
+        const h=sec.querySelector(':scope > h3');
+        if(h){ h.classList.add('tool-page-title'); }
+      }
+      return name;
+    }
+
+    function show(sec,btn){
+      sections.forEach(x=>x.classList.remove('tool-page-active'));
+      [...strip.querySelectorAll('button')].forEach(b=>b.classList.remove('active'));
+      sec.classList.add('tool-page-active');
+      if(btn) btn.classList.add('active');
+      active=sec;
+      side.scrollTop=0;
+    }
+
+    window.activateToolPage=function(id){
+      const sec=sections.find(x=>x.id===id);
+      if(!sec) return false;
+      const btn=[...strip.querySelectorAll('button')].find(b=>b.dataset.targetId===id);
+      show(sec,btn||null);
+      return true;
+    };
+
+    sections.forEach((sec,i)=>{
+      const name=normalize(sec);
+      const b=document.createElement('button');
+      b.type='button';
+      b.textContent=name;
+      b.className='secondary';
+      b.dataset.targetId=sec.id||'';
+      b.addEventListener('click',()=>show(sec,b));
+      strip.appendChild(b);
+      if(i===0) show(sec,b);
+    });
+  }
+  setupCompactSidebar();
+
+
+  // Punkt-Pipette wird zentral im Viewer-pointerdown verarbeitet.
+  // Kein zweiter pointerup-Aufruf: verhindert doppelte Farbaufnahme auf dem iPad.
+
+  fileInput.addEventListener('change',e=>{
+    const file=e.target.files&&e.target.files[0];
+    if(!file) return;
+    const url=URL.createObjectURL(file);
+    img=new Image();
+    img.onload=()=>{
+      loaded=true;
+      placeholder.style.display='none';
+      sourceCanvas.width=img.width; sourceCanvas.height=img.height;
+      sourceCtx.clearRect(0,0,img.width,img.height);
+      sourceCtx.drawImage(img,0,0);
+      rebuildForms();
+      rebuildToneImage();
+      fitImage();
+      URL.revokeObjectURL(url);
+    };
+    img.src=url;
+  });
+
+  fitBtn.addEventListener('click',fitImage);
+  resetBtn.addEventListener('click',fitImage);
+  moveMode.addEventListener('click',()=>setMode('move'));
+  pickerMode.addEventListener('click',()=>setMode('picker'));
+  waterMode.addEventListener('click',()=>setPaintMode('water'));
+  oilMode.addEventListener('click',()=>setPaintMode('oil'));
+  toneAll.addEventListener('click',()=>setToneView('all'));
+  toneOnly.addEventListener('click',()=>setToneView('only'));
+  toneOff.addEventListener('click',()=>setToneView('off'));
+
+  viewer.addEventListener('pointerdown',e=>{
+    viewer.setPointerCapture?.(e.pointerId);
+    touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(areaPickerMode&&touches.size===1){
+      updatePickerCircle(e.clientX,e.clientY,true);
+      sampleCircle(e.clientX,e.clientY,areaPickerMode==='smart');
+      areaPickerMode=null;
+      areaPickerBtn.classList.remove('active'); areaPickerBtn.classList.add('secondary');
+      smartAreaPickerBtn.classList.remove('active'); smartAreaPickerBtn.classList.add('secondary');
+      hint.textContent=mode==='move' ? 'Modus: Verschieben / Zoom' : 'Modus: Pipette';
+      setTimeout(()=>updatePickerCircle(0,0,false),500);
+      touches.delete(e.pointerId);
+      e.preventDefault();
+      return;
+    }
+    if(smartPickerArmed&&touches.size===1){
+      sampleSmartAt(e.clientX,e.clientY,12);
+      smartPickerArmed=false;
+      smartPickerBtn.classList.remove('active');
+      smartPickerBtn.classList.add('secondary');
+      hint.textContent=mode==='move' ? 'Modus: Verschieben / Zoom' : 'Modus: Pipette';
+      touches.delete(e.pointerId);
+      return;
+    }
+    if(mode==='picker'&&touches.size===1){ pickColor(e.clientX,e.clientY); return; }
+    if(mode==='move'){
+      if(touches.size===1){
+        const p=[...touches.values()][0];
+        gestureStart={type:'pan',startX:p.x,startY:p.y,offsetX,offsetY};
+      }else if(touches.size===2){
+        const pts=[...touches.values()];
+        const dx=pts[1].x-pts[0].x, dy=pts[1].y-pts[0].y;
+        const dist=Math.hypot(dx,dy);
+        const midX=(pts[0].x+pts[1].x)/2, midY=(pts[0].y+pts[1].y)/2;
+        const local=canvasPoint(midX,midY);
+        gestureStart={type:'pinch',dist,scale,imageX:(local.x-offsetX)/scale,imageY:(local.y-offsetY)/scale};
+      }
+    }
+  });
+
+  viewer.addEventListener('pointermove',e=>{
+    if(!touches.has(e.pointerId)) return;
+    touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(mode!=='move'||!gestureStart) return;
+
+    if(touches.size===1&&gestureStart.type==='pan'){
+      const p=[...touches.values()][0];
+      offsetX=gestureStart.offsetX+(p.x-gestureStart.startX);
+      offsetY=gestureStart.offsetY+(p.y-gestureStart.startY);
+      syncGlobalViewControls();
+      draw();
+    }else if(touches.size===2){
+      const pts=[...touches.values()];
+      const dx=pts[1].x-pts[0].x, dy=pts[1].y-pts[0].y;
+      const dist=Math.hypot(dx,dy);
+      const midX=(pts[0].x+pts[1].x)/2, midY=(pts[0].y+pts[1].y)/2;
+      if(gestureStart.type!=='pinch'){
+        const local=canvasPoint(midX,midY);
+        gestureStart={type:'pinch',dist,scale,imageX:(local.x-offsetX)/scale,imageY:(local.y-offsetY)/scale};
+      }
+      const newScale=Math.max(.05,Math.min(20,gestureStart.scale*dist/gestureStart.dist));
+      const local=canvasPoint(midX,midY);
+      scale=newScale;
+      offsetX=local.x-gestureStart.imageX*scale;
+      offsetY=local.y-gestureStart.imageY*scale;
+      syncGlobalViewControls();
+      draw();
+    }
+  });
+
+  function endPointer(e){
+    touches.delete(e.pointerId);
+    if(touches.size===0) gestureStart=null;
+    else if(touches.size===1&&mode==='move'){
+      const p=[...touches.values()][0];
+      gestureStart={type:'pan',startX:p.x,startY:p.y,offsetX,offsetY};
+    }
+  }
+
+  viewer.addEventListener('pointerup',endPointer);
+  viewer.addEventListener('pointercancel',endPointer);
+
+  window.addEventListener('resize',resizeCanvas);
+  if('ResizeObserver' in window) new ResizeObserver(resizeCanvas).observe(viewer);
+  resizeCanvas();
+
+  // 1.20.8j: kein Service Worker – GitHub Pages lädt immer die aktuelle index.html.
+})();
+
+
 </script>
+
 </body>
 </html>
