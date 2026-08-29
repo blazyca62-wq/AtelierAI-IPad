@@ -1,4 +1,4 @@
-AtelierAI iPad 1.3
+AtelierAI iPad 1.4
 
 Stabilitaetsstand auf Basis von 1.20.3 FARBTREU.
 Zielreferenz fuer die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.
@@ -24,3 +24,6 @@ Die Farb-, Grossformen-, Tonwert-, Misch- und Lasurberechnungen wurden in diesem
 
 Start:
 - START.html oeffnen. Diese Datei startet AtelierAI direkt.
+
+
+1.4: Neue Farbreise von einer aufgenommenen Startfarbe zur aufgenommenen Zielfarbe mit drei Zwischenstufen und direkter Studio-Mischung pro Stufe.

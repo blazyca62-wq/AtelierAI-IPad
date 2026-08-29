@@ -8,7 +8,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.3</title>
+  <title>AtelierAI iPad 1.4</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -153,7 +153,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.3</div>
+    <div class="title">AtelierAI · iPad 1.4</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -349,6 +349,36 @@
         </div>
 
         <div class="tiny" style="margin-top:6px;">Studio-Mischung · bis zu 5 Farben</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Punkt)</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Punkt- und Maler-Pipette berechnen die Studio-Mischung automatisch.</div><div id="mixResults"></div>
+      </div>
+
+
+
+      <div class="section" id="colorJourneyPanel">
+        <h3>Farbreise zur Zielfarbe</h3>
+        <p>Zeigt den Weg von deiner jetzigen Farbe zur gewünschten Zielfarbe in vier gut unterscheidbaren Malstufen. Jede Zwischenstufe kann direkt als Studio-Mischung berechnet werden.</p>
+
+        <div class="grid2">
+          <button id="journeyTakeStartBtn">Aktuelle Farbe als Start</button>
+          <button id="journeyTakeTargetBtn" class="secondary">Aktuelle Farbe als Ziel</button>
+        </div>
+
+        <div class="target-grid" style="margin-top:9px;">
+          <div>
+            <div class="tiny">Startfarbe</div>
+            <div id="journeyStartSwatch" class="target-box" style="background:#808080"></div>
+          </div>
+          <div>
+            <div class="tiny">Zielfarbe</div>
+            <div id="journeyTargetSwatch" class="target-box" style="background:#808080"></div>
+          </div>
+        </div>
+
+        <div id="journeyInfo" class="tiny" style="margin-top:7px;">
+          1. Startfarbe mit der Pipette aufnehmen und speichern. 2. Zielfarbe aufnehmen und als Ziel speichern.
+        </div>
+
+        <div id="journeyResults" style="margin-top:9px;"></div>
+        <button id="journeyResetBtn" class="secondary" style="width:100%;margin-top:7px;">Farbreise löschen</button>
       </div>
 
 
@@ -601,6 +631,13 @@
   const pickerShowOnlyBtn=document.getElementById('pickerShowOnlyBtn');
   const pickerShowAllBtn=document.getElementById('pickerShowAllBtn');
   const mixResults = document.getElementById('mixResults');
+  const journeyTakeStartBtn=document.getElementById('journeyTakeStartBtn');
+  const journeyTakeTargetBtn=document.getElementById('journeyTakeTargetBtn');
+  const journeyStartSwatch=document.getElementById('journeyStartSwatch');
+  const journeyTargetSwatch=document.getElementById('journeyTargetSwatch');
+  const journeyInfo=document.getElementById('journeyInfo');
+  const journeyResults=document.getElementById('journeyResults');
+  const journeyResetBtn=document.getElementById('journeyResetBtn');
   const managePaletteBtn=document.getElementById('managePaletteBtn');
   const paletteManager=document.getElementById('paletteManager');
   const closePaletteBtn=document.getElementById('closePaletteBtn');
@@ -745,6 +782,11 @@
   let areaPickerMode = null;
   let lastAverageColor = null;
   let lastSmartColor = null;
+
+  // Farbreise: Startfarbe bleibt gespeichert, während anschließend
+  // mit der Pipette die gewünschte Zielfarbe aufgenommen wird.
+  let journeyStartColor=null;
+  let journeyTargetColor=null;
   let paintMedium = 'oil';
 
   let surfaceMode=null;
@@ -1496,6 +1538,79 @@
     avgTargetBox.style.background=displayHx;
     smartTargetBox.style.background=displayHx;
     targetInfo.innerHTML=`${label} ${hx} · RGB ${rgb.join(', ')}`;
+  }
+
+
+  function journeyBlend(a,b,amount){
+    // Weiche Zwischenfarben in sRGB; nur Anzeige/Zielwerte der Farbreise.
+    // Die eigentliche Tubenmischung wird weiterhin von der bestehenden
+    // Studio-Mischung berechnet.
+    return [0,1,2].map(i=>Math.round(a[i]+(b[i]-a[i])*amount));
+  }
+
+  function journeyCurrentColor(){
+    return targetArray();
+  }
+
+  function renderColorJourney(){
+    if(journeyStartColor){
+      journeyStartSwatch.style.background=rgbHex(adaptiveDisplayColor(journeyStartColor));
+    }else{
+      journeyStartSwatch.style.background='#808080';
+    }
+    if(journeyTargetColor){
+      journeyTargetSwatch.style.background=rgbHex(adaptiveDisplayColor(journeyTargetColor));
+    }else{
+      journeyTargetSwatch.style.background='#808080';
+    }
+
+    if(!journeyStartColor || !journeyTargetColor){
+      journeyResults.innerHTML='';
+      journeyInfo.textContent=!journeyStartColor
+        ? 'Zuerst die jetzige Farbe mit der Pipette aufnehmen und „Aktuelle Farbe als Start“ tippen.'
+        : 'Jetzt die gewünschte Zielfarbe mit der Pipette aufnehmen und „Aktuelle Farbe als Ziel“ tippen.';
+      return;
+    }
+
+    const steps=[
+      {name:'Start', amount:0},
+      {name:'Stufe 1', amount:0.25},
+      {name:'Stufe 2', amount:0.50},
+      {name:'Stufe 3', amount:0.75},
+      {name:'Ziel', amount:1}
+    ];
+
+    journeyInfo.innerHTML=`Von <b>${rgbHex(journeyStartColor)}</b> zu <b>${rgbHex(journeyTargetColor)}</b>. Malerisch kannst du dich Stufe für Stufe annähern.`;
+    journeyResults.innerHTML='';
+
+    steps.forEach((step,idx)=>{
+      const rgb=journeyBlend(journeyStartColor,journeyTargetColor,step.amount);
+      const card=document.createElement('div');
+      card.className='mix-card';
+      const pct=Math.round(step.amount*100);
+      card.innerHTML=`
+        <div class="mix-head"><b>${step.name}</b><span>${pct}% zum Ziel</span></div>
+        <div class="swatch-line">
+          <div class="small-swatch" style="background:${rgbHex(adaptiveDisplayColor(rgb))}"></div>
+          <span class="tiny">${rgbHex(rgb)} · RGB ${rgb.join(', ')}</span>
+        </div>
+        ${idx===0 ? '<div class="tiny" style="margin-top:6px;">Deine vorhandene Ausgangsfarbe.</div>' :
+          '<button class="journeyMixBtn" style="width:100%;margin-top:7px;">Diese Stufe mischen</button>'}
+      `;
+      if(idx>0){
+        card.querySelector('.journeyMixBtn').addEventListener('click',()=>{
+          setMixTarget(rgb,`Farbreise – ${step.name}`);
+          showStudioMixPage();
+        });
+      }
+      journeyResults.appendChild(card);
+    });
+  }
+
+  function resetColorJourney(){
+    journeyStartColor=null;
+    journeyTargetColor=null;
+    renderColorJourney();
   }
 
   function readImageDataSRGB(context,x,y,w,h){
@@ -3318,6 +3433,28 @@
   ideaTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){ideasBase=[...t];refreshIdea();}});
   ideaMixBtn.addEventListener('click',()=>{const c=ideaColor();if(c){setMixTarget(c,'Farbidee');showStudioMixPage();}});
   ideaResetBtn.addEventListener('click',()=>{ideaLight.value=0;ideaWarm.value=0;ideaSat.value=0;refreshIdea();});
+  journeyTakeStartBtn.addEventListener('click',()=>{
+    const c=journeyCurrentColor();
+    if(!c){
+      journeyInfo.textContent='Bitte zuerst eine Farbe mit der Pipette oder Maler-Pipette aufnehmen.';
+      return;
+    }
+    journeyStartColor=[...c];
+    renderColorJourney();
+  });
+
+  journeyTakeTargetBtn.addEventListener('click',()=>{
+    const c=journeyCurrentColor();
+    if(!c){
+      journeyInfo.textContent='Bitte zuerst die gewünschte Zielfarbe mit der Pipette aufnehmen.';
+      return;
+    }
+    journeyTargetColor=[...c];
+    renderColorJourney();
+  });
+
+  journeyResetBtn.addEventListener('click',resetColorJourney);
+
   pairCalcBtn.addEventListener('click',calculatePairPalette);
 
   gridToggleBtn.addEventListener('click',()=>{gridEnabled=!gridEnabled;gridToggleBtn.textContent=gridEnabled?'Raster aus':'Raster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);draw();});
@@ -3350,6 +3487,7 @@
       formsPanel:'Großformen',
       tonesPanel:'Tonwerte',
       paintMixPanel:'Mischen',
+      colorJourneyPanel:'Farbreise',
       colorAnalysisPanel:'Farbanalyse',
       surfaceAdvisorPanel:'Flächenberater',
       glazePanel:'Lasuren',
