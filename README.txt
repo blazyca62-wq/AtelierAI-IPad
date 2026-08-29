@@ -1,4 +1,4 @@
-AtelierAI iPad 1.8
+AtelierAI iPad 1.9
 
 Stabilitaetsstand auf Basis von 1.20.3 FARBTREU.
 Zielreferenz fuer die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.
@@ -36,3 +36,5 @@ Start:
 - Farbreise am PC-Prinzip ausgerichtet:
   Ausgangsmischung berechnen -> Teile davon verwenden -> konkrete Tubenfarben hinzufügen -> Übereinstimmung anzeigen.
 - Farbreise öffnet weiterhin automatisch die Pipette; zwei Bildtipps genügen.
+
+1.9: Nur Bedienkorrektur. Beim Öffnen der Farbreise wird die Punkt-Pipette sicher automatisch aktiviert und bleibt für die zweite Aufnahme aktiv. Mischlogik aus 1.8 unverändert.
