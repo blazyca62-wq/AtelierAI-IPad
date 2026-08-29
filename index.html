@@ -4,8 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#f2f1ed" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.20.8i RASTER QUADRATISCH</title>
+  <title>AtelierAI iPad 1.20.8j FARBNUANCEN</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -150,7 +153,7 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.20.8i RASTER QUADRATISCH</div>
+    <div class="title">AtelierAI · iPad 1.20.8j FARBNUANCEN</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -351,7 +354,7 @@
 
       <div class="section" id="surfaceAdvisorPanel">
         <h3>Flächenberater</h3>
-        <p>Bereich antippen → vier Hauptfarben bestimmen. Jede Hauptfarbe kann direkt gemischt werden.</p>
+        <p>Bereich antippen → vier Hauptfarben bestimmen. Wenn vorher „Nur diese Farbe zeigen“ aktiv ist, werden daraus vier Nuancen genau dieser Farbfamilie bestimmt. Jede Farbe kann direkt gemischt werden.</p>
         <div class="grid2">
           <button id="surfaceCircleBtn">Kreis analysieren</button>
           <button id="surfaceRectBtn" class="secondary">Rechteck analysieren</button>
@@ -2324,13 +2327,28 @@
     const x0=Math.max(0,Math.floor(cx-half)),x1=Math.min(w-1,Math.ceil(cx+half));
     const y0=Math.max(0,Math.floor(cy-half)),y1=Math.min(h-1,Math.ceil(cy+half));
     const step=Math.max(1,Math.floor(size/40));
+
+    // Wenn „Nur diese Farbe zeigen“ aktiv ist, werden für die Flächenanalyse
+    // ausschließlich Pixel aus genau dieser sichtbaren Farbfamilie benutzt.
+    const isolatedLab=activeIsolatedColor ? rgbToLabFast(activeIsolatedColor) : null;
+    const isolatedTolerance=currentColorTolerance();
+
     for(let y=y0;y<=y1;y+=step)for(let x=x0;x<=x1;x+=step){
       if(shape==='circle'){const dx=x-cx,dy=y-cy;if(dx*dx+dy*dy>half*half)continue;}
       const q=srcCtx.getImageData(x,y,1,1).data;
-      pts.push([q[0],q[1],q[2]]);
+      const rgb=[q[0],q[1],q[2]];
+      if(isolatedLab && deltaE76FromLab(rgbToLabFast(rgb),isolatedLab)>isolatedTolerance) continue;
+      pts.push(rgb);
     }
     if(pts.length<4)return[];
-    let centers=[.12,.37,.63,.88].map(f=>[...pts[Math.min(pts.length-1,Math.floor(pts.length*f))]]);
+
+    // Bei isolierter Farbe werden die Startpunkte nach Helligkeit verteilt.
+    // So entstehen gezielt vier malerisch brauchbare Nuancen derselben Farbe.
+    const seedPts=isolatedLab
+      ? pts.slice().sort((a,b)=>(.2126*a[0]+.7152*a[1]+.0722*a[2])-(.2126*b[0]+.7152*b[1]+.0722*b[2]))
+      : pts;
+
+    let centers=[.12,.37,.63,.88].map(f=>[...seedPts[Math.min(seedPts.length-1,Math.floor(seedPts.length*f))]]);
     for(let it=0;it<6;it++){
       const sums=centers.map(()=>[0,0,0,0]);
       for(const q of pts){let bi=0,bd=Infinity;centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});sums[bi][0]+=q[0];sums[bi][1]+=q[1];sums[bi][2]+=q[2];sums[bi][3]++;}
@@ -2338,7 +2356,11 @@
     }
     const counts=centers.map(()=>0);
     for(const q of pts){let bi=0,bd=Infinity;centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});counts[bi]++;}
-    return centers.map((c,i)=>({rgb:c.map(v=>Math.round(v)),pct:100*counts[i]/pts.length})).sort((a,b)=>b.pct-a.pct);
+
+    const result=centers.map((c,i)=>({rgb:c.map(v=>Math.round(v)),pct:100*counts[i]/pts.length}));
+    return isolatedLab
+      ? result.sort((a,b)=>(.2126*b.rgb[0]+.7152*b.rgb[1]+.0722*b.rgb[2])-(.2126*a.rgb[0]+.7152*a.rgb[1]+.0722*a.rgb[2]))
+      : result.sort((a,b)=>b.pct-a.pct);
   }
 
 
@@ -2459,16 +2481,21 @@
   }
 
   function renderSurface(clusters){
+    const nuanceMode=!!activeIsolatedColor;
     surfaceClusters=clusters.map(c=>({rgb:[...c.rgb],pct:c.pct}));
     surfaceSelectedIndex=null;
-    surfaceMarkCanvas=null;
+    if(!nuanceMode) surfaceMarkCanvas=null;
     surfaceResults.innerHTML='';
+    if(nuanceMode && !clusters.length){
+      surfaceResults.innerHTML='<span class="tiny">In diesem Bereich sind zu wenige Pixel der angezeigten Farbe. Kreis etwas größer machen oder auf einen stärker sichtbaren Bereich setzen.</span>';
+      return;
+    }
     clusters.forEach((c,i)=>{
       const row=document.createElement('div');row.className='pc-card';
       row.innerHTML=`
         <div class="swatch-line">
           <div class="small-swatch" style="background:${rgbHex(c.rgb)}"></div>
-          <div><b>Hauptfarbe ${i+1}</b><br><span class="tiny">${Math.round(c.pct)}% · ${rgbHex(c.rgb)} · RGB ${c.rgb.join(', ')}</span></div>
+          <div><b>${nuanceMode ? 'Nuance' : 'Hauptfarbe'} ${i+1}</b><br><span class="tiny">${Math.round(c.pct)}% · ${rgbHex(c.rgb)} · RGB ${c.rgb.join(', ')}</span></div>
         </div>
         <div class="grid2" style="margin-top:7px;">
           <button class="surfaceMarkBtn secondary">Nur diese Farbe zeigen</button>
@@ -2478,7 +2505,7 @@
       row.querySelector('.surfaceMarkBtn').onclick=()=>buildSurfaceMark(i);
       row.querySelector('.surfaceZoomBtn').onclick=()=>zoomSurfaceCluster(i);
       row.querySelector('.surfaceMixBtn').onclick=()=>{
-        setMixTarget(c.rgb,`Hauptfarbe ${i+1}`);
+        setMixTarget(c.rgb,`${nuanceMode ? 'Nuance' : 'Hauptfarbe'} ${i+1}`);
         correctionBase=[...c.rgb]; refreshCorrection();
         showStudioMixPage();
       };
@@ -3138,14 +3165,22 @@
     if(surfacePreview){surfacePreview.size=Number(surfaceSize.value)/Math.max(scale,.05);draw();}
   });
   surfaceCircleBtn.addEventListener('click',()=>{
-    surfaceMode='circle'; surfaceMarkCanvas=null; surfaceSelectedIndex=null;
+    surfaceMode='circle'; surfaceSelectedIndex=null;
+    if(!activeIsolatedColor) surfaceMarkCanvas=null;
     if(loaded) surfacePreview={shape:'circle',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
-    hint.textContent='Flächenberater: Kreis ist sichtbar – gewünschte Stelle antippen'; draw();
+    hint.textContent=activeIsolatedColor
+      ? 'Flächenberater: Kreis auf die sichtbare Farbe setzen – es werden 4 Nuancen dieser Farbe bestimmt'
+      : 'Flächenberater: Kreis ist sichtbar – gewünschte Stelle antippen';
+    draw();
   });
   surfaceRectBtn.addEventListener('click',()=>{
-    surfaceMode='rect'; surfaceMarkCanvas=null; surfaceSelectedIndex=null;
+    surfaceMode='rect'; surfaceSelectedIndex=null;
+    if(!activeIsolatedColor) surfaceMarkCanvas=null;
     if(loaded) surfacePreview={shape:'rect',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
-    hint.textContent='Flächenberater: Rechteck ist sichtbar – gewünschte Stelle antippen'; draw();
+    hint.textContent=activeIsolatedColor
+      ? 'Flächenberater: Bereich auf die sichtbare Farbe setzen – es werden 4 Nuancen dieser Farbe bestimmt'
+      : 'Flächenberater: Rechteck ist sichtbar – gewünschte Stelle antippen';
+    draw();
   });
   surfaceClearMarkBtn.addEventListener('click',clearSurfaceMark);
   surfaceResetBtn.addEventListener('click',()=>{
@@ -3163,8 +3198,13 @@
     const clusters=clusterArea(ix,iy,realSize,surfaceMode);
     renderSurface(clusters);
     surfaceMode=null;
-    draw();
-    hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette';
+    if(activeIsolatedColor){
+      isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
+      hint.textContent='Vier Nuancen der angezeigten Farbe bestimmt';
+    }else{
+      draw();
+      hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette';
+    }
     e.preventDefault(); e.stopImmediatePropagation();
   },true);
 
@@ -3513,9 +3553,7 @@
   if('ResizeObserver' in window) new ResizeObserver(resizeCanvas).observe(viewer);
   resizeCanvas();
 
-  if('serviceWorker' in navigator){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-  }
+  // 1.20.8j: kein Service Worker – GitHub Pages lädt immer die aktuelle index.html.
 })();
 
 
