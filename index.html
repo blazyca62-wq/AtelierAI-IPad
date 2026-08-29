@@ -7,8 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <title>AtelierAI iPad 1.7</title>
+  <title>AtelierAI iPad 1.8</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -151,9 +150,27 @@
 </style>
 </head>
 <body>
+<script>
+(function(){
+  try{
+    const wanted='atelierai-1.8-20260829';
+    const u=new URL(location.href);
+    if(u.searchParams.get('v')!==wanted){
+      u.searchParams.set('v',wanted);
+      history.replaceState(null,'',u.toString());
+    }
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});
+    }
+    if('caches' in window){
+      caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))).catch(()=>{});
+    }
+  }catch(e){}
+})();
+</script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.7</div>
+    <div class="title">AtelierAI · iPad 1.8</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1568,90 +1585,137 @@
     const target=[...journeyTargetColor];
     const paletteKey=paintPalette.value;
     const available=selectedPaletteColors(paletteKey);
-
     journeyResults.innerHTML='';
-    journeyInfo.innerHTML=`Grundfarbe <b>${rgbHex(base)}</b> → Zielfarbe <b>${rgbHex(target)}</b>`;
 
-    if(!available || available.length<1){
-      journeyResults.innerHTML='<div class="mix-card"><b>Keine Palettenfarben aktiv.</b><br><span class="tiny">Bitte in „Meine Farben auswählen“ deine vorhandenen Farben markieren.</span></div>';
+    if(!available || available.length<2){
+      journeyInfo.textContent='Für die Farbreise müssen mindestens zwei Farben deiner Palette aktiv sein.';
       return;
     }
 
-    const targetLab=rgbToLabFast(target);
-    const candidates=[];
-    const fractions=[0.04,0.06,0.08,0.10,0.12,0.15,0.18,0.22,0.26,0.30,0.36,0.42,0.50];
+    // PC-Prinzip: zuerst wird die vorhandene Ausgangsfarbe als Studio-Mischung berechnet.
+    const startSuggestions=chooseMixes(base,paletteKey);
+    if(!startSuggestions.length){
+      journeyInfo.textContent='Für die Grundfarbe konnte keine Ausgangsmischung berechnet werden.';
+      return;
+    }
+    const startMix=startSuggestions[0];
 
-    function blendBase(addRgb, f){
-      return [0,1,2].map(k=>Math.round(base[k]*(1-f)+addRgb[k]*f));
+    const isWater=paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie';
+    const candidates=available.map(([name,rgb,series])=>({name,rgb,series}));
+
+    function paintRgb(c){
+      return isWater ? paletteMixRgb(c.name,c.rgb,paletteKey) : c.rgb;
+    }
+    function weightedRgb(items,parts){
+      if(isWater) return opticalDensityMix(items,parts,paletteKey);
+      const total=parts.reduce((s,v)=>s+v,0)||1;
+      return [0,1,2].map(ch=>Math.round(items.reduce((s,c,i)=>s+paintRgb(c)[ch]*parts[i],0)/total));
+    }
+    function targetCost(rgb){
+      return deltaE76FromLab(rgbToLabFast(rgb),rgbToLabFast(target));
+    }
+    function matchPct(cost){
+      return Math.max(0,Math.min(100,Math.round(100-cost*1.55)));
     }
 
-    function pushCandidate(names, addRgb, f){
-      const rgb=blendBase(addRgb,f);
-      const d=deltaE76FromLab(rgbToLabFast(rgb), targetLab);
-      candidates.push({names,rgb,f,d});
+    // Reconstruct the calculated start mixture as paint items.
+    const startItems=[];
+    const startParts=[];
+    for(let i=0;i<startMix.names.length;i++){
+      const cleanName=startMix.names[i].replace(/\s+\((Horadam|Akademie)\)$/,'');
+      const found=candidates.find(c=>c.name===cleanName);
+      if(found){
+        startItems.push(found);
+        startParts.push(startMix.parts[i]||1);
+      }
+    }
+    if(!startItems.length){
+      journeyInfo.textContent='Die Ausgangsmischung konnte nicht mit deiner Palette verknüpft werden.';
+      return;
     }
 
-    // selectedPaletteColors liefert [Name, RGB] bzw. bei Aquarell [Name, RGB, Palette]
-    for(const entry of available){
-      const name=entry[0], rgb=entry[1];
-      if(!rgb) continue;
-      for(const f of fractions) pushCandidate([name], rgb, f);
+    // PC-artige Farbentwicklung:
+    // Teile der vorhandenen Ausgangsmischung + 1 oder 2 zusätzliche Tubenfarben.
+    const found=[];
+    const startUseOptions=[4,5,6,8,10,12,15,18,20];
+    const addOptions=[1,2,3,4,5,6,8,10];
+
+    function scaledStartParts(startUse){
+      const total=startParts.reduce((a,b)=>a+b,0)||1;
+      return startParts.map(v=>v/total*startUse);
     }
 
-    // Zwei Farben als gemeinsame Korrektur-Zugabe
-    const pool=available.slice(0,Math.min(20,available.length));
+    function testAddition(addColors, addParts, startUse){
+      const items=startItems.concat(addColors);
+      const parts=scaledStartParts(startUse).concat(addParts);
+      const rgb=weightedRgb(items,parts);
+      found.push({
+        rgb,
+        cost:targetCost(rgb),
+        startUse,
+        addColors,
+        addParts
+      });
+    }
+
+    for(const c of candidates){
+      for(const su of startUseOptions){
+        for(const ap of addOptions) testAddition([c],[ap],su);
+      }
+    }
+
+    const pool=candidates.slice(0,Math.min(18,candidates.length));
     for(let i=0;i<pool.length;i++){
       for(let j=i+1;j<pool.length;j++){
-        const rgb1=pool[i][1], rgb2=pool[j][1];
-        if(!rgb1 || !rgb2) continue;
-        const addRgb=[0,1,2].map(k=>Math.round((rgb1[k]+rgb2[k])/2));
-        for(const f of [0.06,0.10,0.15,0.20,0.26,0.32,0.40,0.50]){
-          pushCandidate([pool[i][0],pool[j][0]], addRgb, f);
+        for(const su of [6,8,10,12,15,18]){
+          for(const a1 of [1,2,3,4,5]){
+            for(const a2 of [1,2,3,4,5]){
+              testAddition([pool[i],pool[j]],[a1,a2],su);
+            }
+          }
         }
       }
     }
 
-    candidates.sort((x,y)=>x.d-y.d || x.f-y.f);
+    found.sort((x,y)=>x.cost-y.cost || (x.addParts.reduce((a,b)=>a+b,0)-y.addParts.reduce((a,b)=>a+b,0)));
 
-    const chosen=[];
+    const best=[];
     const seen=new Set();
-    for(const c of candidates){
-      const key=c.names.slice().sort().join('|');
-      if(seen.has(key)) continue;
-      seen.add(key);
-      chosen.push(c);
-      if(chosen.length>=3) break;
+    for(const r of found){
+      const sig=r.addColors.map(c=>c.name).sort().join('|');
+      if(seen.has(sig)) continue;
+      seen.add(sig);
+      best.push(r);
+      if(best.length>=3) break;
     }
 
-    if(!chosen.length){
-      journeyResults.innerHTML='<div class="mix-card"><b>Keine passende Zugabe gefunden.</b></div>';
-      return;
-    }
+    const startRecipe=startMix.names.map((n,i)=>`${startMix.parts[i]} Teil${startMix.parts[i]!==1?'e':''} ${n}`).join('<br>');
+    journeyInfo.innerHTML=`<b>Vorhandene Ausgangsmischung:</b><br>${startRecipe}`;
 
-    chosen.forEach((m,idx)=>{
-      const addPct=Math.round(m.f*100);
-      const basePct=100-addPct;
-      const approx=Math.max(0,Math.round(100-Math.min(100,m.d*3)));
-
-      let recipe;
-      if(m.names.length===1){
-        recipe=`${m.names[0]}`;
-      }else{
-        recipe=`½ ${m.names[0]} + ½ ${m.names[1]}`;
-      }
-
+    best.forEach((r,idx)=>{
+      const totalAddition=r.addParts.reduce((a,b)=>a+b,0);
+      const changeLarge=totalAddition >= r.startUse*0.75;
+      const additions=r.addColors.map((c,i)=>`+ ${r.addParts[i]} Teil${r.addParts[i]!==1?'e':''} ${c.name}`).join('<br>');
       const card=document.createElement('div');
       card.className='mix-card';
       card.innerHTML=`
-        <div class="mix-head"><b>${idx===0?'Beste Zugabe':'Alternative '+(idx+1)}</b><span>${approx}% Annäherung</span></div>
+        <div class="mix-head">
+          <b>${idx===0?'Beste Weiterentwicklung':'Alternative '+(idx+1)}</b>
+          <span>${matchPct(r.cost)}% Übereinstimmung</span>
+        </div>
         <div class="mix-swatches">
-          <div><div class="tiny">Ergebnis</div><div class="mix-swatch" style="background:${rgbHex(adaptiveDisplayColor(m.rgb))}"></div></div>
+          <div><div class="tiny">Berechnetes Ergebnis</div><div class="mix-swatch" style="background:${rgbHex(adaptiveDisplayColor(r.rgb))}"></div></div>
           <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${rgbHex(adaptiveDisplayColor(target))}"></div></div>
         </div>
         <div class="mix-lines">
-          <b>Zur Grundfarbe beimischen:</b><br>
-          ${recipe}<br>
-          <span class="tiny">ca. ${basePct}% Grundfarbe + ${addPct}% Zugabe</span>
+          <b>Davon verwenden:</b><br>
+          ${r.startUse} Teile Ausgangsmischung<br>
+          ${additions}
+        </div>
+        <div class="tiny" style="margin-top:7px;">
+          ${changeLarge
+            ? 'Die Veränderung ist groß. Eine neue Mischung könnte sauberer sein.'
+            : 'Gute praktische Weiterentwicklung der vorhandenen Mischung.'}
         </div>
       `;
       journeyResults.appendChild(card);

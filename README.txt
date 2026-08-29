@@ -1,4 +1,4 @@
-AtelierAI iPad 1.7
+AtelierAI iPad 1.8
 
 Stabilitaetsstand auf Basis von 1.20.3 FARBTREU.
 Zielreferenz fuer die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.
@@ -29,3 +29,10 @@ Start:
 1.4: Neue Farbreise von einer aufgenommenen Startfarbe zur aufgenommenen Zielfarbe mit drei Zwischenstufen und direkter Studio-Mischung pro Stufe.
 
 1.7: Farbreise öffnet automatisch die Pipette. Zwei Bildtipps genügen. Mischvorschläge korrigiert und werden direkt angezeigt.
+
+1.8:
+- PWA-Manifest wird von index.html nicht mehr geladen, damit Safari keine alte Start-URL festhält.
+- Service Worker speichert nichts und entfernt alte Caches.
+- Farbreise am PC-Prinzip ausgerichtet:
+  Ausgangsmischung berechnen -> Teile davon verwenden -> konkrete Tubenfarben hinzufügen -> Übereinstimmung anzeigen.
+- Farbreise öffnet weiterhin automatisch die Pipette; zwei Bildtipps genügen.
