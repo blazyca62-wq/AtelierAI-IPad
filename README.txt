@@ -28,4 +28,4 @@ Start:
 
 1.4: Neue Farbreise von einer aufgenommenen Startfarbe zur aufgenommenen Zielfarbe mit drei Zwischenstufen und direkter Studio-Mischung pro Stufe.
 
-1.6 NEU: Neu aufgebaut direkt aus 1.4. Farbreise berechnet Zugabe zur vorhandenen Grundfarbe bis zur Zielfarbe.
+1.6 CACHEFEST: aus 1.4 neu gebaut; alte Service Worker/Caches werden beim Start entfernt.

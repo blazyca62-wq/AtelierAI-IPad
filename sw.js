@@ -7,3 +7,4 @@ self.addEventListener('activate',event=>{
     await self.clients.claim();
   })());
 });
+self.addEventListener('fetch',()=>{});

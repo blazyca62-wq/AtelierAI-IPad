@@ -5,9 +5,23 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>AtelierAI iPad 1.6 starten</title>
+<title>AtelierAI iPad 1.6</title>
 </head><body>
 <h2>AtelierAI iPad 1.6</h2>
-<p><a href="./index.html?v=atelierai-1.6-neu">AtelierAI 1.4 starten</a></p>
-<script>location.replace('./index.html?v=atelierai-1.6-neu');</script>
+<p><a href="./index.html?v=1608291058">AtelierAI iPad 1.6 starten</a></p>
+<script>
+(async()=>{
+  try{
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+    }
+    if('caches' in window){
+      const keys=await caches.keys();
+      await Promise.all(keys.map(k=>caches.delete(k)));
+    }
+  }catch(e){}
+  location.replace('./index.html?v=1608291058');
+})();
+</script>
 </body></html>

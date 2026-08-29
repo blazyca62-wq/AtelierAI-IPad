@@ -149,6 +149,20 @@
     }
 
 </style>
+<script>
+(async function(){
+  try{
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+    }
+    if('caches' in window){
+      const keys=await caches.keys();
+      await Promise.all(keys.map(k=>caches.delete(k)));
+    }
+  }catch(e){}
+})();
+</script>
 </head>
 <body>
 <div class="app">
@@ -1588,12 +1602,10 @@
       candidates.push({colors,rgb,f,d});
     }
 
-    // One correcting palette color.
     for(const c of available){
       for(const f of fractions) addCandidate([c],c.rgb,f);
     }
 
-    // Two correcting palette colors, equal share in the addition.
     const pool=available.slice(0,Math.min(20,available.length));
     for(let i=0;i<pool.length;i++){
       for(let j=i+1;j<pool.length;j++){
@@ -3154,7 +3166,6 @@
     correctionBase=[...rgb]; refreshCorrection(); ideasBase=[...rgb]; refreshIdea();
     showMixes();
 
-    // Farbreise: in derselben Pipetten-Sitzung erst Grundfarbe, dann Zielfarbe.
     const journeyOpen=document.getElementById('colorJourneyPanel')?.classList.contains('tool-page-active');
     if(journeyOpen){
       if(!journeyStartColor || journeyTargetColor){
@@ -3168,7 +3179,6 @@
       return;
     }
 
-    // Bewährtes normales Pipettenverhalten außerhalb der Farbreise.
     if(typeof window.activateToolPage==='function'){
       window.activateToolPage('paintMixPanel');
     }
