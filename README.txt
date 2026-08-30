@@ -1,4 +1,4 @@
-AtelierAI iPad 1.42
+AtelierAI iPad 1.43
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -99,4 +99,4 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 
 1.41: Speichern erweitert: getrennte Schaltflächen für PNG und JPEG. JPEG wird mit 95 % Qualität erzeugt. Beide Formate werden als normale Bilddateien heruntergeladen; die bisherige Bilddarstellung und Rasteroption bleiben erhalten.
 
-1.42: Bildberater / „Bilder malerisch vergleichen“ vollständig entfernt. Alle übrigen Funktionen einschließlich PNG- und JPEG-Speichern bleiben erhalten.
+1.43: Bildberater vollständig entfernt. Korrektur gegenüber 1.42: Der normale Hauptfoto-Öffnen-Code und die Navigation bleiben vollständig erhalten. PNG/JPEG-Speichern bleibt erhalten.

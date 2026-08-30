@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.42</title>
+  <title>AtelierAI iPad 1.43</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.42-20260830';
+    const wanted='atelierai-1.43-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.42</div>
+    <div class="title">AtelierAI · iPad 1.43</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -3779,9 +3779,143 @@
 
 
 
-  // 1.34 Bildberater: Vorbild gegen Foto des aktuellen Gemäldes.
-  // Absichtlich wenige Hinweise: die drei größten malerischen Abweichungen.
+  function setupCompactSidebar(){
+    const side=document.querySelector('aside.side');
+    if(!side) return;
 
+    const sections=[...side.querySelectorAll(':scope > .section')].filter(sec=>sec.id!=='colorIdeasPanel');
+    if(!sections.length) return;
+
+    // 1.9 hatte die Bereiche bereits als Accordion umgebaut.
+    // Für 1.10 holen wir den Inhalt wieder aus diesem Verhalten heraus
+    // und zeigen immer genau eine Werkzeugseite.
+    const labels={
+      toolPanel:'Werkzeug',
+      formsPanel:'Großformen',
+      tonesPanel:'Tonwerte',
+      paintMixPanel:'Mischen',
+      colorAdvisorPanel:'Farbmischpult',
+      colorJourneyPanel:'Farbreise',
+      colorAnalysisPanel:'Farbanalyse',
+      surfaceAdvisorPanel:'Flächenberater',
+      glazePanel:'Lasuren',
+      correctionStudioPanel:'Korrektur',
+      mixPalettePanel:'Mischpalette',
+      gridSavePanel:'Raster & Speichern',
+      sampleColorPanel:'Farbe'
+    };
+
+    const nav=document.createElement('div');
+    nav.className='toolnav-wrap';
+    const strip=document.createElement('div');
+    strip.className='toolnav';
+    nav.appendChild(strip);
+    side.insertBefore(nav,side.firstChild);
+
+    let active=null;
+
+    function sectionName(sec){
+      if(labels[sec.id]) return labels[sec.id];
+      const oldTitle=sec.querySelector(':scope > h3');
+      if(oldTitle) return oldTitle.textContent.trim();
+      const accTitle=sec.querySelector(':scope > .accordion-head .acc-title');
+      if(accTitle) return accTitle.textContent.trim();
+      return 'Werkzeug';
+    }
+
+    function normalize(sec){
+      sec.classList.add('tool-page');
+      sec.classList.remove('open');
+
+      const head=sec.querySelector(':scope > .accordion-head');
+      const body=sec.querySelector(':scope > .accordion-body');
+      const name=sectionName(sec);
+
+      if(head) head.style.display='none';
+      if(body){
+        body.style.display='block';
+        body.style.padding='0';
+        // sichtbare Überschrift im Werkzeugfenster
+        if(!body.querySelector(':scope > .tool-page-title')){
+          const t=document.createElement('div');
+          t.className='tool-page-title';
+          t.textContent=name;
+          body.prepend(t);
+        }
+      } else {
+        const h=sec.querySelector(':scope > h3');
+        if(h){ h.classList.add('tool-page-title'); }
+      }
+      return name;
+    }
+
+    function show(sec,btn){
+      sections.forEach(x=>x.classList.remove('tool-page-active'));
+      [...strip.querySelectorAll('button')].forEach(b=>b.classList.remove('active'));
+      sec.classList.add('tool-page-active');
+      if(btn) btn.classList.add('active');
+      active=sec;
+      side.scrollTop=0;
+
+      // 1.9: Farbreise ist wirklich sofort aufnahmebereit.
+      // Nicht nur den Modus setzen, sondern denselben Pipetten-Klick auslösen
+      // wie bei manueller Bedienung. So bleibt kein alter Verschieben-Zustand aktiv.
+      if(sec.id==='colorJourneyPanel'){
+        setMode('picker');
+        if(pickerMode && typeof pickerMode.click==='function' && !pickerMode.classList.contains('active')){
+          pickerMode.click();
+        }
+        window.setTimeout(()=>{
+          setMode('picker');
+          renderColorJourney();
+        },0);
+      }
+    }
+
+    window.activateToolPage=function(id){
+      const sec=sections.find(x=>x.id===id);
+      if(!sec) return false;
+      const btn=[...strip.querySelectorAll('button')].find(b=>b.dataset.targetId===id);
+      show(sec,btn||null);
+      return true;
+    };
+
+    sections.forEach((sec,i)=>{
+      const name=normalize(sec);
+      const b=document.createElement('button');
+      b.type='button';
+      b.textContent=name;
+      b.className='secondary';
+      b.dataset.targetId=sec.id||'';
+      b.addEventListener('click',()=>show(sec,b));
+      strip.appendChild(b);
+      if(i===0) show(sec,b);
+    });
+  }
+  setupCompactSidebar();
+
+
+  // Punkt-Pipette wird zentral im Viewer-pointerdown verarbeitet.
+  // Kein zweiter pointerup-Aufruf: verhindert doppelte Farbaufnahme auf dem iPad.
+
+  fileInput.addEventListener('change',e=>{
+    const file=e.target.files&&e.target.files[0];
+    if(!file) return;
+    const url=URL.createObjectURL(file);
+    img=new Image();
+    img.onload=()=>{
+      loaded=true;
+      placeholder.style.display='none';
+      sourceCanvas.width=img.width; sourceCanvas.height=img.height;
+      sourceCtx.clearRect(0,0,img.width,img.height);
+      sourceCtx.drawImage(img,0,0);
+      rebuildForms();
+      rebuildToneImage();
+      fitImage();
+      URL.revokeObjectURL(url);
+    };
+    img.src=url;
+  });
 
   fitBtn.addEventListener('click',fitImage);
   resetBtn.addEventListener('click',fitImage);
