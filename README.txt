@@ -77,4 +77,4 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 
 1.30: Künstler-Vorschläge vollständig entfernt, einschließlich Monet Bild 1–6. Allgemeiner Farbatlas und alle Funktionen des Farbmischpults bleiben erhalten.
 
-1.31: Am Anfang des Farbmischpults stehen jetzt die Grundfarbfamilien Rot, Gelb, Blau, Grün, Orange, Violett, Braun, Weiß, Grau und sehr dunkel/Schwarz. Jede Grundfarbe besitzt mehrere direkte Nuancen als Ausgangspunkt. Alle bisherigen Farbatlas- und Mischpultfunktionen bleiben erhalten.
+1.31: Im Farbmischpult wird die aktive Malpalette jetzt eindeutig als Öl oder Aquarell angezeigt. Das Mischpult verwendet weiterhin automatisch die oben gewählte Palette: Winsor & Newton Artisan (Öl), Schmincke Horadam (Aquarell) oder Schmincke Akademie (Aquarell). Beim Palettewechsel werden Grundmischung, Vorschläge und freie Farbauswahl neu aus genau dieser Palette aufgebaut.
