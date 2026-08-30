@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.21</title>
+  <title>AtelierAI iPad 1.22</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.21-20260830';
+    const wanted='atelierai-1.22-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.21</div>
+    <div class="title">AtelierAI · iPad 1.22</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -414,6 +414,25 @@
             <option value="green">Grün</option>
             <option value="skin">Hautfarbe – Halbton</option>
             <option value="blue">Blau</option>
+            <option value="earth">Erde / Boden</option>
+            <option value="snow">Schnee</option>
+            <option value="autumn">Herbstfarben</option>
+            <option value="sky">Himmel</option>
+            <option value="water">Wasser</option>
+            <option value="sand">Sand / Strand</option>
+            <option value="stone">Stein / Felsen</option>
+            <option value="wood">Holz</option>
+            <option value="foliage">Laub / Naturgrün</option>
+            <option value="shadow">Natürliche Schatten</option>
+            <option value="cloud">Wolken</option>
+            <option value="sunset">Abendhimmel / Sonnenuntergang</option>
+            <option value="flowerpink">Rosa Blüten</option>
+            <option value="flowerred">Rote Blüten</option>
+            <option value="yellow">Gelb / Sonnenlicht</option>
+            <option value="turquoise">Türkis</option>
+            <option value="grey">Malerisches Grau</option>
+            <option value="white">Gebrochenes Weiß</option>
+            <option value="blackmix">Dunkel / fast Schwarz</option>
           </select>
 
           <div class="card" style="margin-top:10px;">
@@ -3984,7 +4003,45 @@
     skin:{rgb:[199,145,119],hint:'Haut-Halbton: kleine Zugaben verändern die Mischung stark. Besonders Weiß, Ocker, Rot, Ultramarin und Umbra sind interessant.',terms:[
       ['weiß|white','heller'],['ocker|ochre|yellow ochre','goldener'],['rot|red|zinnober|vermilion|cadmium red|crimson','rosiger / durchblutet'],['ultramarin|blau|blue','kühler / Schattenrichtung'],['umbra|umber|siena|sienna','tiefer / gebrochener']]},
     blue:{rgb:[75,116,166],hint:'Blau: Weiß verändert die Helligkeit, Rot/Violett verschiebt die Richtung, Grün/Türkis macht es kühler, Erdfarbe dämpft.',terms:[
-      ['weiß|white','heller'],['ultramarin|blau|blue','tieferes Blau'],['magenta|violett|purple|crimson','violetter'],['grün|green|cyan|turquoise','türkiser'],['ocker|ochre|siena|sienna|umbra|umber','gedämpfter']]}
+      ['weiß|white','heller'],['ultramarin|blau|blue','tieferes Blau'],['magenta|violett|purple|crimson','violetter'],['grün|green|cyan|turquoise','türkiser'],['ocker|ochre|siena|sienna|umbra|umber','gedämpfter']]},
+    earth:{rgb:[126,91,61],hint:'Erde/Boden: Ocker, Siena und Umbra bilden die Basis. Blau kühlt feuchte Erde, Rot wärmt trockene Erde, Weiß erzeugt staubige helle Töne.',terms:[
+      ['ocker|ochre','goldener / trockener'],['siena|sienna','wärmer / rötlicher'],['umbra|umber','dunkler / erdiger'],['ultramarin|blau|blue','kühler / feuchter'],['weiß|white','heller / staubiger']]},
+    snow:{rgb:[218,225,231],hint:'Schnee ist selten reines Weiß. Weiß bleibt die Basis; Blau/Violett erzeugt kalte Schatten, Ocker oder Rosa warmes Licht.',terms:[
+      ['weiß|white','Schneelicht'],['ultramarin|blau|blue','kalte Schatten'],['violett|purple|magenta','violette Schatten'],['ocker|ochre|gelb|yellow','warmes Sonnenlicht'],['rose|rosa|red|rot','Abendlicht']]},
+    autumn:{rgb:[164,101,47],hint:'Herbst: Ocker und warme Rottöne bilden die Basis. Siena/Umbra vertiefen, Grün hält Übergänge natürlich.',terms:[
+      ['ocker|ochre|gelb|yellow','goldenes Laub'],['rot|red|crimson|karmin','rotes Laub'],['siena|sienna','orangebraun'],['umbra|umber','tiefe trockene Töne'],['grün|green','Restgrün / brechen']]},
+    sky:{rgb:[128,174,211],hint:'Himmel: Blau mit Weiß aufbauen. Ultramarin vertieft den oberen Himmel; wärmere Rot-/Ockerspuren eignen sich Richtung Horizont.',terms:[
+      ['weiß|white','heller / Horizont'],['blau|blue|cerulean|cobalt','Himmelblau'],['ultramarin|ultramarine','tiefer oben'],['magenta|rose|rot|red','wärmer / Abendton'],['ocker|ochre|gelb|yellow','Horizontlicht']]},
+    water:{rgb:[75,132,145],hint:'Wasser übernimmt Himmel und Umgebung. Blau/Grün bestimmen die Grundrichtung, Umbra dämpft, Weiß setzt helle Reflexe.',terms:[
+      ['blau|blue|ultramarin','Himmelreflex'],['grün|green|viridian','grünlicher'],['umbra|umber|siena|sienna','natürlicher / tiefer'],['weiß|white','Lichtreflexe'],['ocker|ochre','flaches / warmes Wasser']]},
+    sand:{rgb:[193,164,112],hint:'Sand: Ocker plus Weiß ist eine gute Basis. Siena wärmt, Umbra vertieft feuchten Sand, Blau kann Schatten neutralisieren.',terms:[
+      ['ocker|ochre','Sandbasis'],['weiß|white','heller / trocken'],['siena|sienna','wärmer'],['umbra|umber','feucht / dunkel'],['ultramarin|blau|blue','kühle Schatten']]},
+    stone:{rgb:[126,124,117],hint:'Stein/Felsen: gebrochene Erdfarben statt neutrales Grau. Ocker/Siena wärmen, Blau kühlt, Umbra vertieft.',terms:[
+      ['weiß|white','heller Stein'],['umbra|umber','Tiefe'],['ocker|ochre','wärmer'],['siena|sienna','rötlicher Fels'],['ultramarin|blau|blue','kühler Schatten']]},
+    wood:{rgb:[139,91,55],hint:'Holz: Ocker, Siena und Umbra bilden natürliche Holztöne. Rot wärmt Mahagoni-Töne, Blau dämpft zu orange Mischungen.',terms:[
+      ['ocker|ochre','helles Holz'],['siena|sienna','warmes Holz'],['umbra|umber','dunkles Holz'],['rot|red|crimson','rötlicher'],['ultramarin|blau|blue','brechen / kühlen']]},
+    foliage:{rgb:[83,116,57],hint:'Naturgrün: Gelb und Blau variieren das Grün. Ocker, Umbra und Rot verhindern künstlich grelle Grüntöne.',terms:[
+      ['gelb|yellow','sonniger / frischer'],['blau|blue|ultramarin','kühler / tiefer'],['ocker|ochre','natürlicher'],['umbra|umber','dunkler'],['rot|red|crimson','brechen']]},
+    shadow:{rgb:[91,91,102],hint:'Natürliche Schatten sind farbig. Blau/Violett kühlt, Umbra erdet, Ocker oder Rot bringen reflektiertes warmes Licht hinein.',terms:[
+      ['ultramarin|blau|blue','kühler'],['violett|purple|magenta','farbiger Schatten'],['umbra|umber','neutraler / tiefer'],['ocker|ochre','warmes Reflexlicht'],['rot|red|crimson','wärmer']]},
+    cloud:{rgb:[205,207,209],hint:'Wolken: Weiß als Licht, Blau/Violett für kühle Unterseiten, Ocker/Rosa für warmes Sonnenlicht.',terms:[
+      ['weiß|white','Licht'],['ultramarin|blau|blue','kalte Unterseite'],['violett|purple|magenta','violetter Schatten'],['ocker|ochre|gelb|yellow','warmes Licht'],['rose|rot|red','Abendlicht']]},
+    sunset:{rgb:[210,112,72],hint:'Abendhimmel: warme Gelb-/Rot-/Rosatöne gegen kühles Blau/Violett ausspielen. Weiß hält die Übergänge leuchtend.',terms:[
+      ['gelb|yellow|ocker|ochre','goldenes Licht'],['rot|red|crimson','wärmer'],['magenta|rose|rosa','rosa-violetter'],['ultramarin|blau|blue','kühler Gegenpol'],['weiß|white','heller Übergang']]},
+    flowerpink:{rgb:[205,115,145],hint:'Rosa Blüten: Weiß und Rot/Magenta aufbauen. Blau macht kühler, Ocker oder Grün brechen zu süße Rosatöne.',terms:[
+      ['weiß|white','heller'],['magenta|rose|rosa|crimson','kräftiger rosa'],['rot|red','wärmer'],['ultramarin|blau|blue','kühler'],['ocker|ochre|grün|green','brechen']]},
+    flowerred:{rgb:[176,55,53],hint:'Rote Blüten: Rot als Basis; Magenta kühlt, Gelb wärmt Richtung Orange, Blau vertieft, Grün bricht.',terms:[
+      ['rot|red|cadmium red|crimson','Rotbasis'],['magenta|rose','kühler'],['gelb|yellow','wärmer / orange'],['ultramarin|blau|blue','tiefer'],['grün|green','brechen']]},
+    yellow:{rgb:[221,184,70],hint:'Gelb/Sonnenlicht: Gelb als Basis, Weiß hellt, Ocker erdet, Rot wärmt, Violett/Blau bricht Schatten.',terms:[
+      ['gelb|yellow','Gelbbasis'],['weiß|white','heller'],['ocker|ochre','erdiger'],['rot|red','wärmer / orange'],['violett|purple|ultramarin|blau|blue','brechen / Schatten']]},
+    turquoise:{rgb:[62,151,157],hint:'Türkis: Blau und Grün aufbauen, Weiß hellt. Gelb macht es grüner, Violett/Rot nimmt die grelle Wirkung.',terms:[
+      ['blau|blue|cyan','blauer'],['grün|green|viridian','grüner'],['weiß|white','heller'],['gelb|yellow','wärmer / grüner'],['magenta|rot|red|violett|purple','brechen']]},
+    grey:{rgb:[128,126,123],hint:'Malerisches Grau: lieber aus Gegenfarben oder Blau plus Erdfarbe mischen als fertiges neutrales Grau. So bleibt es lebendig.',terms:[
+      ['ultramarin|blau|blue','kühler'],['umbra|umber|siena|sienna','wärmer / erdiger'],['ocker|ochre','wärmer'],['rot|red|crimson','rötlicher'],['weiß|white','heller']]},
+    white:{rgb:[224,218,205],hint:'Gebrochenes Weiß: Weiß bleibt dominant. Winzige Mengen Ocker, Umbra, Blau oder Rosa bestimmen den Charakter.',terms:[
+      ['weiß|white','Basis'],['ocker|ochre','cremig / warm'],['umbra|umber','erdig / gedämpft'],['ultramarin|blau|blue','kühl'],['rose|magenta|rot|red','rosig']]},
+    blackmix:{rgb:[45,47,48],hint:'Sehr dunkle Töne wirken lebendiger, wenn sie aus dunklem Blau und Erdfarbe aufgebaut werden. Rot/Grün kann die Richtung verändern.',terms:[
+      ['ultramarin|blau|blue','kühles Dunkel'],['umbra|umber','warmes Dunkel'],['rot|red|crimson','wärmer'],['grün|green','grünliches Dunkel'],['weiß|white','kontrolliert aufhellen']]}
   };
 
   let advisorItems=[];

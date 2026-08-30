@@ -1,4 +1,4 @@
-AtelierAI iPad 1.21
+AtelierAI iPad 1.22
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -54,3 +54,5 @@ Zielreferenz: AtelierAI PC 2.6.96.
 - Kleine Zugaben werden genauer mit zwei Nachkommastellen angezeigt.
 
 1.21: Haupt-Farbfeld im Farbmischpult deutlich vergrößert (260 px, im Vollbild 320 px). Alle übrigen Bedienelemente behalten ihre bisherige Größe.
+
+1.22: Farbmischpult um viele malerische Farbfamilien erweitert: Erde/Boden, Schnee, Herbst, Himmel, Wasser, Sand, Stein/Felsen, Holz, Laub/Naturgrün, natürliche Schatten, Wolken, Abendhimmel, Rosa und rote Blüten, Gelb/Sonnenlicht, Türkis, malerisches Grau, gebrochenes Weiß und sehr dunkle Mischungen. Bestehende Bedienung, Regler, Palettenzugriff, Vollbild und großes Farbfeld unverändert.
