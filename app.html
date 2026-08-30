@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.22</title>
+  <title>AtelierAI iPad 1.23</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.22-20260830';
+    const wanted='atelierai-1.23-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.22</div>
+    <div class="title">AtelierAI · iPad 1.23</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -434,6 +434,10 @@
             <option value="white">Gebrochenes Weiß</option>
             <option value="blackmix">Dunkel / fast Schwarz</option>
           </select>
+
+          <label style="display:block;margin-top:9px;">Farbvorschlag</label>
+          <select id="advisorVariant" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;"></select>
+          <div class="tiny" style="margin-top:4px;">Der Vorschlag ist nur der Startpunkt. Alle Regler und „Farbe hinzufügen“ bleiben frei veränderbar.</div>
 
           <div class="card" style="margin-top:10px;">
             <div class="tiny">Aktuelles Ergebnis</div>
@@ -4044,6 +4048,104 @@
       ['ultramarin|blau|blue','kühles Dunkel'],['umbra|umber','warmes Dunkel'],['rot|red|crimson','wärmer'],['grün|green','grünliches Dunkel'],['weiß|white','kontrolliert aufhellen']]}
   };
 
+  const advisorVariants={
+    lavender:[
+      ['Klassisches Lavendel',[166,145,190]],['Helles Lavendel',[202,190,218]],['Warmes Lavendel',[190,143,183]],
+      ['Kühles Lavendel',[143,151,196]],['Graulavendel',[151,145,160]],['Tiefes Lavendel',[105,82,137]]
+    ],
+    green:[
+      ['Frühlingsgrün',[119,153,72]],['Sommergrün',[83,126,62]],['Salbeigrün',[130,143,111]],
+      ['Olivgrün',[111,108,56]],['Waldgrün',[50,82,49]],['Moosgrün',[92,105,55]]
+    ],
+    skin:[
+      ['Heller Haut-Halbton',[222,174,145]],['Mittlerer Haut-Halbton',[199,145,119]],['Warmer Haut-Halbton',[205,137,105]],
+      ['Kühler Übergang',[174,132,124]],['Warme Wange',[211,123,111]],['Warmer Schatten',[151,101,78]],
+      ['Kühler Schatten',[128,105,101]],['Lippen natürlich',[171,93,91]]
+    ],
+    blue:[
+      ['Klares Blau',[75,116,166]],['Himmelblau',[128,174,211]],['Kühles Blau',[63,125,166]],
+      ['Warmes Blau',[84,91,158]],['Gedämpftes Blau',[102,125,145]],['Tiefblau',[43,65,111]]
+    ],
+    earth:[
+      ['Trockene Erde',[145,101,61]],['Feuchte Erde',[92,72,56]],['Lehm',[164,105,72]],
+      ['Roter Boden',[151,77,55]],['Helle Erde',[180,143,96]],['Dunkle Erde',[69,57,47]]
+    ],
+    snow:[
+      ['Schnee – neutrales Licht',[225,228,229]],['Schnee – warmes Sonnenlicht',[232,219,193]],
+      ['Schnee – kalter Schatten',[188,204,222]],['Schnee – violetter Schatten',[197,191,214]],
+      ['Schnee – Abendlicht Rosa',[228,194,200]],['Schnee – tiefer Schatten',[157,174,194]]
+    ],
+    autumn:[
+      ['Goldenes Herbstlaub',[191,139,48]],['Orangefarbenes Laub',[188,93,42]],['Rotes Herbstlaub',[151,62,45]],
+      ['Olivbraunes Laub',[116,99,47]],['Trockenes Laub',[137,91,53]],['Dunkles Herbstlaub',[86,61,42]]
+    ],
+    sky:[
+      ['Klarer Mittagshimmel',[118,170,211]],['Heller Horizont',[174,199,218]],['Winterhimmel',[151,171,188]],
+      ['Gewitterhimmel',[91,101,116]],['Warmer Morgenhimmel',[211,171,151]],['Abendhimmel',[204,124,111]]
+    ],
+    water:[
+      ['Klarer See',[77,132,151]],['Tiefes Wasser',[43,82,112]],['Grünliches Wasser',[67,119,105]],
+      ['Türkises Wasser',[62,151,157]],['Himmelspiegelung',[111,157,185]],['Dunkle Reflexion',[55,76,78]]
+    ],
+    sand:[
+      ['Heller Sand',[210,187,143]],['Warmer Sand',[199,158,99]],['Feuchter Sand',[142,116,87]],
+      ['Kühler Strandschatten',[157,151,139]],['Goldener Sand',[205,169,92]]
+    ],
+    stone:[
+      ['Heller Stein',[169,164,151]],['Warmer Fels',[151,119,94]],['Kühler Stein',[119,128,132]],
+      ['Rötlicher Fels',[154,99,78]],['Dunkler Fels',[76,75,70]]
+    ],
+    wood:[
+      ['Helles Holz',[181,133,83]],['Warmes Holz',[157,96,58]],['Rötliches Holz',[137,72,55]],
+      ['Altes Holz',[116,101,83]],['Dunkles Holz',[78,57,43]]
+    ],
+    foliage:[
+      ['Sonniges Laub',[111,145,61]],['Naturgrün',[83,116,57]],['Kühles Laub',[61,104,71]],
+      ['Olives Laub',[105,106,56]],['Dunkles Laub',[47,76,48]],['Trockenes Grün',[119,112,68]]
+    ],
+    shadow:[
+      ['Kühler Schatten',[91,99,117]],['Violetter Schatten',[103,91,116]],['Warmer Schatten',[116,92,76]],
+      ['Erdiger Schatten',[89,76,61]],['Reflektierter Schatten',[112,103,92]]
+    ],
+    cloud:[
+      ['Weiße Wolke',[222,221,215]],['Warme Wolke',[222,205,183]],['Kühle Unterseite',[166,176,190]],
+      ['Violette Unterseite',[171,160,181]],['Abendwolke',[213,158,151]]
+    ],
+    sunset:[
+      ['Goldener Horizont',[229,174,86]],['Orange Abendlicht',[218,126,67]],['Rosa Abendlicht',[218,142,158]],
+      ['Violetter Abendhimmel',[137,103,151]],['Tiefe Abendwolke',[101,78,100]]
+    ],
+    flowerpink:[
+      ['Zartrosa',[224,174,187]],['Warmes Rosa',[214,133,144]],['Kühles Rosa',[194,132,169]],
+      ['Altrosa',[172,122,128]],['Tiefrosa',[166,74,113]]
+    ],
+    flowerred:[
+      ['Leuchtendes Rot',[194,58,50]],['Warmes Rot',[202,72,43]],['Kühles Rot',[164,48,69]],
+      ['Gebrochenes Rot',[139,70,62]],['Tiefrot',[111,42,48]]
+    ],
+    yellow:[
+      ['Sonnenlicht',[229,195,91]],['Zitroniges Gelb',[224,207,72]],['Warmes Gelb',[225,173,57]],
+      ['Goldocker',[188,142,55]],['Gedämpftes Gelb',[166,147,83]]
+    ],
+    turquoise:[
+      ['Helles Türkis',[102,184,183]],['Meerestürkis',[62,151,157]],['Blaues Türkis',[53,133,158]],
+      ['Grünes Türkis',[58,145,128]],['Gedämpftes Türkis',[91,132,129]]
+    ],
+    grey:[
+      ['Warmes Grau',[137,126,113]],['Kühles Grau',[116,126,137]],['Violettes Grau',[127,118,132]],
+      ['Grüngrau',[119,128,115]],['Dunkles malerisches Grau',[76,76,74]]
+    ],
+    white:[
+      ['Warmes Weiß',[232,222,202]],['Kühles Weiß',[218,225,231]],['Cremeweiß',[230,214,181]],
+      ['Rosiges Weiß',[231,215,215]],['Grauweiß',[207,207,201]]
+    ],
+    blackmix:[
+      ['Kühles Dunkel',[39,45,53]],['Warmes Dunkel',[52,43,37]],['Blaues Dunkel',[36,44,63]],
+      ['Grünes Dunkel',[38,51,43]],['Rötliches Dunkel',[55,39,42]]
+    ]
+  };
+  const advisorVariant=document.getElementById('advisorVariant');
+
   let advisorItems=[];
 
   function advEsc(s){
@@ -4069,12 +4171,15 @@
 
   function advBaseItems(){
     const d=advisorDefs[advisorFamily.value]||advisorDefs.lavender;
+    const variants=advisorVariants[advisorFamily.value]||[];
+    const vi=Math.max(0,Math.min(variants.length-1,Number(advisorVariant?.value)||0));
+    const targetRgb=(variants[vi]&&variants[vi][1])||d.rgb;
     const {key,colors}=advPalette();
     let base=[];
 
     // Erst AtelierAI-Mischlogik versuchen.
     try{
-      const mixes=window.AtelierPaletteAPI?.mixes?.(d.rgb,key)||[];
+      const mixes=window.AtelierPaletteAPI?.mixes?.(targetRgb,key)||[];
       if(mixes.length){
         const m=mixes[0];
         (m.names||[]).forEach((name,i)=>{
@@ -4112,7 +4217,11 @@
 
   function advMixRgb(){
     const active=advisorItems.filter(x=>x.parts>0);
-    if(!active.length) return (advisorDefs[advisorFamily.value]||advisorDefs.lavender).rgb;
+    if(!active.length){
+      const vs=advisorVariants[advisorFamily.value]||[];
+      const vi=Math.max(0,Math.min(vs.length-1,Number(advisorVariant?.value)||0));
+      return (vs[vi]&&vs[vi][1])||(advisorDefs[advisorFamily.value]||advisorDefs.lavender).rgb;
+    }
     const total=active.reduce((s,x)=>s+x.parts,0)||1;
     return [0,1,2].map(ch=>Math.round(active.reduce((s,x)=>s+x.rgb[ch]*x.parts,0)/total));
   }
@@ -4173,15 +4282,28 @@
     advisorAddBtn.disabled=!available.length;
   }
 
+  function advFillVariants(resetIndex=false){
+    const vs=advisorVariants[advisorFamily.value]||[];
+    advisorVariant.innerHTML=vs.map((v,i)=>`<option value="${i}">${advEsc(v[0])}</option>`).join('');
+    if(resetIndex) advisorVariant.value='0';
+  }
+
   function advReset(){
     const d=advisorDefs[advisorFamily.value]||advisorDefs.lavender;
-    advisorHint.textContent=d.hint;
+    const vs=advisorVariants[advisorFamily.value]||[];
+    const vi=Math.max(0,Math.min(vs.length-1,Number(advisorVariant?.value)||0));
+    const vn=vs[vi]?.[0];
+    advisorHint.textContent=(vn?vn+': ':'')+d.hint;
     advBaseItems();
     advRenderRows();
     advFillAdd();
   }
 
-  advisorFamily?.addEventListener('change',advReset);
+  advisorFamily?.addEventListener('change',()=>{
+    advFillVariants(true);
+    advReset();
+  });
+  advisorVariant?.addEventListener('change',advReset);
   advisorResetBtn?.addEventListener('click',advReset);
 
   advisorClearBtn?.addEventListener('click',()=>{
