@@ -1,4 +1,4 @@
-AtelierAI iPad 1.34
+AtelierAI iPad 1.35
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -84,3 +84,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.33: Fehlerkorrektur im Farbmischpult: Heller/Dunkler verändert jetzt die aktuell manuell eingestellte Mischung, ohne hinzugefügte Farben oder Reglerwerte zurückzusetzen. Die Mischung bleibt vollständig erhalten.
 
 1.34: Neuer Bildberater „Was fehlt meinem Bild?“. Vorbild normal öffnen, zusätzlich Foto des eigenen Gemäldes laden. Der Bildberater vergleicht große Bildbereiche malerisch nach Tonwert, Farbsättigung und Farbton/Temperatur und zeigt bewusst nur die drei wichtigsten Korrekturhinweise mit Bildstelle. Bestehende Werkzeuge bleiben unverändert.
+
+1.35: Bild öffnen im Bildberater für iPad/Safari korrigiert. Ein echter Button öffnet jetzt direkt die Foto-/Dateiauswahl. Sonstige Funktionen unverändert.
