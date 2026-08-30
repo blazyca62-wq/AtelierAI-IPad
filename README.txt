@@ -1,4 +1,4 @@
-AtelierAI iPad 1.20
+AtelierAI iPad 1.21
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -52,3 +52,5 @@ Zielreferenz: AtelierAI PC 2.6.96.
 - Auch eine bereits vorhandene Farbe mit 0 wird beim Anwählen nur auf 0,1 gesetzt.
 - Regler feiner abgestuft: 0,05 Schritte.
 - Kleine Zugaben werden genauer mit zwei Nachkommastellen angezeigt.
+
+1.21: Haupt-Farbfeld im Farbmischpult deutlich vergrößert (260 px, im Vollbild 320 px). Alle übrigen Bedienelemente behalten ihre bisherige Größe.
