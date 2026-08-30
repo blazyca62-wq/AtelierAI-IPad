@@ -1,4 +1,4 @@
-AtelierAI iPad 1.17
+AtelierAI iPad 1.18
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -33,3 +33,9 @@ Zielreferenz: AtelierAI PC 2.6.96.
 - Eigene konkrete Tubenfarbe über Auswahl + „Farbe hinzufügen“.
 - Button „Ganzes Fenster“ vergrößert das Mischpult auf die komplette App-Fläche.
 - Im Vollbild werden die Mischregler größer und übersichtlicher dargestellt.
+
+1.18 Farbmischpult:
+- Das Werkzeug heißt jetzt eindeutig „Farbmischpult“.
+- Im Farbmischpult stehen immer alle Tubenfarben der aktuell gewählten Herstellerpalette zur Auswahl.
+- Die persönliche Farbauswahl begrenzt dieses Werkzeug nicht mehr.
+- Bereits vorhandene Farben können über die Auswahl erneut angewählt und direkt aktiviert werden.

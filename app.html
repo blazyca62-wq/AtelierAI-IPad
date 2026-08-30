@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.17</title>
+  <title>AtelierAI iPad 1.18</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.17-20260830';
+    const wanted='atelierai-1.18-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.17</div>
+    <div class="title">AtelierAI · iPad 1.18</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -402,10 +402,10 @@
         <div id="advisorWorkspace">
           <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
             <div>
-              <h3 style="margin-bottom:2px;">Farbberater – Mischpult</h3>
-              <div class="tiny">Konkrete Tubenfarben auswählen und live mischen.</div>
+              <h3 style="margin-bottom:2px;">Farbmischpult</h3>
+              <div class="tiny">Konkrete Tubenfarben aus der gewählten Palette auswählen und live mischen.</div>
             </div>
-            <button id="advisorFullscreenBtn" type="button" class="secondary">Ganzes Fenster</button>
+            <button id="advisorFullscreenBtn" type="button" class="secondary">Farbmischpult</button>
           </div>
 
           <label style="display:block;margin-top:10px;">Farbfamilie</label>
@@ -428,7 +428,7 @@
             <label>Farbe auswählen</label>
             <div style="display:flex;gap:7px;margin-top:5px;flex-wrap:wrap;">
               <select id="advisorAddColor" style="min-width:220px;flex:1;padding:9px;border-radius:8px;border:1px solid #aaa;"></select>
-              <button id="advisorAddBtn" type="button">Farbe hinzufügen</button>
+              <button id="advisorAddBtn" type="button">Farbmischpult</button>
             </div>
             <div id="advisorPaletteInfo" class="tiny" style="margin-top:5px;"></div>
           </div>
@@ -436,8 +436,8 @@
           <div id="advisorMixerRows" style="margin-top:10px;"></div>
 
           <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-            <button id="advisorResetBtn" type="button" class="secondary" style="flex:1;">Grundmischung wiederherstellen</button>
-            <button id="advisorClearBtn" type="button" class="secondary" style="flex:1;">Mischung leeren</button>
+            <button id="advisorResetBtn" type="button" class="secondary" style="flex:1;">Farbmischpult</button>
+            <button id="advisorClearBtn" type="button" class="secondary" style="flex:1;">Farbmischpult</button>
           </div>
         </div>
       </div>
@@ -3947,7 +3947,7 @@
 
 
 
-  // ===== 1.17 Farbberater – Mischpult Vollbild =====
+  // ===== 1.17 Farbmischpult Vollbild =====
   const advisorFamily=document.getElementById('advisorFamily');
   const advisorResultSwatch=document.getElementById('advisorResultSwatch');
   const advisorRecipe=document.getElementById('advisorRecipe');
@@ -3980,13 +3980,19 @@
 
   function advPalette(){
     const key=(typeof paintPalette!=='undefined' && paintPalette?.value) ? paintPalette.value : 'artisan';
-    let colors=[];
-    try{ colors=selectedPaletteColors(key)||[]; }catch(e){}
 
-    // Wenn noch keine persönlichen Farben aktiviert sind, im Farbberater die komplette
-    // Herstellerpalette anzeigen. So ist immer eine konkrete Tubenfarbe auswählbar.
-    if(!colors.length && typeof PALETTES!=='undefined' && Array.isArray(PALETTES[key])){
-      colors=PALETTES[key].map(x=>[x[0],x[1]]);
+    // Im Farbmischpult IMMER die vollständige Herstellerpalette anbieten.
+    // Die persönliche Auswahl darf die Farbauswahl hier nicht einschränken.
+    let colors=[];
+    try{
+      if(typeof PALETTES!=='undefined' && Array.isArray(PALETTES[key])){
+        colors=PALETTES[key].map(x=>[x[0],x[1],x[2]]);
+      }
+    }catch(e){}
+
+    // Sicherheits-Fallback
+    if(!colors.length){
+      try{ colors=selectedPaletteColors(key)||[]; }catch(e){}
     }
     return {key,colors};
   }
@@ -4078,11 +4084,21 @@
 
   function advFillAdd(){
     const {key,colors}=advPalette();
-    const available=colors.filter(c=>!advisorItems.some(x=>x.name===c[0]));
+    const available=colors.slice();
+
     advisorAddColor.innerHTML=available.length
-      ? available.map(c=>`<option value="${advEsc(c[0])}">${advEsc(c[0])}</option>`).join('')
-      : '<option value="">Keine weitere Farbe</option>';
-    advisorPaletteInfo.textContent=`Palette: ${key} · ${colors.length} Farben verfügbar`;
+      ? available.map(c=>{
+          const already=advisorItems.some(x=>x.name===c[0]);
+          return `<option value="${advEsc(c[0])}">${advEsc(c[0])}${already?' ✓':''}</option>`;
+        }).join('')
+      : '<option value="">Keine Farben verfügbar</option>';
+
+    const paletteNames={
+      artisan:'Winsor & Newton Artisan',
+      horadam:'Schmincke Horadam',
+      akademie:'Schmincke Akademie'
+    };
+    advisorPaletteInfo.textContent=`Palette: ${paletteNames[key]||key} · ${colors.length} Tubenfarben`;
     advisorAddBtn.disabled=!available.length;
   }
 
@@ -4105,11 +4121,16 @@
   advisorAddBtn?.addEventListener('click',()=>{
     const {colors}=advPalette();
     const c=colors.find(x=>x[0]===advisorAddColor.value);
-    if(c && !advisorItems.some(x=>x.name===c[0])){
-      advisorItems.push({name:c[0],rgb:c[1],parts:0,role:'eigene Zugabe'});
-      advRenderRows();
-      advFillAdd();
+    if(!c) return;
+
+    const existing=advisorItems.findIndex(x=>x.name===c[0]);
+    if(existing>=0){
+      if(advisorItems[existing].parts<=0) advisorItems[existing].parts=0.5;
+    }else{
+      advisorItems.push({name:c[0],rgb:c[1],parts:0.5,role:'eigene Zugabe'});
     }
+    advRenderRows();
+    advFillAdd();
   });
 
   advisorFullscreenBtn?.addEventListener('click',()=>{
