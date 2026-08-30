@@ -1,4 +1,4 @@
-AtelierAI iPad 1.27
+AtelierAI iPad 1.28
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -70,3 +70,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.26: Für jeden der 14 bereits vorhandenen Künstler gibt es jetzt eine eigene Kategorie mit genau 20 malerisch inspirierten Farbvorschlägen (280 insgesamt). Alle sind ausdrücklich als inspiriert gekennzeichnet, nicht als historische Originalrezepte. Bestehendes Mischpult unverändert.
 
 1.27: Sechs vom Nutzer bereitgestellte Monet-Bilder als eigene Farbmischpult-Kategorien ergänzt. Jedes Bild enthält 20 benannte Farbvorschläge (120 insgesamt), aus den Bildfarben abgeleitet. Alle bisherigen Mischpult-Funktionen bleiben unverändert.
+
+1.28: Monet-Bildkategorien korrigiert. In 1.27 waren die malerischen Bezeichnungen nach der Farbquantisierung teilweise den falschen RGB-Zielfarben zugeordnet. Jetzt wird jede Bezeichnung direkt aus ihrem tatsächlichen Ziel-Farbton bestimmt; dadurch stimmen Name, Ergebnisbalken und Zielwert zusammen. Mischlogik und übrige Funktionen unverändert.
