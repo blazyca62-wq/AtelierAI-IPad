@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.35</title>
+  <title>AtelierAI iPad 1.36</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.35-20260830';
+    const wanted='atelierai-1.36-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.35</div>
+    <div class="title">AtelierAI · iPad 1.36</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -645,6 +645,7 @@
         <input id="paintingFileInput" type="file" accept="image/*" style="position:absolute;left:-10000px;opacity:0;">
         <button id="paintingOpenBtn" type="button" style="width:100%;margin:8px 0;">Mein Gemälde öffnen</button>
         <div id="paintingCoachStatus" class="tiny">Zuerst oben das Vorbild öffnen, danach hier dein Gemälde.</div>
+        <canvas id="paintingPreviewCanvas" style="display:none;width:100%;max-height:420px;object-fit:contain;background:#fff;border:1px solid #bbb;border-radius:8px;margin-top:10px;"></canvas>
         <button id="paintingCoachAnalyze" style="width:100%;margin-top:8px;">Bild malerisch vergleichen</button>
         <div id="paintingCoachResults" style="margin-top:10px;"></div>
       </div>
@@ -3783,6 +3784,8 @@
   const paintingCoachAnalyze=document.getElementById('paintingCoachAnalyze');
   const paintingCoachResults=document.getElementById('paintingCoachResults');
   const paintingCoachStatus=document.getElementById('paintingCoachStatus');
+  const paintingPreviewCanvas=document.getElementById('paintingPreviewCanvas');
+  const paintingPreviewCtx=paintingPreviewCanvas?.getContext('2d');
   let paintingCoachCanvas=document.createElement('canvas');
   let paintingCoachCtx=paintingCoachCanvas.getContext('2d',{willReadFrequently:true});
   let paintingCoachLoaded=false;
@@ -3793,8 +3796,19 @@
     im.onload=()=>{
       paintingCoachCanvas.width=im.width; paintingCoachCanvas.height=im.height;
       paintingCoachCtx.drawImage(im,0,0);
+
+      if(paintingPreviewCanvas && paintingPreviewCtx){
+        const maxW=900, maxH=700;
+        const scale=Math.min(maxW/im.width,maxH/im.height,1);
+        paintingPreviewCanvas.width=Math.max(1,Math.round(im.width*scale));
+        paintingPreviewCanvas.height=Math.max(1,Math.round(im.height*scale));
+        paintingPreviewCtx.clearRect(0,0,paintingPreviewCanvas.width,paintingPreviewCanvas.height);
+        paintingPreviewCtx.drawImage(im,0,0,paintingPreviewCanvas.width,paintingPreviewCanvas.height);
+        paintingPreviewCanvas.style.display='block';
+      }
+
       paintingCoachLoaded=true;
-      paintingCoachStatus.textContent='Gemälde geladen. Jetzt „Bild malerisch vergleichen“ drücken.';
+      paintingCoachStatus.textContent='Gemälde geladen und unten sichtbar. Jetzt „Bild malerisch vergleichen“ drücken.';
       URL.revokeObjectURL(u);
     };
     im.src=u;
