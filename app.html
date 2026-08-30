@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.13</title>
+  <title>AtelierAI iPad 1.14</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -153,7 +153,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.13-20260830';
+    const wanted='atelierai-1.14-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -170,7 +170,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.13</div>
+    <div class="title">AtelierAI · iPad 1.14</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -380,7 +380,23 @@
 
 
 
-      <div class="section" id="colorJourneyPanel">
+      
+      <div class="section" id="colorAdvisorPanel">
+        <h3>Farbberater</h3>
+        <p>Farbfamilie verstehen, Nuancen vergleichen und mit der gewählten Malpalette mischen.</p>
+        <div class="grid2">
+          <label>Farbfamilie<select id="advisorFamily">
+            <option value="lavender">Lavendel / Violett</option><option value="green">Grün</option>
+            <option value="skin">Hautfarben</option><option value="blue">Blau</option>
+          </select></label>
+          <label>Nuance<select id="advisorNuance"></select></label>
+        </div>
+        <div id="advisorGuide" class="card" style="margin-top:10px;"></div>
+        <div id="advisorSwatches" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin-top:10px;"></div>
+        <div class="card" style="margin-top:12px;"><b>Mischungen aus deiner Palette</b><div id="advisorMixes" class="small" style="margin-top:6px;">Nuance auswählen.</div></div>
+      </div>
+
+<div class="section" id="colorJourneyPanel">
         <h3>Farbreise – Grundfarbe zur Zielfarbe</h3>
         <p>Erster Tipp: vorhandene Grundfarbe. Zweiter Tipp: Zielfarbe. AtelierAI zeigt danach direkt, welche Farbe oder Farbkombination du der Grundfarbe beimischen solltest.</p>
 
@@ -406,6 +422,7 @@
 
         <div id="journeyResults" style="margin-top:9px;"></div>
         <button id="journeyResetBtn" class="secondary" style="width:100%;margin-top:7px;">Farbreise löschen</button>
+<button id="journeyResetBtn" class="secondary" style="width:100%;margin-top:7px;">Farbberater löschen</button>
       </div>
 
 
@@ -3882,6 +3899,46 @@
   // 1.20.8j: kein Service Worker – GitHub Pages lädt immer die aktuelle index.html.
 })();
 
+
+
+  // ===== 1.14 Farbberater =====
+  const advisorFamily=document.getElementById('advisorFamily'), advisorNuance=document.getElementById('advisorNuance');
+  const advisorGuide=document.getElementById('advisorGuide'), advisorSwatches=document.getElementById('advisorSwatches'), advisorMixes=document.getElementById('advisorMixes');
+  const advisorFamilies={
+    lavender:{title:'Lavendel / Violett',note:'Lavendel lebt vom Gleichgewicht zwischen Blau, Rotviolett und Aufhellung. Kleine Verschiebungen verändern die Temperatur stark.',nuances:[
+      ['Neutral',[166,145,190],'Ausgewogenes Lavendel.'],['Warm',[184,139,181],'Mehr Rotviolett/Magenta macht Lavendel wärmer.'],['Kühl',[139,151,196],'Mehr Blau macht es kühler.'],['Hell',[207,194,220],'Mit Weiß aufhellen und die Farbrichtung kontrollieren.'],['Gedämpft',[151,143,164],'Eine kleine Gegenfarbe oder ein Erdton nimmt Buntheit zurück.'],['Tief',[116,91,143],'Weniger Weiß und mehr dunkles Blau/Violett geben Tiefe.']]},
+    green:{title:'Grün',note:'Natürliches Grün braucht Temperatur und Brechung; reines Gelb plus Blau wirkt schnell künstlich.',nuances:[
+      ['Frisch',[111,151,82],'Mehr klares Gelb für ein frisches Grün.'],['Warm',[139,145,73],'Gelb/Ocker macht Grün wärmer und natürlicher.'],['Kühl',[72,127,119],'Mehr kühles Blau verschiebt Grün in die Kälte.'],['Salbei',[143,154,130],'Aufhellen und leicht brechen.'],['Oliv',[112,112,61],'Ocker/Erdton und leichte Brechung.'],['Wald',[47,83,61],'Dunkles Blau plus gedämpftes Grün.']]},
+    skin:{title:'Hautfarben',note:'Haut ist keine einzelne Beige- oder Rosafarbe. Licht, Halbschatten, Durchblutung, kühle Übergänge und Reflexe gehören zusammen.',nuances:[
+      ['Licht',[224,181,151],'Warm und hell; nicht einfach nur Weiß zugeben.'],['Halbton',[199,145,119],'Die tragende Hautmischung zwischen Licht und Schatten.'],['Warme Wange',[205,130,116],'Kontrolliert mehr warmes Rot, Grundmischung erhalten.'],['Kühler Übergang',[173,139,132],'Leicht gebrochene kühle Übergänge modellieren die Form.'],['Warmer Schatten',[155,108,86],'Schatten farbig halten statt mit Schwarz abzudunkeln.'],['Tiefer Schatten',[112,79,72],'Grundfarbe vertiefen und brechen.'],['Lippen',[174,100,101],'Mit der Haut verwandt, rötlicher und tiefer.'],['Reflexlicht',[190,144,118],'Umgebungsfarbe aufnehmen; meist dunkler als direktes Licht.']]},
+    blue:{title:'Blau',note:'Blau verändert seine Temperatur vor allem durch die Richtung zu Violett oder Türkis.',nuances:[
+      ['Neutral',[75,116,166],'Ausgewogenes mittleres Blau.'],['Warm',[88,93,161],'Richtung Violett wird Blau wärmer.'],['Kühl',[57,137,166],'Richtung Cyan/Türkis wird Blau kühler.'],['Himmel hell',[151,185,207],'Aufgehellt und leicht gebrochen.'],['Gedämpft',[102,125,145],'Mit wenig Gegenfarbe beruhigen.'],['Tief',[43,65,111],'Dunkles gesättigtes Blau für Tiefe.']]}
+  };
+  const ae=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function advisorPaletteKey(){
+    if(typeof paletteSelect!=='undefined' && paletteSelect && paletteSelect.value) return paletteSelect.value;
+    return 'artisan';
+  }
+  function advisorSelected(){
+    const f=advisorFamilies[advisorFamily.value]||advisorFamilies.lavender, i=Math.max(0,Math.min(f.nuances.length-1,+advisorNuance.value||0)), n=f.nuances[i];
+    advisorSwatches.querySelectorAll('.advisor-swatch').forEach((b,j)=>{b.classList.toggle('active',j===i);b.classList.toggle('secondary',j!==i);});
+    let mixes=[]; try{ mixes=chooseMixes(n[1],advisorPaletteKey())||[]; }catch(e){}
+    advisorMixes.innerHTML='<div><b>'+ae(n[0])+'</b> – '+ae(n[2])+'</div>'+
+      (mixes.length?mixes.slice(0,3).map((m,k)=>{
+        const names=m.names||[], parts=m.parts||[], rgb=m.rgb||n[1];
+        const recipe=names.map((x,j)=>(parts[j]??1)+' Teil'+((parts[j]??1)==1?'':'e')+' '+ae(x)).join(' + ');
+        return '<div class="card" style="margin-top:8px;display:flex;gap:10px;align-items:center"><span style="width:66px;height:54px;flex:0 0 66px;border-radius:8px;background:rgb('+rgb.join(',')+');border:1px solid rgba(0,0,0,.15)"></span><div><b>Mischung '+(k+1)+'</b><br><span class="small">'+recipe+'</span></div></div>';
+      }).join(''):'<div class="small" style="margin-top:7px">Für diese Palette wurde keine geeignete Mischung gefunden.</div>');
+  }
+  function advisorRender(){
+    const f=advisorFamilies[advisorFamily.value]||advisorFamilies.lavender;
+    advisorNuance.innerHTML=f.nuances.map((n,i)=>'<option value="'+i+'">'+ae(n[0])+'</option>').join('');
+    advisorGuide.innerHTML='<b>'+ae(f.title)+'</b><div class="small" style="margin-top:4px">'+ae(f.note)+'</div>';
+    advisorSwatches.innerHTML=f.nuances.map((n,i)=>'<button type="button" class="secondary advisor-swatch" data-i="'+i+'" style="padding:8px;text-align:left"><span style="display:block;height:58px;border-radius:8px;background:rgb('+n[1].join(',')+');border:1px solid rgba(0,0,0,.15);margin-bottom:6px"></span><b>'+ae(n[0])+'</b><br><span class="small">'+ae(n[2])+'</span></button>').join('');
+    advisorSwatches.querySelectorAll('.advisor-swatch').forEach(b=>b.addEventListener('click',()=>{advisorNuance.value=b.dataset.i;advisorSelected();}));
+    advisorSelected();
+  }
+  advisorFamily?.addEventListener('change',advisorRender); advisorNuance?.addEventListener('change',advisorSelected); advisorRender();
 
 </script>
 
