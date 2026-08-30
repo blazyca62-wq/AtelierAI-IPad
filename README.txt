@@ -1,4 +1,4 @@
-AtelierAI iPad 1.40
+AtelierAI iPad 1.41
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -96,3 +96,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.39: Bildberater weiter erweitert: Detailverteilung/Unruhe, zu wenig Forminformation, gesamte Warm-Kalt-Balance, globaler Tonwertkontrast (zu flach/zu hart), verlorene bzw. zu harte Kanten im Fokus sowie zu starke Kontraste an den Bildrändern. Bestehende Prüfungen bleiben erhalten; weiterhin nur drei wichtigste Hinweise.
 
 1.40: Bildberater um Farbharmonie erweitert. Vergleicht die Verteilung der Farbfamilien zwischen Vorbild und Gemälde, erkennt zu dominante Farbfamilien, fehlende verbindende Farbfamilien und größere Abweichungen der gesamten Farbharmonie. Weiterhin nur drei wichtigste Hinweise.
+
+1.41: Speichern erweitert: getrennte Schaltflächen für PNG und JPEG. JPEG wird mit 95 % Qualität erzeugt. Beide Formate werden als normale Bilddateien heruntergeladen; die bisherige Bilddarstellung und Rasteroption bleiben erhalten.
