@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.15</title>
+  <title>AtelierAI iPad 1.16</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -153,7 +153,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.15-20260830';
+    const wanted='atelierai-1.16-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -170,7 +170,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.15</div>
+    <div class="title">AtelierAI · iPad 1.16</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -382,21 +382,33 @@
 
       
       <div class="section" id="colorAdvisorPanel">
-        <h3>Farbberater</h3>
-        <p>Farbfamilie verstehen, Nuancen vergleichen und mit der gewählten Malpalette mischen.</p>
-        <div class="grid2">
-          <label>Farbfamilie<select id="advisorFamily">
-            <option value="lavender">Lavendel / Violett</option><option value="green">Grün</option>
-            <option value="skin">Hautfarben</option><option value="blue">Blau</option>
-          </select></label>
-          <label>Nuance<select id="advisorNuance"></select></label>
+        <h3>Farbberater – Mischpult</h3>
+        <p>Wähle eine Farbfamilie. AtelierAI stellt eine malerische Grundmischung bereit. Mit konkreten Tubenfarben kannst du die Mischung anschließend selbst verändern.</p>
+        <label>Farbfamilie</label>
+        <select id="advisorFamily" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;">
+          <option value="lavender">Lavendel / Violett</option>
+          <option value="green">Grün</option>
+          <option value="skin">Hautfarbe – Halbton</option>
+          <option value="blue">Blau</option>
+        </select>
+        <div class="card" style="margin-top:10px;">
+          <div class="tiny">Aktuelles Ergebnis</div>
+          <div id="advisorResultSwatch" style="height:105px;border-radius:10px;border:1px solid rgba(0,0,0,.18);margin:6px 0;"></div>
+          <div id="advisorRecipe" class="small"></div>
         </div>
-        <div id="advisorGuide" class="card" style="margin-top:10px;"></div>
-        <div id="advisorSwatches" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin-top:10px;"></div>
-        <div class="card" style="margin-top:12px;"><b>Mischungen aus deiner Palette</b><div id="advisorMixes" class="small" style="margin-top:6px;">Nuance auswählen.</div></div>
+        <div id="advisorHint" class="small" style="margin-top:9px;"></div>
+        <div id="advisorMixerRows" style="margin-top:10px;"></div>
+        <div class="card" style="margin-top:10px;">
+          <label>Andere Farbe hinzufügen</label>
+          <div style="display:flex;gap:7px;margin-top:5px;">
+            <select id="advisorAddColor" style="min-width:0;flex:1;padding:8px;border-radius:8px;border:1px solid #aaa;"></select>
+            <button id="advisorAddBtn" type="button" class="secondary">Hinzufügen</button>
+          </div>
+        </div>
+        <button id="advisorResetBtn" type="button" class="secondary" style="width:100%;margin-top:8px;">Grundmischung wiederherstellen</button>
       </div>
 
-<div class="section" id="colorJourneyPanel">
+      <div class="section" id="colorJourneyPanel">
         <h3>Farbreise – Grundfarbe zur Zielfarbe</h3>
         <p>Erster Tipp: vorhandene Grundfarbe. Zweiter Tipp: Zielfarbe. AtelierAI zeigt danach direkt, welche Farbe oder Farbkombination du der Grundfarbe beimischen solltest.</p>
 
@@ -3901,76 +3913,116 @@
 
 
 
-  // ===== 1.14 Farbberater =====
-  const advisorFamily=document.getElementById('advisorFamily'), advisorNuance=document.getElementById('advisorNuance');
-  const advisorGuide=document.getElementById('advisorGuide'), advisorSwatches=document.getElementById('advisorSwatches'), advisorMixes=document.getElementById('advisorMixes');
-  const advisorFamilies={
-    lavender:{title:'Lavendel / Violett',note:'Lavendel lebt vom Gleichgewicht zwischen Blau, Rotviolett und Aufhellung. Kleine Verschiebungen verändern die Temperatur stark.',nuances:[
-      ['Neutral',[166,145,190],'Ausgewogenes Lavendel.'],['Warm',[184,139,181],'Mehr Rotviolett/Magenta macht Lavendel wärmer.'],['Kühl',[139,151,196],'Mehr Blau macht es kühler.'],['Hell',[207,194,220],'Mit Weiß aufhellen und die Farbrichtung kontrollieren.'],['Gedämpft',[151,143,164],'Eine kleine Gegenfarbe oder ein Erdton nimmt Buntheit zurück.'],['Tief',[116,91,143],'Weniger Weiß und mehr dunkles Blau/Violett geben Tiefe.']]},
-    green:{title:'Grün',note:'Natürliches Grün braucht Temperatur und Brechung; reines Gelb plus Blau wirkt schnell künstlich.',nuances:[
-      ['Frisch',[111,151,82],'Mehr klares Gelb für ein frisches Grün.'],['Warm',[139,145,73],'Gelb/Ocker macht Grün wärmer und natürlicher.'],['Kühl',[72,127,119],'Mehr kühles Blau verschiebt Grün in die Kälte.'],['Salbei',[143,154,130],'Aufhellen und leicht brechen.'],['Oliv',[112,112,61],'Ocker/Erdton und leichte Brechung.'],['Wald',[47,83,61],'Dunkles Blau plus gedämpftes Grün.']]},
-    skin:{title:'Hautfarben',note:'Haut ist keine einzelne Beige- oder Rosafarbe. Licht, Halbschatten, Durchblutung, kühle Übergänge und Reflexe gehören zusammen.',nuances:[
-      ['Licht',[224,181,151],'Warm und hell; nicht einfach nur Weiß zugeben.'],['Halbton',[199,145,119],'Die tragende Hautmischung zwischen Licht und Schatten.'],['Warme Wange',[205,130,116],'Kontrolliert mehr warmes Rot, Grundmischung erhalten.'],['Kühler Übergang',[173,139,132],'Leicht gebrochene kühle Übergänge modellieren die Form.'],['Warmer Schatten',[155,108,86],'Schatten farbig halten statt mit Schwarz abzudunkeln.'],['Tiefer Schatten',[112,79,72],'Grundfarbe vertiefen und brechen.'],['Lippen',[174,100,101],'Mit der Haut verwandt, rötlicher und tiefer.'],['Reflexlicht',[190,144,118],'Umgebungsfarbe aufnehmen; meist dunkler als direktes Licht.']]},
-    blue:{title:'Blau',note:'Blau verändert seine Temperatur vor allem durch die Richtung zu Violett oder Türkis.',nuances:[
-      ['Neutral',[75,116,166],'Ausgewogenes mittleres Blau.'],['Warm',[88,93,161],'Richtung Violett wird Blau wärmer.'],['Kühl',[57,137,166],'Richtung Cyan/Türkis wird Blau kühler.'],['Himmel hell',[151,185,207],'Aufgehellt und leicht gebrochen.'],['Gedämpft',[102,125,145],'Mit wenig Gegenfarbe beruhigen.'],['Tief',[43,65,111],'Dunkles gesättigtes Blau für Tiefe.']]}
+  // ===== 1.16 Farbberater – interaktives Mischpult =====
+  const advisorFamily=document.getElementById('advisorFamily');
+  const advisorResultSwatch=document.getElementById('advisorResultSwatch');
+  const advisorRecipe=document.getElementById('advisorRecipe');
+  const advisorHint=document.getElementById('advisorHint');
+  const advisorMixerRows=document.getElementById('advisorMixerRows');
+  const advisorAddColor=document.getElementById('advisorAddColor');
+  const advisorAddBtn=document.getElementById('advisorAddBtn');
+  const advisorResetBtn=document.getElementById('advisorResetBtn');
+
+  const advisorDefs={
+    lavender:{rgb:[166,145,190],hint:'Lavendel: Weiß bestimmt die Helligkeit, Blau und Rotviolett bestimmen die Richtung. Kleine Mengen Ocker oder Erdfarbe können die Mischung brechen.',terms:[
+      ['weiß','Aufhellen'],['ultramarin','blauer / tiefer'],['magenta|permanentrosa|rose|karmin','rötlicher'],['ocker|siena|umbra','brechen / natürlicher']]},
+    green:{rgb:[104,137,83],hint:'Grün: Gelb und Blau bauen die Farbe auf. Ocker oder Erdfarben machen Grün natürlicher; Rot kann es sehr kontrolliert brechen.',terms:[
+      ['gelb|yellow','gelblicher / frischer'],['ultramarin|blau|blue','blauer / kühler'],['ocker|siena|umbra','erdiger / natürlicher'],['rot|red|magenta','brechen']]},
+    skin:{rgb:[199,145,119],hint:'Haut-Halbton: Die Grundmischung bleibt erhalten. Kleine Zugaben verändern sie stark – besonders Rot, Ocker und Blau.',terms:[
+      ['weiß','heller'],['ocker|yellow ochre','goldener'],['rot|red|zinnober|cadmium red','rosiger / durchblutet'],['ultramarin|blau|blue','kühler / Schattenrichtung'],['umbra|siena','tiefer / gebrochener']]},
+    blue:{rgb:[75,116,166],hint:'Blau: Weiß verändert Helligkeit, Violett/Rot verschiebt die Richtung, Grün/Cyan macht es türkiser, Erdfarbe dämpft.',terms:[
+      ['weiß','heller'],['ultramarin|blau|blue','tieferes Blau'],['magenta|violett|purple','violetter'],['grün|green|cyan','türkiser'],['ocker|siena|umbra','gedämpfter']]}
   };
-  const ae=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function advisorPaletteKey(){
-    // Dieselbe Palettenauswahl benutzen wie AtelierAI selbst.
-    const candidates=[
-      document.getElementById('paletteSelect')?.value,
-      document.getElementById('paintPalette')?.value,
-      document.getElementById('palette')?.value,
-      document.getElementById('watercolorPalette')?.value,
-      (typeof currentPalette!=='undefined' ? currentPalette : null),
-      (typeof paletteKey!=='undefined' ? paletteKey : null),
-      'oil','artisan','horadam','akademie'
-    ].filter(Boolean);
-    for(const key of candidates){
-      try{
-        const colors=selectedPaletteColors(key);
-        if(Array.isArray(colors) && colors.length) return key;
-      }catch(e){}
-    }
-    return null;
+  let advisorItems=[];
+
+  function advEsc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function advPalette(){
+    const key=(typeof paintPalette!=='undefined'&&paintPalette?.value)?paintPalette.value:'artisan';
+    try{return {key,colors:selectedPaletteColors(key)||[]};}catch(e){return {key,colors:[]};}
   }
-  function advisorSelected(){
-    const f=advisorFamilies[advisorFamily.value]||advisorFamilies.lavender, i=Math.max(0,Math.min(f.nuances.length-1,+advisorNuance.value||0)), n=f.nuances[i];
-    advisorSwatches.querySelectorAll('.advisor-swatch').forEach((b,j)=>{b.classList.toggle('active',j===i);b.classList.toggle('secondary',j!==i);});
-    let mixes=[];
-    const pk=advisorPaletteKey();
-    if(pk){
-      try{ mixes=chooseMixes(n[1],pk)||[]; }catch(e){ mixes=[]; }
-    }
-    // Falls die UI-Palette anders benannt ist, alle real vorhandenen AtelierAI-Paletten
-    // prüfen und die erste gültige Mischung verwenden.
-    if(!mixes.length){
-      for(const k of ['oil','artisan','horadam','akademie','watercolor']){
-        try{
-          const colors=selectedPaletteColors(k);
-          if(Array.isArray(colors) && colors.length){
-            const trial=chooseMixes(n[1],k)||[];
-            if(trial.length){ mixes=trial; break; }
-          }
-        }catch(e){}
+  function advFind(colors,pattern){
+    const rx=new RegExp(pattern,'i');
+    return colors.find(c=>rx.test(c[0]))||null;
+  }
+  function advBaseItems(){
+    const d=advisorDefs[advisorFamily.value]||advisorDefs.lavender;
+    const {key,colors}=advPalette();
+    let base=[];
+    try{
+      const mixes=chooseMixes(d.rgb,key)||[];
+      if(mixes.length){
+        const m=mixes[0];
+        (m.names||[]).forEach((name,i)=>{
+          const c=colors.find(x=>x[0]===name);
+          if(c) base.push({name:c[0],rgb:c[1],parts:Math.max(.1,Number((m.parts||[])[i]||1)),role:'Grundmischung'});
+        });
       }
+    }catch(e){}
+    if(!base.length){
+      // only real selected palette colors; choose sensible nearest family ingredients
+      d.terms.slice(0,3).forEach(([pat,role])=>{
+        const c=advFind(colors,pat);
+        if(c&&!base.some(x=>x.name===c[0])) base.push({name:c[0],rgb:c[1],parts:1,role});
+      });
     }
-    advisorMixes.innerHTML='<div><b>'+ae(n[0])+'</b> – '+ae(n[2])+'</div>'+
-      (mixes.length?mixes.slice(0,3).map((m,k)=>{
-        const names=m.names||[], parts=m.parts||[], rgb=m.rgb||n[1];
-        const recipe=names.map((x,j)=>(parts[j]??1)+' Teil'+((parts[j]??1)==1?'':'e')+' '+ae(x)).join(' + ');
-        return '<div class="card" style="margin-top:8px;display:flex;gap:10px;align-items:center"><span style="width:66px;height:54px;flex:0 0 66px;border-radius:8px;background:rgb('+rgb.join(',')+');border:1px solid rgba(0,0,0,.15)"></span><div><b>Mischung '+(k+1)+'</b><br><span class="small">'+recipe+'</span></div></div>';
-      }).join(''):'<div class="small" style="margin-top:7px">Für diese Palette wurde keine geeignete Mischung gefunden.</div>');
+    // add recommended concrete modifiers at zero
+    d.terms.forEach(([pat,role])=>{
+      const c=advFind(colors,pat);
+      if(c&&!base.some(x=>x.name===c[0])) base.push({name:c[0],rgb:c[1],parts:0,role});
+    });
+    advisorItems=base.slice(0,7);
   }
-  function advisorRender(){
-    const f=advisorFamilies[advisorFamily.value]||advisorFamilies.lavender;
-    advisorNuance.innerHTML=f.nuances.map((n,i)=>'<option value="'+i+'">'+ae(n[0])+'</option>').join('');
-    advisorGuide.innerHTML='<b>'+ae(f.title)+'</b><div class="small" style="margin-top:4px">'+ae(f.note)+'</div>';
-    advisorSwatches.innerHTML=f.nuances.map((n,i)=>'<button type="button" class="secondary advisor-swatch" data-i="'+i+'" style="padding:8px;text-align:left"><span style="display:block;height:58px;border-radius:8px;background:rgb('+n[1].join(',')+');border:1px solid rgba(0,0,0,.15);margin-bottom:6px"></span><b>'+ae(n[0])+'</b><br><span class="small">'+ae(n[2])+'</span></button>').join('');
-    advisorSwatches.querySelectorAll('.advisor-swatch').forEach(b=>b.addEventListener('click',()=>{advisorNuance.value=b.dataset.i;advisorSelected();}));
-    advisorSelected();
+  function advMixRgb(){
+    const active=advisorItems.filter(x=>x.parts>0);
+    if(!active.length) return (advisorDefs[advisorFamily.value]||advisorDefs.lavender).rgb;
+    const total=active.reduce((s,x)=>s+x.parts,0)||1;
+    return [0,1,2].map(ch=>Math.round(active.reduce((s,x)=>s+x.rgb[ch]*x.parts,0)/total));
   }
-  advisorFamily?.addEventListener('change',advisorRender); advisorNuance?.addEventListener('change',advisorSelected); advisorRender();
+  function advRenderResult(){
+    const rgb=advMixRgb();
+    advisorResultSwatch.style.background=`rgb(${rgb.join(',')})`;
+    const active=advisorItems.filter(x=>x.parts>0);
+    advisorRecipe.innerHTML=active.length
+      ? '<b>Aktuelle Mischung:</b><br>'+active.map(x=>`${Math.round(x.parts*10)/10} Teile ${advEsc(x.name)}`).join(' + ')
+      : 'Noch keine Farbe in der Mischung.';
+  }
+  function advRenderRows(){
+    advisorMixerRows.innerHTML=advisorItems.map((x,i)=>`
+      <div class="card" style="margin-top:7px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="width:38px;height:38px;flex:0 0 38px;border-radius:7px;background:rgb(${x.rgb.join(',')});border:1px solid rgba(0,0,0,.18)"></span>
+          <div style="min-width:0;flex:1"><b>${advEsc(x.name)}</b><div class="tiny">${advEsc(x.role)}</div></div>
+          <span id="advVal${i}" class="tiny">${Math.round(x.parts*10)/10}</span>
+        </div>
+        <input class="adv-slider" data-i="${i}" type="range" min="0" max="5" step="0.1" value="${x.parts}" style="width:100%;margin-top:6px;">
+      </div>`).join('');
+    advisorMixerRows.querySelectorAll('.adv-slider').forEach(s=>s.addEventListener('input',()=>{
+      const i=+s.dataset.i; advisorItems[i].parts=+s.value;
+      const v=document.getElementById('advVal'+i); if(v)v.textContent=(+s.value).toFixed(1);
+      advRenderResult();
+    }));
+    advRenderResult();
+  }
+  function advFillAdd(){
+    const {colors}=advPalette();
+    advisorAddColor.innerHTML=colors.filter(c=>!advisorItems.some(x=>x.name===c[0])).map(c=>`<option value="${advEsc(c[0])}">${advEsc(c[0])}</option>`).join('');
+  }
+  function advReset(){
+    const d=advisorDefs[advisorFamily.value]||advisorDefs.lavender;
+    advisorHint.textContent=d.hint;
+    advBaseItems(); advRenderRows(); advFillAdd();
+  }
+  advisorFamily?.addEventListener('change',advReset);
+  advisorResetBtn?.addEventListener('click',advReset);
+  advisorAddBtn?.addEventListener('click',()=>{
+    const {colors}=advPalette(), c=colors.find(x=>x[0]===advisorAddColor.value);
+    if(c&&!advisorItems.some(x=>x.name===c[0])){
+      advisorItems.push({name:c[0],rgb:c[1],parts:0,role:'eigene Zugabe'});
+      advRenderRows(); advFillAdd();
+    }
+  });
+  if(typeof paintPalette!=='undefined'&&paintPalette) paintPalette.addEventListener('change',advReset);
+  advReset();
 
 </script>
 
