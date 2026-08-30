@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.14</title>
+  <title>AtelierAI iPad 1.15</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -153,7 +153,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.14-20260830';
+    const wanted='atelierai-1.15-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -170,7 +170,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.14</div>
+    <div class="title">AtelierAI · iPad 1.15</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -3916,13 +3916,45 @@
   };
   const ae=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function advisorPaletteKey(){
-    if(typeof paletteSelect!=='undefined' && paletteSelect && paletteSelect.value) return paletteSelect.value;
-    return 'artisan';
+    // Dieselbe Palettenauswahl benutzen wie AtelierAI selbst.
+    const candidates=[
+      document.getElementById('paletteSelect')?.value,
+      document.getElementById('paintPalette')?.value,
+      document.getElementById('palette')?.value,
+      document.getElementById('watercolorPalette')?.value,
+      (typeof currentPalette!=='undefined' ? currentPalette : null),
+      (typeof paletteKey!=='undefined' ? paletteKey : null),
+      'oil','artisan','horadam','akademie'
+    ].filter(Boolean);
+    for(const key of candidates){
+      try{
+        const colors=selectedPaletteColors(key);
+        if(Array.isArray(colors) && colors.length) return key;
+      }catch(e){}
+    }
+    return null;
   }
   function advisorSelected(){
     const f=advisorFamilies[advisorFamily.value]||advisorFamilies.lavender, i=Math.max(0,Math.min(f.nuances.length-1,+advisorNuance.value||0)), n=f.nuances[i];
     advisorSwatches.querySelectorAll('.advisor-swatch').forEach((b,j)=>{b.classList.toggle('active',j===i);b.classList.toggle('secondary',j!==i);});
-    let mixes=[]; try{ mixes=chooseMixes(n[1],advisorPaletteKey())||[]; }catch(e){}
+    let mixes=[];
+    const pk=advisorPaletteKey();
+    if(pk){
+      try{ mixes=chooseMixes(n[1],pk)||[]; }catch(e){ mixes=[]; }
+    }
+    // Falls die UI-Palette anders benannt ist, alle real vorhandenen AtelierAI-Paletten
+    // prüfen und die erste gültige Mischung verwenden.
+    if(!mixes.length){
+      for(const k of ['oil','artisan','horadam','akademie','watercolor']){
+        try{
+          const colors=selectedPaletteColors(k);
+          if(Array.isArray(colors) && colors.length){
+            const trial=chooseMixes(n[1],k)||[];
+            if(trial.length){ mixes=trial; break; }
+          }
+        }catch(e){}
+      }
+    }
     advisorMixes.innerHTML='<div><b>'+ae(n[0])+'</b> – '+ae(n[2])+'</div>'+
       (mixes.length?mixes.slice(0,3).map((m,k)=>{
         const names=m.names||[], parts=m.parts||[], rgb=m.rgb||n[1];
