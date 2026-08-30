@@ -1,4 +1,4 @@
-AtelierAI iPad 1.10
+AtelierAI iPad 1.11
 
 Vollständiger Neuaufbau des 1.10-Pakets auf Basis der funktionierenden 1.9.
 
@@ -9,3 +9,5 @@ Vollständiger Neuaufbau des 1.10-Pakets auf Basis der funktionierenden 1.9.
 - Farbreise- und Mischlogik bleiben unverändert.
 
 Zielreferenz für die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.
+
+1.11: Original ein-/ausblendbar während Tonwerte und „Nur diese Farbe zeigen“. Zoom, Position, Tonwertregler, Farbisolation und Berechnungen bleiben dabei unverändert.

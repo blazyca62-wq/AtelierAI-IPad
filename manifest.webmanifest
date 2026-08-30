@@ -1,7 +1,7 @@
 {
-  "name": "AtelierAI iPad 1.10",
-  "short_name": "AtelierAI 1.10",
-  "start_url": "./index.html?v=atelierai-1.10-neu-20260829",
+  "name": "AtelierAI iPad 1.11",
+  "short_name": "AtelierAI 1.11",
+  "start_url": "./index.html?v=atelierai-1.11-20260830",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff"

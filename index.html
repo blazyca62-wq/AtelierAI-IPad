@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.10</title>
+  <title>AtelierAI iPad 1.11</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -153,7 +153,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.10-neu-20260829';
+    const wanted='atelierai-1.11-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -170,7 +170,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.10</div>
+    <div class="title">AtelierAI · iPad 1.11</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -229,6 +229,7 @@
           <button id="toneOnly" class="secondary">Nur Tonwert</button>
           <button id="toneOff" class="secondary">Original</button>
         </div>
+        <button id="toneOriginalPreviewBtn" class="secondary" style="width:100%;margin-top:8px;">Original einblenden</button>
 
         <div class="toneRow">
           <label>Hell</label>
@@ -360,6 +361,7 @@
           <button id="pickerShowOnlyBtn" class="secondary">Nur diese Farbe zeigen</button>
           <button id="pickerShowAllBtn" class="secondary">Alle Farben zeigen</button>
         </div>
+        <button id="isolationOriginalPreviewBtn" class="secondary" style="width:100%;margin-top:8px;">Original einblenden</button>
 
         <div class="mode" style="margin-top:10px;">
           <button id="calcMixesBtn">Studio-Mischung berechnen</button>
@@ -647,6 +649,8 @@
   const pickerColorToleranceVal=document.getElementById('pickerColorToleranceVal');
   const pickerShowOnlyBtn=document.getElementById('pickerShowOnlyBtn');
   const pickerShowAllBtn=document.getElementById('pickerShowAllBtn');
+  const toneOriginalPreviewBtn=document.getElementById('toneOriginalPreviewBtn');
+  const isolationOriginalPreviewBtn=document.getElementById('isolationOriginalPreviewBtn');
   const mixResults = document.getElementById('mixResults');
   const journeyTakeStartBtn=document.getElementById('journeyTakeStartBtn');
   const journeyTakeTargetBtn=document.getElementById('journeyTakeTargetBtn');
@@ -838,6 +842,19 @@
   let formCtx = formCanvas.getContext('2d', { willReadFrequently: true });
   let processedCanvas = document.createElement('canvas');
   let processedCtx = processedCanvas.getContext('2d', { willReadFrequently: true });
+  let originalPreviewVisible=false;
+
+  function setOriginalPreview(show){
+    originalPreviewVisible=!!show;
+    const label=originalPreviewVisible ? 'Bearbeitung wieder anzeigen' : 'Original einblenden';
+    [toneOriginalPreviewBtn,isolationOriginalPreviewBtn].forEach(b=>{
+      if(!b)return;
+      b.textContent=label;
+      b.classList.toggle('active',originalPreviewVisible);
+      b.classList.toggle('secondary',!originalPreviewVisible);
+    });
+    draw();
+  }
 
 
   function rgbToHsl(r,g,b){
@@ -3195,8 +3212,10 @@
     ctx.imageSmoothingQuality='high';
     ctx.translate(offsetX,offsetY);
     ctx.scale(scale,scale);
-    // Farbtreue Darstellung: Bild unverändert zeichnen.
-    if(surfaceMarkCanvas) ctx.drawImage(surfaceMarkCanvas,0,0);
+    // 1.11: Original kann während Tonwerten oder „Diese Farbe sehen“
+    // eingeblendet werden, ohne die aktuelle Analyse zu verlassen.
+    if(originalPreviewVisible) ctx.drawImage(sourceCanvas,0,0);
+    else if(surfaceMarkCanvas) ctx.drawImage(surfaceMarkCanvas,0,0);
     else ctx.drawImage(processedCanvas,0,0);
     if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value);
     ctx.restore();
@@ -3393,7 +3412,11 @@
   });
   syncColorTolerance(12);
 
+  toneOriginalPreviewBtn.addEventListener('click',()=>setOriginalPreview(!originalPreviewVisible));
+  isolationOriginalPreviewBtn.addEventListener('click',()=>setOriginalPreview(!originalPreviewVisible));
+
   pickerShowOnlyBtn.addEventListener('click',()=>{
+    if(originalPreviewVisible) setOriginalPreview(false);
     const t=targetArray();
     if(t) isolateColorAcrossImage(t,'Pipettenfarbe');
   });
