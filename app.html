@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.36</title>
+  <title>AtelierAI iPad 1.40</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.36-20260830';
+    const wanted='atelierai-1.40-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.36</div>
+    <div class="title">AtelierAI · iPad 1.40</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -641,7 +641,7 @@
       
       <div class="section" id="paintingCoachPanel">
         <h3>Was fehlt meinem Bild?</h3>
-        <p>Vergleicht dein gemaltes Bild mit dem geöffneten Vorbild und zeigt nur die drei wichtigsten malerischen Unterschiede.</p>
+        <p>Vergleicht dein gemaltes Bild mit dem geöffneten Vorbild: Tonwerte, Farbe, Farbharmonie, Großformen, Lichter/Dunkelheiten, Kanten, Hauptformen, Fokus, Detailverteilung, Warm/Kalt-Balance, Gesamtkontrast und Bildränder. Angezeigt werden nur die drei wichtigsten malerischen Unterschiede.</p>
         <input id="paintingFileInput" type="file" accept="image/*" style="position:absolute;left:-10000px;opacity:0;">
         <button id="paintingOpenBtn" type="button" style="width:100%;margin:8px 0;">Mein Gemälde öffnen</button>
         <div id="paintingCoachStatus" class="tiny">Zuerst oben das Vorbild öffnen, danach hier dein Gemälde.</div>
@@ -3842,6 +3842,92 @@
     rr/=n;gg/=n;bb/=n;
     return {L:coachLum(rr,gg,bb),S:coachSat(rr,gg,bb),H:coachHue(rr,gg,bb),rgb:[rr,gg,bb]};
   }
+
+  function coachEdgeStats(data,w,h,x0,y0,x1,y1){
+    let n=0,sum=0,strong=0;
+    const step=Math.max(1,Math.floor(Math.max(w,h)/320));
+    for(let y=Math.max(y0+step,step);y<Math.min(y1-step,h-step);y+=step){
+      for(let x=Math.max(x0+step,step);x<Math.min(x1-step,w-step);x+=step){
+        const i=(y*w+x)*4, il=(y*w+x-step)*4, ir=(y*w+x+step)*4;
+        const iu=((y-step)*w+x)*4, id=((y+step)*w+x)*4;
+        const l=coachLum(data[il],data[il+1],data[il+2]), r=coachLum(data[ir],data[ir+1],data[ir+2]);
+        const u=coachLum(data[iu],data[iu+1],data[iu+2]), d=coachLum(data[id],data[id+1],data[id+2]);
+        const g=Math.sqrt((r-l)*(r-l)+(d-u)*(d-u));
+        sum+=g;if(g>38)strong++;n++;
+      }
+    }
+    return {edge:n?sum/n:0,strong:n?strong/n:0};
+  }
+  function coachLightDarkStats(data,w,h,x0,y0,x1,y1){
+    let n=0,hi=0,lo=0,mean=0;
+    const vals=[],step=Math.max(1,Math.floor(Math.max(w,h)/320));
+    for(let y=y0;y<y1;y+=step)for(let x=x0;x<x1;x+=step){
+      const i=(y*w+x)*4,L=coachLum(data[i],data[i+1],data[i+2]);
+      vals.push(L);mean+=L;n++;
+    }
+    if(!n)return {high:0,dark:0,contrast:0};
+    mean/=n;
+    let variance=0;
+    for(const L of vals){if(L>218)hi++;if(L<55)lo++;variance+=(L-mean)*(L-mean);}
+    return {high:hi/n,dark:lo/n,contrast:Math.sqrt(variance/n)};
+  }
+  function coachLargeShapeStats(data,w,h,x0,y0,x1,y1){
+    let n=0,dark=0,light=0;
+    const step=Math.max(1,Math.floor(Math.max(w,h)/320));
+    let avg=0, vals=[];
+    for(let y=y0;y<y1;y+=step)for(let x=x0;x<x1;x+=step){
+      const i=(y*w+x)*4,L=coachLum(data[i],data[i+1],data[i+2]); vals.push(L);avg+=L;n++;
+    }
+    if(!n)return {dark:0,light:0};
+    avg/=n;
+    for(const L of vals){if(L<avg-24)dark++;if(L>avg+24)light++;}
+    return {dark:dark/n,light:light/n};
+  }
+
+
+  function coachGlobalMap(data,w,h){
+    const cols=6,rows=6,cells=[];
+    for(let ry=0;ry<rows;ry++)for(let rx=0;rx<cols;rx++){
+      const x0=Math.floor(rx*w/cols),x1=Math.floor((rx+1)*w/cols);
+      const y0=Math.floor(ry*h/rows),y1=Math.floor((ry+1)*h/rows);
+      const st=coachStats(data,w,h,x0,y0,x1,y1);
+      const ed=coachEdgeStats(data,w,h,x0,y0,x1,y1);
+      const ld=coachLightDarkStats(data,w,h,x0,y0,x1,y1);
+      cells.push({rx,ry,L:st.L,S:st.S,H:st.H,edge:ed.edge,contrast:ld.contrast});
+    }
+    return {cols,rows,cells};
+  }
+  function coachWeightedCenter(map,kind){
+    let sx=0,sy=0,sw=0;
+    for(const c of map.cells){
+      let wt=0;
+      if(kind==='dark') wt=Math.max(0,145-c.L);
+      else if(kind==='light') wt=Math.max(0,c.L-150);
+      else wt=Math.max(0,c.edge-5)+Math.max(0,c.contrast-8)*.7;
+      sx+=(c.rx+.5)*wt;sy+=(c.ry+.5)*wt;sw+=wt;
+    }
+    return sw?{x:sx/sw/map.cols,y:sy/sw/map.rows,w:sw}:{x:.5,y:.5,w:0};
+  }
+  function coachPositionText(dx,dy){
+    const parts=[];
+    if(Math.abs(dx)>.055)parts.push(dx>0?'zu weit rechts':'zu weit links');
+    if(Math.abs(dy)>.055)parts.push(dy>0?'zu weit unten':'zu weit oben');
+    return parts.join(' und ');
+  }
+  function coachFocusStats(map){
+    let best=null;
+    for(const c of map.cells){
+      const score=c.edge*.62+c.contrast*.9+c.S*18;
+      if(!best||score>best.score)best={...c,score};
+    }
+    return best;
+  }
+  function coachCellPlace(c,map){
+    const x=(c.rx+.5)/map.cols,y=(c.ry+.5)/map.rows;
+    const ix=x<.34?0:(x<.67?1:2),iy=y<.34?0:(y<.67?1:2);
+    return coachRegionName(ix,iy);
+  }
+
   function coachAnalyze(){
     if(!loaded){paintingCoachResults.innerHTML='<div class="pc-card">Bitte zuerst das Vorbild mit „Foto öffnen“ laden.</div>';return;}
     if(!paintingCoachLoaded){paintingCoachResults.innerHTML='<div class="pc-card">Bitte zuerst ein Foto deines Gemäldes laden.</div>';return;}
@@ -3865,7 +3951,189 @@
       if(dH>18 && r.S>.12 && q.S>.12) findings.push({score:dH*.55,
         title:'Farbtemperatur/Farbton prüfen',
         text:`${place}: Der Farbton weicht deutlich vom Vorbild ab. Prüfe zuerst warm/kalt, bevor du Details weiter malst.`});
+      const ea=coachEdgeStats(A,W,H,x0,y0,x1,y1), eb=coachEdgeStats(B,W,H,x0,y0,x1,y1);
+      const edgeDiff=eb.edge-ea.edge, strongDiff=eb.strong-ea.strong;
+      if(edgeDiff>7 || strongDiff>.055) findings.push({score:Math.abs(edgeDiff)*1.05+Math.abs(strongDiff)*70,
+        title:'Kanten zu hart / zu unruhig',
+        text:`${place}: Dein Gemälde hat hier deutlich stärkere bzw. mehr harte Kanten als das Vorbild. Einige Übergänge weicher verbinden.`});
+      if(edgeDiff<-8 && strongDiff<-.045) findings.push({score:Math.abs(edgeDiff)*1.0+Math.abs(strongDiff)*65,
+        title:'Wichtige Kanten fehlen',
+        text:`${place}: Das Vorbild hat hier klarere Formkanten. Die wichtigste Kontur oder Trennkante gezielt verstärken – nicht alles schärfen.`});
+
+      const la=coachLightDarkStats(A,W,H,x0,y0,x1,y1), lb=coachLightDarkStats(B,W,H,x0,y0,x1,y1);
+      if(la.high-lb.high>.035) findings.push({score:(la.high-lb.high)*150,
+        title:'Wichtige Lichter fehlen',
+        text:`${place}: Im Vorbild gibt es mehr sehr helle Akzente. Die wichtigsten Lichter gezielt setzen, statt den ganzen Bereich aufzuhellen.`});
+      if(la.dark-lb.dark>.045) findings.push({score:(la.dark-lb.dark)*135,
+        title:'Tiefe Dunkelheiten fehlen',
+        text:`${place}: Im Vorbild sitzen stärkere dunkle Akzente. Einige Kernschatten oder dunkle Anker gezielt vertiefen.`});
+      if(la.contrast-lb.contrast>9) findings.push({score:(la.contrast-lb.contrast)*.85,
+        title:'Kontrast noch zu schwach',
+        text:`${place}: Die Hell-Dunkel-Spanne ist im Vorbild größer. Licht und Schatten stärker voneinander trennen.`});
+
+      const sa=coachLargeShapeStats(A,W,H,x0,y0,x1,y1), sb=coachLargeShapeStats(B,W,H,x0,y0,x1,y1);
+      if(Math.abs(sa.dark-sb.dark)>.075) findings.push({score:Math.abs(sa.dark-sb.dark)*115,
+        title:'Dunkle Großform prüfen',
+        text:`${place}: Der Anteil der dunklen großen Form stimmt noch nicht gut mit dem Vorbild überein. Zuerst Größe und Ausdehnung der Schattenform korrigieren, bevor Details kommen.`});
+      if(Math.abs(sa.light-sb.light)>.08) findings.push({score:Math.abs(sa.light-sb.light)*105,
+        title:'Helle Großform prüfen',
+        text:`${place}: Die helle Hauptform hat eine andere Ausdehnung als im Vorbild. Die große Lichtform zuerst vereinfachen und in ihrer Größe korrigieren.`});
     }
+
+    // Gesamtbild: Lage der großen Hell-/Dunkelmassen und Schwerpunkt/Fokus.
+    const mapA=coachGlobalMap(A,W,H), mapB=coachGlobalMap(B,W,H);
+    for(const kind of ['dark','light']){
+      const ca=coachWeightedCenter(mapA,kind), cb=coachWeightedCenter(mapB,kind);
+      const dx=cb.x-ca.x,dy=cb.y-ca.y,dist=Math.hypot(dx,dy);
+      if(dist>.085 && ca.w>20 && cb.w>20){
+        const posText=coachPositionText(dx,dy);
+        findings.push({score:dist*115,
+          title:kind==='dark'?'Lage der dunklen Hauptform':'Lage der hellen Hauptform',
+          text:`Die ${kind==='dark'?'dunkle':'helle'} Hauptmasse liegt in deinem Gemälde ${posText||'anders verteilt'} als im Vorbild. Prüfe zuerst Position und Ausdehnung der großen Form, nicht die Details.`});
+      }
+    }
+
+    const fa=coachFocusStats(mapA),fb=coachFocusStats(mapB);
+    if(fa&&fb){
+      const dax=(fb.rx-fa.rx)/mapA.cols, day=(fb.ry-fa.ry)/mapA.rows;
+      const focusDist=Math.hypot(dax,day);
+      if(focusDist>.17){
+        findings.push({score:focusDist*85,
+          title:'Bildfokus liegt an anderer Stelle',
+          text:`Im Vorbild sitzt die stärkste visuelle Aufmerksamkeit ${coachCellPlace(fa,mapA)}, in deinem Gemälde eher ${coachCellPlace(fb,mapB)}. Den wichtigen Bereich mit Kontrast/Kante stärken und konkurrierende Bereiche beruhigen.`});
+      }
+      const ratio=fb.score/(fa.score||1);
+      if(ratio>1.32){
+        findings.push({score:(ratio-1)*28,
+          title:'Fokus zu hart / zu dominant',
+          text:`Der stärkste Bereich deines Gemäldes wirkt deutlich härter oder kontrastreicher als im Vorbild. Unwichtige Kanten und Kontraste etwas zurücknehmen.`});
+      }else if(ratio<.68){
+        findings.push({score:(1-ratio)*30,
+          title:'Hauptfokus noch zu schwach',
+          text:`Der wichtigste Bereich hat gegenüber dem Vorbild noch zu wenig Kontrast, Kantenschärfe oder Farbkraft. Dort gezielt verstärken, den Rest nicht pauschal schärfen.`});
+      }
+    }
+
+
+    // Weitere malerische Gesamtprüfungen.
+    // 1) Detailverteilung: wo ist das Gemälde unnötig unruhiger bzw. zu glatt?
+    for(let i=0;i<mapA.cells.length;i++){
+      const ra=mapA.cells[i], rb=mapB.cells[i];
+      const de=rb.edge-ra.edge, dc=rb.contrast-ra.contrast;
+      if(de>10 && dc>4){
+        findings.push({score:de*.65+dc*.75,
+          title:'Zu viele Details / Unruhe',
+          text:`${coachCellPlace(rb,mapB)}: Dein Gemälde ist hier kleinteiliger und kontrastreicher als das Vorbild. Details zusammenfassen und einige Kanten verlieren lassen.`});
+      } else if(de<-11 && dc<-4){
+        findings.push({score:Math.abs(de)*.6+Math.abs(dc)*.7,
+          title:'Zu wenig Forminformation',
+          text:`${coachCellPlace(rb,mapB)}: Dieser Bereich ist gegenüber dem Vorbild sehr weich bzw. leer. Nur die charakteristischen Formen und Kanten ergänzen.`});
+      }
+    }
+
+    // 2) Warm/Kalt-Balance des gesamten Bildes.
+    function coachWarmness(map){
+      let warm=0,cool=0,n=0;
+      for(const c of map.cells){
+        if(c.S<.08)continue;
+        const h=c.H;
+        if(h<70 || h>330)warm+=c.S;
+        else if(h>165 && h<285)cool+=c.S;
+        n+=c.S;
+      }
+      return n?{warm:warm/n,cool:cool/n}:{warm:0,cool:0};
+    }
+    const wa=coachWarmness(mapA),wb=coachWarmness(mapB);
+    if(wb.warm-wa.warm>.12) findings.push({score:(wb.warm-wa.warm)*65,
+      title:'Gesamtwirkung zu warm',
+      text:'Dein Gemälde enthält insgesamt deutlich mehr warme Farbkraft als das Vorbild. Prüfe besonders warme Halbtöne und Reflexe; nicht pauschal Blau beimischen.'});
+    if(wb.cool-wa.cool>.12) findings.push({score:(wb.cool-wa.cool)*65,
+      title:'Gesamtwirkung zu kühl',
+      text:'Dein Gemälde enthält insgesamt deutlich mehr kühle Farbkraft als das Vorbild. Prüfe Licht- und Halbtöne auf fehlende Wärme.'});
+
+    // 3) Tonwert-Kompression: wirkt das gesamte Bild flacher oder härter?
+    function coachGlobalContrast(map){
+      const vals=map.cells.map(c=>c.L), mean=vals.reduce((a,b)=>a+b,0)/(vals.length||1);
+      return Math.sqrt(vals.reduce((s,v)=>s+(v-mean)*(v-mean),0)/(vals.length||1));
+    }
+    const gca=coachGlobalContrast(mapA),gcb=coachGlobalContrast(mapB);
+    if(gca-gcb>7) findings.push({score:(gca-gcb)*1.25,
+      title:'Gesamtbild wirkt zu flach',
+      text:'Die großen Tonwertgruppen liegen in deinem Gemälde enger zusammen als im Vorbild. Zuerst die Hauptlichter und Hauptschatten klarer trennen.'});
+    if(gcb-gca>9) findings.push({score:(gcb-gca)*1.1,
+      title:'Gesamtkontrast zu hart',
+      text:'Dein Gemälde trennt Hell und Dunkel stärker als das Vorbild. Einige Übergänge und Nebenkontraste zurücknehmen.'});
+
+    // 4) Verlorene/gefundene Kanten: besonders am Rand des Fokusbereichs.
+    if(fa&&fb){
+      const focusPlace=coachCellPlace(fa,mapA);
+      const ai=fa.ry*mapA.cols+fa.rx, bi=fa.ry*mapB.cols+fa.rx;
+      const ae=mapA.cells[ai]?.edge||0, be=mapB.cells[bi]?.edge||0;
+      if(be<ae*.66 && ae>10) findings.push({score:(ae-be)*.9,
+        title:'Fokuskante fehlt',
+        text:`${focusPlace}: Im Hauptbereich des Vorbildes sitzt eine deutlichere Kantenstruktur. Dort wenige entscheidende Kanten gezielt setzen.`});
+      if(be>ae*1.55 && be-ae>7) findings.push({score:(be-ae)*.85,
+        title:'Fokuskanten zu hart',
+        text:`${focusPlace}: Selbst im Hauptmotiv sind deine Kanten härter als im Vorbild. Einige Konturen unterbrechen oder weich auslaufen lassen.`});
+    }
+
+    // 5) Randkontrolle: starke Kontraste am Bildrand können den Blick herausziehen.
+    let edgeA=0,edgeB=0,cnt=0;
+    for(const c of mapA.cells){
+      if(c.rx===0||c.ry===0||c.rx===mapA.cols-1||c.ry===mapA.rows-1){
+        const j=c.ry*mapA.cols+c.rx;
+        edgeA+=c.edge+c.contrast; edgeB+=mapB.cells[j].edge+mapB.cells[j].contrast; cnt++;
+      }
+    }
+    edgeA/=cnt||1; edgeB/=cnt||1;
+    if(edgeB-edgeA>9) findings.push({score:(edgeB-edgeA)*.8,
+      title:'Bildrand zieht zu viel Aufmerksamkeit',
+      text:'An den äußeren Bildrändern sind Kanten und Kontraste stärker als im Vorbild. Dort etwas beruhigen, damit der Blick im Bild bleibt.'});
+
+
+    // Farbharmonie: Verteilung der Farbfamilien und dominante Ausreißer.
+    function coachHueHarmony(map){
+      const bins=new Array(12).fill(0), sat=new Array(12).fill(0);
+      let total=0;
+      for(const c of map.cells){
+        if(c.S<.10)continue;
+        const b=Math.floor((((c.H%360)+360)%360)/30)%12;
+        const w=c.S*(.55+.45*Math.min(1,c.contrast/35));
+        bins[b]+=w; sat[b]+=c.S; total+=w;
+      }
+      if(total>0)for(let i=0;i<12;i++)bins[i]/=total;
+      return {bins,total};
+    }
+    function coachHueName(i){
+      return ['Rot','Rotorange','Orange/Gelb','Gelbgrün','Grün','Blaugrün','Türkis','Blau','Blauviolett','Violett','Magenta','Rotviolett'][i%12];
+    }
+    const ha=coachHueHarmony(mapA), hb=coachHueHarmony(mapB);
+    if(ha.total>0 && hb.total>0){
+      let worst=-1,worstDiff=0,missing=-1,missingDiff=0;
+      for(let i=0;i<12;i++){
+        const d=hb.bins[i]-ha.bins[i];
+        if(d>worstDiff){worstDiff=d;worst=i;}
+        if(-d>missingDiff){missingDiff=-d;missing=i;}
+      }
+      if(worstDiff>.16){
+        findings.push({score:worstDiff*62,
+          title:'Farbharmonie: Farbe zu dominant',
+          text:`${coachHueName(worst)} nimmt in deinem Gemälde deutlich mehr Raum/Farbkraft ein als im Vorbild. Diese Farbfamilie etwas brechen, abschwächen oder in kleineren Flächen einsetzen.`});
+      }
+      if(missingDiff>.17){
+        findings.push({score:missingDiff*58,
+          title:'Farbharmonie: verbindende Farbe fehlt',
+          text:`${coachHueName(missing)} ist im Vorbild stärker an der Farbharmonie beteiligt. Prüfe, ob kleine Wiederholungen dieser Farbfamilie Licht, Schatten oder Übergänge besser verbinden.`});
+      }
+      let harmonyDelta=0;
+      for(let i=0;i<12;i++)harmonyDelta+=Math.abs(hb.bins[i]-ha.bins[i]);
+      if(harmonyDelta>.72){
+        findings.push({score:harmonyDelta*12,
+          title:'Farbharmonie insgesamt prüfen',
+          text:'Die Verteilung der Farbfamilien unterscheidet sich deutlich vom Vorbild. Suche zuerst 2–3 Hauptfarbfamilien und ordne Nebenfarben diesen unter, statt einzelne Stellen isoliert zu korrigieren.'});
+      }
+    }
+
     findings.sort((x,y)=>y.score-x.score);
     const chosen=[]; const used=new Set();
     for(const f of findings){

@@ -1,4 +1,4 @@
-AtelierAI iPad 1.36
+AtelierAI iPad 1.40
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -88,3 +88,11 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.35: Bild öffnen im Bildberater für iPad/Safari korrigiert. Ein echter Button öffnet jetzt direkt die Foto-/Dateiauswahl. Sonstige Funktionen unverändert.
 
 1.36: Bildberater korrigiert: Das geladene Gemälde wird jetzt nach der Auswahl sichtbar im Bildberater angezeigt. Die Analyse arbeitet weiterhin mit dem vollständigen geladenen Gemälde; die sichtbare Vorschau ist nur für Kontrolle und Orientierung.
+
+1.37: Bildberater erweitert. Zusätzlich zu Tonwert, Sättigung und Farbton/Warm-Kalt werden jetzt dunkle und helle Großformen, wichtige Lichter, tiefe Dunkelheiten, Kontrast sowie zu harte oder fehlende wichtige Kanten geprüft. Weiterhin werden bewusst nur die drei stärksten malerischen Hinweise ausgegeben.
+
+1.38: Bildberater um Gesamtbild-Prüfungen erweitert: Lage der hellen und dunklen Hauptmassen (Proportion/Position) sowie Bildfokus/visueller Schwerpunkt. Der Fokus wird aus Kantenstärke, lokalem Kontrast und Farbsättigung beurteilt. Weiterhin nur drei wichtigste Hinweise.
+
+1.39: Bildberater weiter erweitert: Detailverteilung/Unruhe, zu wenig Forminformation, gesamte Warm-Kalt-Balance, globaler Tonwertkontrast (zu flach/zu hart), verlorene bzw. zu harte Kanten im Fokus sowie zu starke Kontraste an den Bildrändern. Bestehende Prüfungen bleiben erhalten; weiterhin nur drei wichtigste Hinweise.
+
+1.40: Bildberater um Farbharmonie erweitert. Vergleicht die Verteilung der Farbfamilien zwischen Vorbild und Gemälde, erkennt zu dominante Farbfamilien, fehlende verbindende Farbfamilien und größere Abweichungen der gesamten Farbharmonie. Weiterhin nur drei wichtigste Hinweise.
