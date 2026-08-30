@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.33</title>
+  <title>AtelierAI iPad 1.34</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.33-20260830';
+    const wanted='atelierai-1.34-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.33</div>
+    <div class="title">AtelierAI · iPad 1.34</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -636,6 +636,18 @@
         <div id="glazeResults" class="pc-card" style="margin-top:8px;">
           <span class="tiny">Noch kein Messpunkt ausgewählt.</span>
         </div>
+      </div>
+
+      
+      <div class="section" id="paintingCoachPanel">
+        <h3>Was fehlt meinem Bild?</h3>
+        <p>Vergleicht dein gemaltes Bild mit dem geöffneten Vorbild und zeigt nur die drei wichtigsten malerischen Unterschiede.</p>
+        <label class="filelabel" style="display:block;text-align:center;margin:8px 0;">Mein Gemälde fotografieren / öffnen
+          <input id="paintingFileInput" type="file" accept="image/*">
+        </label>
+        <div id="paintingCoachStatus" class="tiny">Zuerst oben das Vorbild öffnen, danach hier dein Gemälde.</div>
+        <button id="paintingCoachAnalyze" style="width:100%;margin-top:8px;">Bild malerisch vergleichen</button>
+        <div id="paintingCoachResults" style="margin-top:10px;"></div>
       </div>
 
       <div class="section" id="correctionStudioPanel">
@@ -3763,6 +3775,97 @@
 
 
 
+
+  // 1.34 Bildberater: Vorbild gegen Foto des aktuellen Gemäldes.
+  // Absichtlich wenige Hinweise: die drei größten malerischen Abweichungen.
+  const paintingFileInput=document.getElementById('paintingFileInput');
+  const paintingCoachAnalyze=document.getElementById('paintingCoachAnalyze');
+  const paintingCoachResults=document.getElementById('paintingCoachResults');
+  const paintingCoachStatus=document.getElementById('paintingCoachStatus');
+  let paintingCoachCanvas=document.createElement('canvas');
+  let paintingCoachCtx=paintingCoachCanvas.getContext('2d',{willReadFrequently:true});
+  let paintingCoachLoaded=false;
+
+  paintingFileInput?.addEventListener('change',e=>{
+    const f=e.target.files&&e.target.files[0]; if(!f)return;
+    const u=URL.createObjectURL(f), im=new Image();
+    im.onload=()=>{
+      paintingCoachCanvas.width=im.width; paintingCoachCanvas.height=im.height;
+      paintingCoachCtx.drawImage(im,0,0);
+      paintingCoachLoaded=true;
+      paintingCoachStatus.textContent='Gemälde geladen. Jetzt „Bild malerisch vergleichen“ drücken.';
+      URL.revokeObjectURL(u);
+    };
+    im.src=u;
+  });
+
+  function coachLum(r,g,b){return .2126*r+.7152*g+.0722*b}
+  function coachSat(r,g,b){
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+    return mx===0?0:(mx-mn)/mx;
+  }
+  function coachHue(r,g,b){
+    r/=255;g/=255;b/=255; const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
+    if(d<.0001)return 0; let h;
+    if(mx===r)h=((g-b)/d)%6; else if(mx===g)h=(b-r)/d+2; else h=(r-g)/d+4;
+    h*=60;if(h<0)h+=360;return h;
+  }
+  function coachHueDiff(a,b){let d=Math.abs(a-b);return Math.min(d,360-d)}
+  function coachRegionName(ix,iy){
+    const x=['links','in der Mitte','rechts'][ix], y=['oben','mittig','unten'][iy];
+    if(ix===1&&iy===1)return 'in der Bildmitte';
+    return y+' '+x;
+  }
+  function coachStats(data,w,h,x0,y0,x1,y1){
+    let n=0,L=0,S=0,sx=0,sy=0,rr=0,gg=0,bb=0;
+    const step=Math.max(1,Math.floor(Math.max(w,h)/320));
+    for(let y=y0;y<y1;y+=step)for(let x=x0;x<x1;x+=step){
+      const i=(y*w+x)*4,r=data[i],g=data[i+1],b=data[i+2];
+      rr+=r;gg+=g;bb+=b;n++;
+    }
+    if(!n)return {L:0,S:0,H:0};
+    rr/=n;gg/=n;bb/=n;
+    return {L:coachLum(rr,gg,bb),S:coachSat(rr,gg,bb),H:coachHue(rr,gg,bb),rgb:[rr,gg,bb]};
+  }
+  function coachAnalyze(){
+    if(!loaded){paintingCoachResults.innerHTML='<div class="pc-card">Bitte zuerst das Vorbild mit „Foto öffnen“ laden.</div>';return;}
+    if(!paintingCoachLoaded){paintingCoachResults.innerHTML='<div class="pc-card">Bitte zuerst ein Foto deines Gemäldes laden.</div>';return;}
+    const W=360,H=Math.max(180,Math.round(360*sourceCanvas.height/sourceCanvas.width));
+    const a=document.createElement('canvas'),b=document.createElement('canvas');
+    a.width=b.width=W;a.height=b.height=H;
+    const ac=a.getContext('2d',{willReadFrequently:true}),bc=b.getContext('2d',{willReadFrequently:true});
+    ac.drawImage(sourceCanvas,0,0,W,H);bc.drawImage(paintingCoachCanvas,0,0,W,H);
+    const A=ac.getImageData(0,0,W,H).data,B=bc.getImageData(0,0,W,H).data;
+    let findings=[];
+    for(let iy=0;iy<3;iy++)for(let ix=0;ix<3;ix++){
+      const x0=Math.floor(ix*W/3),x1=Math.floor((ix+1)*W/3),y0=Math.floor(iy*H/3),y1=Math.floor((iy+1)*H/3);
+      const r=coachStats(A,W,H,x0,y0,x1,y1),q=coachStats(B,W,H,x0,y0,x1,y1),place=coachRegionName(ix,iy);
+      const dL=q.L-r.L,dS=q.S-r.S,dH=coachHueDiff(q.H,r.H);
+      if(Math.abs(dL)>9) findings.push({score:Math.abs(dL)*1.25,
+        title:dL>0?'Tonwert zu hell':'Tonwert zu dunkel',
+        text:`${place}: Dein Bild ist hier ${dL>0?'heller':'dunkler'} als das Vorbild. ${dL>0?'Die dunkle Form bzw. den Schatten etwas verstärken.':'Licht bzw. hellere Halbtöne wieder öffnen.'}`});
+      if(Math.abs(dS)>.09) findings.push({score:Math.abs(dS)*90,
+        title:dS>0?'Farbe zu kräftig':'Farbe zu grau',
+        text:`${place}: Die Farbsättigung ist ${dS>0?'stärker':'schwächer'} als im Vorbild. ${dS>0?'Etwas brechen oder neutralisieren.':'Etwas mehr reine Lokalfarbe zulassen.'}`});
+      if(dH>18 && r.S>.12 && q.S>.12) findings.push({score:dH*.55,
+        title:'Farbtemperatur/Farbton prüfen',
+        text:`${place}: Der Farbton weicht deutlich vom Vorbild ab. Prüfe zuerst warm/kalt, bevor du Details weiter malst.`});
+    }
+    findings.sort((x,y)=>y.score-x.score);
+    const chosen=[]; const used=new Set();
+    for(const f of findings){
+      const k=f.title+'|'+f.text.split(':')[0];
+      if(!used.has(k)){chosen.push(f);used.add(k);}
+      if(chosen.length===3)break;
+    }
+    if(!chosen.length){
+      paintingCoachResults.innerHTML='<div class="pc-card"><b>Sehr nah am Vorbild.</b><br><span class="tiny">In den großen Farb- und Tonwertbereichen sehe ich momentan keine starke Abweichung. Jetzt eher Kanten, Akzente und Details nach Augenmaß prüfen.</span></div>';
+      return;
+    }
+    paintingCoachResults.innerHTML=chosen.map((f,i)=>`<div class="pc-card" style="margin-bottom:8px"><b>${i+1}. ${f.title}</b><div class="tiny" style="margin-top:4px">${f.text}</div></div>`).join('');
+  }
+  paintingCoachAnalyze?.addEventListener('click',coachAnalyze);
+
   function setupCompactSidebar(){
     const side=document.querySelector('aside.side');
     if(!side) return;
@@ -3783,6 +3886,7 @@
       colorAnalysisPanel:'Farbanalyse',
       surfaceAdvisorPanel:'Flächenberater',
       glazePanel:'Lasuren',
+      paintingCoachPanel:'Bildberater',
       correctionStudioPanel:'Korrektur',
       mixPalettePanel:'Mischpalette',
       gridSavePanel:'Raster & Speichern',
