@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.19</title>
+  <title>AtelierAI iPad 1.20</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.19-20260830';
+    const wanted='atelierai-1.20-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.19</div>
+    <div class="title">AtelierAI · iPad 1.20</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -4065,7 +4065,10 @@
     advisorResultSwatch.style.background=`rgb(${rgb.join(',')})`;
     const active=advisorItems.filter(x=>x.parts>0);
     advisorRecipe.innerHTML=active.length
-      ? '<b>Aktuelle Mischung:</b><br>'+active.map(x=>`${Math.round(x.parts*10)/10} Teile ${advEsc(x.name)}`).join(' + ')
+      ? '<b>Aktuelle Mischung:</b><br>'+active.map(x=>{
+          const q=x.parts<1?Math.round(x.parts*100)/100:Math.round(x.parts*10)/10;
+          return `${q} Teile ${advEsc(x.name)}`;
+        }).join(' + ')
       : '<b>Aktuelle Mischung:</b> leer';
   }
 
@@ -4075,16 +4078,19 @@
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="width:44px;height:44px;flex:0 0 44px;border-radius:7px;background:rgb(${x.rgb.join(',')});border:1px solid rgba(0,0,0,.18)"></span>
           <div style="min-width:0;flex:1"><b>${advEsc(x.name)}</b><div class="tiny">${advEsc(x.role)}</div></div>
-          <span id="advVal${i}" class="tiny">${Number(x.parts).toFixed(1)}</span>
+          <span id="advVal${i}" class="tiny">${Number(x.parts)<1?Number(x.parts).toFixed(2):Number(x.parts).toFixed(1)}</span>
         </div>
-        <input class="adv-slider" data-i="${i}" type="range" min="0" max="5" step="0.1" value="${x.parts}" style="width:100%;margin-top:7px;">
+        <input class="adv-slider" data-i="${i}" type="range" min="0" max="5" step="0.05" value="${x.parts}" style="width:100%;margin-top:7px;">
       </div>`).join('');
 
     advisorMixerRows.querySelectorAll('.adv-slider').forEach(s=>s.addEventListener('input',()=>{
       const i=+s.dataset.i;
       advisorItems[i].parts=+s.value;
       const v=document.getElementById('advVal'+i);
-      if(v) v.textContent=(+s.value).toFixed(1);
+      if(v){
+        const vv=+s.value;
+        v.textContent=vv<1?vv.toFixed(2):vv.toFixed(1);
+      }
       advRenderResult();
     }));
     advRenderResult();
@@ -4133,9 +4139,9 @@
 
     const existing=advisorItems.findIndex(x=>x.name===c[0]);
     if(existing>=0){
-      if(advisorItems[existing].parts<=0) advisorItems[existing].parts=0.5;
+      if(advisorItems[existing].parts<=0) advisorItems[existing].parts=0.1;
     }else{
-      advisorItems.push({name:c[0],rgb:c[1],parts:0.5,role:'eigene Zugabe'});
+      advisorItems.push({name:c[0],rgb:c[1],parts:0.1,role:'eigene Zugabe'});
     }
     advRenderRows();
     advFillAdd();

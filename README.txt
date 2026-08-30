@@ -1,4 +1,4 @@
-AtelierAI iPad 1.19
+AtelierAI iPad 1.20
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -46,3 +46,9 @@ Zielreferenz: AtelierAI PC 2.6.96.
   Ganzes Fenster, Farbe hinzufügen, Grundmischung wiederherstellen, Mischung leeren.
 - Das Farbmischpult hat jetzt echten Zugriff auf die intern definierten Herstellerpaletten.
 - Ursache behoben: Die Paletten waren im Hauptprogramm in einem geschlossenen JavaScript-Bereich und für das neue Modul vorher nicht sichtbar.
+
+1.20 Farbmischpult:
+- Neue Farbzugäbe startet deutlich sanfter bei 0,1 Teilen statt 0,5.
+- Auch eine bereits vorhandene Farbe mit 0 wird beim Anwählen nur auf 0,1 gesetzt.
+- Regler feiner abgestuft: 0,05 Schritte.
+- Kleine Zugaben werden genauer mit zwei Nachkommastellen angezeigt.
