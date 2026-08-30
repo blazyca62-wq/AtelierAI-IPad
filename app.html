@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.16</title>
+  <title>AtelierAI iPad 1.17</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -147,13 +147,30 @@
       touch-action:pan-x;
     }
 
+
+  #advisorWorkspace.advisor-fullscreen{
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:#f4f4f4;
+    overflow:auto;
+    padding:18px;
+    box-sizing:border-box;
+  }
+  #advisorWorkspace.advisor-fullscreen #advisorResultSwatch{height:180px;}
+  #advisorWorkspace.advisor-fullscreen #advisorMixerRows{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:8px;
+  }
+  #advisorWorkspace.advisor-fullscreen .card{max-width:none;}
 </style>
 </head>
 <body>
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.16-20260830';
+    const wanted='atelierai-1.17-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -170,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.16</div>
+    <div class="title">AtelierAI · iPad 1.17</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -382,30 +399,47 @@
 
       
       <div class="section" id="colorAdvisorPanel">
-        <h3>Farbberater – Mischpult</h3>
-        <p>Wähle eine Farbfamilie. AtelierAI stellt eine malerische Grundmischung bereit. Mit konkreten Tubenfarben kannst du die Mischung anschließend selbst verändern.</p>
-        <label>Farbfamilie</label>
-        <select id="advisorFamily" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;">
-          <option value="lavender">Lavendel / Violett</option>
-          <option value="green">Grün</option>
-          <option value="skin">Hautfarbe – Halbton</option>
-          <option value="blue">Blau</option>
-        </select>
-        <div class="card" style="margin-top:10px;">
-          <div class="tiny">Aktuelles Ergebnis</div>
-          <div id="advisorResultSwatch" style="height:105px;border-radius:10px;border:1px solid rgba(0,0,0,.18);margin:6px 0;"></div>
-          <div id="advisorRecipe" class="small"></div>
-        </div>
-        <div id="advisorHint" class="small" style="margin-top:9px;"></div>
-        <div id="advisorMixerRows" style="margin-top:10px;"></div>
-        <div class="card" style="margin-top:10px;">
-          <label>Andere Farbe hinzufügen</label>
-          <div style="display:flex;gap:7px;margin-top:5px;">
-            <select id="advisorAddColor" style="min-width:0;flex:1;padding:8px;border-radius:8px;border:1px solid #aaa;"></select>
-            <button id="advisorAddBtn" type="button" class="secondary">Hinzufügen</button>
+        <div id="advisorWorkspace">
+          <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+            <div>
+              <h3 style="margin-bottom:2px;">Farbberater – Mischpult</h3>
+              <div class="tiny">Konkrete Tubenfarben auswählen und live mischen.</div>
+            </div>
+            <button id="advisorFullscreenBtn" type="button" class="secondary">Ganzes Fenster</button>
+          </div>
+
+          <label style="display:block;margin-top:10px;">Farbfamilie</label>
+          <select id="advisorFamily" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;">
+            <option value="lavender">Lavendel / Violett</option>
+            <option value="green">Grün</option>
+            <option value="skin">Hautfarbe – Halbton</option>
+            <option value="blue">Blau</option>
+          </select>
+
+          <div class="card" style="margin-top:10px;">
+            <div class="tiny">Aktuelles Ergebnis</div>
+            <div id="advisorResultSwatch" style="height:125px;border-radius:10px;border:1px solid rgba(0,0,0,.18);margin:6px 0;"></div>
+            <div id="advisorRecipe" class="small"></div>
+          </div>
+
+          <div id="advisorHint" class="small" style="margin-top:9px;"></div>
+
+          <div class="card" style="margin-top:10px;">
+            <label>Farbe auswählen</label>
+            <div style="display:flex;gap:7px;margin-top:5px;flex-wrap:wrap;">
+              <select id="advisorAddColor" style="min-width:220px;flex:1;padding:9px;border-radius:8px;border:1px solid #aaa;"></select>
+              <button id="advisorAddBtn" type="button">Farbe hinzufügen</button>
+            </div>
+            <div id="advisorPaletteInfo" class="tiny" style="margin-top:5px;"></div>
+          </div>
+
+          <div id="advisorMixerRows" style="margin-top:10px;"></div>
+
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            <button id="advisorResetBtn" type="button" class="secondary" style="flex:1;">Grundmischung wiederherstellen</button>
+            <button id="advisorClearBtn" type="button" class="secondary" style="flex:1;">Mischung leeren</button>
           </div>
         </div>
-        <button id="advisorResetBtn" type="button" class="secondary" style="width:100%;margin-top:8px;">Grundmischung wiederherstellen</button>
       </div>
 
       <div class="section" id="colorJourneyPanel">
@@ -3913,7 +3947,7 @@
 
 
 
-  // ===== 1.16 Farbberater – interaktives Mischpult =====
+  // ===== 1.17 Farbberater – Mischpult Vollbild =====
   const advisorFamily=document.getElementById('advisorFamily');
   const advisorResultSwatch=document.getElementById('advisorResultSwatch');
   const advisorRecipe=document.getElementById('advisorRecipe');
@@ -3922,106 +3956,171 @@
   const advisorAddColor=document.getElementById('advisorAddColor');
   const advisorAddBtn=document.getElementById('advisorAddBtn');
   const advisorResetBtn=document.getElementById('advisorResetBtn');
+  const advisorClearBtn=document.getElementById('advisorClearBtn');
+  const advisorFullscreenBtn=document.getElementById('advisorFullscreenBtn');
+  const advisorWorkspace=document.getElementById('advisorWorkspace');
+  const advisorPaletteInfo=document.getElementById('advisorPaletteInfo');
 
   const advisorDefs={
-    lavender:{rgb:[166,145,190],hint:'Lavendel: Weiß bestimmt die Helligkeit, Blau und Rotviolett bestimmen die Richtung. Kleine Mengen Ocker oder Erdfarbe können die Mischung brechen.',terms:[
-      ['weiß','Aufhellen'],['ultramarin','blauer / tiefer'],['magenta|permanentrosa|rose|karmin','rötlicher'],['ocker|siena|umbra','brechen / natürlicher']]},
-    green:{rgb:[104,137,83],hint:'Grün: Gelb und Blau bauen die Farbe auf. Ocker oder Erdfarben machen Grün natürlicher; Rot kann es sehr kontrolliert brechen.',terms:[
-      ['gelb|yellow','gelblicher / frischer'],['ultramarin|blau|blue','blauer / kühler'],['ocker|siena|umbra','erdiger / natürlicher'],['rot|red|magenta','brechen']]},
-    skin:{rgb:[199,145,119],hint:'Haut-Halbton: Die Grundmischung bleibt erhalten. Kleine Zugaben verändern sie stark – besonders Rot, Ocker und Blau.',terms:[
-      ['weiß','heller'],['ocker|yellow ochre','goldener'],['rot|red|zinnober|cadmium red','rosiger / durchblutet'],['ultramarin|blau|blue','kühler / Schattenrichtung'],['umbra|siena','tiefer / gebrochener']]},
-    blue:{rgb:[75,116,166],hint:'Blau: Weiß verändert Helligkeit, Violett/Rot verschiebt die Richtung, Grün/Cyan macht es türkiser, Erdfarbe dämpft.',terms:[
-      ['weiß','heller'],['ultramarin|blau|blue','tieferes Blau'],['magenta|violett|purple','violetter'],['grün|green|cyan','türkiser'],['ocker|siena|umbra','gedämpfter']]}
+    lavender:{rgb:[166,145,190],hint:'Lavendel: Weiß bestimmt die Helligkeit, Blau und Rotviolett bestimmen die Richtung. Ocker oder Erdfarbe kann die Mischung brechen.',terms:[
+      ['weiß|white','Aufhellen'],['ultramarin|ultramarine','blauer / tiefer'],['magenta|permanentrosa|rose|karmin|crimson','rötlicher'],['ocker|ochre|siena|sienna|umbra|umber','brechen / natürlicher']]},
+    green:{rgb:[104,137,83],hint:'Grün: Gelb und Blau bauen die Farbe auf. Ocker/Erdfarbe macht Grün natürlicher; Rot kann es kontrolliert brechen.',terms:[
+      ['gelb|yellow','gelblicher / frischer'],['ultramarin|blau|blue','blauer / kühler'],['ocker|ochre|siena|sienna|umbra|umber','erdiger / natürlicher'],['rot|red|magenta|crimson','brechen']]},
+    skin:{rgb:[199,145,119],hint:'Haut-Halbton: kleine Zugaben verändern die Mischung stark. Besonders Weiß, Ocker, Rot, Ultramarin und Umbra sind interessant.',terms:[
+      ['weiß|white','heller'],['ocker|ochre|yellow ochre','goldener'],['rot|red|zinnober|vermilion|cadmium red|crimson','rosiger / durchblutet'],['ultramarin|blau|blue','kühler / Schattenrichtung'],['umbra|umber|siena|sienna','tiefer / gebrochener']]},
+    blue:{rgb:[75,116,166],hint:'Blau: Weiß verändert die Helligkeit, Rot/Violett verschiebt die Richtung, Grün/Türkis macht es kühler, Erdfarbe dämpft.',terms:[
+      ['weiß|white','heller'],['ultramarin|blau|blue','tieferes Blau'],['magenta|violett|purple|crimson','violetter'],['grün|green|cyan|turquoise','türkiser'],['ocker|ochre|siena|sienna|umbra|umber','gedämpfter']]}
   };
+
   let advisorItems=[];
 
-  function advEsc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-  function advPalette(){
-    const key=(typeof paintPalette!=='undefined'&&paintPalette?.value)?paintPalette.value:'artisan';
-    try{return {key,colors:selectedPaletteColors(key)||[]};}catch(e){return {key,colors:[]};}
+  function advEsc(s){
+    return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
+
+  function advPalette(){
+    const key=(typeof paintPalette!=='undefined' && paintPalette?.value) ? paintPalette.value : 'artisan';
+    let colors=[];
+    try{ colors=selectedPaletteColors(key)||[]; }catch(e){}
+
+    // Wenn noch keine persönlichen Farben aktiviert sind, im Farbberater die komplette
+    // Herstellerpalette anzeigen. So ist immer eine konkrete Tubenfarbe auswählbar.
+    if(!colors.length && typeof PALETTES!=='undefined' && Array.isArray(PALETTES[key])){
+      colors=PALETTES[key].map(x=>[x[0],x[1]]);
+    }
+    return {key,colors};
+  }
+
   function advFind(colors,pattern){
     const rx=new RegExp(pattern,'i');
     return colors.find(c=>rx.test(c[0]))||null;
   }
+
   function advBaseItems(){
     const d=advisorDefs[advisorFamily.value]||advisorDefs.lavender;
     const {key,colors}=advPalette();
     let base=[];
+
+    // Erst AtelierAI-Mischlogik versuchen.
     try{
       const mixes=chooseMixes(d.rgb,key)||[];
       if(mixes.length){
         const m=mixes[0];
         (m.names||[]).forEach((name,i)=>{
           const c=colors.find(x=>x[0]===name);
-          if(c) base.push({name:c[0],rgb:c[1],parts:Math.max(.1,Number((m.parts||[])[i]||1)),role:'Grundmischung'});
+          if(c) base.push({
+            name:c[0],rgb:c[1],
+            parts:Math.max(.1,Number((m.parts||[])[i]||1)),
+            role:'Grundmischung'
+          });
         });
       }
     }catch(e){}
+
+    // Wenn persönliche Palette leer/zu klein ist: aus vollständiger realer Palette
+    // sinnvolle konkrete Farben wählen.
     if(!base.length){
-      // only real selected palette colors; choose sensible nearest family ingredients
       d.terms.slice(0,3).forEach(([pat,role])=>{
         const c=advFind(colors,pat);
-        if(c&&!base.some(x=>x.name===c[0])) base.push({name:c[0],rgb:c[1],parts:1,role});
+        if(c && !base.some(x=>x.name===c[0])){
+          base.push({name:c[0],rgb:c[1],parts:1,role});
+        }
       });
     }
-    // add recommended concrete modifiers at zero
+
+    // Weitere sinnvolle konkrete Zugaben bei 0 starten.
     d.terms.forEach(([pat,role])=>{
       const c=advFind(colors,pat);
-      if(c&&!base.some(x=>x.name===c[0])) base.push({name:c[0],rgb:c[1],parts:0,role});
+      if(c && !base.some(x=>x.name===c[0])){
+        base.push({name:c[0],rgb:c[1],parts:0,role});
+      }
     });
-    advisorItems=base.slice(0,7);
+
+    advisorItems=base.slice(0,8);
   }
+
   function advMixRgb(){
     const active=advisorItems.filter(x=>x.parts>0);
     if(!active.length) return (advisorDefs[advisorFamily.value]||advisorDefs.lavender).rgb;
     const total=active.reduce((s,x)=>s+x.parts,0)||1;
     return [0,1,2].map(ch=>Math.round(active.reduce((s,x)=>s+x.rgb[ch]*x.parts,0)/total));
   }
+
   function advRenderResult(){
     const rgb=advMixRgb();
     advisorResultSwatch.style.background=`rgb(${rgb.join(',')})`;
     const active=advisorItems.filter(x=>x.parts>0);
     advisorRecipe.innerHTML=active.length
       ? '<b>Aktuelle Mischung:</b><br>'+active.map(x=>`${Math.round(x.parts*10)/10} Teile ${advEsc(x.name)}`).join(' + ')
-      : 'Noch keine Farbe in der Mischung.';
+      : '<b>Aktuelle Mischung:</b> leer';
   }
+
   function advRenderRows(){
     advisorMixerRows.innerHTML=advisorItems.map((x,i)=>`
       <div class="card" style="margin-top:7px;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="width:38px;height:38px;flex:0 0 38px;border-radius:7px;background:rgb(${x.rgb.join(',')});border:1px solid rgba(0,0,0,.18)"></span>
+          <span style="width:44px;height:44px;flex:0 0 44px;border-radius:7px;background:rgb(${x.rgb.join(',')});border:1px solid rgba(0,0,0,.18)"></span>
           <div style="min-width:0;flex:1"><b>${advEsc(x.name)}</b><div class="tiny">${advEsc(x.role)}</div></div>
-          <span id="advVal${i}" class="tiny">${Math.round(x.parts*10)/10}</span>
+          <span id="advVal${i}" class="tiny">${Number(x.parts).toFixed(1)}</span>
         </div>
-        <input class="adv-slider" data-i="${i}" type="range" min="0" max="5" step="0.1" value="${x.parts}" style="width:100%;margin-top:6px;">
+        <input class="adv-slider" data-i="${i}" type="range" min="0" max="5" step="0.1" value="${x.parts}" style="width:100%;margin-top:7px;">
       </div>`).join('');
+
     advisorMixerRows.querySelectorAll('.adv-slider').forEach(s=>s.addEventListener('input',()=>{
-      const i=+s.dataset.i; advisorItems[i].parts=+s.value;
-      const v=document.getElementById('advVal'+i); if(v)v.textContent=(+s.value).toFixed(1);
+      const i=+s.dataset.i;
+      advisorItems[i].parts=+s.value;
+      const v=document.getElementById('advVal'+i);
+      if(v) v.textContent=(+s.value).toFixed(1);
       advRenderResult();
     }));
     advRenderResult();
   }
+
   function advFillAdd(){
-    const {colors}=advPalette();
-    advisorAddColor.innerHTML=colors.filter(c=>!advisorItems.some(x=>x.name===c[0])).map(c=>`<option value="${advEsc(c[0])}">${advEsc(c[0])}</option>`).join('');
+    const {key,colors}=advPalette();
+    const available=colors.filter(c=>!advisorItems.some(x=>x.name===c[0]));
+    advisorAddColor.innerHTML=available.length
+      ? available.map(c=>`<option value="${advEsc(c[0])}">${advEsc(c[0])}</option>`).join('')
+      : '<option value="">Keine weitere Farbe</option>';
+    advisorPaletteInfo.textContent=`Palette: ${key} · ${colors.length} Farben verfügbar`;
+    advisorAddBtn.disabled=!available.length;
   }
+
   function advReset(){
     const d=advisorDefs[advisorFamily.value]||advisorDefs.lavender;
     advisorHint.textContent=d.hint;
-    advBaseItems(); advRenderRows(); advFillAdd();
+    advBaseItems();
+    advRenderRows();
+    advFillAdd();
   }
+
   advisorFamily?.addEventListener('change',advReset);
   advisorResetBtn?.addEventListener('click',advReset);
+
+  advisorClearBtn?.addEventListener('click',()=>{
+    advisorItems.forEach(x=>x.parts=0);
+    advRenderRows();
+  });
+
   advisorAddBtn?.addEventListener('click',()=>{
-    const {colors}=advPalette(), c=colors.find(x=>x[0]===advisorAddColor.value);
-    if(c&&!advisorItems.some(x=>x.name===c[0])){
+    const {colors}=advPalette();
+    const c=colors.find(x=>x[0]===advisorAddColor.value);
+    if(c && !advisorItems.some(x=>x.name===c[0])){
       advisorItems.push({name:c[0],rgb:c[1],parts:0,role:'eigene Zugabe'});
-      advRenderRows(); advFillAdd();
+      advRenderRows();
+      advFillAdd();
     }
   });
-  if(typeof paintPalette!=='undefined'&&paintPalette) paintPalette.addEventListener('change',advReset);
+
+  advisorFullscreenBtn?.addEventListener('click',()=>{
+    const on=advisorWorkspace.classList.toggle('advisor-fullscreen');
+    advisorFullscreenBtn.textContent=on?'Fenster schließen':'Ganzes Fenster';
+  });
+
+  if(typeof paintPalette!=='undefined' && paintPalette){
+    paintPalette.addEventListener('change',advReset);
+  }
+
   advReset();
 
 </script>

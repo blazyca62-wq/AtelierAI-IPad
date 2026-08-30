@@ -1,4 +1,4 @@
-AtelierAI iPad 1.16
+AtelierAI iPad 1.17
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -27,3 +27,9 @@ Zielreferenz: AtelierAI PC 2.6.96.
 1.15: Farbberater-Palettenanbindung korrigiert. Er verwendet jetzt die tatsächlich vorhandene AtelierAI-Palette und fällt nicht mehr wegen eines falschen Palettenschlüssels auf „keine Mischung gefunden“ zurück.
 
 1.16: Farbberater komplett als interaktives Farbmischpult neu aufgebaut. Grundmischung plus konkrete Tubenfarben aus der gewählten Palette, jede Zugabe mit eigenem Regler 0–5 Teile, großes Live-Ergebnisfeld, aktuelle Rezeptur und freie zusätzliche Palettenfarbe.
+
+1.17 Farbberater:
+- Farbwahl funktioniert auch dann, wenn noch keine persönliche Palette aktiviert wurde: im Farbberater wird dann die vollständige reale Herstellerpalette angeboten.
+- Eigene konkrete Tubenfarbe über Auswahl + „Farbe hinzufügen“.
+- Button „Ganzes Fenster“ vergrößert das Mischpult auf die komplette App-Fläche.
+- Im Vollbild werden die Mischregler größer und übersichtlicher dargestellt.
