@@ -1,4 +1,4 @@
-AtelierAI iPad 1.24
+AtelierAI iPad 1.25
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -60,3 +60,9 @@ Zielreferenz: AtelierAI PC 2.6.96.
 1.23: Farbatlas als zusätzliche Ebene im bestehenden Farbmischpult. Jede Farbfamilie besitzt mehrere konkrete Ausgangsvorschläge. Auswahl eines Vorschlags erzeugt nur eine neue Grundmischung; alle bisherigen Regler, sanfte Dosierung, freies Hinzufügen jeder Tubenfarbe, großes Farbfeld und Vollbild bleiben unverändert verfügbar.
 
 1.24: Im Farbatlas/Farbmischpult gibt es jetzt den Regler „Grundton heller / dunkler“ (-40 bis +40). Er verändert den gewählten Ausgangston und berechnet daraus eine passende neue Grundmischung. Alle bisherigen Regler, freie Farbauswahl, sanfte Dosierung, großes Farbfeld und Vollbild bleiben erhalten.
+
+1.25: Großer Farbatlas stark erweitert. Insgesamt 385 konkrete Farbvorschläge.
+Besonders erweitert: Hauttöne mit vielen Licht-, Halbton-, Schatten-, Wangen-, Hals-, Ohr-, Kinder-, Männer- und Frauenhaut-Varianten.
+Neue Themen: Haare, Augen, Lippen, Wangen/Hautröte, Wiesen, Getreide, Berge, Nebel, Nacht/Mondlicht, Sturm, Ziegel/Terrakotta, Metall/Silber, Kupfer/Bronze, Gold/Messing, Stoff/Kleidung.
+Zusätzlich Künstler-inspirierte Farbstimmungen (keine historischen Originalrezepte), z.B. Rembrandt, Turner, Monet, Renoir, Sargent, Zorn, Sorolla, Cézanne, Van Gogh, Vermeer, Whistler, Degas, Matisse und Hopper.
+Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosierung, großes Farbfeld, Vollbild und freie Farbauswahl bleiben erhalten.
