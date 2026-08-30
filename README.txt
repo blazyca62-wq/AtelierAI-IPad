@@ -1,4 +1,4 @@
-AtelierAI iPad 1.32
+AtelierAI iPad 1.33
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -80,3 +80,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.31: Am Anfang des Farbmischpults stehen jetzt die Grundfarbfamilien Rot, Gelb, Blau, Grün, Orange, Violett, Braun, Weiß, Grau und sehr dunkel/Schwarz. Jede Grundfarbe besitzt mehrere direkte Nuancen als Ausgangspunkt. Alle bisherigen Farbatlas- und Mischpultfunktionen bleiben erhalten.
 
 1.32: Direkt im Farbmischpult ist jetzt die komplette Palette wählbar: Winsor & Newton Artisan Öl, Schmincke Horadam Aquarell oder Schmincke Akademie Aquarell. Die Auswahl steuert Grundmischung, Vorschläge und Farbe hinzufügen.
+
+1.33: Fehlerkorrektur im Farbmischpult: Heller/Dunkler verändert jetzt die aktuell manuell eingestellte Mischung, ohne hinzugefügte Farben oder Reglerwerte zurückzusetzen. Die Mischung bleibt vollständig erhalten.

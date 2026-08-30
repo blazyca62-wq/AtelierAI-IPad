@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.32</title>
+  <title>AtelierAI iPad 1.33</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.32-20260830';
+    const wanted='atelierai-1.33-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.32</div>
+    <div class="title">AtelierAI · iPad 1.33</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -4183,7 +4183,7 @@
     const variants=advisorVariants[advisorFamily.value]||[];
     const vi=Math.max(0,Math.min(variants.length-1,Number(advisorVariant?.value)||0));
     const rawTarget=(variants[vi]&&variants[vi][1])||d.rgb;
-    const targetRgb=advBrightnessRgb(rawTarget,advisorBrightness?.value||0);
+    const targetRgb=rawTarget;
     const {key,colors}=advPalette();
     let base=[];
 
@@ -4234,7 +4234,8 @@
       return advBrightnessRgb(raw,advisorBrightness?.value||0);
     }
     const total=active.reduce((s,x)=>s+x.parts,0)||1;
-    return [0,1,2].map(ch=>Math.round(active.reduce((s,x)=>s+x.rgb[ch]*x.parts,0)/total));
+    const mixed=[0,1,2].map(ch=>Math.round(active.reduce((s,x)=>s+x.rgb[ch]*x.parts,0)/total));
+    return advBrightnessRgb(mixed,advisorBrightness?.value||0);
   }
 
   function advRenderResult(){
@@ -4316,12 +4317,10 @@
   });
   advisorVariant?.addEventListener('change',advReset);
 
-  let advisorBrightnessTimer=null;
   advisorBrightness?.addEventListener('input',()=>{
     const v=Number(advisorBrightness.value)||0;
     if(advisorBrightnessVal) advisorBrightnessVal.textContent=(v>0?'+':'')+v;
-    clearTimeout(advisorBrightnessTimer);
-    advisorBrightnessTimer=setTimeout(advReset,90);
+    advRenderResult();
   });
 
   advisorResetBtn?.addEventListener('click',advReset);
