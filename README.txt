@@ -1,4 +1,4 @@
-AtelierAI iPad 1.25
+AtelierAI iPad 1.26
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -66,3 +66,5 @@ Besonders erweitert: Hauttöne mit vielen Licht-, Halbton-, Schatten-, Wangen-, 
 Neue Themen: Haare, Augen, Lippen, Wangen/Hautröte, Wiesen, Getreide, Berge, Nebel, Nacht/Mondlicht, Sturm, Ziegel/Terrakotta, Metall/Silber, Kupfer/Bronze, Gold/Messing, Stoff/Kleidung.
 Zusätzlich Künstler-inspirierte Farbstimmungen (keine historischen Originalrezepte), z.B. Rembrandt, Turner, Monet, Renoir, Sargent, Zorn, Sorolla, Cézanne, Van Gogh, Vermeer, Whistler, Degas, Matisse und Hopper.
 Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosierung, großes Farbfeld, Vollbild und freie Farbauswahl bleiben erhalten.
+
+1.26: Für jeden der 14 bereits vorhandenen Künstler gibt es jetzt eine eigene Kategorie mit genau 20 malerisch inspirierten Farbvorschlägen (280 insgesamt). Alle sind ausdrücklich als inspiriert gekennzeichnet, nicht als historische Originalrezepte. Bestehendes Mischpult unverändert.
