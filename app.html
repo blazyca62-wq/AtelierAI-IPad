@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.23</title>
+  <title>AtelierAI iPad 1.24</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.23-20260830';
+    const wanted='atelierai-1.24-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.23</div>
+    <div class="title">AtelierAI · iPad 1.24</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -437,6 +437,13 @@
 
           <label style="display:block;margin-top:9px;">Farbvorschlag</label>
           <select id="advisorVariant" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;"></select>
+
+          <div class="control-line" style="margin-top:9px;">
+            <label for="advisorBrightness">Grundton heller / dunkler</label>
+            <input id="advisorBrightness" type="range" min="-40" max="40" value="0" step="1" style="flex:1;">
+            <span id="advisorBrightnessVal" style="min-width:46px;text-align:right;">0</span>
+          </div>
+
           <div class="tiny" style="margin-top:4px;">Der Vorschlag ist nur der Startpunkt. Alle Regler und „Farbe hinzufügen“ bleiben frei veränderbar.</div>
 
           <div class="card" style="margin-top:10px;">
@@ -4145,6 +4152,16 @@
     ]
   };
   const advisorVariant=document.getElementById('advisorVariant');
+  const advisorBrightness=document.getElementById('advisorBrightness');
+  const advisorBrightnessVal=document.getElementById('advisorBrightnessVal');
+
+  function advBrightnessRgb(rgb, amount){
+    const a=Math.max(-40,Math.min(40,Number(amount)||0))/40;
+    if(a>=0){
+      return rgb.map(v=>Math.round(v+(255-v)*a*0.72));
+    }
+    return rgb.map(v=>Math.round(v*(1+a*0.62)));
+  }
 
   let advisorItems=[];
 
@@ -4173,7 +4190,8 @@
     const d=advisorDefs[advisorFamily.value]||advisorDefs.lavender;
     const variants=advisorVariants[advisorFamily.value]||[];
     const vi=Math.max(0,Math.min(variants.length-1,Number(advisorVariant?.value)||0));
-    const targetRgb=(variants[vi]&&variants[vi][1])||d.rgb;
+    const rawTarget=(variants[vi]&&variants[vi][1])||d.rgb;
+    const targetRgb=advBrightnessRgb(rawTarget,advisorBrightness?.value||0);
     const {key,colors}=advPalette();
     let base=[];
 
@@ -4220,7 +4238,8 @@
     if(!active.length){
       const vs=advisorVariants[advisorFamily.value]||[];
       const vi=Math.max(0,Math.min(vs.length-1,Number(advisorVariant?.value)||0));
-      return (vs[vi]&&vs[vi][1])||(advisorDefs[advisorFamily.value]||advisorDefs.lavender).rgb;
+      const raw=(vs[vi]&&vs[vi][1])||(advisorDefs[advisorFamily.value]||advisorDefs.lavender).rgb;
+      return advBrightnessRgb(raw,advisorBrightness?.value||0);
     }
     const total=active.reduce((s,x)=>s+x.parts,0)||1;
     return [0,1,2].map(ch=>Math.round(active.reduce((s,x)=>s+x.rgb[ch]*x.parts,0)/total));
@@ -4304,6 +4323,15 @@
     advReset();
   });
   advisorVariant?.addEventListener('change',advReset);
+
+  let advisorBrightnessTimer=null;
+  advisorBrightness?.addEventListener('input',()=>{
+    const v=Number(advisorBrightness.value)||0;
+    if(advisorBrightnessVal) advisorBrightnessVal.textContent=(v>0?'+':'')+v;
+    clearTimeout(advisorBrightnessTimer);
+    advisorBrightnessTimer=setTimeout(advReset,90);
+  });
+
   advisorResetBtn?.addEventListener('click',advReset);
 
   advisorClearBtn?.addEventListener('click',()=>{
@@ -4336,6 +4364,7 @@
     advisorPaletteSelect.addEventListener('change',advReset);
   }
 
+  if(advisorBrightnessVal) advisorBrightnessVal.textContent='0';
   advReset();
 
 </script>
