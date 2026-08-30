@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.12</title>
+  <title>AtelierAI iPad 1.13</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -153,7 +153,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.12-20260830';
+    const wanted='atelierai-1.13-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -170,7 +170,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.12</div>
+    <div class="title">AtelierAI · iPad 1.13</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -229,7 +229,11 @@
           <button id="toneOnly" class="secondary">Nur Tonwert</button>
           <button id="toneOff" class="secondary">Original</button>
         </div>
-        <button id="toneOriginalPreviewBtn" class="secondary" style="width:100%;margin-top:8px;">Original einblenden</button>
+        <div class="control-line" style="margin-top:8px;">
+          <label for="toneOriginalBlend">Original</label>
+          <input id="toneOriginalBlend" type="range" min="0" max="100" value="0" step="1">
+          <span id="toneOriginalBlendVal">0 %</span>
+        </div>
 
         <div class="toneRow">
           <label>Hell</label>
@@ -361,7 +365,11 @@
           <button id="pickerShowOnlyBtn" class="secondary">Nur diese Farbe zeigen</button>
           <button id="pickerShowAllBtn" class="secondary">Alle Farben zeigen</button>
         </div>
-        <button id="isolationOriginalPreviewBtn" class="secondary" style="width:100%;margin-top:8px;">Original einblenden</button>
+        <div class="control-line" style="margin-top:8px;">
+          <label for="isolationOriginalBlend">Original</label>
+          <input id="isolationOriginalBlend" type="range" min="0" max="100" value="0" step="1">
+          <span id="isolationOriginalBlendVal">0 %</span>
+        </div>
 
         <div class="mode" style="margin-top:10px;">
           <button id="calcMixesBtn">Studio-Mischung berechnen</button>
@@ -649,8 +657,10 @@
   const pickerColorToleranceVal=document.getElementById('pickerColorToleranceVal');
   const pickerShowOnlyBtn=document.getElementById('pickerShowOnlyBtn');
   const pickerShowAllBtn=document.getElementById('pickerShowAllBtn');
-  const toneOriginalPreviewBtn=document.getElementById('toneOriginalPreviewBtn');
-  const isolationOriginalPreviewBtn=document.getElementById('isolationOriginalPreviewBtn');
+  const toneOriginalBlend=document.getElementById('toneOriginalBlend');
+  const toneOriginalBlendVal=document.getElementById('toneOriginalBlendVal');
+  const isolationOriginalBlend=document.getElementById('isolationOriginalBlend');
+  const isolationOriginalBlendVal=document.getElementById('isolationOriginalBlendVal');
   const mixResults = document.getElementById('mixResults');
   const journeyTakeStartBtn=document.getElementById('journeyTakeStartBtn');
   const journeyTakeTargetBtn=document.getElementById('journeyTakeTargetBtn');
@@ -842,17 +852,15 @@
   let formCtx = formCanvas.getContext('2d', { willReadFrequently: true });
   let processedCanvas = document.createElement('canvas');
   let processedCtx = processedCanvas.getContext('2d', { willReadFrequently: true });
-  let originalPreviewVisible=false;
+  let originalBlendPercent=0;
 
-  function setOriginalPreview(show){
-    originalPreviewVisible=!!show;
-    const label=originalPreviewVisible ? 'Bearbeitung wieder anzeigen' : 'Original einblenden';
-    [toneOriginalPreviewBtn,isolationOriginalPreviewBtn].forEach(b=>{
-      if(!b)return;
-      b.textContent=label;
-      b.classList.toggle('active',originalPreviewVisible);
-      b.classList.toggle('secondary',!originalPreviewVisible);
-    });
+  function setOriginalBlend(value, source){
+    originalBlendPercent=Math.max(0,Math.min(100,Number(value)||0));
+    const pct=Math.round(originalBlendPercent);
+    if(source!=='tone' && toneOriginalBlend) toneOriginalBlend.value=String(pct);
+    if(source!=='isolation' && isolationOriginalBlend) isolationOriginalBlend.value=String(pct);
+    if(toneOriginalBlendVal) toneOriginalBlendVal.textContent=pct+' %';
+    if(isolationOriginalBlendVal) isolationOriginalBlendVal.textContent=pct+' %';
     draw();
   }
 
@@ -3212,11 +3220,16 @@
     ctx.imageSmoothingQuality='high';
     ctx.translate(offsetX,offsetY);
     ctx.scale(scale,scale);
-    // 1.11: Original kann während Tonwerten oder „Diese Farbe sehen“
-    // eingeblendet werden, ohne die aktuelle Analyse zu verlassen.
-    if(originalPreviewVisible) ctx.drawImage(sourceCanvas,0,0);
-    else if(surfaceMarkCanvas) ctx.drawImage(surfaceMarkCanvas,0,0);
+    // 1.13: Original stufenlos über die aktuelle Arbeitsansicht blenden.
+    if(surfaceMarkCanvas) ctx.drawImage(surfaceMarkCanvas,0,0);
     else ctx.drawImage(processedCanvas,0,0);
+
+    if(originalBlendPercent>0){
+      ctx.save();
+      ctx.globalAlpha=originalBlendPercent/100;
+      ctx.drawImage(sourceCanvas,0,0);
+      ctx.restore();
+    }
     if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value);
     ctx.restore();
     if(surfacePreview){
@@ -3412,11 +3425,10 @@
   });
   syncColorTolerance(12);
 
-  toneOriginalPreviewBtn.addEventListener('click',()=>setOriginalPreview(!originalPreviewVisible));
-  isolationOriginalPreviewBtn.addEventListener('click',()=>setOriginalPreview(!originalPreviewVisible));
+  toneOriginalBlend.addEventListener('input',()=>setOriginalBlend(toneOriginalBlend.value,'tone'));
+  isolationOriginalBlend.addEventListener('input',()=>setOriginalBlend(isolationOriginalBlend.value,'isolation'));
 
   pickerShowOnlyBtn.addEventListener('click',()=>{
-    if(originalPreviewVisible) setOriginalPreview(false);
     const t=targetArray();
     if(t) isolateColorAcrossImage(t,'Pipettenfarbe');
   });

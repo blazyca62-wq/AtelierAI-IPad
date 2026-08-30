@@ -1,4 +1,4 @@
-AtelierAI iPad 1.12
+AtelierAI iPad 1.13
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -19,3 +19,5 @@ Version 1.12 enthält außerdem die Funktionen aus 1.11:
 - Farbreise-Fix aus 1.10 bleibt erhalten.
 
 Zielreferenz: AtelierAI PC 2.6.96.
+
+1.13: Statt Original-Ein/Aus gibt es bei Tonwerten und „Diese Farbe sehen“ einen stufenlosen Original-Überblendungsregler 0–100 %. 0 % = Arbeitsansicht, 100 % = Original, Zwischenwerte blenden das Original langsam darüber. Zoom, Position und Analyse bleiben erhalten.
