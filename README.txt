@@ -1,13 +1,21 @@
-AtelierAI iPad 1.11
+AtelierAI iPad 1.12
 
-Vollständiger Neuaufbau des 1.10-Pakets auf Basis der funktionierenden 1.9.
+WICHTIGE STRUKTURÄNDERUNG:
+index.html ist ab jetzt ein permanenter Start-Loader.
+Die eigentliche Anwendung liegt in app.html.
 
-Änderung:
-- In der Farbreise kann „Bewegen“ zum Verschieben/Zoomen benutzt werden.
-- Nach Ende der Bewegung schaltet AtelierAI automatisch zurück auf die Punkt-Pipette.
-- Der Bewegen-Button bleibt dadurch nicht mehr aktiv.
-- Farbreise- und Mischlogik bleiben unverändert.
+Bei jedem Start lädt index.html die app.html mit einem neuen eindeutigen
+Zeitstempel und cache:'no-store'. Dadurch kann Safari/GitHub Pages nicht
+einfach die vorherige App-Version aus dem Browsercache verwenden.
 
-Zielreferenz für die weitere iPad-Entwicklung: AtelierAI PC 2.6.96.
+Für kommende Versionen:
+- index.html möglichst unverändert lassen.
+- Nur app.html durch die neue Programmversion ersetzen.
+- Dadurch öffnet der gleiche Start-Link automatisch immer die neueste App.
 
-1.11: Original ein-/ausblendbar während Tonwerte und „Nur diese Farbe zeigen“. Zoom, Position, Tonwertregler, Farbisolation und Berechnungen bleiben dabei unverändert.
+Version 1.12 enthält außerdem die Funktionen aus 1.11:
+- Original ein-/ausblendbar bei Tonwerten.
+- Original ein-/ausblendbar bei „Nur diese Farbe zeigen“.
+- Farbreise-Fix aus 1.10 bleibt erhalten.
+
+Zielreferenz: AtelierAI PC 2.6.96.
