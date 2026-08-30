@@ -1,4 +1,4 @@
-AtelierAI iPad 1.18
+AtelierAI iPad 1.19
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -39,3 +39,10 @@ Zielreferenz: AtelierAI PC 2.6.96.
 - Im Farbmischpult stehen immer alle Tubenfarben der aktuell gewählten Herstellerpalette zur Auswahl.
 - Die persönliche Farbauswahl begrenzt dieses Werkzeug nicht mehr.
 - Bereits vorhandene Farben können über die Auswahl erneut angewählt und direkt aktiviert werden.
+
+1.19 Farbmischpult – echte Korrektur:
+- Navigationsleiste zeigt nun „Farbmischpult“ statt „Werkzeug“.
+- Die versehentlich dreifach als „Farbmischpult“ beschrifteten Schaltflächen wurden zurückgesetzt:
+  Ganzes Fenster, Farbe hinzufügen, Grundmischung wiederherstellen, Mischung leeren.
+- Das Farbmischpult hat jetzt echten Zugriff auf die intern definierten Herstellerpaletten.
+- Ursache behoben: Die Paletten waren im Hauptprogramm in einem geschlossenen JavaScript-Bereich und für das neue Modul vorher nicht sichtbar.

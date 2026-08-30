@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.18</title>
+  <title>AtelierAI iPad 1.19</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.18-20260830';
+    const wanted='atelierai-1.19-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.18</div>
+    <div class="title">AtelierAI · iPad 1.19</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -405,7 +405,7 @@
               <h3 style="margin-bottom:2px;">Farbmischpult</h3>
               <div class="tiny">Konkrete Tubenfarben aus der gewählten Palette auswählen und live mischen.</div>
             </div>
-            <button id="advisorFullscreenBtn" type="button" class="secondary">Farbmischpult</button>
+            <button id="advisorFullscreenBtn" type="button" class="secondary">Ganzes Fenster</button>
           </div>
 
           <label style="display:block;margin-top:10px;">Farbfamilie</label>
@@ -428,7 +428,7 @@
             <label>Farbe auswählen</label>
             <div style="display:flex;gap:7px;margin-top:5px;flex-wrap:wrap;">
               <select id="advisorAddColor" style="min-width:220px;flex:1;padding:9px;border-radius:8px;border:1px solid #aaa;"></select>
-              <button id="advisorAddBtn" type="button">Farbmischpult</button>
+              <button id="advisorAddBtn" type="button">Farbe hinzufügen</button>
             </div>
             <div id="advisorPaletteInfo" class="tiny" style="margin-top:5px;"></div>
           </div>
@@ -436,8 +436,8 @@
           <div id="advisorMixerRows" style="margin-top:10px;"></div>
 
           <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-            <button id="advisorResetBtn" type="button" class="secondary" style="flex:1;">Farbmischpult</button>
-            <button id="advisorClearBtn" type="button" class="secondary" style="flex:1;">Farbmischpult</button>
+            <button id="advisorResetBtn" type="button" class="secondary" style="flex:1;">Grundmischung wiederherstellen</button>
+            <button id="advisorClearBtn" type="button" class="secondary" style="flex:1;">Mischung leeren</button>
           </div>
         </div>
       </div>
@@ -3715,6 +3715,7 @@
       formsPanel:'Großformen',
       tonesPanel:'Tonwerte',
       paintMixPanel:'Mischen',
+      colorAdvisorPanel:'Farbmischpult',
       colorJourneyPanel:'Farbreise',
       colorAnalysisPanel:'Farbanalyse',
       surfaceAdvisorPanel:'Flächenberater',
@@ -3942,6 +3943,20 @@
   if('ResizeObserver' in window) new ResizeObserver(resizeCanvas).observe(viewer);
   resizeCanvas();
 
+  // 1.19: kontrollierter Zugriff des Farbmischpults auf die echten internen Paletten.
+  window.AtelierPaletteAPI={
+    currentKey:()=>paintPalette.value,
+    fullPalette:(key)=>{
+      const k=key||paintPalette.value;
+      return (PALETTES[k]||[]).map(x=>[x[0],x[1],x[2]]);
+    },
+    selectedPalette:(key)=>{
+      const k=key||paintPalette.value;
+      return selectedPaletteColors(k)||[];
+    },
+    mixes:(target,key)=>chooseMixes(target,key||paintPalette.value)
+  };
+
   // 1.20.8j: kein Service Worker – GitHub Pages lädt immer die aktuelle index.html.
 })();
 
@@ -3979,24 +3994,17 @@
   }
 
   function advPalette(){
-    const key=(typeof paintPalette!=='undefined' && paintPalette?.value) ? paintPalette.value : 'artisan';
-
-    // Im Farbmischpult IMMER die vollständige Herstellerpalette anbieten.
-    // Die persönliche Auswahl darf die Farbauswahl hier nicht einschränken.
+    const api=window.AtelierPaletteAPI;
+    const select=document.getElementById('paintPalette');
+    const key=(select && select.value) ? select.value : (api?.currentKey?.() || 'artisan');
     let colors=[];
     try{
-      if(typeof PALETTES!=='undefined' && Array.isArray(PALETTES[key])){
-        colors=PALETTES[key].map(x=>[x[0],x[1],x[2]]);
-      }
-    }catch(e){}
-
-    // Sicherheits-Fallback
-    if(!colors.length){
-      try{ colors=selectedPaletteColors(key)||[]; }catch(e){}
+      colors=api?.fullPalette?.(key) || [];
+    }catch(e){
+      colors=[];
     }
     return {key,colors};
   }
-
   function advFind(colors,pattern){
     const rx=new RegExp(pattern,'i');
     return colors.find(c=>rx.test(c[0]))||null;
@@ -4009,7 +4017,7 @@
 
     // Erst AtelierAI-Mischlogik versuchen.
     try{
-      const mixes=chooseMixes(d.rgb,key)||[];
+      const mixes=window.AtelierPaletteAPI?.mixes?.(d.rgb,key)||[];
       if(mixes.length){
         const m=mixes[0];
         (m.names||[]).forEach((name,i)=>{
@@ -4138,8 +4146,9 @@
     advisorFullscreenBtn.textContent=on?'Fenster schließen':'Ganzes Fenster';
   });
 
-  if(typeof paintPalette!=='undefined' && paintPalette){
-    paintPalette.addEventListener('change',advReset);
+  const advisorPaletteSelect=document.getElementById('paintPalette');
+  if(advisorPaletteSelect){
+    advisorPaletteSelect.addEventListener('change',advReset);
   }
 
   advReset();
