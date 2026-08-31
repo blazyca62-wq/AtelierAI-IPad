@@ -1,4 +1,4 @@
-AtelierAI iPad 1.47
+AtelierAI iPad 1.48
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -108,3 +108,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.46: Schwarz-Weiß-Einblendung repariert: echte Graustufen-Kopie statt Safari-Filter. Farbig und Schwarz-Weiß sind jetzt getrennte Original-Hintergründe.
 
 1.47: Tonwerte: Auswahl Farbig/Schwarz-Weiß jetzt über zwei direkte Buttons statt Dropdown. Die Schwarz-Weiß-Schaltung greift direkt auf die echte Graustufen-Kopie zu; die vorherige fehleranfällige Bereichserkennung wurde entfernt. Der 0–100%-Einblendregler bleibt unverändert.
+
+1.48: Tonwerte-Originalsteuerung neu aufgebaut: zwei direkte Buttons Farbig/Schwarz-Weiß und ein deutlich sichtbarer 0–100%-Regler über die volle Breite. Bei Umschaltung von 0% wird automatisch 50% eingeblendet, damit die Wirkung sofort sichtbar ist.
