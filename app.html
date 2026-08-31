@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.43</title>
+  <title>AtelierAI iPad 1.44</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.43-20260830';
+    const wanted='atelierai-1.44-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.43</div>
+    <div class="title">AtelierAI · iPad 1.44</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -3142,12 +3142,35 @@
   function toneStrength(lum, band, sliderVal){
     const v = sliderVal/100;
     if(v>=0.999) return 1;
+
+    // Aquarell-Aufbau:
+    // Dunkel: bisheriges Verhalten – die dunkelsten Anteile verschwinden zuerst.
+    // Mittel + Hell: beim Zurücknehmen verschwinden die dunkleren Anteile zuerst,
+    // sodass innerhalb der jeweiligen Gruppe die hellsten Stellen bis zuletzt sichtbar bleiben.
+    if(paintMode==='water'){
+      let t;
+      if(band==='light'){
+        t=(lum-170)/85;                 // heller = größer
+        t=Math.max(0,Math.min(1,t));
+        return t>=(1-v)?1:0;
+      }
+      if(band==='mid'){
+        t=(lum-85)/85;                  // dunkler Mittelton -> heller Mittelton
+        t=Math.max(0,Math.min(1,t));
+        return t>=(1-v)?1:0;
+      }
+      t=(85-lum)/85;                    // dunkel: bisherige Richtung beibehalten
+      t=Math.max(0,Math.min(1,t));
+      return t<=v?1:0;
+    }
+
+    // Ölmodus unverändert.
     let t;
     if(band==='light') t=(lum-170)/85;
     else if(band==='mid') t=1-Math.abs(lum-128)/90;
     else t=(85-lum)/85;
     t=Math.max(0,Math.min(1,t));
-    return paintMode==='water' ? (t<=v?1:0) : (t>=(1-v)?1:0);
+    return t>=(1-v)?1:0;
   }
 
   function rebuildForms(){

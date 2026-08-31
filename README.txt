@@ -1,4 +1,4 @@
-AtelierAI iPad 1.43
+AtelierAI iPad 1.44
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -100,3 +100,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.41: Speichern erweitert: getrennte Schaltflächen für PNG und JPEG. JPEG wird mit 95 % Qualität erzeugt. Beide Formate werden als normale Bilddateien heruntergeladen; die bisherige Bilddarstellung und Rasteroption bleiben erhalten.
 
 1.43: Bildberater vollständig entfernt. Korrektur gegenüber 1.42: Der normale Hauptfoto-Öffnen-Code und die Navigation bleiben vollständig erhalten. PNG/JPEG-Speichern bleibt erhalten.
+
+1.44: Aquarell-Tonwerte geändert: Bei Mittel- und hellen Tönen verschwinden beim Zurücknehmen des Reglers zuerst die dunkleren Anteile; die hellsten Anteile bleiben bis zuletzt sichtbar. Dunkle Tonwerte und Ölmodus bleiben unverändert.
