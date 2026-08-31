@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.48</title>
+  <title>AtelierAI iPad 1.49</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.48-20260830';
+    const wanted='atelierai-1.49-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.48</div>
+    <div class="title">AtelierAI · iPad 1.49</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1015,6 +1015,9 @@
     }
     toneGrayCtx.putImageData(im,0,0);
   }
+
+  let toneGrayBackgroundCanvas = document.createElement('canvas');
+  let toneGrayBackgroundCtx = toneGrayBackgroundCanvas.getContext('2d', { willReadFrequently: true });
 
   let processedCanvas = document.createElement('canvas');
   let processedCtx = processedCanvas.getContext('2d', { willReadFrequently: true });
@@ -3336,6 +3339,14 @@
 
     const src=formCtx.getImageData(0,0,w,h);
     const out=processedCtx.createImageData(w,h);
+
+    // Graustufen-Hintergrund für Tonwerte:
+    // Nicht ausgewählte Tonwerte werden Schwarz-Weiß,
+    // ausgewählte Tonwerte bleiben hier transparent und behalten dadurch ihre Farbe.
+    toneGrayBackgroundCanvas.width=w;
+    toneGrayBackgroundCanvas.height=h;
+    const grayBg=toneGrayBackgroundCtx.createImageData(w,h);
+
     const lv=+lightSlider.value, mv=+midSlider.value, dv=+darkSlider.value;
 
     for(let i=0;i<src.data.length;i+=4){
@@ -3350,6 +3361,14 @@
         band==='light' ? toneStrength(lum,'light',lv) :
         band==='mid' ? toneStrength(lum,'mid',mv) :
         toneStrength(lum,'dark',dv);
+
+      if(strength>0 && toneView!=='off'){
+        // Dieser Tonwert soll farbig sichtbar bleiben.
+        grayBg.data[i]=0; grayBg.data[i+1]=0; grayBg.data[i+2]=0; grayBg.data[i+3]=0;
+      }else{
+        const gray=Math.round(lum);
+        grayBg.data[i]=gray; grayBg.data[i+1]=gray; grayBg.data[i+2]=gray; grayBg.data[i+3]=255;
+      }
 
       if(toneView==='off'){
         out.data[i]=r; out.data[i+1]=g; out.data[i+2]=b; out.data[i+3]=a;
@@ -3374,6 +3393,7 @@
     }
     applyFamilyVisibility(out);
     processedCtx.putImageData(out,0,0);
+    toneGrayBackgroundCtx.putImageData(grayBg,0,0);
     draw();
   }
 
@@ -3417,7 +3437,14 @@
       ctx.save();
       ctx.globalAlpha=originalBlendPercent/100;
       if(toneOriginalModeValue==='gray'){
-        ctx.drawImage(toneGrayCanvas,0,0);
+        if(toneView==='off'){
+          // Bei Originalansicht darf das ganze Bild Schwarz-Weiß werden.
+          ctx.drawImage(toneGrayCanvas,0,0);
+        }else{
+          // Nur der Hintergrund wird Schwarz-Weiß eingeblendet.
+          // Die ausgewählten farbigen Tonwerte bleiben vollständig erhalten.
+          ctx.drawImage(toneGrayBackgroundCanvas,0,0);
+        }
       }else{
         ctx.drawImage(sourceCanvas,0,0);
       }
