@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.45</title>
+  <title>AtelierAI iPad 1.46</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.45-20260830';
+    const wanted='atelierai-1.46-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.45</div>
+    <div class="title">AtelierAI · iPad 1.46</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -983,6 +983,21 @@
   let sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
   let formCanvas = document.createElement('canvas');
   let formCtx = formCanvas.getContext('2d', { willReadFrequently: true });
+  let toneGrayCanvas = document.createElement('canvas');
+  let toneGrayCtx = toneGrayCanvas.getContext('2d', { willReadFrequently: true });
+  function rebuildToneGrayOriginal(){
+    if(!sourceCanvas.width || !sourceCanvas.height) return;
+    toneGrayCanvas.width=sourceCanvas.width; toneGrayCanvas.height=sourceCanvas.height;
+    toneGrayCtx.drawImage(sourceCanvas,0,0);
+    const im=toneGrayCtx.getImageData(0,0,toneGrayCanvas.width,toneGrayCanvas.height);
+    const d=im.data;
+    for(let i=0;i<d.length;i+=4){
+      const y=Math.round(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2]);
+      d[i]=y; d[i+1]=y; d[i+2]=y;
+    }
+    toneGrayCtx.putImageData(im,0,0);
+  }
+
   let processedCanvas = document.createElement('canvas');
   let processedCtx = processedCanvas.getContext('2d', { willReadFrequently: true });
   let originalBlendPercent=0;
@@ -3384,10 +3399,7 @@
       ctx.save();
       ctx.globalAlpha=originalBlendPercent/100;
       if(toneOriginalMode?.value==='gray' && document.getElementById('tonesPanel')?.classList.contains('tool-active')){
-        ctx.save();
-        ctx.filter='grayscale(1)';
-        ctx.drawImage(sourceCanvas,0,0);
-        ctx.restore();
+        ctx.drawImage(toneGrayCanvas,0,0);
       }else{
         ctx.drawImage(sourceCanvas,0,0);
       }
@@ -3945,6 +3957,7 @@
       sourceCanvas.width=img.width; sourceCanvas.height=img.height;
       sourceCtx.clearRect(0,0,img.width,img.height);
       sourceCtx.drawImage(img,0,0);
+      rebuildToneGrayOriginal();
       rebuildForms();
       rebuildToneImage();
       fitImage();
