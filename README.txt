@@ -1,4 +1,4 @@
-AtelierAI iPad 1.44
+AtelierAI iPad 1.45
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -102,3 +102,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.43: Bildberater vollständig entfernt. Korrektur gegenüber 1.42: Der normale Hauptfoto-Öffnen-Code und die Navigation bleiben vollständig erhalten. PNG/JPEG-Speichern bleibt erhalten.
 
 1.44: Aquarell-Tonwerte geändert: Bei Mittel- und hellen Tönen verschwinden beim Zurücknehmen des Reglers zuerst die dunkleren Anteile; die hellsten Anteile bleiben bis zuletzt sichtbar. Dunkle Tonwerte und Ölmodus bleiben unverändert.
+
+1.45: In Tonwerte kann das Original beim vorhandenen 0–100%-Einblendregler jetzt wahlweise farbig oder Schwarz-Weiß als Hintergrund eingeblendet werden. Andere Module bleiben unverändert.

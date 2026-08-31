@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.44</title>
+  <title>AtelierAI iPad 1.45</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.44-20260830';
+    const wanted='atelierai-1.45-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.44</div>
+    <div class="title">AtelierAI · iPad 1.45</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -248,6 +248,10 @@
         </div>
         <div class="control-line" style="margin-top:8px;">
           <label for="toneOriginalBlend">Original</label>
+          <select id="toneOriginalMode" style="margin-bottom:7px;">
+            <option value="color">Original farbig</option>
+            <option value="gray">Original Schwarz-Weiß</option>
+          </select>
           <input id="toneOriginalBlend" type="range" min="0" max="100" value="0" step="1">
           <span id="toneOriginalBlendVal">0 %</span>
         </div>
@@ -785,6 +789,7 @@
   const pickerShowOnlyBtn=document.getElementById('pickerShowOnlyBtn');
   const pickerShowAllBtn=document.getElementById('pickerShowAllBtn');
   const toneOriginalBlend=document.getElementById('toneOriginalBlend');
+  const toneOriginalMode=document.getElementById('toneOriginalMode');
   const toneOriginalBlendVal=document.getElementById('toneOriginalBlendVal');
   const isolationOriginalBlend=document.getElementById('isolationOriginalBlend');
   const isolationOriginalBlendVal=document.getElementById('isolationOriginalBlendVal');
@@ -3378,7 +3383,14 @@
     if(originalBlendPercent>0){
       ctx.save();
       ctx.globalAlpha=originalBlendPercent/100;
-      ctx.drawImage(sourceCanvas,0,0);
+      if(toneOriginalMode?.value==='gray' && document.getElementById('tonesPanel')?.classList.contains('tool-active')){
+        ctx.save();
+        ctx.filter='grayscale(1)';
+        ctx.drawImage(sourceCanvas,0,0);
+        ctx.restore();
+      }else{
+        ctx.drawImage(sourceCanvas,0,0);
+      }
       ctx.restore();
     }
     if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value);
@@ -3577,6 +3589,7 @@
   syncColorTolerance(12);
 
   toneOriginalBlend.addEventListener('input',()=>setOriginalBlend(toneOriginalBlend.value,'tone'));
+  toneOriginalMode?.addEventListener('change',()=>draw());
   isolationOriginalBlend.addEventListener('input',()=>setOriginalBlend(isolationOriginalBlend.value,'isolation'));
 
   pickerShowOnlyBtn.addEventListener('click',()=>{
