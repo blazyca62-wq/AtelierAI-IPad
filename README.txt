@@ -1,4 +1,4 @@
-AtelierAI iPad 1.50
+AtelierAI iPad 1.51
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -114,3 +114,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.49: Schwarz-Weiß-Einblendung in Tonwerte geändert: Das Schwarz-Weiß-Original wird nur in den ausgeblendeten Tonwertbereichen als Hintergrund eingeblendet. Die aktuell sichtbaren/ausgewählten Tonwerte bleiben farbig und werden nicht von Schwarz-Weiß überdeckt. Der 0–100%-Regler und die Buttons bleiben erhalten.
 
 1.50: Kreispipette gezielt korrigiert. Bei 'Nur diese Farbe zeigen' wird jetzt surfaceMarkCanvas, also genau die sichtbare gefilterte Darstellung, aufgenommen. Original nur entsprechend dem sichtbaren Original-Einblendregler.
+
+1.51: Neues Werkzeug Zwei-Farben-Mischverlauf. Zwei echte Palettenfarben wählen, kontinuierlicher malerischer Mischverlauf, Antippen zeigt Mischungsverhältnis und Zwischenfarbe. Artisan/Horadam/Akademie.

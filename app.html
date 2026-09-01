@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.50</title>
+  <title>AtelierAI iPad 1.51</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.50-20260830';
+    const wanted='atelierai-1.51-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.50</div>
+    <div class="title">AtelierAI · iPad 1.51</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -507,6 +507,27 @@
             <button id="advisorClearBtn" type="button" class="secondary" style="flex:1;">Mischung leeren</button>
           </div>
         </div>
+      </div>
+
+      <div class="section" id="mixGradientPanel">
+        <h3>Zwei-Farben-Mischverlauf</h3>
+        <p>Zwei Malfarben wählen und ihren durchgehenden Mischverlauf sehen. Tippe in den Verlauf für das Mischungsverhältnis.</p>
+
+        <label for="mixGradientPalette">Palette</label>
+        <select id="mixGradientPalette" style="width:100%;margin-bottom:8px;">
+          <option value="artisan">Winsor &amp; Newton Artisan – Öl</option>
+          <option value="horadam">Schmincke Horadam – Aquarell</option>
+          <option value="akademie">Schmincke Akademie – Aquarell</option>
+        </select>
+
+        <div class="grid2">
+          <div><label for="mixGradientA">Farbe A</label><select id="mixGradientA" style="width:100%;"></select></div>
+          <div><label for="mixGradientB">Farbe B</label><select id="mixGradientB" style="width:100%;"></select></div>
+        </div>
+
+        <canvas id="mixGradientCanvas" width="900" height="150" style="display:block;width:100%;height:110px;margin-top:12px;border:1px solid #cfcfcf;border-radius:10px;touch-action:manipulation;"></canvas>
+        <div id="mixGradientRatio" style="margin-top:8px;padding:9px;border:1px solid #d8d6d0;border-radius:10px;background:#fff;text-align:center;font-weight:600;">50 % Farbe A + 50 % Farbe B</div>
+        <div id="mixGradientPicked" style="height:64px;margin-top:8px;border:1px solid #cfcfcf;border-radius:10px;"></div>
       </div>
 
       <div class="section" id="colorJourneyPanel">
@@ -3898,6 +3919,91 @@
 
 
 
+  // 1.51 Zwei-Farben-Mischverlauf: malerische Mischung statt CSS/RGB-Verlauf.
+  const mgPalette=document.getElementById('mixGradientPalette');
+  const mgA=document.getElementById('mixGradientA');
+  const mgB=document.getElementById('mixGradientB');
+  const mgCanvas=document.getElementById('mixGradientCanvas');
+  const mgCtx=mgCanvas?.getContext('2d');
+  const mgRatio=document.getElementById('mixGradientRatio');
+  const mgPicked=document.getElementById('mixGradientPicked');
+
+  function mgColors(){
+    return (window.AtelierPaletteAPI?.fullPalette(mgPalette.value)||[]);
+  }
+  function mgPopulate(){
+    const colors=mgColors();
+    const oldA=mgA.value, oldB=mgB.value;
+    mgA.innerHTML=''; mgB.innerHTML='';
+    colors.forEach((x,i)=>{
+      const oa=document.createElement('option'); oa.value=String(i); oa.textContent=x[0]; mgA.appendChild(oa);
+      const ob=document.createElement('option'); ob.value=String(i); ob.textContent=x[0]; mgB.appendChild(ob);
+    });
+    if(colors.length){
+      mgA.value=(oldA && +oldA<colors.length)?oldA:'0';
+      mgB.value=(oldB && +oldB<colors.length)?oldB:String(Math.min(1,colors.length-1));
+    }
+    mgDraw();
+  }
+  function mgRgb(v){
+    if(Array.isArray(v)) return v;
+    if(typeof v==='string'){
+      const h=v.replace('#','');
+      if(/^[0-9a-f]{6}$/i.test(h)) return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];
+    }
+    return [128,128,128];
+  }
+  // Kubelka-Munk-artige optische Mischung in linearisiertem Reflexionsraum.
+  // Vermeidet den künstlichen Bildschirm-RGB-Verlauf und ergibt malerischere Zwischenfarben.
+  function mgMix(a,b,t){
+    a=mgRgb(a); b=mgRgb(b);
+    const out=[];
+    for(let k=0;k<3;k++){
+      const ra=Math.max(.015,a[k]/255), rb=Math.max(.015,b[k]/255);
+      const ka=((1-ra)*(1-ra))/(2*ra);
+      const kb=((1-rb)*(1-rb))/(2*rb);
+      const km=ka*(1-t)+kb*t;
+      const r=(1+km)-Math.sqrt(km*km+2*km);
+      out[k]=Math.max(0,Math.min(255,Math.round(r*255)));
+    }
+    return out;
+  }
+  function mgSelected(){
+    const c=mgColors();
+    return [c[+mgA.value]||c[0],c[+mgB.value]||c[1]||c[0]];
+  }
+  function mgDraw(){
+    if(!mgCtx)return;
+    const [a,b]=mgSelected(); if(!a||!b)return;
+    const w=mgCanvas.width,h=mgCanvas.height;
+    for(let x=0;x<w;x++){
+      const q=x/(w-1), rgb=mgMix(a[1],b[1],q);
+      mgCtx.fillStyle=`rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+      mgCtx.fillRect(x,0,1,h);
+    }
+    mgPick(.5);
+  }
+  function mgPick(q){
+    q=Math.max(0,Math.min(1,q));
+    const [a,b]=mgSelected(); if(!a||!b)return;
+    const rgb=mgMix(a[1],b[1],q);
+    const pa=Math.round((1-q)*100),pb=100-pa;
+    mgRatio.textContent=`${pa} % ${a[0]} + ${pb} % ${b[0]}`;
+    mgPicked.style.background=`rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+  }
+  function mgPointer(e){
+    const r=mgCanvas.getBoundingClientRect();
+    mgPick((e.clientX-r.left)/r.width);
+  }
+  mgPalette?.addEventListener('change',mgPopulate);
+  mgA?.addEventListener('change',mgDraw);
+  mgB?.addEventListener('change',mgDraw);
+  mgCanvas?.addEventListener('pointerdown',mgPointer);
+  mgCanvas?.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType==='touch')mgPointer(e);});
+  // Hauptpalette als Startwert übernehmen, ohne andere Module zu verändern.
+  if(mgPalette && typeof paintPalette!=='undefined') mgPalette.value=paintPalette.value;
+  mgPopulate();
+
   function setupCompactSidebar(){
     const side=document.querySelector('aside.side');
     if(!side) return;
@@ -3914,6 +4020,7 @@
       tonesPanel:'Tonwerte',
       paintMixPanel:'Mischen',
       colorAdvisorPanel:'Farbmischpult',
+      mixGradientPanel:'2-Farben-Verlauf',
       colorJourneyPanel:'Farbreise',
       colorAnalysisPanel:'Farbanalyse',
       surfaceAdvisorPanel:'Flächenberater',
