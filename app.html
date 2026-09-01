@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.63</title>
+  <title>AtelierAI iPad 1.64</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -181,7 +181,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.63-20260830';
+    const wanted='atelierai-1.64-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -198,7 +198,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.63</div>
+    <div class="title">AtelierAI · iPad 1.64</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -541,7 +541,7 @@
 
         <label for="mixChartSort">Sortierung</label>
         <select id="mixChartSort" style="width:100%;margin-bottom:8px;">
-          <option value="families">Farbfamilien zusammen: Gelb | Orange | Rot | Violett | Blau | Grün | Braun | Neutral</option>
+          <option value="families">Farbfamilien: Gelb | Orange | Ocker | Rosa | Rot | Sienna | Umber | Grün | Blau | Violett | Neutral</option>
           <option value="lightness">Helligkeit: hell → dunkel</option>
           <option value="warmth">Wärme: warm → kühl</option>
         </select>
@@ -3984,17 +3984,25 @@
   function mcFamily(c){
     const n=(c[0]||'').toLowerCase();
 
-    // Strikte Farbfamilien nach Farbnamen. Eine benannte blaue Farbe bleibt immer bei Blau,
-    // eine gelbe immer bei Gelb usw. RGB wird hier absichtlich NICHT zur Familie benutzt.
-    if(/yellow|gelb|lemon|zitron|jaune|naples/.test(n)) return 0;                 // Gelb
-    if(/orange|zinnober|vermillion/.test(n)) return 1;                           // Orange
-    if(/red|rot|crimson|karmin|carmine|scarlet|rose|rosa|pink|magenta|alizarin/.test(n)) return 2; // Rot/Rosa
-    if(/violet|violett|purple|purpur|mauve|lila|dioxazine/.test(n)) return 3;     // Violett
-    if(/blue|blau|ultramarin|ultramarine|cobalt|kobalt|cerulean|coelin|prussian|preuß/.test(n)) return 4; // Blau
-    if(/green|grün|viridian|sap|olive|oliv/.test(n)) return 5;                   // Grün
-    if(/umber|umbra|sienna|siena|ochre|ocker|brown|braun|sepia|van dyck|earth|erde/.test(n)) return 6; // Braun/Erde
-    if(/white|weiß|weiss|grey|gray|grau|black|schwarz|neutral|payne/.test(n)) return 7; // Neutral
-    return 8;                                                                    // Sonstige
+    // Malerische Reihenfolge:
+    // Gelb → Orange → Ocker → Rosa → Rot → Sienna → Umber → Grün → Blau → Violett → Neutral
+    // Spezifische Erdfarben werden VOR den allgemeinen Rot-/Gelb-Begriffen geprüft.
+    if(/ochre|ocker/.test(n)) return 2;
+    if(/sienna|siena/.test(n)) return 5;
+    if(/umber|umbra|van dyck/.test(n)) return 6;
+
+    if(/yellow|gelb|lemon|zitron|jaune|naples/.test(n)) return 0;
+    if(/orange|zinnober|vermillion/.test(n)) return 1;
+    if(/rose|rosa|pink|magenta/.test(n)) return 3;
+    if(/red|rot|crimson|karmin|carmine|scarlet|alizarin|indian red/.test(n)) return 4;
+    if(/green|grün|viridian|sap|olive|oliv/.test(n)) return 7;
+    if(/blue|blau|ultramarin|ultramarine|cobalt|kobalt|cerulean|coelin|prussian|preuß/.test(n)) return 8;
+    if(/violet|violett|purple|purpur|mauve|lila|dioxazine/.test(n)) return 9;
+    if(/white|weiß|weiss|grey|gray|grau|black|schwarz|neutral|payne/.test(n)) return 10;
+
+    // übrige Braun-/Erdfarben direkt bei Umber einordnen
+    if(/brown|braun|sepia|earth|erde/.test(n)) return 6;
+    return 10;
   }
 
   function mcSorted(colors){

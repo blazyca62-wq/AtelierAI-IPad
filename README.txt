@@ -1,4 +1,4 @@
-AtelierAI iPad 1.63
+AtelierAI iPad 1.64
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -140,3 +140,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.62: Farbfelder direkt bei den oberen und linken Farbbezeichnungen auf exakt dieselbe Größe wie die Mischfelder gesetzt (42 × 42 px).
 
 1.63: Farbfamilien jetzt strikt zusammenhängend nach Farbnamen gruppiert. Keine RGB/Hue-Zuordnung mehr für die Familien. Gelb bleibt geschlossen bei Gelb, Rot bei Rot, Blau bei Blau usw.; innerhalb einer Familie bleibt die Reihenfolge der Palette erhalten.
+
+1.64: Mischdiagramm-Farbfamilien exakt in gewünschter malerischer Reihenfolge: Gelb, Orange, Ocker, Rosa, Rot, Sienna, Umber, Grün, Blau, Violett, Neutral. Spezifische Erdfarben werden vor allgemeinen Farbnamen geprüft.
