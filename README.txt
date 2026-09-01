@@ -1,4 +1,4 @@
-AtelierAI iPad 1.49
+AtelierAI iPad 1.50
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -112,3 +112,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.48: Tonwerte-Originalsteuerung neu aufgebaut: zwei direkte Buttons Farbig/Schwarz-Weiß und ein deutlich sichtbarer 0–100%-Regler über die volle Breite. Bei Umschaltung von 0% wird automatisch 50% eingeblendet, damit die Wirkung sofort sichtbar ist.
 
 1.49: Schwarz-Weiß-Einblendung in Tonwerte geändert: Das Schwarz-Weiß-Original wird nur in den ausgeblendeten Tonwertbereichen als Hintergrund eingeblendet. Die aktuell sichtbaren/ausgewählten Tonwerte bleiben farbig und werden nicht von Schwarz-Weiß überdeckt. Der 0–100%-Regler und die Buttons bleiben erhalten.
+
+1.50: Kreispipette korrigiert: Farbdurchschnitt wird aus dem aktuell sichtbaren Bild berechnet, inklusive Tonwertdarstellung und Original-Einblendung. Punktpipette unverändert.
