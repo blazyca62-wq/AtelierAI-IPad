@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.61</title>
+  <title>AtelierAI iPad 1.62</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -181,7 +181,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.61-20260830';
+    const wanted='atelierai-1.62-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -198,7 +198,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.61</div>
+    <div class="title">AtelierAI · iPad 1.62</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -4121,7 +4121,7 @@
       const th=document.createElement('th');
       th.title=c[0];
       const cr=mcRgb(c[1]);
-      th.innerHTML='<div style="width:48px;height:24px;margin:0 auto 5px;border-radius:5px;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.22);background:rgb('+cr[0]+','+cr[1]+','+cr[2]+');"></div><div>'+c[0]+'</div>';
+      th.innerHTML='<div style="width:42px;height:42px;margin:0 auto 5px;border-radius:5px;border:1px solid rgba(0,0,0,.10);box-sizing:border-box;background:rgb('+cr[0]+','+cr[1]+','+cr[2]+');"></div><div>'+c[0]+'</div>';
       th.style.cssText='position:sticky;top:0;z-index:2;background:#f4f4f4;padding:5px 4px 7px;font-size:9px;height:104px;min-width:58px;max-width:74px;line-height:1.05;word-break:break-word;vertical-align:bottom;border-bottom:3px solid #b7b7b7;';
       head.appendChild(th);
     });
@@ -4132,7 +4132,7 @@
       const rh=document.createElement('th');
       rh.title=rowColor[0];
       const rr=mcRgb(rowColor[1]);
-      rh.innerHTML='<span style="display:inline-block;width:20px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.2);vertical-align:-3px;margin-right:5px;background:rgb('+rr[0]+','+rr[1]+','+rr[2]+');"></span>'+rowColor[0];
+      rh.innerHTML='<span style="display:inline-block;width:42px;height:42px;border-radius:5px;border:1px solid rgba(0,0,0,.10);box-sizing:border-box;vertical-align:middle;margin-right:6px;background:rgb('+rr[0]+','+rr[1]+','+rr[2]+');"></span>'+rowColor[0];
       rh.style.cssText='position:sticky;left:0;z-index:1;background:#f4f4f4;padding:4px 7px;font-size:10px;text-align:right;max-width:150px;white-space:nowrap;border-right:3px solid #b7b7b7;';
       tr.appendChild(rh);
 

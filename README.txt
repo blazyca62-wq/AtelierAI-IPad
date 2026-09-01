@@ -1,4 +1,4 @@
-AtelierAI iPad 1.61
+AtelierAI iPad 1.62
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -136,3 +136,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.60: iPad-Mischdiagramm Übersicht korrigiert. Nach Sortierung und beim Öffnen im Vollbild springt die Matrix automatisch ganz nach links/oben, damit Zeilen- und Spaltenanfang dieselbe Farbfamilie zeigen. Obere Spaltenbezeichnungen erhalten ebenfalls ein Farbfeld.
 
 1.61: Mischdiagramm visuell eindeutig gemacht. Kopf- und Zeilenbeschriftungen zeigen große reine Farbfelder, die Mischmatrix ist klar getrennt, die Diagonale ist schwarz markiert. Artisan-Blau-Swatches (Cerulean, Cobalt, Ultramarine, Phthalo, Prussian) wurden von zu grün/türkis wirkenden Bildschirmwerten auf plausiblere Blaureferenzen korrigiert.
+
+1.62: Farbfelder direkt bei den oberen und linken Farbbezeichnungen auf exakt dieselbe Größe wie die Mischfelder gesetzt (42 × 42 px).
