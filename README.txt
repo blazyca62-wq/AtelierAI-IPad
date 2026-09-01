@@ -1,4 +1,4 @@
-AtelierAI iPad 1.55
+AtelierAI iPad 1.56
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -124,3 +124,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.54: Mischdiagramm kann als eigenes Vollbildfenster geöffnet werden. Aufhellung korrigiert: keine milchige RGB-Aufhellung mehr, sondern optisch berechnete Weißzugabe/Titanweiß zur Farbmischung.
 
 1.55: Mischdiagramm standardmäßig nur mit den vom Nutzer ausgewählten Palettenfarben. Optional kann die komplette Herstellerpalette eingeblendet werden. Vollbild und Weißzugabe bleiben erhalten.
+
+1.56: Mischdiagramm sortierbar nach Wärme (warm→kühl) oder Helligkeit (hell→dunkel). Weißzugabe deutlich verstärkt und bis 100 % erweitert; nichtlineare Pigment-Aufhellung für klar sichtbare Tints.

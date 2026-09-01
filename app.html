@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.55</title>
+  <title>AtelierAI iPad 1.56</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -181,7 +181,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.55-20260830';
+    const wanted='atelierai-1.56-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -198,7 +198,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.55</div>
+    <div class="title">AtelierAI · iPad 1.56</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -539,8 +539,14 @@
           <span>Nur meine ausgewählten Farben</span>
         </label>
 
+        <label for="mixChartSort">Sortierung</label>
+        <select id="mixChartSort" style="width:100%;margin-bottom:8px;">
+          <option value="warmth">Wärme: warm → kühl</option>
+          <option value="lightness">Helligkeit: hell → dunkel</option>
+        </select>
+
         <label for="mixChartLight">Weißzugabe <span id="mixChartLightVal">0 %</span></label>
-        <input id="mixChartLight" type="range" min="0" max="80" value="0" step="5" style="width:100%;">
+        <input id="mixChartLight" type="range" min="0" max="100" value="0" step="5" style="width:100%;">
 
         <div style="margin-top:8px;font-size:12px;">Tippe auf ein Mischfeld, um die beiden Farben und das Verhältnis zu sehen.</div>
         <div id="mixChartInfo" style="margin-top:8px;padding:9px;border:1px solid #d8d6d0;border-radius:10px;background:#fff;">Noch keine Mischung gewählt.</div>
@@ -3947,8 +3953,42 @@
   const mcTable=document.getElementById('mixChartTable');
   const mcInfo=document.getElementById('mixChartInfo');
   const mcSelectedOnly=document.getElementById('mixChartSelectedOnly');
+  const mcSort=document.getElementById('mixChartSort');
   const mcWorkspace=document.getElementById('mixChartWorkspace');
   const mcFullscreenBtn=document.getElementById('mixChartFullscreenBtn');
+
+  function mcMetrics(c){
+    const rgb=mcRgb(c[1]);
+    const r=rgb[0]/255,g=rgb[1]/255,b=rgb[2]/255;
+    const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+    let h=0;
+    if(d){
+      if(max===r) h=60*(((g-b)/d)%6);
+      else if(max===g) h=60*((b-r)/d+2);
+      else h=60*((r-g)/d+4);
+      if(h<0)h+=360;
+    }
+    const light=0.2126*rgb[0]+0.7152*rgb[1]+0.0722*rgb[2];
+    // Painterly warm/cool ordering: reds/oranges/yellows first, then neutrals/greens, blues/violets last.
+    let warmth;
+    if(d<0.055) warmth=1.5; // neutral colors grouped centrally
+    else{
+      const distWarm=Math.min(Math.abs(h-35),360-Math.abs(h-35));
+      const distCool=Math.min(Math.abs(h-220),360-Math.abs(h-220));
+      warmth=distWarm-distCool;
+    }
+    return {light,warmth};
+  }
+  function mcSorted(colors){
+    const arr=[...colors];
+    if(mcSort?.value==='lightness'){
+      return arr.sort((a,b)=>mcMetrics(b).light-mcMetrics(a).light);
+    }
+    return arr.sort((a,b)=>{
+      const A=mcMetrics(a),B=mcMetrics(b);
+      return A.warmth-B.warmth || B.light-A.light;
+    });
+  }
 
   function mcColors(){
     const key=mcPalette?.value||'artisan';
@@ -3988,26 +4028,25 @@
     return out;
   }
   function mcLighten(rgb,pct){
-    const t=Math.max(0,Math.min(.8,pct/100));
-    if(t<=0) return rgb;
-    // Aufhellung wie zusätzliche weiße Malfarbe, nicht als milchiger Bildschirm-Overlay.
-    // Titanweiß wird optisch mit der Mischung kombiniert; die Dosierung bleibt bewusst sanft.
-    const white=[248,247,242];
+    const p=Math.max(0,Math.min(100,pct))/100;
+    if(p<=0) return rgb;
+    // Weißzugabe als Pigmentmischung. Nicht linear: ab der Mitte deutlich stärkere Aufhellung.
+    // 100 % entspricht einer sehr hohen Weißmenge und soll sichtbar fast bis zum hellen Tint führen.
+    const white=[250,249,246];
+    const whiteParts=(Math.pow(p,1.25)*10.0);
     const out=[];
     for(let k=0;k<3;k++){
-      const r1=Math.max(.015,rgb[k]/255), r2=Math.max(.015,white[k]/255);
+      const r1=Math.max(.012,rgb[k]/255), r2=Math.max(.012,white[k]/255);
       const k1=((1-r1)*(1-r1))/(2*r1), k2=((1-r2)*(1-r2))/(2*r2);
-      // Regler 0–80 % entspricht zunehmender Weißzugabe, nicht Deckkraft.
-      const whiteParts=t*1.5;
-      const km=(k1 + k2*whiteParts)/(1+whiteParts);
-      const r=(1+km)-Math.sqrt(km*km+2*km);
-      out[k]=Math.max(0,Math.min(255,Math.round(r*255)));
+      const km=(k1+k2*whiteParts)/(1+whiteParts);
+      const rr=(1+km)-Math.sqrt(km*km+2*km);
+      out[k]=Math.max(0,Math.min(255,Math.round(rr*255)));
     }
     return out;
   }
   function mcRender(){
     if(!mcTable)return;
-    const colors=mcColors();
+    const colors=mcSorted(mcColors());
     const light=+(mcLight?.value||0);
     mcLightVal.textContent=light+' %';
     mcTable.innerHTML='';
@@ -4059,6 +4098,7 @@
   });
   mcPalette?.addEventListener('change',mcRender);
   mcSelectedOnly?.addEventListener('change',mcRender);
+  mcSort?.addEventListener('change',mcRender);
   mcLight?.addEventListener('input',mcRender);
   if(mcPalette && typeof paintPalette!=='undefined') mcPalette.value=paintPalette.value;
   setTimeout(mcRender,0);
