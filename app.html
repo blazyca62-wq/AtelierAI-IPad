@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.51</title>
+  <title>AtelierAI iPad 1.52</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.51-20260830';
+    const wanted='atelierai-1.52-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.51</div>
+    <div class="title">AtelierAI · iPad 1.52</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -3929,7 +3929,10 @@
   const mgPicked=document.getElementById('mixGradientPicked');
 
   function mgColors(){
-    return (window.AtelierPaletteAPI?.fullPalette(mgPalette.value)||[]);
+    const api=window.AtelierPaletteAPI;
+    if(api?.fullPalette) return api.fullPalette(mgPalette.value)||[];
+    // Während des ersten Seitenaufbaus liegt die Palette noch im Hauptmodul.
+    return (PALETTES[mgPalette.value]||[]).map(x=>[x[0],x[1],x[2]]);
   }
   function mgPopulate(){
     const colors=mgColors();
@@ -4002,7 +4005,8 @@
   mgCanvas?.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType==='touch')mgPointer(e);});
   // Hauptpalette als Startwert übernehmen, ohne andere Module zu verändern.
   if(mgPalette && typeof paintPalette!=='undefined') mgPalette.value=paintPalette.value;
-  mgPopulate();
+  // Erst nach vollständigem Aufbau füllen; so sind die Herstellerpaletten sicher verfügbar.
+  setTimeout(mgPopulate,0);
 
   function setupCompactSidebar(){
     const side=document.querySelector('aside.side');
