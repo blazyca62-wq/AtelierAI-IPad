@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.62</title>
+  <title>AtelierAI iPad 1.63</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -181,7 +181,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.62-20260830';
+    const wanted='atelierai-1.63-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -198,7 +198,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.62</div>
+    <div class="title">AtelierAI · iPad 1.63</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -541,7 +541,7 @@
 
         <label for="mixChartSort">Sortierung</label>
         <select id="mixChartSort" style="width:100%;margin-bottom:8px;">
-          <option value="families">Farbfamilien: Gelb → Orange → Rot → Violett → Blau → Grün → Braun → Neutral</option>
+          <option value="families">Farbfamilien zusammen: Gelb | Orange | Rot | Violett | Blau | Grün | Braun | Neutral</option>
           <option value="lightness">Helligkeit: hell → dunkel</option>
           <option value="warmth">Wärme: warm → kühl</option>
         </select>
@@ -3982,50 +3982,28 @@
     return {light,warmth};
   }
   function mcFamily(c){
-    const name=(c[0]||'').toLowerCase();
+    const n=(c[0]||'').toLowerCase();
 
-    // Zuerst nach der tatsächlichen Farbbezeichnung des Herstellers gruppieren.
-    // Das verhindert, dass z.B. sehr dunkle Blau- oder Rotpigmente nur wegen ihres RGB-Wertes
-    // in einer falschen Familie landen.
-    if(/lemon|zitron|yellow|gelb|cadmium yellow|indian yellow|naples yellow|jaune|gelbton/.test(name)) return 0;
-    if(/orange|orangefarb|vermillion|zinnober/.test(name)) return 1;
-    if(/red|rot|crimson|karmin|carmine|scarlet|rose|rosa|pink|magenta|alizarin/.test(name)) return 2;
-    if(/violet|violett|purple|purpur|mauve|lila/.test(name)) return 3;
-    if(/blue|blau|ultramarin|ultramarine|cobalt|kobalt|cerulean|coelin|phthalo blue|prussian|preuß/.test(name)) return 4;
-    if(/green|grün|viridian|sap green|olive|oliv|phthalo green/.test(name)) return 5;
-    if(/umber|umbra|sienna|siena|ochre|ocker|brown|braun|sepia|van dyck|earth|erde/.test(name)) return 6;
-    if(/white|weiß|weiss|grey|gray|grau|black|schwarz|neutral|payne/.test(name)) return 7;
-
-    // Nur wenn der Name keine eindeutige Familie verrät, nach Farbton einsortieren.
-    const rgb=mcRgb(c[1]);
-    const r=rgb[0]/255,g=rgb[1]/255,b=rgb[2]/255;
-    const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
-    if(d<0.08) return 7;
-
-    let h=0;
-    if(max===r) h=60*(((g-b)/d)%6);
-    else if(max===g) h=60*((b-r)/d+2);
-    else h=60*((r-g)/d+4);
-    if(h<0) h+=360;
-
-    if(h>=45 && h<75) return 0;
-    if(h>=20 && h<45) return 1;
-    if(h<20 || h>=340) return 2;
-    if(h>=275 && h<340) return 3;
-    if(h>=185 && h<275) return 4;
-    if(h>=75 && h<185) return 5;
-    return 6;
+    // Strikte Farbfamilien nach Farbnamen. Eine benannte blaue Farbe bleibt immer bei Blau,
+    // eine gelbe immer bei Gelb usw. RGB wird hier absichtlich NICHT zur Familie benutzt.
+    if(/yellow|gelb|lemon|zitron|jaune|naples/.test(n)) return 0;                 // Gelb
+    if(/orange|zinnober|vermillion/.test(n)) return 1;                           // Orange
+    if(/red|rot|crimson|karmin|carmine|scarlet|rose|rosa|pink|magenta|alizarin/.test(n)) return 2; // Rot/Rosa
+    if(/violet|violett|purple|purpur|mauve|lila|dioxazine/.test(n)) return 3;     // Violett
+    if(/blue|blau|ultramarin|ultramarine|cobalt|kobalt|cerulean|coelin|prussian|preuß/.test(n)) return 4; // Blau
+    if(/green|grün|viridian|sap|olive|oliv/.test(n)) return 5;                   // Grün
+    if(/umber|umbra|sienna|siena|ochre|ocker|brown|braun|sepia|van dyck|earth|erde/.test(n)) return 6; // Braun/Erde
+    if(/white|weiß|weiss|grey|gray|grau|black|schwarz|neutral|payne/.test(n)) return 7; // Neutral
+    return 8;                                                                    // Sonstige
   }
 
   function mcSorted(colors){
     const arr=[...colors];
     if(mcSort?.value==='families'){
-      return arr.sort((a,b)=>{
-        const fa=mcFamily(a), fb=mcFamily(b);
-        if(fa!==fb) return fa-fb;
-        // Innerhalb jeder Farbfamilie weiterhin hell → dunkel.
-        return mcMetrics(b).light-mcMetrics(a).light;
-      });
+      return arr
+        .map((c,i)=>({c,i,f:mcFamily(c)}))
+        .sort((a,b)=>a.f-b.f || a.i-b.i)
+        .map(x=>x.c);
     }
     if(mcSort?.value==='lightness'){
       return arr.sort((a,b)=>{
