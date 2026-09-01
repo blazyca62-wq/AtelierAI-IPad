@@ -1,4 +1,4 @@
-AtelierAI iPad 1.59
+AtelierAI iPad 1.60
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -132,3 +132,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.58: Mischdiagramm standardmäßig nach Farbfamilien gruppiert: Gelb, Orange, Rot, Violett, Blau, Grün, Braun/Erdfarben, Neutral. Innerhalb jeder Familie hell→dunkel. Alternative Sortierungen bleiben verfügbar.
 
 1.59: Farbfamilien-Sortierung korrigiert. Hersteller-Farbnamen haben Vorrang vor RGB/Hue; RGB dient nur noch als Fallback. Beschriftungen bleiben exakt an ihrer Farbe, Zeilen zeigen zusätzlich ein kleines Farbfeld zur Kontrolle. Vertikal gedrehte Kopfzeilen entfernt.
+
+1.60: iPad-Mischdiagramm Übersicht korrigiert. Nach Sortierung und beim Öffnen im Vollbild springt die Matrix automatisch ganz nach links/oben, damit Zeilen- und Spaltenanfang dieselbe Farbfamilie zeigen. Obere Spaltenbezeichnungen erhalten ebenfalls ein Farbfeld.

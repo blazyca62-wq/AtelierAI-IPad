@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.59</title>
+  <title>AtelierAI iPad 1.60</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -181,7 +181,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.59-20260830';
+    const wanted='atelierai-1.60-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -198,7 +198,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.59</div>
+    <div class="title">AtelierAI · iPad 1.60</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -3953,6 +3953,7 @@
   const mcLightVal=document.getElementById('mixChartLightVal');
   const mcTable=document.getElementById('mixChartTable');
   const mcInfo=document.getElementById('mixChartInfo');
+  const mcWrap=document.getElementById('mixChartWrap');
   const mcSelectedOnly=document.getElementById('mixChartSelectedOnly');
   const mcSort=document.getElementById('mixChartSort');
   const mcWorkspace=document.getElementById('mixChartWorkspace');
@@ -4118,9 +4119,10 @@
 
     colors.forEach((c)=>{
       const th=document.createElement('th');
-      th.textContent=c[0];
       th.title=c[0];
-      th.style.cssText='position:sticky;top:0;z-index:2;background:#f4f4f4;padding:4px;font-size:9px;height:72px;min-width:54px;max-width:70px;line-height:1.05;word-break:break-word;vertical-align:bottom;';
+      const cr=mcRgb(c[1]);
+      th.innerHTML='<span style="display:block;width:18px;height:18px;margin:0 auto 3px;border-radius:4px;border:1px solid rgba(0,0,0,.15);background:rgb('+cr[0]+','+cr[1]+','+cr[2]+');"></span><span>'+c[0]+'</span>';
+      th.style.cssText='position:sticky;top:0;z-index:2;background:#f4f4f4;padding:4px;font-size:9px;height:84px;min-width:58px;max-width:74px;line-height:1.05;word-break:break-word;vertical-align:bottom;';
       head.appendChild(th);
     });
     mcTable.appendChild(head);
@@ -4146,11 +4148,22 @@
       });
       mcTable.appendChild(tr);
     });
+
+    // Nach jeder Sortierung wirklich am Anfang der Matrix starten.
+    // Auf dem iPad blieb vorher die alte horizontale Scrollposition erhalten:
+    // links stand z.B. „Lemon Yellow“, oben war aber schon „Phthalo Blue“ sichtbar.
+    requestAnimationFrame(()=>{
+      if(mcWrap){
+        mcWrap.scrollLeft=0;
+        mcWrap.scrollTop=0;
+      }
+    });
   }
 
   mcFullscreenBtn?.addEventListener('click',()=>{
     const on=mcWorkspace.classList.toggle('mixchart-fullscreen');
     mcFullscreenBtn.textContent=on?'Fenster schließen':'Ganzes Fenster';
+    if(on) requestAnimationFrame(()=>{ if(mcWrap){ mcWrap.scrollLeft=0; mcWrap.scrollTop=0; } });
   });
   mcPalette?.addEventListener('change',mcRender);
   mcSelectedOnly?.addEventListener('change',mcRender);
