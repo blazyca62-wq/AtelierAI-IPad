@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.64</title>
+  <title>AtelierAI iPad 1.65</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -181,7 +181,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.64-20260830';
+    const wanted='atelierai-1.65-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -198,7 +198,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.64</div>
+    <div class="title">AtelierAI · iPad 1.65</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -3994,9 +3994,11 @@
     if(/yellow|gelb|lemon|zitron|jaune|naples/.test(n)) return 0;
     if(/orange|zinnober|vermillion/.test(n)) return 1;
     if(/rose|rosa|pink|magenta/.test(n)) return 3;
+    // Farbfamilie hat Vorrang vor Shade-Bezeichnungen:
+    // "Phthalo Blue (Red Shade)" ist Blau, "Red Shade" beschreibt nur den Unterton.
+    if(/blue|blau|ultramarin|ultramarine|cobalt|kobalt|cerulean|coelin|prussian|preuß/.test(n)) return 8;
     if(/red|rot|crimson|karmin|carmine|scarlet|alizarin|indian red/.test(n)) return 4;
     if(/green|grün|viridian|sap|olive|oliv/.test(n)) return 7;
-    if(/blue|blau|ultramarin|ultramarine|cobalt|kobalt|cerulean|coelin|prussian|preuß/.test(n)) return 8;
     if(/violet|violett|purple|purpur|mauve|lila|dioxazine/.test(n)) return 9;
     if(/white|weiß|weiss|grey|gray|grau|black|schwarz|neutral|payne/.test(n)) return 10;
 
