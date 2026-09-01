@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.49</title>
+  <title>AtelierAI iPad 1.50</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.49-20260830';
+    const wanted='atelierai-1.50-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.49</div>
+    <div class="title">AtelierAI · iPad 1.50</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -276,6 +276,20 @@
           <button id="waterMode" class="active">Aquarell</button>
           <button id="oilMode" class="secondary">Öl</button>
         </div>
+      </div>
+
+      <div class="section" id="aiPainterPanel">
+        <h3>AI-Malberater</h3>
+        <p>Analysiert nur auf ausdrücklichen Knopfdruck das aktuell geöffnete Bild. Die normalen AtelierAI-Funktionen bleiben unabhängig.</p>
+        <div style="padding:10px;border:1px solid #d8d6d0;border-radius:10px;background:#fff;margin:10px 0;"><strong>Bildübertragung</strong><p style="margin:6px 0 0;">Erst „AI analysieren“ darf das aktuelle Bild an den später eingerichteten sicheren AI-Server senden.</p></div>
+        <label for="aiPaintMedium">Malweise</label>
+        <select id="aiPaintMedium" style="width:100%;margin-bottom:8px;"><option value="watercolor">Aquarell</option><option value="oil">Öl</option></select>
+        <label for="aiPainterQuestion">Frage / Auftrag</label>
+        <textarea id="aiPainterQuestion" rows="4" style="width:100%;resize:vertical;" placeholder="z. B. Wie beginne ich dieses Bild? Welche Farben brauche ich?"></textarea>
+        <div class="grid2" style="margin-top:8px;"><button type="button" id="aiQuickStartBtn" class="secondary">Malaufbau</button><button type="button" id="aiQuickColorsBtn" class="secondary">Farben</button></div>
+        <button type="button" id="aiAnalyzeBtn" style="width:100%;margin-top:8px;">AI analysieren</button>
+        <div id="aiPainterStatus" style="margin-top:8px;font-size:13px;">AI-Verbindung noch nicht eingerichtet. Es wird nichts übertragen.</div>
+        <div id="aiPainterResult" style="margin-top:10px;padding:10px;border:1px solid #d8d6d0;border-radius:10px;background:#fff;white-space:pre-wrap;min-height:70px;">Hier erscheint später die AI-Bildanalyse.</div>
       </div>
 
       <div class="section" id="colorAnalysisPanel">
@@ -3873,6 +3887,45 @@
 
 
 
+  // 1.50: sichere Grundlage für den optionalen AI-Malberater.
+  const aiPaintMedium=document.getElementById('aiPaintMedium');
+  const aiPainterQuestion=document.getElementById('aiPainterQuestion');
+  const aiQuickStartBtn=document.getElementById('aiQuickStartBtn');
+  const aiQuickColorsBtn=document.getElementById('aiQuickColorsBtn');
+  const aiAnalyzeBtn=document.getElementById('aiAnalyzeBtn');
+  const aiPainterStatus=document.getElementById('aiPainterStatus');
+  const aiPainterResult=document.getElementById('aiPainterResult');
+  const ATELIER_AI_ENDPOINT='';
+
+  aiQuickStartBtn?.addEventListener('click',()=>{aiPainterQuestion.value='Analysiere dieses Referenzbild für einen Maler. Gib mir eine klare Reihenfolge: große Formen, Tonwerte, wichtige Farbbereiche und erst danach Details.';});
+  aiQuickColorsBtn?.addEventListener('click',()=>{aiPainterQuestion.value='Analysiere die wichtigsten Farben dieses Referenzbildes. Nenne eine kleine praktische Palette und konkrete Mischideen für die wichtigsten Bildbereiche.';});
+
+  function atelierAiImageData(){
+    if(!loaded||!sourceCanvas.width||!sourceCanvas.height)return null;
+    const maxSide=1280, s=Math.min(1,maxSide/Math.max(sourceCanvas.width,sourceCanvas.height));
+    const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(sourceCanvas.width*s)); c.height=Math.max(1,Math.round(sourceCanvas.height*s));
+    c.getContext('2d').drawImage(sourceCanvas,0,0,c.width,c.height);
+    return c.toDataURL('image/jpeg',0.86);
+  }
+
+  aiAnalyzeBtn?.addEventListener('click',async()=>{
+    if(!loaded){aiPainterStatus.textContent='Bitte zuerst oben ein Foto öffnen.';return;}
+    if(!ATELIER_AI_ENDPOINT){
+      aiPainterStatus.textContent='Sichere Grundlage fertig. Das Bild wurde NICHT übertragen.';
+      aiPainterResult.textContent='Als nächstes wird der sichere AI-Server verbunden. Der geheime API-Schlüssel kommt nicht in die iPad-/GitHub-App.';
+      return;
+    }
+    const image=atelierAiImageData(); if(!image)return;
+    const question=(aiPainterQuestion.value||'Analysiere dieses Bild malerisch und gib mir die wichtigsten nächsten Schritte.').trim();
+    aiAnalyzeBtn.disabled=true; aiPainterStatus.textContent='Bild wird jetzt auf deinen Knopfdruck zur AI-Analyse gesendet …';
+    try{
+      const res=await fetch(ATELIER_AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image,question,medium:aiPaintMedium.value})});
+      if(!res.ok)throw new Error('Server '+res.status);
+      const data=await res.json(); aiPainterResult.textContent=data.answer||'Keine Antwort erhalten.'; aiPainterStatus.textContent='Analyse abgeschlossen.';
+    }catch(err){aiPainterStatus.textContent='AI-Verbindung fehlgeschlagen.';aiPainterResult.textContent='Fehler: '+err.message;}
+    finally{aiAnalyzeBtn.disabled=false;}
+  });
+
   function setupCompactSidebar(){
     const side=document.querySelector('aside.side');
     if(!side) return;
@@ -3887,6 +3940,7 @@
       toolPanel:'Werkzeug',
       formsPanel:'Großformen',
       tonesPanel:'Tonwerte',
+      aiPainterPanel:'AI-Malberater',
       paintMixPanel:'Mischen',
       colorAdvisorPanel:'Farbmischpult',
       colorJourneyPanel:'Farbreise',
