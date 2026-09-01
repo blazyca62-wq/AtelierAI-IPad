@@ -113,4 +113,4 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 
 1.49: Schwarz-Weiß-Einblendung in Tonwerte geändert: Das Schwarz-Weiß-Original wird nur in den ausgeblendeten Tonwertbereichen als Hintergrund eingeblendet. Die aktuell sichtbaren/ausgewählten Tonwerte bleiben farbig und werden nicht von Schwarz-Weiß überdeckt. Der 0–100%-Regler und die Buttons bleiben erhalten.
 
-1.50: Kreispipette korrigiert: Farbdurchschnitt wird aus dem aktuell sichtbaren Bild berechnet, inklusive Tonwertdarstellung und Original-Einblendung. Punktpipette unverändert.
+1.50: Kreispipette gezielt korrigiert. Bei 'Nur diese Farbe zeigen' wird jetzt surfaceMarkCanvas, also genau die sichtbare gefilterte Darstellung, aufgenommen. Original nur entsprechend dem sichtbaren Original-Einblendregler.
