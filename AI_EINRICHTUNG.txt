@@ -1,0 +1,14 @@
+ATELIERAI 1.51 – AI-MALBERATER VERBINDEN
+
+1. Cloudflare Workers öffnen und einen neuen Worker anlegen.
+2. Den Inhalt von cloudflare-worker.js als Worker-Code einsetzen und bereitstellen.
+3. Im Worker unter Settings > Variables and Secrets ein Secret anlegen:
+   Name: OPENAI_API_KEY
+   Wert: dein eigener OpenAI API-Schlüssel
+   Den Schlüssel NICHT in GitHub und NICHT in app.html eintragen.
+4. Die https://...workers.dev Adresse kopieren.
+5. In AtelierAI > AI-Malberater > AI-Verbindung diese Adresse einmal eintragen und „Adresse speichern“ drücken.
+6. Danach Foto öffnen und „AI analysieren“ drücken.
+
+Das Bild wird erst bei diesem Knopfdruck übertragen.
+Der Worker akzeptiert nur Aufrufe von https://blazyca62-wq.github.io.

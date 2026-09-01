@@ -1,4 +1,4 @@
-AtelierAI iPad 1.50
+AtelierAI iPad 1.51
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -114,3 +114,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.49: Schwarz-Weiß-Einblendung in Tonwerte geändert: Das Schwarz-Weiß-Original wird nur in den ausgeblendeten Tonwertbereichen als Hintergrund eingeblendet. Die aktuell sichtbaren/ausgewählten Tonwerte bleiben farbig und werden nicht von Schwarz-Weiß überdeckt. Der 0–100%-Regler und die Buttons bleiben erhalten.
 
 1.50: AI-Malberater als separates optionales Modul vorbereitet. Keine automatische Bildübertragung, kein API-Schlüssel im Browser, externe AI-Verbindung absichtlich noch deaktiviert. Bestehende Funktionen bleiben unverändert.
+
+1.51: Echte AI-Verbindung über sicheren Cloudflare Worker vorbereitet. Worker-Code und kurze Einrichtung enthalten. Endpoint wird einmal in AtelierAI gespeichert. API-Key bleibt ausschließlich als Server-Secret.

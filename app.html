@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.50</title>
+  <title>AtelierAI iPad 1.51</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.50-20260830';
+    const wanted='atelierai-1.51-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.50</div>
+    <div class="title">AtelierAI · iPad 1.51</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -287,6 +287,13 @@
         <label for="aiPainterQuestion">Frage / Auftrag</label>
         <textarea id="aiPainterQuestion" rows="4" style="width:100%;resize:vertical;" placeholder="z. B. Wie beginne ich dieses Bild? Welche Farben brauche ich?"></textarea>
         <div class="grid2" style="margin-top:8px;"><button type="button" id="aiQuickStartBtn" class="secondary">Malaufbau</button><button type="button" id="aiQuickColorsBtn" class="secondary">Farben</button></div>
+        <details style="margin-top:8px;">
+          <summary>AI-Verbindung</summary>
+          <label for="aiEndpointInput" style="display:block;margin-top:8px;">Sichere Worker-Adresse</label>
+          <input id="aiEndpointInput" type="url" inputmode="url" placeholder="https://atelierai-malberater.…workers.dev" style="width:100%;">
+          <button type="button" id="aiSaveEndpointBtn" class="secondary" style="width:100%;margin-top:6px;">Adresse speichern</button>
+          <div style="font-size:12px;margin-top:6px;">Der OpenAI-Schlüssel bleibt ausschließlich als Secret auf dem Server.</div>
+        </details>
         <button type="button" id="aiAnalyzeBtn" style="width:100%;margin-top:8px;">AI analysieren</button>
         <div id="aiPainterStatus" style="margin-top:8px;font-size:13px;">AI-Verbindung noch nicht eingerichtet. Es wird nichts übertragen.</div>
         <div id="aiPainterResult" style="margin-top:10px;padding:10px;border:1px solid #d8d6d0;border-radius:10px;background:#fff;white-space:pre-wrap;min-height:70px;">Hier erscheint später die AI-Bildanalyse.</div>
@@ -3895,7 +3902,20 @@
   const aiAnalyzeBtn=document.getElementById('aiAnalyzeBtn');
   const aiPainterStatus=document.getElementById('aiPainterStatus');
   const aiPainterResult=document.getElementById('aiPainterResult');
-  const ATELIER_AI_ENDPOINT='';
+  let ATELIER_AI_ENDPOINT=localStorage.getItem('atelierAiEndpoint')||'';
+  const aiEndpointInput=document.getElementById('aiEndpointInput');
+  const aiSaveEndpointBtn=document.getElementById('aiSaveEndpointBtn');
+  if(aiEndpointInput) aiEndpointInput.value=ATELIER_AI_ENDPOINT;
+  aiSaveEndpointBtn?.addEventListener('click',()=>{
+    const v=(aiEndpointInput?.value||'').trim();
+    if(!/^https:\/\//i.test(v)){
+      aiPainterStatus.textContent='Bitte eine sichere https:// Worker-Adresse eintragen.';
+      return;
+    }
+    ATELIER_AI_ENDPOINT=v.replace(/\/$/,'');
+    localStorage.setItem('atelierAiEndpoint',ATELIER_AI_ENDPOINT);
+    aiPainterStatus.textContent='Sichere AI-Adresse gespeichert. Jetzt kann „AI analysieren“ verwendet werden.';
+  });
 
   aiQuickStartBtn?.addEventListener('click',()=>{aiPainterQuestion.value='Analysiere dieses Referenzbild für einen Maler. Gib mir eine klare Reihenfolge: große Formen, Tonwerte, wichtige Farbbereiche und erst danach Details.';});
   aiQuickColorsBtn?.addEventListener('click',()=>{aiPainterQuestion.value='Analysiere die wichtigsten Farben dieses Referenzbildes. Nenne eine kleine praktische Palette und konkrete Mischideen für die wichtigsten Bildbereiche.';});
@@ -3919,9 +3939,19 @@
     const question=(aiPainterQuestion.value||'Analysiere dieses Bild malerisch und gib mir die wichtigsten nächsten Schritte.').trim();
     aiAnalyzeBtn.disabled=true; aiPainterStatus.textContent='Bild wird jetzt auf deinen Knopfdruck zur AI-Analyse gesendet …';
     try{
-      const res=await fetch(ATELIER_AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image,question,medium:aiPaintMedium.value})});
-      if(!res.ok)throw new Error('Server '+res.status);
-      const data=await res.json(); aiPainterResult.textContent=data.answer||'Keine Antwort erhalten.'; aiPainterStatus.textContent='Analyse abgeschlossen.';
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),90000);
+      const res=await fetch(ATELIER_AI_ENDPOINT,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({image,question,medium:aiPaintMedium.value}),
+        signal:controller.signal
+      });
+      clearTimeout(timer);
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok)throw new Error(data.error||('Server '+res.status));
+      aiPainterResult.textContent=data.answer||'Keine Antwort erhalten.';
+      aiPainterStatus.textContent='Analyse abgeschlossen.';
     }catch(err){aiPainterStatus.textContent='AI-Verbindung fehlgeschlagen.';aiPainterResult.textContent='Fehler: '+err.message;}
     finally{aiAnalyzeBtn.disabled=false;}
   });
