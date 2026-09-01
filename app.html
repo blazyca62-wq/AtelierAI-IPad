@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.56</title>
+  <title>AtelierAI iPad 1.57</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -181,7 +181,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.56-20260830';
+    const wanted='atelierai-1.57-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -198,7 +198,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.56</div>
+    <div class="title">AtelierAI · iPad 1.57</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -541,8 +541,8 @@
 
         <label for="mixChartSort">Sortierung</label>
         <select id="mixChartSort" style="width:100%;margin-bottom:8px;">
-          <option value="warmth">Wärme: warm → kühl</option>
           <option value="lightness">Helligkeit: hell → dunkel</option>
+          <option value="warmth">Wärme: warm → kühl</option>
         </select>
 
         <label for="mixChartLight">Weißzugabe <span id="mixChartLightVal">0 %</span></label>
@@ -3982,7 +3982,17 @@
   function mcSorted(colors){
     const arr=[...colors];
     if(mcSort?.value==='lightness'){
-      return arr.sort((a,b)=>mcMetrics(b).light-mcMetrics(a).light);
+      return arr.sort((a,b)=>{
+        const A=mcMetrics(a), B=mcMetrics(b);
+        const dl=B.light-A.light;
+        if(Math.abs(dl)>8) return dl;
+        // Bei ähnlich hellen Farben die leuchtend warmen Gelbtöne zuerst:
+        // so beginnt die Malerpalette z.B. mit Zitronengelb statt mit zufälligen Nachbarfarben.
+        const ar=mcRgb(a[1]), br=mcRgb(b[1]);
+        const aYellow=(ar[0]+ar[1]-1.55*ar[2]);
+        const bYellow=(br[0]+br[1]-1.55*br[2]);
+        return bYellow-aYellow || dl;
+      });
     }
     return arr.sort((a,b)=>{
       const A=mcMetrics(a),B=mcMetrics(b);
