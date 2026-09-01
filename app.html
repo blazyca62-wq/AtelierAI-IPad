@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.53</title>
+  <title>AtelierAI iPad 1.54</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -164,13 +164,24 @@
     gap:8px;
   }
   #advisorWorkspace.advisor-fullscreen .card{max-width:none;}
+
+    #mixChartWorkspace.mixchart-fullscreen{
+      position:fixed; inset:0; z-index:99999; background:#f4f4f4;
+      overflow:auto; padding:16px; box-sizing:border-box;
+    }
+    #mixChartWorkspace.mixchart-fullscreen #mixChartWrap{
+      max-height:calc(100vh - 190px) !important;
+    }
+    #mixChartWorkspace.mixchart-fullscreen #mixChartTable td{
+      width:54px !important;height:54px !important;min-width:54px !important;
+    }
 </style>
 </head>
 <body>
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.53-20260830';
+    const wanted='atelierai-1.54-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +198,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.53</div>
+    <div class="title">AtelierAI · iPad 1.54</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -509,7 +520,11 @@
         </div>
       </div>
       <div class="section" id="mixChartPanel">
-        <h3>Mischdiagramm</h3>
+        <div id="mixChartWorkspace">
+        <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;">
+          <h3 style="margin:0;">Mischdiagramm</h3>
+          <button type="button" id="mixChartFullscreenBtn" class="secondary">Ganzes Fenster</button>
+        </div>
         <p>Jede Farbe wird 1:1 mit jeder anderen Farbe der gewählten Palette gemischt. Mit „Aufhellung“ kannst du alle Mischungen zusätzlich Richtung Weiß aufhellen.</p>
 
         <label for="mixChartPalette">Palette</label>
@@ -519,7 +534,7 @@
           <option value="akademie">Schmincke Akademie – Aquarell</option>
         </select>
 
-        <label for="mixChartLight">Aufhellung <span id="mixChartLightVal">0 %</span></label>
+        <label for="mixChartLight">Weißzugabe <span id="mixChartLightVal">0 %</span></label>
         <input id="mixChartLight" type="range" min="0" max="80" value="0" step="5" style="width:100%;">
 
         <div style="margin-top:8px;font-size:12px;">Tippe auf ein Mischfeld, um die beiden Farben und das Verhältnis zu sehen.</div>
@@ -527,6 +542,7 @@
 
         <div id="mixChartWrap" style="overflow:auto;-webkit-overflow-scrolling:touch;margin-top:10px;border:1px solid #d8d6d0;border-radius:10px;background:#fff;max-height:62vh;">
           <table id="mixChartTable" style="border-collapse:separate;border-spacing:3px;min-width:max-content;"></table>
+        </div>
         </div>
       </div>
 
@@ -3925,6 +3941,8 @@
   const mcLightVal=document.getElementById('mixChartLightVal');
   const mcTable=document.getElementById('mixChartTable');
   const mcInfo=document.getElementById('mixChartInfo');
+  const mcWorkspace=document.getElementById('mixChartWorkspace');
+  const mcFullscreenBtn=document.getElementById('mixChartFullscreenBtn');
 
   function mcColors(){
     const key=mcPalette?.value||'artisan';
@@ -3954,8 +3972,21 @@
   }
   function mcLighten(rgb,pct){
     const t=Math.max(0,Math.min(.8,pct/100));
-    // optisches Aufhellen Richtung Weiß
-    return rgb.map(v=>Math.round(v+(255-v)*t));
+    if(t<=0) return rgb;
+    // Aufhellung wie zusätzliche weiße Malfarbe, nicht als milchiger Bildschirm-Overlay.
+    // Titanweiß wird optisch mit der Mischung kombiniert; die Dosierung bleibt bewusst sanft.
+    const white=[248,247,242];
+    const out=[];
+    for(let k=0;k<3;k++){
+      const r1=Math.max(.015,rgb[k]/255), r2=Math.max(.015,white[k]/255);
+      const k1=((1-r1)*(1-r1))/(2*r1), k2=((1-r2)*(1-r2))/(2*r2);
+      // Regler 0–80 % entspricht zunehmender Weißzugabe, nicht Deckkraft.
+      const whiteParts=t*1.5;
+      const km=(k1 + k2*whiteParts)/(1+whiteParts);
+      const r=(1+km)-Math.sqrt(km*km+2*km);
+      out[k]=Math.max(0,Math.min(255,Math.round(r*255)));
+    }
+    return out;
   }
   function mcRender(){
     if(!mcTable)return;
@@ -3997,7 +4028,7 @@
         td.style.cssText=`width:42px;height:42px;min-width:42px;background:rgb(${mixed[0]},${mixed[1]},${mixed[2]});border:1px solid rgba(0,0,0,.10);border-radius:5px;cursor:pointer;`;
         td.title=`${rowColor[0]} + ${colColor[0]}`;
         td.addEventListener('click',()=>{
-          mcInfo.innerHTML='<strong>'+rowColor[0]+' + '+colColor[0]+'</strong><br>1 : 1'+(light?'<br>Aufhellung '+light+' %':'');
+          mcInfo.innerHTML='<strong>'+rowColor[0]+' + '+colColor[0]+'</strong><br>1 : 1'+(light?'<br>Weißzugabe '+light+' %':'');
         });
         tr.appendChild(td);
       });
@@ -4005,6 +4036,10 @@
     });
   }
 
+  mcFullscreenBtn?.addEventListener('click',()=>{
+    const on=mcWorkspace.classList.toggle('mixchart-fullscreen');
+    mcFullscreenBtn.textContent=on?'Fenster schließen':'Ganzes Fenster';
+  });
   mcPalette?.addEventListener('change',mcRender);
   mcLight?.addEventListener('input',mcRender);
   if(mcPalette && typeof paintPalette!=='undefined') mcPalette.value=paintPalette.value;
