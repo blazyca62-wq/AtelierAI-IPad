@@ -1,4 +1,4 @@
-AtelierAI iPad 1.52
+AtelierAI iPad 1.53
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -118,3 +118,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.51: Neues Werkzeug Zwei-Farben-Mischverlauf. Zwei echte Palettenfarben wählen, kontinuierlicher malerischer Mischverlauf, Antippen zeigt Mischungsverhältnis und Zwischenfarbe. Artisan/Horadam/Akademie.
 
 1.52: Zwei-Farben-Mischverlauf Fix: Farbe A/B werden jetzt zuverlässig mit den Farben der gewählten Herstellerpalette gefüllt.
+
+1.53: Zwei-Farben-Mischverlauf vollständig entfernt. Neues Mischdiagramm: jede Farbe mit jeder Farbe 1:1, für Artisan/Horadam/Akademie, plus gemeinsame Aufhellung 0–80 %. Antippen zeigt Farbpaar und Verhältnis.
