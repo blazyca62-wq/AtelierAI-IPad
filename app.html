@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.54</title>
+  <title>AtelierAI iPad 1.55</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -181,7 +181,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.54-20260830';
+    const wanted='atelierai-1.55-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -198,7 +198,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.54</div>
+    <div class="title">AtelierAI · iPad 1.55</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -533,6 +533,11 @@
           <option value="horadam">Schmincke Horadam – Aquarell</option>
           <option value="akademie">Schmincke Akademie – Aquarell</option>
         </select>
+
+        <label style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;">
+          <input id="mixChartSelectedOnly" type="checkbox" checked>
+          <span>Nur meine ausgewählten Farben</span>
+        </label>
 
         <label for="mixChartLight">Weißzugabe <span id="mixChartLightVal">0 %</span></label>
         <input id="mixChartLight" type="range" min="0" max="80" value="0" step="5" style="width:100%;">
@@ -3941,11 +3946,23 @@
   const mcLightVal=document.getElementById('mixChartLightVal');
   const mcTable=document.getElementById('mixChartTable');
   const mcInfo=document.getElementById('mixChartInfo');
+  const mcSelectedOnly=document.getElementById('mixChartSelectedOnly');
   const mcWorkspace=document.getElementById('mixChartWorkspace');
   const mcFullscreenBtn=document.getElementById('mixChartFullscreenBtn');
 
   function mcColors(){
     const key=mcPalette?.value||'artisan';
+    const selectedOnly=mcSelectedOnly?.checked!==false;
+
+    if(selectedOnly){
+      if(window.AtelierPaletteAPI?.selectedPalette){
+        const selected=window.AtelierPaletteAPI.selectedPalette(key)||[];
+        if(selected.length) return selected;
+      }
+      const selected=selectedPaletteColors(key)||[];
+      if(selected.length) return selected;
+    }
+
     if(window.AtelierPaletteAPI?.fullPalette) return window.AtelierPaletteAPI.fullPalette(key)||[];
     return (PALETTES[key]||[]).map(x=>[x[0],x[1],x[2]]);
   }
@@ -3995,7 +4012,7 @@
     mcLightVal.textContent=light+' %';
     mcTable.innerHTML='';
     if(!colors.length){
-      mcTable.innerHTML='<tr><td style="padding:10px;">Keine Farben verfügbar.</td></tr>';
+      mcTable.innerHTML='<tr><td style="padding:10px;">Keine ausgewählten Farben vorhanden. Wähle zuerst Farben in deiner Palette oder schalte „Nur meine ausgewählten Farben“ aus.</td></tr>';
       return;
     }
 
@@ -4041,6 +4058,7 @@
     mcFullscreenBtn.textContent=on?'Fenster schließen':'Ganzes Fenster';
   });
   mcPalette?.addEventListener('change',mcRender);
+  mcSelectedOnly?.addEventListener('change',mcRender);
   mcLight?.addEventListener('input',mcRender);
   if(mcPalette && typeof paintPalette!=='undefined') mcPalette.value=paintPalette.value;
   setTimeout(mcRender,0);
