@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.57</title>
+  <title>AtelierAI iPad 1.58</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -181,7 +181,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.57-20260830';
+    const wanted='atelierai-1.58-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -198,7 +198,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.57</div>
+    <div class="title">AtelierAI · iPad 1.58</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -541,6 +541,7 @@
 
         <label for="mixChartSort">Sortierung</label>
         <select id="mixChartSort" style="width:100%;margin-bottom:8px;">
+          <option value="families">Farbfamilien: Gelb → Orange → Rot → Violett → Blau → Grün → Braun → Neutral</option>
           <option value="lightness">Helligkeit: hell → dunkel</option>
           <option value="warmth">Wärme: warm → kühl</option>
         </select>
@@ -3979,8 +3980,40 @@
     }
     return {light,warmth};
   }
+  function mcFamily(c){
+    const rgb=mcRgb(c[1]), name=(c[0]||'').toLowerCase();
+    const r=rgb[0]/255,g=rgb[1]/255,b=rgb[2]/255;
+    const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+    let h=0;
+    if(d){
+      if(max===r) h=60*(((g-b)/d)%6);
+      else if(max===g) h=60*((b-r)/d+2);
+      else h=60*((r-g)/d+4);
+      if(h<0)h+=360;
+    }
+    // Namen helfen bei Erdfarben und neutralen Künstlerfarben, die rein per RGB schwer einzuordnen sind.
+    if(/weiß|white|grau|grey|gray|schwarz|black|payne|neutral/.test(name)) return 7;
+    if(/umbra|umber|siena|sienna|ocker|ochre|braun|brown|sepia|van dyck/.test(name)) return 6;
+    if(d<0.09) return 7;
+    if(h>=45 && h<75) return 0;       // Gelb
+    if(h>=20 && h<45) return 1;       // Orange
+    if(h<20 || h>=340) return 2;      // Rot
+    if(h>=275 && h<340) return 3;     // Violett/Magenta
+    if(h>=185 && h<275) return 4;     // Blau
+    if(h>=75 && h<185) return 5;      // Grün
+    return 6;                         // erdige Zwischenfarben
+  }
+
   function mcSorted(colors){
     const arr=[...colors];
+    if(mcSort?.value==='families'){
+      return arr.sort((a,b)=>{
+        const fa=mcFamily(a), fb=mcFamily(b);
+        if(fa!==fb) return fa-fb;
+        // Innerhalb jeder Farbfamilie weiterhin hell → dunkel.
+        return mcMetrics(b).light-mcMetrics(a).light;
+      });
+    }
     if(mcSort?.value==='lightness'){
       return arr.sort((a,b)=>{
         const A=mcMetrics(a), B=mcMetrics(b);

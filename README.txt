@@ -1,4 +1,4 @@
-AtelierAI iPad 1.57
+AtelierAI iPad 1.58
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -128,3 +128,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.56: Mischdiagramm sortierbar nach Wärme (warm→kühl) oder Helligkeit (hell→dunkel). Weißzugabe deutlich verstärkt und bis 100 % erweitert; nichtlineare Pigment-Aufhellung für klar sichtbare Tints.
 
 1.57: Mischdiagramm startet standardmäßig mit Helligkeit hell→dunkel. Bei ähnlich hellen Farben werden leuchtende Gelbtöne bevorzugt, sodass z.B. Zitronengelb am Anfang der malerischen Reihenfolge steht. Wärme-Sortierung bleibt optional.
+
+1.58: Mischdiagramm standardmäßig nach Farbfamilien gruppiert: Gelb, Orange, Rot, Violett, Blau, Grün, Braun/Erdfarben, Neutral. Innerhalb jeder Familie hell→dunkel. Alternative Sortierungen bleiben verfügbar.
