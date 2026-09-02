@@ -144,3 +144,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.64: Mischdiagramm-Farbfamilien exakt in gewünschter malerischer Reihenfolge: Gelb, Orange, Ocker, Rosa, Rot, Sienna, Umber, Grün, Blau, Violett, Neutral. Spezifische Erdfarben werden vor allgemeinen Farbnamen geprüft.
 
 1.65: Phthalo Blue (Red Shade) und andere Blue-Farben mit Shade-Zusatz werden korrekt der Familie Blau zugeordnet. Die eigentliche Farbfamilie hat Vorrang vor Wörtern wie Red Shade.
+
+1.71: Aquarell-Aufbau: Stufe 1 als zarte selektive Maler-Vorzeichnung neu aufgebaut. Vor der Kantenerkennung wird geglättet; nur starke Hauptkonturen/lokale Kantenmaxima bleiben, in sehr hellem warmgrauem Bleistiftton. Kumulative Lasuren und Stufenpipette aus 1.70 bleiben unverändert.

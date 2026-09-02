@@ -211,7 +211,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.70</div>
+    <div class="title">AtelierAI · iPad 1.71</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -4224,7 +4224,7 @@
   const aqStageBtns=[...document.querySelectorAll('[data-aq-stage]')];
 
   const AQ_STAGES=[
-    {p:0,   name:'Zeichnung', title:'1 · Zeichnung', text:'Vollständige Vorzeichnung: Außenkonturen, wichtige Innenformen und Papierweiß/Lichter festlegen. Noch keine Farbe.'},
+    {p:0,   name:'Zeichnung', title:'1 · Zarte Vorzeichnung', text:'Sehr leichte Malerzeichnung: nur Hauptkonturen und wenige wichtige Innenformen. Keine technische Kantenkarte, keine Haut- oder Hintergrundtextur. Papierweiß/Lichter planen.'},
     {p:8,   name:'erster Farbhauch', title:'2 · Erster Farbhauch', text:'Nur eine kaum sichtbare Grundlasur. Sehr viel Papierweiß bleibt stehen. Keine dunklen Haare, keine fertigen Augen, keine tiefen Schatten.'},
     {p:18,  name:'helle Grundfarben', title:'3 · Helle Grundfarben', text:'Zweite sehr transparente Farbinformation: lokale Haut-, Haar-, Kleidungs- und Hintergrundfarben. Noch keine kräftigen Tonwerte.'},
     {p:30,  name:'erste Warm/Kalt-Schatten', title:'4 · Erste warme und kühle Schatten', text:'Nur die größten Schattenformen hauchdünn anlegen. Warme und kühle Schatten getrennt behandeln; Kanten weich, Details weiterhin ausgespart.'},
@@ -4280,7 +4280,7 @@
     const rows=[];
     const add=(letter,label,rgb,water)=>rows.push(`<div class="aq-recipe"><span class="aq-dot" style="background:${aqHex(rgb)}"></span><div><b>${letter} · ${label}</b><span class="tiny">Pigmente: ${aqMixText(rgb)}<br>Wasser: ${water}</span></div></div>`);
     const warm=aqAverageTarget('warm'),cool=aqAverageTarget('cool'),mid=aqAverageTarget('mid'),dark=aqAverageTarget('dark');
-    if(st===1){aqColorAdvice.innerHTML='<span class="tiny">In Stufe 1 keine Farbe. Papierweiß und Lichter planen.</span>';return;}
+    if(st===1){aqColorAdvice.innerHTML='<span class="tiny">In Stufe 1 keine Farbe. Nur zarte Hauptkonturen; Papierweiß und Lichter planen.</span>';return;}
     add('A','helle Grundlasur',mid,aqWaterText(Math.min(st,3)));
     if(st>=3)add('B','warme Farbzonen',warm,aqWaterText(st));
     if(st>=4)add('C','warmer Schatten',warm,aqWaterText(st));
@@ -4291,17 +4291,50 @@
   }
 
   function aqBuildSketch(){
-    const W=sourceCanvas.width,H=sourceCanvas.height,max=850,sc=Math.min(1,max/Math.max(W,H));
+    // 1.71: zarte, selektive Maler-Vorzeichnung statt technischer Kantenkarte.
+    // Nur wirklich wichtige Formkanten werden gezeichnet; Textur, Hautdetails
+    // und kleine Kontrastwechsel bleiben bewusst weg.
+    const W=sourceCanvas.width,H=sourceCanvas.height,max=900,sc=Math.min(1,max/Math.max(W,H));
     const w=Math.max(2,Math.round(W*sc)),h=Math.max(2,Math.round(H*sc));
-    const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(sourceCanvas,0,0,w,h);
-    const src=x.getImageData(0,0,w,h),gray=new Float32Array(w*h);for(let i=0,j=0;i<src.data.length;i+=4,j++)gray[j]=.2126*src.data[i]+.7152*src.data[i+1]+.0722*src.data[i+2];
-    const out=x.createImageData(w,h);out.data.fill(255);
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    const x=c.getContext('2d',{willReadFrequently:true});
+    // Vor dem Kantentest weichzeichnen: Poren, Stoffstruktur, Laub usw. erzeugen keine Linien.
+    x.save();x.filter='blur(2.4px)';x.drawImage(sourceCanvas,0,0,w,h);x.restore();
+    const src=x.getImageData(0,0,w,h),gray=new Float32Array(w*h);
+    for(let i=0,j=0;i<src.data.length;i+=4,j++)gray[j]=.2126*src.data[i]+.7152*src.data[i+1]+.0722*src.data[i+2];
+    const mag=new Float32Array(w*h);
     for(let y=1;y<h-1;y++)for(let xx=1;xx<w-1;xx++){
       const a=(y-1)*w+xx-1,b=(y-1)*w+xx,c0=(y-1)*w+xx+1,d=y*w+xx-1,f=y*w+xx+1,g=(y+1)*w+xx-1,hh=(y+1)*w+xx,i=(y+1)*w+xx+1;
-      const gx=-gray[a]+gray[c0]-2*gray[d]+2*gray[f]-gray[g]+gray[i],gy=-gray[a]-2*gray[b]-gray[c0]+gray[g]+2*gray[hh]+gray[i];
-      const m=Math.hypot(gx,gy),v=m>34?Math.max(112,238-m*1.15):252,idx=(y*w+xx)*4;out.data[idx]=v;out.data[idx+1]=v*.97;out.data[idx+2]=v*.91;out.data[idx+3]=255;
+      const gx=-gray[a]+gray[c0]-2*gray[d]+2*gray[f]-gray[g]+gray[i];
+      const gy=-gray[a]-2*gray[b]-gray[c0]+gray[g]+2*gray[hh]+gray[i];
+      mag[y*w+xx]=Math.hypot(gx,gy);
     }
-    x.putImageData(out,0,0);watercolorBuildCtx.clearRect(0,0,W,H);watercolorBuildCtx.fillStyle='#fbfaf6';watercolorBuildCtx.fillRect(0,0,W,H);watercolorBuildCtx.imageSmoothingEnabled=true;watercolorBuildCtx.drawImage(c,0,0,W,H);
+    const out=x.createImageData(w,h);out.data.fill(255);
+    const hi=58, lo=43; // bewusst hohe Schwelle: nur Hauptkonturen
+    for(let y=2;y<h-2;y++)for(let xx=2;xx<w-2;xx++){
+      const j=y*w+xx,m=mag[j];
+      // Linie nur an lokalem Maximum. Das macht die Kontur deutlich dünner.
+      const localMax=m>=mag[j-1]&&m>=mag[j+1] || m>=mag[j-w]&&m>=mag[j+w];
+      let keep=m>=hi&&localMax;
+      // Sehr starke benachbarte Kante darf einen etwas schwächeren Abschnitt verbinden.
+      if(!keep&&m>=lo&&localMax){
+        keep=mag[j-1]>=hi||mag[j+1]>=hi||mag[j-w]>=hi||mag[j+w]>=hi;
+      }
+      const idx=j*4;
+      if(keep){
+        // warmer, sehr heller Bleistiftton; nie schwarze/dominante Linien
+        const strength=Math.min(1,(m-lo)/85);
+        const v=Math.round(238-26*strength);
+        out.data[idx]=v;out.data[idx+1]=Math.min(248,v+3);out.data[idx+2]=Math.min(248,v+6);out.data[idx+3]=255;
+      }else{
+        out.data[idx]=251;out.data[idx+1]=250;out.data[idx+2]=247;out.data[idx+3]=255;
+      }
+    }
+    x.putImageData(out,0,0);
+    watercolorBuildCtx.clearRect(0,0,W,H);
+    watercolorBuildCtx.fillStyle='#fbfaf7';watercolorBuildCtx.fillRect(0,0,W,H);
+    watercolorBuildCtx.imageSmoothingEnabled=true;
+    watercolorBuildCtx.drawImage(c,0,0,W,H);
   }
 
   function aqHsvToRgb(h,s,v){
@@ -4354,7 +4387,7 @@
     const W=sourceCanvas.width,H=sourceCanvas.height;watercolorBuildCanvas.width=W;watercolorBuildCanvas.height=H;
     if(watercolorBuildStage===1){aqBuildSketch();return;}
 
-    // 1.70: ECHTER KUMULATIVER AUFBAU.
+    // 1.71: ECHTER KUMULATIVER AUFBAU + ZARTE MALERZEICHNUNG.
     // Ausgangspunkt ist Stufe 1 (Zeichnung auf Papier). Jede folgende Stufe
     // wird auf das Ergebnis der vorherigen gelegt. Kein Pixel darf dabei
     // wieder heller werden. So kann eine spaetere Stufe keine fruehere
