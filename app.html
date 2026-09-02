@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.67</title>
+  <title>AtelierAI iPad 1.65</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -175,26 +175,13 @@
     #mixChartWorkspace.mixchart-fullscreen #mixChartTable td{
       width:54px !important;height:54px !important;min-width:54px !important;
     }
-
-
-    /* 1.67: Aquarell-Malaufbau – echte Tonwert-/Farbschichten statt Bild-Einblendung */
-    .aq-stage-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:8px 0}
-    .aq-stage-grid button{min-width:0;padding:8px 4px}
-    .aq-stage-grid button.active{background:#173a5e;color:#fff;border-color:#173a5e}
-    .aq-card{border:1px solid #d7d7d7;border-radius:10px;padding:9px;background:#fafafa;margin-top:8px}
-    .aq-card b{display:block;margin-bottom:4px}
-    .aq-recipe{display:grid;grid-template-columns:18px 1fr;gap:7px;align-items:start;margin:6px 0}
-    .aq-dot{width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.25);margin-top:2px}
-    .aq-progress{height:8px;background:#e9e9e9;border-radius:99px;overflow:hidden;margin:6px 0 2px}
-    .aq-progress>i{display:block;height:100%;background:#315b7a;width:0}
-
 </style>
 </head>
 <body>
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.67-20260902';
+    const wanted='atelierai-1.65-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -211,7 +198,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.71</div>
+    <div class="title">AtelierAI · iPad 1.65</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -758,30 +745,6 @@
         </div>
         <button id="ideaResetBtn" class="secondary" style="width:100%;margin-top:7px;">Farbidee zurücksetzen</button>
       </div>
-
-
-      <div class="section" id="waterBuildPanel">
-        <h3>Aquarell-Aufbau</h3>
-        <p>10 kumulative Malstufen. Stufen 2–7 bauen das Bild bewusst sehr langsam auf; erst Stufe 8 ist die Hauptmalerei weitgehend geschlossen. 9–10 sind Details und Schlussakzente.</p>
-        <div class="grid2">
-          <button id="aqBuildOnBtn">Vorschau ein</button>
-          <button id="aqBuildOffBtn" class="secondary">Originalansicht</button>
-        </div>
-        <div class="aq-stage-grid" id="aqStageGrid">
-          <button data-aq-stage="1" class="secondary">1</button><button data-aq-stage="2" class="secondary">2</button><button data-aq-stage="3" class="secondary">3</button><button data-aq-stage="4" class="secondary">4</button><button data-aq-stage="5" class="secondary">5</button>
-          <button data-aq-stage="6" class="secondary">6</button><button data-aq-stage="7" class="secondary">7</button><button data-aq-stage="8" class="secondary">8</button><button data-aq-stage="9" class="secondary">9</button><button data-aq-stage="10" class="secondary">10</button>
-        </div>
-        <div class="control-line"><label>Stufe</label><input id="aqStageSlider" type="range" min="1" max="10" value="1" step="1"><span id="aqStageVal">1</span></div>
-        <div class="aq-progress"><i id="aqProgressBar"></i></div>
-        <div class="tiny" id="aqProgressText">Zeichnung</div>
-        <div id="aqStageInfo" class="aq-card"></div>
-        <div class="aq-card">
-          <b>Farbhinweise aus dem Foto</b>
-          <div class="tiny">Pigmentverhältnis und Wasserverdünnung werden getrennt angegeben. Die Vorschläge verwenden – soweit gewählt – deine Aquarellpalette.</div><div class="tiny" style="margin-top:5px"><b>Pipette:</b> Bei „Sichtbares Bild“ wird aus der aktuell angezeigten Aquarell-Stufe aufgenommen.</div>
-          <div id="aqColorAdvice" style="margin-top:7px;"></div>
-        </div>
-      </div>
-
 <div class="section" id="gridSavePanel">
         <h3>Raster & Speichern</h3>
         <div class="grid2">
@@ -1085,13 +1048,6 @@
 
   let sourceCanvas = document.createElement('canvas');
   let sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
-
-  // 1.67 Aquarell-Malaufbau
-  let watercolorBuildActive=false;
-  let watercolorBuildStage=1;
-  let watercolorBuildCanvas=document.createElement('canvas');
-  let watercolorBuildCtx=watercolorBuildCanvas.getContext('2d',{willReadFrequently:true});
-
   let formCanvas = document.createElement('canvas');
   let formCtx = formCanvas.getContext('2d', { willReadFrequently: true });
   let toneGrayCanvas = document.createElement('canvas');
@@ -2049,11 +2005,7 @@
   }
 
   function sourceContextForPicker(){
-    // 1.69: Bildaufbau unverändert aus 1.67. Nur die Pipettenquelle wurde verbessert:
-    // Bei 'Sichtbares Bild' wird direkt aus der aktuell angezeigten Aquarell-Stufe aufgenommen.
-    if(pickerSource && pickerSource.value==='original') return sourceCtx;
-    if(watercolorBuildActive && watercolorBuildCanvas.width) return watercolorBuildCtx;
-    return processedCtx;
+    return pickerSource && pickerSource.value==='original' ? sourceCtx : processedCtx;
   }
 
   function drawGridOverlay(targetCtx, w, h, density){
@@ -3552,8 +3504,7 @@
     ctx.translate(offsetX,offsetY);
     ctx.scale(scale,scale);
     // 1.13: Original stufenlos über die aktuelle Arbeitsansicht blenden.
-    if(watercolorBuildActive && watercolorBuildCanvas.width) ctx.drawImage(watercolorBuildCanvas,0,0);
-    else if(surfaceMarkCanvas) ctx.drawImage(surfaceMarkCanvas,0,0);
+    if(surfaceMarkCanvas) ctx.drawImage(surfaceMarkCanvas,0,0);
     else ctx.drawImage(processedCanvas,0,0);
 
     if(originalBlendPercent>0){
@@ -4211,222 +4162,6 @@
   if(mcPalette && typeof paintPalette!=='undefined') mcPalette.value=paintPalette.value;
   setTimeout(mcRender,0);
 
-
-  // ===== 1.67 Aquarell-Malaufbau =====
-  const aqBuildOnBtn=document.getElementById('aqBuildOnBtn');
-  const aqBuildOffBtn=document.getElementById('aqBuildOffBtn');
-  const aqStageSlider=document.getElementById('aqStageSlider');
-  const aqStageVal=document.getElementById('aqStageVal');
-  const aqStageInfo=document.getElementById('aqStageInfo');
-  const aqColorAdvice=document.getElementById('aqColorAdvice');
-  const aqProgressBar=document.getElementById('aqProgressBar');
-  const aqProgressText=document.getElementById('aqProgressText');
-  const aqStageBtns=[...document.querySelectorAll('[data-aq-stage]')];
-
-  const AQ_STAGES=[
-    {p:0,   name:'Zeichnung', title:'1 · Zarte Vorzeichnung', text:'Sehr leichte Malerzeichnung: nur Hauptkonturen und wenige wichtige Innenformen. Keine technische Kantenkarte, keine Haut- oder Hintergrundtextur. Papierweiß/Lichter planen.'},
-    {p:8,   name:'erster Farbhauch', title:'2 · Erster Farbhauch', text:'Nur eine kaum sichtbare Grundlasur. Sehr viel Papierweiß bleibt stehen. Keine dunklen Haare, keine fertigen Augen, keine tiefen Schatten.'},
-    {p:18,  name:'helle Grundfarben', title:'3 · Helle Grundfarben', text:'Zweite sehr transparente Farbinformation: lokale Haut-, Haar-, Kleidungs- und Hintergrundfarben. Noch keine kräftigen Tonwerte.'},
-    {p:30,  name:'erste Warm/Kalt-Schatten', title:'4 · Erste warme und kühle Schatten', text:'Nur die größten Schattenformen hauchdünn anlegen. Warme und kühle Schatten getrennt behandeln; Kanten weich, Details weiterhin ausgespart.'},
-    {p:43,  name:'zweite Modellierung', title:'5 · Zweite Modellierung', text:'Mittelwerte vorsichtig ergänzen. Formen werden lesbarer, bleiben aber deutlich unfertig. Dunkelste Werte und harte Kanten fehlen noch.'},
-    {p:57,  name:'Formen entwickeln', title:'6 · Formen entwickeln', text:'Volumen in Gesicht, Haar, Kleidung und Umgebung schrittweise verstärken. Noch keine kleinen Details; große Formen haben Vorrang.'},
-    {p:72,  name:'Tonwerte vertiefen', title:'7 · Tonwerte und Farben vertiefen', text:'Dunklere Bereiche und Farbsättigung kontrolliert aufbauen. Warme und kühle Schatten werden genauer, aber das Bild bleibt noch offen.'},
-    {p:88,  name:'Hauptmalerei', title:'8 · Hauptmalerei abschließen', text:'Erst jetzt darf das Bild fast fertig wirken. Tiefen, Hauptkontraste und Farbbeziehungen schließen; kleine Details noch zurückhalten.'},
-    {p:95,  name:'Details', title:'9 · Details', text:'Ausgewählte Details: Augen, einzelne Haarsträhnen, kleine Kanten, Stoff- oder Hintergrundstrukturen. Nicht überall gleich detaillieren.'},
-    {p:100, name:'Schlussakzente', title:'10 · Schlussakzente', text:'Wenige dunkelste Akzente, letzte transparente Lasuren und kleine Korrekturen. Papierweiß nicht nachträglich erfinden.'}
-  ];
-
-  function aqRgbToHsv(r,g,b){
-    r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;
-    if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360;}
-    return [h,mx?d/mx:0,mx];
-  }
-  function aqAverageTarget(kind){
-    if(!loaded||!sourceCanvas.width)return null;
-    const max=260, sc=Math.min(1,max/Math.max(sourceCanvas.width,sourceCanvas.height));
-    const w=Math.max(1,Math.round(sourceCanvas.width*sc)),h=Math.max(1,Math.round(sourceCanvas.height*sc));
-    const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(sourceCanvas,0,0,w,h);
-    const d=x.getImageData(0,0,w,h).data;let rr=0,gg=0,bb=0,n=0;
-    for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2],lum=.2126*r+.7152*g+.0722*b;const [H,S]=aqRgbToHsv(r,g,b);let ok=false;
-      if(kind==='warm') ok=(H<70||H>335)&&S>.10&&lum>55&&lum<190;
-      else if(kind==='cool') ok=(H>=165&&H<=260)&&S>.08&&lum>35&&lum<175;
-      else if(kind==='dark') ok=lum<80;
-      else ok=lum>90&&lum<215;
-      if(ok){rr+=r;gg+=g;bb+=b;n++;}
-    }
-    if(!n)return kind==='warm'?[170,115,85]:kind==='cool'?[75,100,120]:kind==='dark'?[55,55,55]:[170,150,130];
-    return [Math.round(rr/n),Math.round(gg/n),Math.round(bb/n)];
-  }
-  function aqHex(rgb){return '#'+rgb.map(v=>Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join('');}
-  function aqMixText(rgb){
-    try{
-      let mixes=chooseMixes(rgb,'watercolor');
-      if(!mixes.length) mixes=chooseMixes(rgb,paintPalette.value);
-      if(mixes.length){const m=mixes[0];return m.names.map((n,i)=>`${m.parts[i]} Teil${m.parts[i]===1?'':'e'} ${n}`).join(' + ');}
-    }catch(e){}
-    return `Zielfarbe ${aqHex(rgb)}`;
-  }
-  function aqWaterText(stage){
-    if(stage<=2)return 'ca. 95–98 % Wasser';
-    if(stage<=4)return 'ca. 90–95 % Wasser';
-    if(stage<=6)return 'ca. 78–90 % Wasser';
-    if(stage<=8)return 'ca. 60–78 % Wasser';
-    return 'ca. 45–60 % Wasser, nur sparsam';
-  }
-  function aqRenderAdvice(){
-    if(!aqColorAdvice)return;
-    if(!loaded){aqColorAdvice.innerHTML='<span class="tiny">Bitte zuerst ein Foto öffnen.</span>';return;}
-    const st=watercolorBuildStage;
-    const rows=[];
-    const add=(letter,label,rgb,water)=>rows.push(`<div class="aq-recipe"><span class="aq-dot" style="background:${aqHex(rgb)}"></span><div><b>${letter} · ${label}</b><span class="tiny">Pigmente: ${aqMixText(rgb)}<br>Wasser: ${water}</span></div></div>`);
-    const warm=aqAverageTarget('warm'),cool=aqAverageTarget('cool'),mid=aqAverageTarget('mid'),dark=aqAverageTarget('dark');
-    if(st===1){aqColorAdvice.innerHTML='<span class="tiny">In Stufe 1 keine Farbe. Nur zarte Hauptkonturen; Papierweiß und Lichter planen.</span>';return;}
-    add('A','helle Grundlasur',mid,aqWaterText(Math.min(st,3)));
-    if(st>=3)add('B','warme Farbzonen',warm,aqWaterText(st));
-    if(st>=4)add('C','warmer Schatten',warm,aqWaterText(st));
-    if(st>=4)add('D','kühler Schatten',cool,aqWaterText(st));
-    if(st>=6)add('E','dunklere Formen',dark,aqWaterText(st));
-    if(st>=8)add('F','kräftigste Hauptwerte',dark,aqWaterText(st));
-    aqColorAdvice.innerHTML=rows.join('');
-  }
-
-  function aqBuildSketch(){
-    // 1.71: zarte, selektive Maler-Vorzeichnung statt technischer Kantenkarte.
-    // Nur wirklich wichtige Formkanten werden gezeichnet; Textur, Hautdetails
-    // und kleine Kontrastwechsel bleiben bewusst weg.
-    const W=sourceCanvas.width,H=sourceCanvas.height,max=900,sc=Math.min(1,max/Math.max(W,H));
-    const w=Math.max(2,Math.round(W*sc)),h=Math.max(2,Math.round(H*sc));
-    const c=document.createElement('canvas');c.width=w;c.height=h;
-    const x=c.getContext('2d',{willReadFrequently:true});
-    // Vor dem Kantentest weichzeichnen: Poren, Stoffstruktur, Laub usw. erzeugen keine Linien.
-    x.save();x.filter='blur(2.4px)';x.drawImage(sourceCanvas,0,0,w,h);x.restore();
-    const src=x.getImageData(0,0,w,h),gray=new Float32Array(w*h);
-    for(let i=0,j=0;i<src.data.length;i+=4,j++)gray[j]=.2126*src.data[i]+.7152*src.data[i+1]+.0722*src.data[i+2];
-    const mag=new Float32Array(w*h);
-    for(let y=1;y<h-1;y++)for(let xx=1;xx<w-1;xx++){
-      const a=(y-1)*w+xx-1,b=(y-1)*w+xx,c0=(y-1)*w+xx+1,d=y*w+xx-1,f=y*w+xx+1,g=(y+1)*w+xx-1,hh=(y+1)*w+xx,i=(y+1)*w+xx+1;
-      const gx=-gray[a]+gray[c0]-2*gray[d]+2*gray[f]-gray[g]+gray[i];
-      const gy=-gray[a]-2*gray[b]-gray[c0]+gray[g]+2*gray[hh]+gray[i];
-      mag[y*w+xx]=Math.hypot(gx,gy);
-    }
-    const out=x.createImageData(w,h);out.data.fill(255);
-    const hi=58, lo=43; // bewusst hohe Schwelle: nur Hauptkonturen
-    for(let y=2;y<h-2;y++)for(let xx=2;xx<w-2;xx++){
-      const j=y*w+xx,m=mag[j];
-      // Linie nur an lokalem Maximum. Das macht die Kontur deutlich dünner.
-      const localMax=m>=mag[j-1]&&m>=mag[j+1] || m>=mag[j-w]&&m>=mag[j+w];
-      let keep=m>=hi&&localMax;
-      // Sehr starke benachbarte Kante darf einen etwas schwächeren Abschnitt verbinden.
-      if(!keep&&m>=lo&&localMax){
-        keep=mag[j-1]>=hi||mag[j+1]>=hi||mag[j-w]>=hi||mag[j+w]>=hi;
-      }
-      const idx=j*4;
-      if(keep){
-        // warmer, sehr heller Bleistiftton; nie schwarze/dominante Linien
-        const strength=Math.min(1,(m-lo)/85);
-        const v=Math.round(238-26*strength);
-        out.data[idx]=v;out.data[idx+1]=Math.min(248,v+3);out.data[idx+2]=Math.min(248,v+6);out.data[idx+3]=255;
-      }else{
-        out.data[idx]=251;out.data[idx+1]=250;out.data[idx+2]=247;out.data[idx+3]=255;
-      }
-    }
-    x.putImageData(out,0,0);
-    watercolorBuildCtx.clearRect(0,0,W,H);
-    watercolorBuildCtx.fillStyle='#fbfaf7';watercolorBuildCtx.fillRect(0,0,W,H);
-    watercolorBuildCtx.imageSmoothingEnabled=true;
-    watercolorBuildCtx.drawImage(c,0,0,W,H);
-  }
-
-  function aqHsvToRgb(h,s,v){
-    h=((h%360)+360)%360;const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;let r=0,g=0,b=0;
-    if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}
-    return [Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)];
-  }
-
-  function aqDesiredStageImage(stage,W,H){
-    const stageCfg={
-      2:{floor:.965,sat:.14,blur:10.0,detail:0.00},
-      3:{floor:.915,sat:.28,blur:7.5, detail:0.00},
-      4:{floor:.855,sat:.42,blur:5.5, detail:0.00},
-      5:{floor:.785,sat:.56,blur:4.0, detail:0.05},
-      6:{floor:.690,sat:.70,blur:2.8, detail:0.12},
-      7:{floor:.565,sat:.84,blur:1.8, detail:0.25},
-      8:{floor:.390,sat:.94,blur:.85, detail:0.48},
-      9:{floor:.210,sat:1.00,blur:.25, detail:0.78},
-      10:{floor:.000,sat:1.00,blur:0, detail:1.00}
-    };
-    const cfg=stageCfg[stage];
-    const tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;
-    const tx=tmp.getContext('2d',{willReadFrequently:true});
-    tx.save();if(cfg.blur>0)tx.filter=`blur(${cfg.blur}px)`;tx.drawImage(sourceCanvas,0,0);tx.restore();
-    const src=tx.getImageData(0,0,W,H),orig=sourceCtx.getImageData(0,0,W,H),out=tx.createImageData(W,H);
-    const dd=src.data,oo=orig.data,od=out.data;
-    for(let i=0;i<dd.length;i+=4){
-      let r=dd[i],g=dd[i+1],b=dd[i+2];
-      let [h,s,v]=aqRgbToHsv(r,g,b);
-      const origLum=.2126*oo[i]+.7152*oo[i+1]+.0722*oo[i+2];
-      if(origLum>242){od[i]=250;od[i+1]=249;od[i+2]=245;od[i+3]=255;continue;}
-      v=Math.max(v,cfg.floor);s=Math.min(1,s*cfg.sat);
-      if(stage>=4){
-        const isCool=(h>=165&&h<=270),isWarm=(h<80||h>330);
-        if(isCool)s=Math.min(1,s*(1.04+0.03*(stage-4)));
-        if(isWarm)s=Math.min(1,s*(1.03+0.025*(stage-4)));
-      }
-      let rgb=aqHsvToRgb(h,s,v);
-      if(cfg.detail>0){
-        rgb=[0,1,2].map(k=>Math.round(rgb[k]*(1-cfg.detail)+oo[i+k]*cfg.detail));
-        const [hh,ss,vv]=aqRgbToHsv(...rgb);rgb=aqHsvToRgb(hh,ss,Math.max(vv,cfg.floor));
-      }
-      od[i]=rgb[0];od[i+1]=rgb[1];od[i+2]=rgb[2];od[i+3]=255;
-    }
-    return out;
-  }
-
-  function rebuildWatercolorBuild(){
-    if(!loaded)return;
-    const W=sourceCanvas.width,H=sourceCanvas.height;watercolorBuildCanvas.width=W;watercolorBuildCanvas.height=H;
-    if(watercolorBuildStage===1){aqBuildSketch();return;}
-
-    // 1.71: ECHTER KUMULATIVER AUFBAU + ZARTE MALERZEICHNUNG.
-    // Ausgangspunkt ist Stufe 1 (Zeichnung auf Papier). Jede folgende Stufe
-    // wird auf das Ergebnis der vorherigen gelegt. Kein Pixel darf dabei
-    // wieder heller werden. So kann eine spaetere Stufe keine fruehere
-    // Lasur ersetzen oder "zuruecknehmen".
-    aqBuildSketch();
-    let accumulated=watercolorBuildCtx.getImageData(0,0,W,H);
-    const ad=accumulated.data;
-
-    for(let stage=2;stage<=watercolorBuildStage;stage++){
-      const desired=aqDesiredStageImage(stage,W,H);
-      const dd=desired.data;
-      for(let i=0;i<ad.length;i+=4){
-        // Transparente Lasur-Logik: nur die zusaetzliche Abdunklung dieser
-        // Stufe wird zugelassen. Bereits vorhandene Farbe bleibt erhalten.
-        // Kanalweises Minimum entspricht auf weissem Papier einer nur
-        // pigment-hinzufuegenden, niemals aufhellenden Schichtung.
-        ad[i]  =Math.min(ad[i],  dd[i]);
-        ad[i+1]=Math.min(ad[i+1],dd[i+1]);
-        ad[i+2]=Math.min(ad[i+2],dd[i+2]);
-        ad[i+3]=255;
-      }
-    }
-    watercolorBuildCtx.putImageData(accumulated,0,0);
-  }
-  function setWatercolorBuildStage(n,activate=true){
-    watercolorBuildStage=Math.max(1,Math.min(10,Number(n)||1));if(activate)watercolorBuildActive=true;
-    if(aqStageSlider)aqStageSlider.value=watercolorBuildStage;if(aqStageVal)aqStageVal.textContent=watercolorBuildStage;
-    aqStageBtns.forEach(b=>{const on=Number(b.dataset.aqStage)===watercolorBuildStage;b.classList.toggle('active',on);b.classList.toggle('secondary',!on);});
-    const st=AQ_STAGES[watercolorBuildStage-1];
-    if(aqProgressBar)aqProgressBar.style.width=st.p+'%';if(aqProgressText)aqProgressText.textContent=`Stufe ${watercolorBuildStage}/10 · ${st.name}`;
-    if(aqStageInfo)aqStageInfo.innerHTML=`<b>${st.title}</b><div>${st.text}</div><div class="tiny" style="margin-top:6px"><b>Wasserverdünnung:</b> ${aqWaterText(watercolorBuildStage)}</div>`;
-    if(loaded)rebuildWatercolorBuild();aqRenderAdvice();draw();
-  }
-  aqStageBtns.forEach(b=>b.addEventListener('click',()=>setWatercolorBuildStage(b.dataset.aqStage,true)));
-  aqStageSlider?.addEventListener('input',()=>setWatercolorBuildStage(aqStageSlider.value,true));
-  aqBuildOnBtn?.addEventListener('click',()=>setWatercolorBuildStage(watercolorBuildStage,true));
-  aqBuildOffBtn?.addEventListener('click',()=>{watercolorBuildActive=false;draw();});
-  setWatercolorBuildStage(1,false);
-
   function setupCompactSidebar(){
     const side=document.querySelector('aside.side');
     if(!side) return;
@@ -4451,8 +4186,7 @@
       correctionStudioPanel:'Korrektur',
       mixPalettePanel:'Mischpalette',
       gridSavePanel:'Raster & Speichern',
-      sampleColorPanel:'Farbe',
-      waterBuildPanel:'Aquarell-Aufbau'
+      sampleColorPanel:'Farbe'
     };
 
     const nav=document.createElement('div');
@@ -4559,8 +4293,6 @@
       sourceCanvas.width=img.width; sourceCanvas.height=img.height;
       sourceCtx.clearRect(0,0,img.width,img.height);
       sourceCtx.drawImage(img,0,0);
-      if(watercolorBuildActive) rebuildWatercolorBuild();
-      aqRenderAdvice();
       rebuildToneGrayOriginal();
       rebuildForms();
       rebuildToneImage();
