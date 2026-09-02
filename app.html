@@ -211,7 +211,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.69</div>
+    <div class="title">AtelierAI · iPad 1.70</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -4310,14 +4310,7 @@
     return [Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)];
   }
 
-  function rebuildWatercolorBuild(){
-    if(!loaded)return;
-    const W=sourceCanvas.width,H=sourceCanvas.height;watercolorBuildCanvas.width=W;watercolorBuildCanvas.height=H;
-    if(watercolorBuildStage===1){aqBuildSketch();return;}
-
-    // 1.67: KEIN Einblenden des Originals. Jede Stufe hat eine eigene
-    // Tonwert-Untergrenze und Farbsättigung. Dadurch entstehen echte
-    // helle -> mittlere -> dunkle Malphasen; bereits Gemaltes wird nie heller.
+  function aqDesiredStageImage(stage,W,H){
     const stageCfg={
       2:{floor:.965,sat:.14,blur:10.0,detail:0.00},
       3:{floor:.915,sat:.28,blur:7.5, detail:0.00},
@@ -4327,43 +4320,64 @@
       7:{floor:.565,sat:.84,blur:1.8, detail:0.25},
       8:{floor:.390,sat:.94,blur:.85, detail:0.48},
       9:{floor:.210,sat:1.00,blur:.25, detail:0.78},
-      10:{floor:.000,sat:1.00,blur:0,   detail:1.00}
+      10:{floor:.000,sat:1.00,blur:0, detail:1.00}
     };
-    const cfg=stageCfg[watercolorBuildStage];
-    const tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;const tx=tmp.getContext('2d',{willReadFrequently:true});
+    const cfg=stageCfg[stage];
+    const tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;
+    const tx=tmp.getContext('2d',{willReadFrequently:true});
     tx.save();if(cfg.blur>0)tx.filter=`blur(${cfg.blur}px)`;tx.drawImage(sourceCanvas,0,0);tx.restore();
-    const src=tx.getImageData(0,0,W,H),orig=sourceCtx.getImageData(0,0,W,H),out=watercolorBuildCtx.createImageData(W,H);
+    const src=tx.getImageData(0,0,W,H),orig=sourceCtx.getImageData(0,0,W,H),out=tx.createImageData(W,H);
     const dd=src.data,oo=orig.data,od=out.data;
     for(let i=0;i<dd.length;i+=4){
       let r=dd[i],g=dd[i+1],b=dd[i+2];
       let [h,s,v]=aqRgbToHsv(r,g,b);
-
-      // Papierweiß und sehr helle Lichtstellen von Anfang an schützen.
       const origLum=.2126*oo[i]+.7152*oo[i+1]+.0722*oo[i+2];
       if(origLum>242){od[i]=250;od[i+1]=249;od[i+2]=245;od[i+3]=255;continue;}
-
-      // Früh nur Farbtemperatur zeigen, noch keine tiefen Werte.
-      v=Math.max(v,cfg.floor);
-      s=Math.min(1,s*cfg.sat);
-
-      // Ab Stufe 4 warme/kühle Schatten etwas unterscheidbarer machen,
-      // ohne sie vorzeitig dunkel werden zu lassen.
-      if(watercolorBuildStage>=4){
-        const isCool=(h>=165&&h<=270);
-        const isWarm=(h<80||h>330);
-        if(isCool)s=Math.min(1,s*(1.04+0.03*(watercolorBuildStage-4)));
-        if(isWarm)s=Math.min(1,s*(1.03+0.025*(watercolorBuildStage-4)));
+      v=Math.max(v,cfg.floor);s=Math.min(1,s*cfg.sat);
+      if(stage>=4){
+        const isCool=(h>=165&&h<=270),isWarm=(h<80||h>330);
+        if(isCool)s=Math.min(1,s*(1.04+0.03*(stage-4)));
+        if(isWarm)s=Math.min(1,s*(1.03+0.025*(stage-4)));
       }
-
       let rgb=aqHsvToRgb(h,s,v);
-      // Details kommen erst spät zurück; Stufe 8 ist die erste fast geschlossene Malerei.
       if(cfg.detail>0){
         rgb=[0,1,2].map(k=>Math.round(rgb[k]*(1-cfg.detail)+oo[i+k]*cfg.detail));
         const [hh,ss,vv]=aqRgbToHsv(...rgb);rgb=aqHsvToRgb(hh,ss,Math.max(vv,cfg.floor));
       }
       od[i]=rgb[0];od[i+1]=rgb[1];od[i+2]=rgb[2];od[i+3]=255;
     }
-    watercolorBuildCtx.putImageData(out,0,0);
+    return out;
+  }
+
+  function rebuildWatercolorBuild(){
+    if(!loaded)return;
+    const W=sourceCanvas.width,H=sourceCanvas.height;watercolorBuildCanvas.width=W;watercolorBuildCanvas.height=H;
+    if(watercolorBuildStage===1){aqBuildSketch();return;}
+
+    // 1.70: ECHTER KUMULATIVER AUFBAU.
+    // Ausgangspunkt ist Stufe 1 (Zeichnung auf Papier). Jede folgende Stufe
+    // wird auf das Ergebnis der vorherigen gelegt. Kein Pixel darf dabei
+    // wieder heller werden. So kann eine spaetere Stufe keine fruehere
+    // Lasur ersetzen oder "zuruecknehmen".
+    aqBuildSketch();
+    let accumulated=watercolorBuildCtx.getImageData(0,0,W,H);
+    const ad=accumulated.data;
+
+    for(let stage=2;stage<=watercolorBuildStage;stage++){
+      const desired=aqDesiredStageImage(stage,W,H);
+      const dd=desired.data;
+      for(let i=0;i<ad.length;i+=4){
+        // Transparente Lasur-Logik: nur die zusaetzliche Abdunklung dieser
+        // Stufe wird zugelassen. Bereits vorhandene Farbe bleibt erhalten.
+        // Kanalweises Minimum entspricht auf weissem Papier einer nur
+        // pigment-hinzufuegenden, niemals aufhellenden Schichtung.
+        ad[i]  =Math.min(ad[i],  dd[i]);
+        ad[i+1]=Math.min(ad[i+1],dd[i+1]);
+        ad[i+2]=Math.min(ad[i+2],dd[i+2]);
+        ad[i+3]=255;
+      }
+    }
+    watercolorBuildCtx.putImageData(accumulated,0,0);
   }
   function setWatercolorBuildStage(n,activate=true){
     watercolorBuildStage=Math.max(1,Math.min(10,Number(n)||1));if(activate)watercolorBuildActive=true;
