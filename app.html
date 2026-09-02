@@ -211,7 +211,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.68</div>
+    <div class="title">AtelierAI · iPad 1.69</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -777,7 +777,7 @@
         <div id="aqStageInfo" class="aq-card"></div>
         <div class="aq-card">
           <b>Farbhinweise aus dem Foto</b>
-          <div class="tiny">Pigmentverhältnis und Wasserverdünnung werden getrennt angegeben. Die Vorschläge verwenden – soweit gewählt – deine Aquarellpalette.</div><div class="tiny" style="margin-top:5px"><b>Pipette:</b> Wenn „Sichtbares Bild“ gewählt ist, wird die Farbe direkt aus der aktuell angezeigten Aquarell-Stufe aufgenommen.</div>
+          <div class="tiny">Pigmentverhältnis und Wasserverdünnung werden getrennt angegeben. Die Vorschläge verwenden – soweit gewählt – deine Aquarellpalette.</div><div class="tiny" style="margin-top:5px"><b>Pipette:</b> Bei „Sichtbares Bild“ wird aus der aktuell angezeigten Aquarell-Stufe aufgenommen.</div>
           <div id="aqColorAdvice" style="margin-top:7px;"></div>
         </div>
       </div>
@@ -2049,8 +2049,8 @@
   }
 
   function sourceContextForPicker(){
-    // 1.68: Bei 'Sichtbares Bild' wirklich aus der aktuell dargestellten
-    // Aquarell-Stufe aufnehmen – nicht heimlich aus dem Original/processed Bild.
+    // 1.69: Bildaufbau unverändert aus 1.67. Nur die Pipettenquelle wurde verbessert:
+    // Bei 'Sichtbares Bild' wird direkt aus der aktuell angezeigten Aquarell-Stufe aufgenommen.
     if(pickerSource && pickerSource.value==='original') return sourceCtx;
     if(watercolorBuildActive && watercolorBuildCanvas.width) return watercolorBuildCtx;
     return processedCtx;
@@ -4315,82 +4315,53 @@
     const W=sourceCanvas.width,H=sourceCanvas.height;watercolorBuildCanvas.width=W;watercolorBuildCanvas.height=H;
     if(watercolorBuildStage===1){aqBuildSketch();return;}
 
-    // 1.68: Malerischer, kumulativer Aufbau statt "Foto stufenweise einblenden".
-    // Jede Stufe beginnt auf Papierweiß. Früh werden nur breite, helle Farbmassen
-    // sichtbar; Mittelwerte, Schatten und Details werden getrennt und deutlich später
-    // freigegeben. Die Schwellen sind monoton: was in einer Stufe vorhanden ist,
-    // bleibt in allen folgenden Stufen erhalten.
+    // 1.67: KEIN Einblenden des Originals. Jede Stufe hat eine eigene
+    // Tonwert-Untergrenze und Farbsättigung. Dadurch entstehen echte
+    // helle -> mittlere -> dunkle Malphasen; bereits Gemaltes wird nie heller.
     const stageCfg={
-      2:{floor:.975,sat:.12,blur:14.0,coverage:.30,shadow:.00,detail:.00},
-      3:{floor:.945,sat:.22,blur:10.0,coverage:.44,shadow:.05,detail:.00},
-      4:{floor:.905,sat:.32,blur:7.5, coverage:.56,shadow:.14,detail:.00},
-      5:{floor:.845,sat:.44,blur:5.5, coverage:.67,shadow:.28,detail:.02},
-      6:{floor:.760,sat:.58,blur:3.8, coverage:.77,shadow:.44,detail:.07},
-      7:{floor:.645,sat:.72,blur:2.4, coverage:.86,shadow:.62,detail:.16},
-      8:{floor:.455,sat:.88,blur:1.25,coverage:.94,shadow:.82,detail:.38},
-      9:{floor:.245,sat:.97,blur:.45,coverage:.985,shadow:.94,detail:.72},
-      10:{floor:.000,sat:1.00,blur:0,coverage:1.00,shadow:1.00,detail:1.00}
+      2:{floor:.965,sat:.14,blur:10.0,detail:0.00},
+      3:{floor:.915,sat:.28,blur:7.5, detail:0.00},
+      4:{floor:.855,sat:.42,blur:5.5, detail:0.00},
+      5:{floor:.785,sat:.56,blur:4.0, detail:0.05},
+      6:{floor:.690,sat:.70,blur:2.8, detail:0.12},
+      7:{floor:.565,sat:.84,blur:1.8, detail:0.25},
+      8:{floor:.390,sat:.94,blur:.85, detail:0.48},
+      9:{floor:.210,sat:1.00,blur:.25, detail:0.78},
+      10:{floor:.000,sat:1.00,blur:0,   detail:1.00}
     };
     const cfg=stageCfg[watercolorBuildStage];
     const tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;const tx=tmp.getContext('2d',{willReadFrequently:true});
     tx.save();if(cfg.blur>0)tx.filter=`blur(${cfg.blur}px)`;tx.drawImage(sourceCanvas,0,0);tx.restore();
     const src=tx.getImageData(0,0,W,H),orig=sourceCtx.getImageData(0,0,W,H),out=watercolorBuildCtx.createImageData(W,H);
     const dd=src.data,oo=orig.data,od=out.data;
-    const paper=[251,249,244];
-
     for(let i=0;i<dd.length;i+=4){
       let r=dd[i],g=dd[i+1],b=dd[i+2];
       let [h,s,v]=aqRgbToHsv(r,g,b);
+
+      // Papierweiß und sehr helle Lichtstellen von Anfang an schützen.
       const origLum=.2126*oo[i]+.7152*oo[i+1]+.0722*oo[i+2];
-      const origV=Math.max(oo[i],oo[i+1],oo[i+2])/255;
-      const origMin=Math.min(oo[i],oo[i+1],oo[i+2])/255;
-      const origSat=origV>0?(origV-origMin)/origV:0;
+      if(origLum>242){od[i]=250;od[i+1]=249;od[i+2]=245;od[i+3]=255;continue;}
 
-      // Echte Lichter/Papierweiß bleiben von Anfang bis Ende ausgespart.
-      if(origLum>246){od[i]=paper[0];od[i+1]=paper[1];od[i+2]=paper[2];od[i+3]=255;continue;}
-
-      // Malrelevanz: große farbige Flächen zuerst, neutrale und dunkle Bereiche später.
-      // Diese Kennzahl hängt nur vom Original ab; mit wachsender coverage werden
-      // immer mehr Bereiche zugelassen, niemals wieder entfernt.
-      const darkness=Math.max(0,Math.min(1,(232-origLum)/210));
-      const chroma=Math.max(0,Math.min(1,origSat*1.35));
-      const paintScore=Math.max(chroma*.58 + (1-darkness)*.18, darkness*.46 + chroma*.34);
-      const threshold=1-cfg.coverage;
-      let reveal=(paintScore-threshold)/Math.max(.001,cfg.coverage);
-      reveal=Math.max(0,Math.min(1,reveal));
-      // Breite Grundlasur: selbst noch nicht freigegebene Bereiche bekommen höchstens
-      // einen kaum sichtbaren Farbhauch, kein verstecktes Originalbild.
-      const baseWash=watercolorBuildStage<=3?.08:(watercolorBuildStage===4?.12:.16);
-      reveal=Math.max(baseWash,reveal);
-
-      // Frühe Stufen bleiben hoch in der Helligkeit und niedrig in der Sättigung.
+      // Früh nur Farbtemperatur zeigen, noch keine tiefen Werte.
       v=Math.max(v,cfg.floor);
       s=Math.min(1,s*cfg.sat);
 
-      // Warme/kühle Schatten werden ab Stufe 4 als Farbrichtung sichtbar,
-      // aber ihre Tiefe kommt erst schrittweise über cfg.shadow hinzu.
+      // Ab Stufe 4 warme/kühle Schatten etwas unterscheidbarer machen,
+      // ohne sie vorzeitig dunkel werden zu lassen.
       if(watercolorBuildStage>=4){
-        const isCool=(h>=165&&h<=275);
-        const isWarm=(h<85||h>325);
-        if(isCool)s=Math.min(1,s*(1.08+cfg.shadow*.20));
-        if(isWarm)s=Math.min(1,s*(1.06+cfg.shadow*.16));
-        const shadowV=Math.max(cfg.floor, v-(darkness*cfg.shadow*.16));
-        v=Math.max(cfg.floor,shadowV);
+        const isCool=(h>=165&&h<=270);
+        const isWarm=(h<80||h>330);
+        if(isCool)s=Math.min(1,s*(1.04+0.03*(watercolorBuildStage-4)));
+        if(isWarm)s=Math.min(1,s*(1.03+0.025*(watercolorBuildStage-4)));
       }
 
       let rgb=aqHsvToRgb(h,s,v);
-      // Originaldetails erst spät und nur kontrolliert zurückholen.
+      // Details kommen erst spät zurück; Stufe 8 ist die erste fast geschlossene Malerei.
       if(cfg.detail>0){
         rgb=[0,1,2].map(k=>Math.round(rgb[k]*(1-cfg.detail)+oo[i+k]*cfg.detail));
-        let [hh,ss,vv]=aqRgbToHsv(...rgb);vv=Math.max(vv,cfg.floor);rgb=aqHsvToRgb(hh,ss,vv);
+        const [hh,ss,vv]=aqRgbToHsv(...rgb);rgb=aqHsvToRgb(hh,ss,Math.max(vv,cfg.floor));
       }
-
-      // Auf Papierweiß lasieren. Reveal wächst stufenweise und kumulativ.
-      const alpha=Math.max(0,Math.min(1,reveal*(.42+.58*cfg.coverage)));
-      od[i]=Math.round(paper[0]*(1-alpha)+rgb[0]*alpha);
-      od[i+1]=Math.round(paper[1]*(1-alpha)+rgb[1]*alpha);
-      od[i+2]=Math.round(paper[2]*(1-alpha)+rgb[2]*alpha);
-      od[i+3]=255;
+      od[i]=rgb[0];od[i+1]=rgb[1];od[i+2]=rgb[2];od[i+3]=255;
     }
     watercolorBuildCtx.putImageData(out,0,0);
   }
