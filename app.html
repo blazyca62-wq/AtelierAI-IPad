@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.66</title>
+  <title>AtelierAI iPad 1.52</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -164,24 +164,13 @@
     gap:8px;
   }
   #advisorWorkspace.advisor-fullscreen .card{max-width:none;}
-
-    #mixChartWorkspace.mixchart-fullscreen{
-      position:fixed; inset:0; z-index:99999; background:#f4f4f4;
-      overflow:auto; padding:16px; box-sizing:border-box;
-    }
-    #mixChartWorkspace.mixchart-fullscreen #mixChartWrap{
-      max-height:calc(100vh - 190px) !important;
-    }
-    #mixChartWorkspace.mixchart-fullscreen #mixChartTable td{
-      width:54px !important;height:54px !important;min-width:54px !important;
-    }
 </style>
 </head>
 <body>
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.66-20260830';
+    const wanted='atelierai-1.52-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -198,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.66</div>
+    <div class="title">AtelierAI · iPad 1.52</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -519,43 +508,26 @@
           </div>
         </div>
       </div>
-      <div class="section" id="mixChartPanel">
-        <div id="mixChartWorkspace">
-        <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;">
-          <h3 style="margin:0;">Mischdiagramm</h3>
-          <button type="button" id="mixChartFullscreenBtn" class="secondary">Ganzes Fenster</button>
-        </div>
-        <p>Oben und links siehst du die reinen Ausgangsfarben. Die Felder im Raster sind 1:1-Mischungen. Die schwarz umrandete Diagonale zeigt die reine Farbe mit sich selbst.</p>
 
-        <label for="mixChartPalette">Palette</label>
-        <select id="mixChartPalette" style="width:100%;margin-bottom:8px;">
+      <div class="section" id="mixGradientPanel">
+        <h3>Zwei-Farben-Mischverlauf</h3>
+        <p>Zwei Malfarben wählen und ihren durchgehenden Mischverlauf sehen. Tippe in den Verlauf für das Mischungsverhältnis.</p>
+
+        <label for="mixGradientPalette">Palette</label>
+        <select id="mixGradientPalette" style="width:100%;margin-bottom:8px;">
           <option value="artisan">Winsor &amp; Newton Artisan – Öl</option>
           <option value="horadam">Schmincke Horadam – Aquarell</option>
           <option value="akademie">Schmincke Akademie – Aquarell</option>
         </select>
 
-        <label style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;">
-          <input id="mixChartSelectedOnly" type="checkbox" checked>
-          <span>Nur meine ausgewählten Farben</span>
-        </label>
-
-        <label for="mixChartSort">Sortierung</label>
-        <select id="mixChartSort" style="width:100%;margin-bottom:8px;">
-          <option value="families">Farbfamilien: Gelb | Orange | Ocker | Rosa | Rot | Sienna | Umber | Grün | Blau | Violett | Neutral</option>
-          <option value="lightness">Helligkeit: hell → dunkel</option>
-          <option value="warmth">Wärme: warm → kühl</option>
-        </select>
-
-        <label for="mixChartLight">Weißzugabe <span id="mixChartLightVal">0 %</span></label>
-        <input id="mixChartLight" type="range" min="0" max="100" value="0" step="5" style="width:100%;">
-
-        <div style="margin-top:8px;font-size:12px;">Tippe auf ein Mischfeld, um die beiden Farben und das Verhältnis zu sehen.</div>
-        <div id="mixChartInfo" style="margin-top:8px;padding:9px;border:1px solid #d8d6d0;border-radius:10px;background:#fff;">Noch keine Mischung gewählt.</div>
-
-        <div id="mixChartWrap" style="overflow:auto;-webkit-overflow-scrolling:touch;margin-top:10px;border:1px solid #d8d6d0;border-radius:10px;background:#fff;max-height:62vh;">
-          <table id="mixChartTable" style="border-collapse:separate;border-spacing:3px;min-width:max-content;"></table>
+        <div class="grid2">
+          <div><label for="mixGradientA">Farbe A</label><select id="mixGradientA" style="width:100%;"></select></div>
+          <div><label for="mixGradientB">Farbe B</label><select id="mixGradientB" style="width:100%;"></select></div>
         </div>
-        </div>
+
+        <canvas id="mixGradientCanvas" width="900" height="150" style="display:block;width:100%;height:110px;margin-top:12px;border:1px solid #cfcfcf;border-radius:10px;touch-action:manipulation;"></canvas>
+        <div id="mixGradientRatio" style="margin-top:8px;padding:9px;border:1px solid #d8d6d0;border-radius:10px;background:#fff;text-align:center;font-weight:600;">50 % Farbe A + 50 % Farbe B</div>
+        <div id="mixGradientPicked" style="height:64px;margin-top:8px;border:1px solid #cfcfcf;border-radius:10px;"></div>
       </div>
 
       <div class="section" id="colorJourneyPanel">
@@ -1223,23 +1195,11 @@
         if(data[i+3]>20) samples.push([data[i],data[i+1],data[i+2]]);
       }
     }
-    const result=robustSmartColor(samples);
-    showSmartColor(result);
-    if(result && result.smart){
-      const rgb=[...result.smart];
-      lastAverageColor=[...rgb];
-      lastSmartColor=[...rgb];
-      colorBox.style.background=rgbHex(adaptiveDisplayColor(rgb));
-      colorText.innerHTML=`RGB: ${rgb.join(', ')}<br>HEX: ${rgbHex(rgb)}`;
-      correctionBase=[...rgb]; refreshCorrection();
-      ideasBase=[...rgb]; refreshIdea();
-      // showStudioMixPage ist weiter unten definiert; Funktionsdeklarationen werden gehoistet.
-      showStudioMixPage();
-    }
+    showSmartColor(robustSmartColor(samples));
   }
 
 
-  const PALETTES = {"artisan":[["Lemon Yellow",[255,221,0]],["Cadmium Yellow Light",[250,197,0]],["Cadmium Yellow Pale Hue",[247,194,9]],["Cadmium Yellow Medium",[244,176,29]],["Cadmium Yellow Hue",[241,174,26]],["Cadmium Yellow Deep Hue",[240,140,29]],["Cadmium Orange Hue",[235,92,59]],["Cadmium Red Light",[228,43,53]],["Cadmium Red Medium",[224,37,49]],["Cadmium Red Hue",[222,14,46]],["Cadmium Red Dark",[185,37,59]],["Cadmium Red Deep Hue",[198,18,45]],["Permanent Rose",[238,17,73]],["Permanent Alizarin Crimson",[199,17,49]],["Magenta",[222,0,116]],["Dioxazine Purple",[82,48,129]],["Cerulean Blue",[44,132,184]],["Cerulean Blue Hue",[45,145,190]],["Cobalt Blue",[47,92,166]],["Cobalt Blue Hue",[45,88,158]],["French Ultramarine",[42,55,145]],["Phthalo Blue (Red Shade)",[22,63,118]],["Prussian Blue",[22,48,82]],["Phthalo Green (Yellow Shade)",[0,123,72]],["Viridian Hue",[0,174,117]],["Phthalo Green (Blue Shade)",[0,107,65]],["Permanent Sap Green",[54,112,60]],["Olive Green",[54,64,34]],["Naples Yellow Hue",[237,179,100]],["Yellow Ochre",[210,123,39]],["Raw Sienna",[211,113,30]],["Indian Red",[155,58,51]],["Burnt Sienna",[132,53,46]],["Burnt Umber",[91,56,49]],["Raw Umber",[69,59,49]],["Payne's Gray",[37,58,57]],["Ivory Black",[35,31,31]],["Lamp Black",[32,29,29]],["Titanium White",[245,245,241]],["Zinc White (Mixing White)",[250,250,247]]],"horadam":[["Titan-Deckweiß",[244,243,237]],["Permanent chinesisch Weiß",[244,243,237]],["Titangelb",[220,178,55]],["Zitronengelb",[220,178,55]],["Kadmiumgelb zitron",[220,178,55]],["Chromgelbton zitron",[220,178,55]],["Vanadiumgelb",[220,178,55]],["Kadmiumgelb hell",[220,178,55]],["Reingelb",[220,178,55]],["Aureolinton",[128,128,128]],["Kadmiumgelb mittel",[220,178,55]],["Chromgelbton hell",[220,178,55]],["Lasurgelb",[220,178,55]],["Turners Gelb",[220,178,55]],["Chinacridongoldton",[194,151,61]],["Chromgelbton dunkel",[220,178,55]],["Kadmiumgelb dunkel",[220,178,55]],["Indischgelb",[220,178,55]],["Gelborange",[220,178,55]],["Kadmiumorange hell",[226,105,44]],["Chromorangeton",[226,105,44]],["Kadmiumorange dunkel",[226,105,44]],["Lasurorange",[226,105,44]],["Saturnrot",[184,55,57]],["Kadmiumrot Orange",[226,105,44]],["Permanentrot Orange",[226,105,44]],["Permanentrot",[184,55,57]],["Kadmiumrot hell",[184,55,57]],["Geranienrot",[184,55,57]],["Zinnoberrot",[184,55,57]],["Zinnoberrot hell",[184,55,57]],["Scharlachrot",[184,55,57]],["Kadmiumrot mittel",[184,55,57]],["Chinacridon Hellrot",[184,55,57]],["Lasurdunkelrot",[184,55,57]],["Kadmiumrot dunkel",[184,55,57]],["Dunkelrot",[184,55,57]],["Perylenrot tief",[184,55,57]],["Alizarin-Karmesin",[128,128,128]],["Rubinrot dunkel",[184,55,57]],["Krapplack dunkel",[128,128,128]],["Krapprot tief",[184,55,57]],["Bordeauxrot",[184,55,57]],["Krapplack Rosa",[204,87,120]],["Permanent Karmin",[184,55,57]],["Rubinrot",[184,55,57]],["Magenta",[177,48,119]],["Purpur Magenta",[177,48,119]],["Chinacridon Magenta",[177,48,119]],["Chinacridon Violett",[107,69,135]],["Potters Pink",[204,87,120]],["Perylenviolett",[107,69,135]],["Chinacridon Purpur",[177,48,119]],["Manganviolett",[107,69,135]],["Schmincke Violett",[107,69,135]],["Kobaltviolettton",[107,69,135]],["Ultramarinviolett",[107,69,135]],["Delftblau",[53,83,144]],["Indigo",[53,83,144]],["Tiefblau",[53,83,144]],["Phthalo Saphirblau",[53,83,144]],["Kobaltblau dunkel",[53,83,144]],["Franz. Ultramarin",[53,83,144]],["Ultramarin feinst",[53,83,144]],["Ultramarinblau",[53,83,144]],["Kobaltblau hell",[53,83,144]],["Kobaltblauton",[53,83,144]],["Bergblau",[53,83,144]],["Kobalt Azur",[128,128,128]],["Preußischblau",[53,83,144]],["Pariserblau",[53,83,144]],["Phthaloblau",[53,83,144]],["Coelinblauton",[53,83,144]],["Heliocoelin",[49,133,155]],["Kobaltcoelin",[49,133,155]],["Heliotürkis",[49,133,155]],["Kobalttürkis",[49,133,155]],["Kobaltgrün Türkis",[49,133,155]],["Preußischgrün",[61,112,76]],["Smaragdgrün",[61,112,76]],["Chromoxidgrün feurig",[61,112,76]],["Phthalogrün",[61,112,76]],["Heliogrün",[61,112,76]],["Permanentgrün Oliv",[61,112,76]],["Saftgrün",[61,112,76]],["Permanentgrün",[61,112,76]],["Maigrün",[61,112,76]],["Kobaltgrün rein",[61,112,76]],["Kobaltgrün tief",[61,112,76]],["Hookersgrün",[61,112,76]],["Grünoliv",[61,112,76]],["Chromoxidgrün stumpf",[61,112,76]],["Olivgrün gelblich",[220,178,55]],["Grüne Erde",[61,112,76]],["Lasurgoldgrün",[61,112,76]],["Rutilgelb",[220,178,55]],["Jaune brillant tief",[128,128,128]],["Neapelgelb",[220,178,55]],["Siena natur",[126,85,57]],["Lichter Ocker natur",[220,178,55]],["Titangoldocker",[220,178,55]],["Lichter Ocker",[220,178,55]],["Lasur Ocker",[220,178,55]],["Umbra natur",[126,85,57]],["Neapelgelb rötlich",[220,178,55]],["Spinellbraun",[126,85,57]],["Goldbraun",[126,85,57]],["Lasur Siena",[126,85,57]],["Kastanienbraun",[126,85,57]],["Siena gebrannt",[126,85,57]],["Englisch-Venezianisch Rot",[184,55,57]],["Krappbraun",[126,85,57]],["Lasurbraun",[126,85,57]],["Mahagonibraun",[126,85,57]],["Caput mortuum",[128,128,128]],["Eisenoxidbraun",[126,85,57]],["Lasur Umbra",[126,85,57]],["Umbra gebrannt",[126,85,57]],["Umbra grünlich",[61,112,76]],["Vandyckbraun",[126,85,57]],["Sepiabraun",[126,85,57]],["Sepiabraun rötlich",[126,85,57]],["Neutraltinte",[128,128,128]],["Neutralgrau",[105,108,112]],["Paynesgrau bläulich",[105,108,112]],["Perylengrün",[61,112,76]],["Schmincke Paynesgrau",[105,108,112]],["Lampenschwarz",[35,35,35]],["Elfenbeinschwarz",[35,35,35]],["Hämatitschwarz",[35,35,35]],["Anthrazit",[128,128,128]],["Graphitgrau",[105,108,112]],["Eisenoxidschwarz",[35,35,35]],["Silber",[170,173,177]],["Gold",[194,151,61]],["Brillant Opernrosa",[204,87,120]],["Brillant Purpur",[177,48,119]],["Brillant Rotviolett",[184,55,57]],["Brillant Blauviolett",[107,69,135]]],"akademie":[["Deckweiß",[244,243,237]],["Hellgelb zitron",[220,178,55]],["Kadmiumgelbton",[220,178,55]],["Indischgelb",[220,178,55]],["Orange",[226,105,44]],["Kadmiumrotton",[184,55,57]],["Brillantrot",[184,55,57]],["Dunkelrot",[184,55,57]],["Karmin",[184,55,57]],["Magenta",[177,48,119]],["Violett",[107,69,135]],["Blauviolett",[107,69,135]],["Lavendelviolett",[107,69,135]],["Dunkelblau",[53,83,144]],["Indigo",[53,83,144]],["Ultramarin",[53,83,144]],["Preußischblau",[53,83,144]],["Kobaltblauton",[53,83,144]],["Cyan",[49,133,155]],["Kobalttürkiston",[49,133,155]],["Brillantgrün",[61,112,76]],["Laubgrün",[61,112,76]],["Dunkelgrün",[61,112,76]],["Permanentgrün",[61,112,76]],["Oliv Gelbgrün",[220,178,55]],["Maigrün",[61,112,76]],["Lichter Ocker",[220,178,55]],["Neapelgelb",[220,178,55]],["Goldrosa",[204,87,120]],["Englischrot",[184,55,57]],["Siena gebrannt",[126,85,57]],["Umbra gebrannt",[126,85,57]],["Vandyckbraun",[126,85,57]],["Sepia",[126,85,57]],["Paynesgrau",[105,108,112]],["Hellgrau",[105,108,112]],["Schwarz",[35,35,35]],["Neongelb",[220,178,55]],["Neonorange",[226,105,44]],["Neonpink",[204,87,120]]]};
+  const PALETTES = {"artisan":[["Lemon Yellow",[255,221,0]],["Cadmium Yellow Light",[250,197,0]],["Cadmium Yellow Pale Hue",[247,194,9]],["Cadmium Yellow Medium",[244,176,29]],["Cadmium Yellow Hue",[241,174,26]],["Cadmium Yellow Deep Hue",[240,140,29]],["Cadmium Orange Hue",[235,92,59]],["Cadmium Red Light",[228,43,53]],["Cadmium Red Medium",[224,37,49]],["Cadmium Red Hue",[222,14,46]],["Cadmium Red Dark",[185,37,59]],["Cadmium Red Deep Hue",[198,18,45]],["Permanent Rose",[238,17,73]],["Permanent Alizarin Crimson",[199,17,49]],["Magenta",[222,0,116]],["Dioxazine Purple",[82,48,129]],["Cerulean Blue",[0,126,139]],["Cerulean Blue Hue",[0,157,184]],["Cobalt Blue",[0,111,178]],["Cobalt Blue Hue",[31,93,167]],["French Ultramarine",[0,77,151]],["Phthalo Blue (Red Shade)",[31,65,98]],["Prussian Blue",[27,42,65]],["Phthalo Green (Yellow Shade)",[0,123,72]],["Viridian Hue",[0,174,117]],["Phthalo Green (Blue Shade)",[0,107,65]],["Permanent Sap Green",[54,112,60]],["Olive Green",[54,64,34]],["Naples Yellow Hue",[237,179,100]],["Yellow Ochre",[210,123,39]],["Raw Sienna",[211,113,30]],["Indian Red",[155,58,51]],["Burnt Sienna",[132,53,46]],["Burnt Umber",[91,56,49]],["Raw Umber",[69,59,49]],["Payne's Gray",[37,58,57]],["Ivory Black",[35,31,31]],["Lamp Black",[32,29,29]],["Titanium White",[245,245,241]],["Zinc White (Mixing White)",[250,250,247]]],"horadam":[["Titan-Deckweiß",[244,243,237]],["Permanent chinesisch Weiß",[244,243,237]],["Titangelb",[220,178,55]],["Zitronengelb",[220,178,55]],["Kadmiumgelb zitron",[220,178,55]],["Chromgelbton zitron",[220,178,55]],["Vanadiumgelb",[220,178,55]],["Kadmiumgelb hell",[220,178,55]],["Reingelb",[220,178,55]],["Aureolinton",[128,128,128]],["Kadmiumgelb mittel",[220,178,55]],["Chromgelbton hell",[220,178,55]],["Lasurgelb",[220,178,55]],["Turners Gelb",[220,178,55]],["Chinacridongoldton",[194,151,61]],["Chromgelbton dunkel",[220,178,55]],["Kadmiumgelb dunkel",[220,178,55]],["Indischgelb",[220,178,55]],["Gelborange",[220,178,55]],["Kadmiumorange hell",[226,105,44]],["Chromorangeton",[226,105,44]],["Kadmiumorange dunkel",[226,105,44]],["Lasurorange",[226,105,44]],["Saturnrot",[184,55,57]],["Kadmiumrot Orange",[226,105,44]],["Permanentrot Orange",[226,105,44]],["Permanentrot",[184,55,57]],["Kadmiumrot hell",[184,55,57]],["Geranienrot",[184,55,57]],["Zinnoberrot",[184,55,57]],["Zinnoberrot hell",[184,55,57]],["Scharlachrot",[184,55,57]],["Kadmiumrot mittel",[184,55,57]],["Chinacridon Hellrot",[184,55,57]],["Lasurdunkelrot",[184,55,57]],["Kadmiumrot dunkel",[184,55,57]],["Dunkelrot",[184,55,57]],["Perylenrot tief",[184,55,57]],["Alizarin-Karmesin",[128,128,128]],["Rubinrot dunkel",[184,55,57]],["Krapplack dunkel",[128,128,128]],["Krapprot tief",[184,55,57]],["Bordeauxrot",[184,55,57]],["Krapplack Rosa",[204,87,120]],["Permanent Karmin",[184,55,57]],["Rubinrot",[184,55,57]],["Magenta",[177,48,119]],["Purpur Magenta",[177,48,119]],["Chinacridon Magenta",[177,48,119]],["Chinacridon Violett",[107,69,135]],["Potters Pink",[204,87,120]],["Perylenviolett",[107,69,135]],["Chinacridon Purpur",[177,48,119]],["Manganviolett",[107,69,135]],["Schmincke Violett",[107,69,135]],["Kobaltviolettton",[107,69,135]],["Ultramarinviolett",[107,69,135]],["Delftblau",[53,83,144]],["Indigo",[53,83,144]],["Tiefblau",[53,83,144]],["Phthalo Saphirblau",[53,83,144]],["Kobaltblau dunkel",[53,83,144]],["Franz. Ultramarin",[53,83,144]],["Ultramarin feinst",[53,83,144]],["Ultramarinblau",[53,83,144]],["Kobaltblau hell",[53,83,144]],["Kobaltblauton",[53,83,144]],["Bergblau",[53,83,144]],["Kobalt Azur",[128,128,128]],["Preußischblau",[53,83,144]],["Pariserblau",[53,83,144]],["Phthaloblau",[53,83,144]],["Coelinblauton",[53,83,144]],["Heliocoelin",[49,133,155]],["Kobaltcoelin",[49,133,155]],["Heliotürkis",[49,133,155]],["Kobalttürkis",[49,133,155]],["Kobaltgrün Türkis",[49,133,155]],["Preußischgrün",[61,112,76]],["Smaragdgrün",[61,112,76]],["Chromoxidgrün feurig",[61,112,76]],["Phthalogrün",[61,112,76]],["Heliogrün",[61,112,76]],["Permanentgrün Oliv",[61,112,76]],["Saftgrün",[61,112,76]],["Permanentgrün",[61,112,76]],["Maigrün",[61,112,76]],["Kobaltgrün rein",[61,112,76]],["Kobaltgrün tief",[61,112,76]],["Hookersgrün",[61,112,76]],["Grünoliv",[61,112,76]],["Chromoxidgrün stumpf",[61,112,76]],["Olivgrün gelblich",[220,178,55]],["Grüne Erde",[61,112,76]],["Lasurgoldgrün",[61,112,76]],["Rutilgelb",[220,178,55]],["Jaune brillant tief",[128,128,128]],["Neapelgelb",[220,178,55]],["Siena natur",[126,85,57]],["Lichter Ocker natur",[220,178,55]],["Titangoldocker",[220,178,55]],["Lichter Ocker",[220,178,55]],["Lasur Ocker",[220,178,55]],["Umbra natur",[126,85,57]],["Neapelgelb rötlich",[220,178,55]],["Spinellbraun",[126,85,57]],["Goldbraun",[126,85,57]],["Lasur Siena",[126,85,57]],["Kastanienbraun",[126,85,57]],["Siena gebrannt",[126,85,57]],["Englisch-Venezianisch Rot",[184,55,57]],["Krappbraun",[126,85,57]],["Lasurbraun",[126,85,57]],["Mahagonibraun",[126,85,57]],["Caput mortuum",[128,128,128]],["Eisenoxidbraun",[126,85,57]],["Lasur Umbra",[126,85,57]],["Umbra gebrannt",[126,85,57]],["Umbra grünlich",[61,112,76]],["Vandyckbraun",[126,85,57]],["Sepiabraun",[126,85,57]],["Sepiabraun rötlich",[126,85,57]],["Neutraltinte",[128,128,128]],["Neutralgrau",[105,108,112]],["Paynesgrau bläulich",[105,108,112]],["Perylengrün",[61,112,76]],["Schmincke Paynesgrau",[105,108,112]],["Lampenschwarz",[35,35,35]],["Elfenbeinschwarz",[35,35,35]],["Hämatitschwarz",[35,35,35]],["Anthrazit",[128,128,128]],["Graphitgrau",[105,108,112]],["Eisenoxidschwarz",[35,35,35]],["Silber",[170,173,177]],["Gold",[194,151,61]],["Brillant Opernrosa",[204,87,120]],["Brillant Purpur",[177,48,119]],["Brillant Rotviolett",[184,55,57]],["Brillant Blauviolett",[107,69,135]]],"akademie":[["Deckweiß",[244,243,237]],["Hellgelb zitron",[220,178,55]],["Kadmiumgelbton",[220,178,55]],["Indischgelb",[220,178,55]],["Orange",[226,105,44]],["Kadmiumrotton",[184,55,57]],["Brillantrot",[184,55,57]],["Dunkelrot",[184,55,57]],["Karmin",[184,55,57]],["Magenta",[177,48,119]],["Violett",[107,69,135]],["Blauviolett",[107,69,135]],["Lavendelviolett",[107,69,135]],["Dunkelblau",[53,83,144]],["Indigo",[53,83,144]],["Ultramarin",[53,83,144]],["Preußischblau",[53,83,144]],["Kobaltblauton",[53,83,144]],["Cyan",[49,133,155]],["Kobalttürkiston",[49,133,155]],["Brillantgrün",[61,112,76]],["Laubgrün",[61,112,76]],["Dunkelgrün",[61,112,76]],["Permanentgrün",[61,112,76]],["Oliv Gelbgrün",[220,178,55]],["Maigrün",[61,112,76]],["Lichter Ocker",[220,178,55]],["Neapelgelb",[220,178,55]],["Goldrosa",[204,87,120]],["Englischrot",[184,55,57]],["Siena gebrannt",[126,85,57]],["Umbra gebrannt",[126,85,57]],["Vandyckbraun",[126,85,57]],["Sepia",[126,85,57]],["Paynesgrau",[105,108,112]],["Hellgrau",[105,108,112]],["Schwarz",[35,35,35]],["Neongelb",[220,178,55]],["Neonorange",[226,105,44]],["Neonpink",[204,87,120]]]};
 
 
   const OWNED_KEY='atelierai_owned_colors_v141';
@@ -1804,7 +1764,7 @@
     // also update the existing smart color display for consistency
     if(robust) showSmartColor(robust);
     correctionBase=[...lastSmartColor]; refreshCorrection(); ideasBase=[...lastSmartColor]; refreshIdea();
-    showStudioMixPage();
+    showMixes();
   }
 
 
@@ -3959,220 +3919,94 @@
 
 
 
-  // 1.53 Mischdiagramm: jede Palettenfarbe 1:1 mit jeder anderen.
-  const mcPalette=document.getElementById('mixChartPalette');
-  const mcLight=document.getElementById('mixChartLight');
-  const mcLightVal=document.getElementById('mixChartLightVal');
-  const mcTable=document.getElementById('mixChartTable');
-  const mcInfo=document.getElementById('mixChartInfo');
-  const mcWrap=document.getElementById('mixChartWrap');
-  const mcSelectedOnly=document.getElementById('mixChartSelectedOnly');
-  const mcSort=document.getElementById('mixChartSort');
-  const mcWorkspace=document.getElementById('mixChartWorkspace');
-  const mcFullscreenBtn=document.getElementById('mixChartFullscreenBtn');
+  // 1.51 Zwei-Farben-Mischverlauf: malerische Mischung statt CSS/RGB-Verlauf.
+  const mgPalette=document.getElementById('mixGradientPalette');
+  const mgA=document.getElementById('mixGradientA');
+  const mgB=document.getElementById('mixGradientB');
+  const mgCanvas=document.getElementById('mixGradientCanvas');
+  const mgCtx=mgCanvas?.getContext('2d');
+  const mgRatio=document.getElementById('mixGradientRatio');
+  const mgPicked=document.getElementById('mixGradientPicked');
 
-  function mcMetrics(c){
-    const rgb=mcRgb(c[1]);
-    const r=rgb[0]/255,g=rgb[1]/255,b=rgb[2]/255;
-    const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
-    let h=0;
-    if(d){
-      if(max===r) h=60*(((g-b)/d)%6);
-      else if(max===g) h=60*((b-r)/d+2);
-      else h=60*((r-g)/d+4);
-      if(h<0)h+=360;
-    }
-    const light=0.2126*rgb[0]+0.7152*rgb[1]+0.0722*rgb[2];
-    // Painterly warm/cool ordering: reds/oranges/yellows first, then neutrals/greens, blues/violets last.
-    let warmth;
-    if(d<0.055) warmth=1.5; // neutral colors grouped centrally
-    else{
-      const distWarm=Math.min(Math.abs(h-35),360-Math.abs(h-35));
-      const distCool=Math.min(Math.abs(h-220),360-Math.abs(h-220));
-      warmth=distWarm-distCool;
-    }
-    return {light,warmth};
+  function mgColors(){
+    const api=window.AtelierPaletteAPI;
+    if(api?.fullPalette) return api.fullPalette(mgPalette.value)||[];
+    // Während des ersten Seitenaufbaus liegt die Palette noch im Hauptmodul.
+    return (PALETTES[mgPalette.value]||[]).map(x=>[x[0],x[1],x[2]]);
   }
-  function mcFamily(c){
-    const n=(c[0]||'').toLowerCase();
-
-    // Malerische Reihenfolge:
-    // Gelb → Orange → Ocker → Rosa → Rot → Sienna → Umber → Grün → Blau → Violett → Neutral
-    // Spezifische Erdfarben werden VOR den allgemeinen Rot-/Gelb-Begriffen geprüft.
-    if(/ochre|ocker/.test(n)) return 2;
-    if(/sienna|siena/.test(n)) return 5;
-    if(/umber|umbra|van dyck/.test(n)) return 6;
-
-    if(/yellow|gelb|lemon|zitron|jaune|naples/.test(n)) return 0;
-    if(/orange|zinnober|vermillion/.test(n)) return 1;
-    if(/rose|rosa|pink|magenta/.test(n)) return 3;
-    // Farbfamilie hat Vorrang vor Shade-Bezeichnungen:
-    // "Phthalo Blue (Red Shade)" ist Blau, "Red Shade" beschreibt nur den Unterton.
-    if(/blue|blau|ultramarin|ultramarine|cobalt|kobalt|cerulean|coelin|prussian|preuß/.test(n)) return 8;
-    if(/red|rot|crimson|karmin|carmine|scarlet|alizarin|indian red/.test(n)) return 4;
-    if(/green|grün|viridian|sap|olive|oliv/.test(n)) return 7;
-    if(/violet|violett|purple|purpur|mauve|lila|dioxazine/.test(n)) return 9;
-    if(/white|weiß|weiss|grey|gray|grau|black|schwarz|neutral|payne/.test(n)) return 10;
-
-    // übrige Braun-/Erdfarben direkt bei Umber einordnen
-    if(/brown|braun|sepia|earth|erde/.test(n)) return 6;
-    return 10;
-  }
-
-  function mcSorted(colors){
-    const arr=[...colors];
-    if(mcSort?.value==='families'){
-      return arr
-        .map((c,i)=>({c,i,f:mcFamily(c)}))
-        .sort((a,b)=>a.f-b.f || a.i-b.i)
-        .map(x=>x.c);
-    }
-    if(mcSort?.value==='lightness'){
-      return arr.sort((a,b)=>{
-        const A=mcMetrics(a), B=mcMetrics(b);
-        const dl=B.light-A.light;
-        if(Math.abs(dl)>8) return dl;
-        // Bei ähnlich hellen Farben die leuchtend warmen Gelbtöne zuerst:
-        // so beginnt die Malerpalette z.B. mit Zitronengelb statt mit zufälligen Nachbarfarben.
-        const ar=mcRgb(a[1]), br=mcRgb(b[1]);
-        const aYellow=(ar[0]+ar[1]-1.55*ar[2]);
-        const bYellow=(br[0]+br[1]-1.55*br[2]);
-        return bYellow-aYellow || dl;
-      });
-    }
-    return arr.sort((a,b)=>{
-      const A=mcMetrics(a),B=mcMetrics(b);
-      return A.warmth-B.warmth || B.light-A.light;
+  function mgPopulate(){
+    const colors=mgColors();
+    const oldA=mgA.value, oldB=mgB.value;
+    mgA.innerHTML=''; mgB.innerHTML='';
+    colors.forEach((x,i)=>{
+      const oa=document.createElement('option'); oa.value=String(i); oa.textContent=x[0]; mgA.appendChild(oa);
+      const ob=document.createElement('option'); ob.value=String(i); ob.textContent=x[0]; mgB.appendChild(ob);
     });
-  }
-
-  function mcColors(){
-    const key=mcPalette?.value||'artisan';
-    const selectedOnly=mcSelectedOnly?.checked!==false;
-
-    if(selectedOnly){
-      if(window.AtelierPaletteAPI?.selectedPalette){
-        const selected=window.AtelierPaletteAPI.selectedPalette(key)||[];
-        if(selected.length) return selected;
-      }
-      const selected=selectedPaletteColors(key)||[];
-      if(selected.length) return selected;
+    if(colors.length){
+      mgA.value=(oldA && +oldA<colors.length)?oldA:'0';
+      mgB.value=(oldB && +oldB<colors.length)?oldB:String(Math.min(1,colors.length-1));
     }
-
-    if(window.AtelierPaletteAPI?.fullPalette) return window.AtelierPaletteAPI.fullPalette(key)||[];
-    return (PALETTES[key]||[]).map(x=>[x[0],x[1],x[2]]);
+    mgDraw();
   }
-  function mcRgb(v){
-    if(Array.isArray(v)) return v.slice(0,3);
+  function mgRgb(v){
+    if(Array.isArray(v)) return v;
     if(typeof v==='string'){
       const h=v.replace('#','');
       if(/^[0-9a-f]{6}$/i.test(h)) return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];
     }
     return [128,128,128];
   }
-  // Optische 1:1-Mischung im Reflexionsraum statt einfachem Bildschirm-RGB.
-  function mcMix(a,b){
-    a=mcRgb(a); b=mcRgb(b);
+  // Kubelka-Munk-artige optische Mischung in linearisiertem Reflexionsraum.
+  // Vermeidet den künstlichen Bildschirm-RGB-Verlauf und ergibt malerischere Zwischenfarben.
+  function mgMix(a,b,t){
+    a=mgRgb(a); b=mgRgb(b);
     const out=[];
     for(let k=0;k<3;k++){
       const ra=Math.max(.015,a[k]/255), rb=Math.max(.015,b[k]/255);
-      const ka=((1-ra)*(1-ra))/(2*ra), kb=((1-rb)*(1-rb))/(2*rb);
-      const km=(ka+kb)/2;
+      const ka=((1-ra)*(1-ra))/(2*ra);
+      const kb=((1-rb)*(1-rb))/(2*rb);
+      const km=ka*(1-t)+kb*t;
       const r=(1+km)-Math.sqrt(km*km+2*km);
       out[k]=Math.max(0,Math.min(255,Math.round(r*255)));
     }
     return out;
   }
-  function mcLighten(rgb,pct){
-    const p=Math.max(0,Math.min(100,pct))/100;
-    if(p<=0) return rgb;
-    // Weißzugabe als Pigmentmischung. Nicht linear: ab der Mitte deutlich stärkere Aufhellung.
-    // 100 % entspricht einer sehr hohen Weißmenge und soll sichtbar fast bis zum hellen Tint führen.
-    const white=[250,249,246];
-    const whiteParts=(Math.pow(p,1.25)*10.0);
-    const out=[];
-    for(let k=0;k<3;k++){
-      const r1=Math.max(.012,rgb[k]/255), r2=Math.max(.012,white[k]/255);
-      const k1=((1-r1)*(1-r1))/(2*r1), k2=((1-r2)*(1-r2))/(2*r2);
-      const km=(k1+k2*whiteParts)/(1+whiteParts);
-      const rr=(1+km)-Math.sqrt(km*km+2*km);
-      out[k]=Math.max(0,Math.min(255,Math.round(rr*255)));
-    }
-    return out;
+  function mgSelected(){
+    const c=mgColors();
+    return [c[+mgA.value]||c[0],c[+mgB.value]||c[1]||c[0]];
   }
-  function mcRender(){
-    if(!mcTable)return;
-    const colors=mcSorted(mcColors());
-    const light=+(mcLight?.value||0);
-    mcLightVal.textContent=light+' %';
-    mcTable.innerHTML='';
-    if(!colors.length){
-      mcTable.innerHTML='<tr><td style="padding:10px;">Keine ausgewählten Farben vorhanden. Wähle zuerst Farben in deiner Palette oder schalte „Nur meine ausgewählten Farben“ aus.</td></tr>';
-      return;
+  function mgDraw(){
+    if(!mgCtx)return;
+    const [a,b]=mgSelected(); if(!a||!b)return;
+    const w=mgCanvas.width,h=mgCanvas.height;
+    for(let x=0;x<w;x++){
+      const q=x/(w-1), rgb=mgMix(a[1],b[1],q);
+      mgCtx.fillStyle=`rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+      mgCtx.fillRect(x,0,1,h);
     }
-
-    const head=document.createElement('tr');
-    const corner=document.createElement('th');
-    corner.textContent='×';
-    corner.style.cssText='position:sticky;left:0;top:0;z-index:4;background:#f4f4f4;padding:5px;min-width:74px;';
-    head.appendChild(corner);
-
-    colors.forEach((c)=>{
-      const th=document.createElement('th');
-      th.title=c[0];
-      const cr=mcRgb(c[1]);
-      th.innerHTML='<div style="width:42px;height:42px;margin:0 auto 5px;border-radius:5px;border:1px solid rgba(0,0,0,.10);box-sizing:border-box;background:rgb('+cr[0]+','+cr[1]+','+cr[2]+');"></div><div>'+c[0]+'</div>';
-      th.style.cssText='position:sticky;top:0;z-index:2;background:#f4f4f4;padding:5px 4px 7px;font-size:9px;height:104px;min-width:58px;max-width:74px;line-height:1.05;word-break:break-word;vertical-align:bottom;border-bottom:3px solid #b7b7b7;';
-      head.appendChild(th);
-    });
-    mcTable.appendChild(head);
-
-    colors.forEach((rowColor,ri)=>{
-      const tr=document.createElement('tr');
-      const rh=document.createElement('th');
-      rh.title=rowColor[0];
-      const rr=mcRgb(rowColor[1]);
-      rh.innerHTML='<span style="display:inline-block;width:42px;height:42px;border-radius:5px;border:1px solid rgba(0,0,0,.10);box-sizing:border-box;vertical-align:middle;margin-right:6px;background:rgb('+rr[0]+','+rr[1]+','+rr[2]+');"></span>'+rowColor[0];
-      rh.style.cssText='position:sticky;left:0;z-index:1;background:#f4f4f4;padding:4px 7px;font-size:10px;text-align:right;max-width:150px;white-space:nowrap;border-right:3px solid #b7b7b7;';
-      tr.appendChild(rh);
-
-      colors.forEach((colColor,ci)=>{
-        const td=document.createElement('td');
-        const baseMixed=(ri===ci)?mcRgb(rowColor[1]):mcMix(rowColor[1],colColor[1]);
-        const mixed=mcLighten(baseMixed,light);
-        const same=ri===ci;
-        td.style.cssText=`width:42px;height:42px;min-width:42px;background:rgb(${mixed[0]},${mixed[1]},${mixed[2]});border:${same?'3px solid #111':'1px solid rgba(0,0,0,.10)'};border-radius:5px;cursor:pointer;box-sizing:border-box;`;
-        td.title=same?`${rowColor[0]} pur`:`Mischung 1:1: ${rowColor[0]} + ${colColor[0]}`;
-        td.addEventListener('click',()=>{
-          mcInfo.innerHTML='<strong>'+rowColor[0]+' + '+colColor[0]+'</strong><br>1 : 1'+(light?'<br>Weißzugabe '+light+' %':'');
-        });
-        tr.appendChild(td);
-      });
-      mcTable.appendChild(tr);
-    });
-
-    // Nach jeder Sortierung wirklich am Anfang der Matrix starten.
-    // Auf dem iPad blieb vorher die alte horizontale Scrollposition erhalten:
-    // links stand z.B. „Lemon Yellow“, oben war aber schon „Phthalo Blue“ sichtbar.
-    requestAnimationFrame(()=>{
-      if(mcWrap){
-        mcWrap.scrollLeft=0;
-        mcWrap.scrollTop=0;
-      }
-    });
+    mgPick(.5);
   }
-
-  mcFullscreenBtn?.addEventListener('click',()=>{
-    const on=mcWorkspace.classList.toggle('mixchart-fullscreen');
-    mcFullscreenBtn.textContent=on?'Fenster schließen':'Ganzes Fenster';
-    if(on) requestAnimationFrame(()=>{ if(mcWrap){ mcWrap.scrollLeft=0; mcWrap.scrollTop=0; } });
-  });
-  mcPalette?.addEventListener('change',mcRender);
-  mcSelectedOnly?.addEventListener('change',mcRender);
-  mcSort?.addEventListener('change',mcRender);
-  mcLight?.addEventListener('input',mcRender);
-  if(mcPalette && typeof paintPalette!=='undefined') mcPalette.value=paintPalette.value;
-  setTimeout(mcRender,0);
+  function mgPick(q){
+    q=Math.max(0,Math.min(1,q));
+    const [a,b]=mgSelected(); if(!a||!b)return;
+    const rgb=mgMix(a[1],b[1],q);
+    const pa=Math.round((1-q)*100),pb=100-pa;
+    mgRatio.textContent=`${pa} % ${a[0]} + ${pb} % ${b[0]}`;
+    mgPicked.style.background=`rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+  }
+  function mgPointer(e){
+    const r=mgCanvas.getBoundingClientRect();
+    mgPick((e.clientX-r.left)/r.width);
+  }
+  mgPalette?.addEventListener('change',mgPopulate);
+  mgA?.addEventListener('change',mgDraw);
+  mgB?.addEventListener('change',mgDraw);
+  mgCanvas?.addEventListener('pointerdown',mgPointer);
+  mgCanvas?.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType==='touch')mgPointer(e);});
+  // Hauptpalette als Startwert übernehmen, ohne andere Module zu verändern.
+  if(mgPalette && typeof paintPalette!=='undefined') mgPalette.value=paintPalette.value;
+  // Erst nach vollständigem Aufbau füllen; so sind die Herstellerpaletten sicher verfügbar.
+  setTimeout(mgPopulate,0);
 
   function setupCompactSidebar(){
     const side=document.querySelector('aside.side');
@@ -4190,7 +4024,7 @@
       tonesPanel:'Tonwerte',
       paintMixPanel:'Mischen',
       colorAdvisorPanel:'Farbmischpult',
-      mixChartPanel:'Mischdiagramm',
+      mixGradientPanel:'2-Farben-Verlauf',
       colorJourneyPanel:'Farbreise',
       colorAnalysisPanel:'Farbanalyse',
       surfaceAdvisorPanel:'Flächenberater',
