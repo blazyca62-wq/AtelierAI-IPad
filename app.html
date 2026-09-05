@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.73</title>
+  <title>AtelierAI iPad 1.74</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.73-20260830';
+    const wanted='atelierai-1.74-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.73</div>
+    <div class="title">AtelierAI · iPad 1.74</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -4052,7 +4052,12 @@ const mixes=chooseMixes(target,paletteKey);
       touches.delete(e.pointerId);
       return;
     }
-    if(mode==='picker'&&touches.size===1){ pickColor(e.clientX,e.clientY); return; }
+    if(mode==='picker'&&touches.size===1){
+      pickColor(e.clientX,e.clientY);
+      touches.delete(e.pointerId);
+      e.preventDefault();
+      return;
+    }
     if(mode==='move'){
       if(touches.size===1){
         const p=[...touches.values()][0];

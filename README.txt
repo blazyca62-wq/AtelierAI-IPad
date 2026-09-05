@@ -125,3 +125,9 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 - Unter 2 aktiven Farben wird automatisch die vollständige gewählte Herstellerpalette benutzt.
 - Eigene gespeicherte Farbauswahl wird nicht gelöscht.
 - Mischvorschläge, Farbreise, Lasuren und Farbpaar-Werkzeuge verwenden denselben robusten Palette-Fallback.
+
+1.74:
+- Nur Farbreise korrigiert.
+- Nach dem ersten Pipetten-Tap wird der Pointer auf dem iPad sofort beendet.
+- Dadurch wird der zweite Tap als eigene Zielfarbe erkannt.
+- Werkzeug, Großformen, Tonwerte, Farbanalyse und Mischpult unverändert.
