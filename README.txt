@@ -1,4 +1,4 @@
-AtelierAI iPad 1.65
+AtelierAI iPad 1.66
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -144,3 +144,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.64: Mischdiagramm-Farbfamilien exakt in gewünschter malerischer Reihenfolge: Gelb, Orange, Ocker, Rosa, Rot, Sienna, Umber, Grün, Blau, Violett, Neutral. Spezifische Erdfarben werden vor allgemeinen Farbnamen geprüft.
 
 1.65: Phthalo Blue (Red Shade) und andere Blue-Farben mit Shade-Zusatz werden korrekt der Familie Blau zugeordnet. Die eigentliche Farbfamilie hat Vorrang vor Wörtern wie Red Shade.
+
+1.66: Pipetten-Fix. Kreis-Pipette und Maler-/Smart-Pipette öffnen nach der Farbaufnahme wieder direkt die Mischvorschläge; das Mischziel wird zuverlässig gesetzt. Punkt-Pipette bleibt unverändert.

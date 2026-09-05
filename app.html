@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.65</title>
+  <title>AtelierAI iPad 1.66</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -181,7 +181,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.65-20260830';
+    const wanted='atelierai-1.66-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -198,7 +198,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.65</div>
+    <div class="title">AtelierAI · iPad 1.66</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1223,7 +1223,19 @@
         if(data[i+3]>20) samples.push([data[i],data[i+1],data[i+2]]);
       }
     }
-    showSmartColor(robustSmartColor(samples));
+    const result=robustSmartColor(samples);
+    showSmartColor(result);
+    if(result && result.smart){
+      const rgb=[...result.smart];
+      lastAverageColor=[...rgb];
+      lastSmartColor=[...rgb];
+      colorBox.style.background=rgbHex(adaptiveDisplayColor(rgb));
+      colorText.innerHTML=`RGB: ${rgb.join(', ')}<br>HEX: ${rgbHex(rgb)}`;
+      correctionBase=[...rgb]; refreshCorrection();
+      ideasBase=[...rgb]; refreshIdea();
+      // showStudioMixPage ist weiter unten definiert; Funktionsdeklarationen werden gehoistet.
+      showStudioMixPage();
+    }
   }
 
 
@@ -1792,7 +1804,7 @@
     // also update the existing smart color display for consistency
     if(robust) showSmartColor(robust);
     correctionBase=[...lastSmartColor]; refreshCorrection(); ideasBase=[...lastSmartColor]; refreshIdea();
-    showMixes();
+    showStudioMixPage();
   }
 
 
