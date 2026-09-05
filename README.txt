@@ -119,3 +119,9 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 - Keine späteren Eingriffe in Pipette, Mischlogik oder Palettenlogik.
 - Loader-Struktur bleibt sauber: index.html lädt app.html mit no-store.
 - sw.js löscht alte Caches und registriert sich wieder ab.
+
+1.73:
+- Leere oder defekte gespeicherte Farbauswahl blockiert Mischvorschläge nicht mehr.
+- Unter 2 aktiven Farben wird automatisch die vollständige gewählte Herstellerpalette benutzt.
+- Eigene gespeicherte Farbauswahl wird nicht gelöscht.
+- Mischvorschläge, Farbreise, Lasuren und Farbpaar-Werkzeuge verwenden denselben robusten Palette-Fallback.
