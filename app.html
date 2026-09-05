@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.67</title>
+  <title>AtelierAI iPad 1.68</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -181,7 +181,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.67-20260830';
+    const wanted='atelierai-1.68-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -198,7 +198,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.67</div>
+    <div class="title">AtelierAI · iPad 1.68</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1593,7 +1593,7 @@
   }
 
   function chooseMixes(target, paletteKey){
-    const pal=selectedPaletteColors(paletteKey);
+    const pal=mixingPaletteColors(paletteKey);
     if(pal.length<2)return[];
     const isWater=paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie';
     const candidates=pal.map(([name,rgb,series])=>({name,rgb,series}));
@@ -1706,6 +1706,10 @@
     const paletteKey=paintPalette.value;
     const mixes=chooseMixes(target,paletteKey);
     mixResults.innerHTML='';
+    if(!mixes.length){
+      mixResults.innerHTML='<div class="mix-card"><b>Keine Mischung berechnet.</b><br><span class="tiny">Bitte Palette prüfen.</span></div>';
+      return;
+    }
     mixes.forEach((m,idx)=>{
       const card=document.createElement('div');
       card.className='mix-card';

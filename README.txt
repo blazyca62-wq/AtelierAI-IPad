@@ -1,4 +1,4 @@
-AtelierAI iPad 1.67
+AtelierAI iPad 1.68
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -148,3 +148,5 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.66: Pipetten-Fix. Kreis-Pipette und Maler-/Smart-Pipette öffnen nach der Farbaufnahme wieder direkt die Mischvorschläge; das Mischziel wird zuverlässig gesetzt. Punkt-Pipette bleibt unverändert.
 
 1.67: Mischvorschläge benötigen keine vorher markierten Farben mehr. Wenn mindestens zwei eigene Farben markiert sind, werden diese benutzt; sonst rechnet AtelierAI automatisch mit der vollständigen gewählten Herstellerpalette. Pipette zeigt danach direkt Vorschläge.
+
+1.68: Echter Fix der Mischvorschläge. chooseMixes benutzt jetzt tatsächlich mixingPaletteColors(): ab 2 markierten Farben nur eigene Auswahl, sonst automatisch vollständige gewählte Palette. Dadurch erscheinen nach Pipettenaufnahme wieder konkrete Mischrezepte.
