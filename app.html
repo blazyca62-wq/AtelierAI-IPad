@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.50</title>
+  <title>AtelierAI iPad 1.32</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.50-20260830';
+    const wanted='atelierai-1.32-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.50</div>
+    <div class="title">AtelierAI · iPad 1.32</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -246,14 +246,10 @@
           <button id="toneOnly" class="secondary">Nur Tonwert</button>
           <button id="toneOff" class="secondary">Original</button>
         </div>
-        <div id="toneOriginalControls" style="margin-top:10px;padding:10px;border:1px solid #d8d6d0;border-radius:10px;background:#fff;">
-          <div class="grid2" style="margin-bottom:10px;">
-            <button type="button" id="toneOriginalColorBtn" class="active">Farbig</button>
-            <button type="button" id="toneOriginalGrayBtn" class="secondary">Schwarz-Weiß</button>
-          </div>
-          <label for="toneOriginalBlend" style="display:block;margin-bottom:4px;">Original einblenden</label>
-          <input id="toneOriginalBlend" type="range" min="0" max="100" value="0" step="1" style="display:block;width:100%;height:34px;">
-          <div style="text-align:right;margin-top:2px;"><span id="toneOriginalBlendVal">0 %</span></div>
+        <div class="control-line" style="margin-top:8px;">
+          <label for="toneOriginalBlend">Original</label>
+          <input id="toneOriginalBlend" type="range" min="0" max="100" value="0" step="1">
+          <span id="toneOriginalBlendVal">0 %</span>
         </div>
 
         <div class="toneRow">
@@ -700,9 +696,8 @@
         <h3>Raster & Speichern</h3>
         <div class="grid2">
           <button id="gridToggleBtn" class="secondary">Raster ein</button>
-          <button id="savePngBtn">Als PNG speichern</button>
+          <button id="saveViewBtn">Bild speichern</button>
         </div>
-        <button id="saveJpegBtn" class="secondary" style="width:100%;margin-top:7px;">Als JPEG speichern</button>
         <div class="control-line"><label>Raster</label><input id="gridDensity" type="range" min="2" max="20" value="8"><span id="gridDensityVal">8</span></div>
       </div>
 
@@ -789,25 +784,6 @@
   const pickerShowOnlyBtn=document.getElementById('pickerShowOnlyBtn');
   const pickerShowAllBtn=document.getElementById('pickerShowAllBtn');
   const toneOriginalBlend=document.getElementById('toneOriginalBlend');
-  const toneOriginalColorBtn=document.getElementById('toneOriginalColorBtn');
-  const toneOriginalGrayBtn=document.getElementById('toneOriginalGrayBtn');
-  let toneOriginalModeValue='color';
-
-  function setToneOriginalMode(mode){
-    toneOriginalModeValue = mode==='gray' ? 'gray' : 'color';
-    if(toneOriginalColorBtn){
-      toneOriginalColorBtn.classList.toggle('active',toneOriginalModeValue==='color');
-      toneOriginalColorBtn.classList.toggle('secondary',toneOriginalModeValue!=='color');
-    }
-    if(toneOriginalGrayBtn){
-      toneOriginalGrayBtn.classList.toggle('active',toneOriginalModeValue==='gray');
-      toneOriginalGrayBtn.classList.toggle('secondary',toneOriginalModeValue!=='gray');
-    }
-    if(toneOriginalBlend && Number(toneOriginalBlend.value)===0){
-      toneOriginalBlend.value='50';
-      setOriginalBlend(50,'tone');
-    }else{ draw(); }
-  }
   const toneOriginalBlendVal=document.getElementById('toneOriginalBlendVal');
   const isolationOriginalBlend=document.getElementById('isolationOriginalBlend');
   const isolationOriginalBlendVal=document.getElementById('isolationOriginalBlendVal');
@@ -914,8 +890,7 @@
   const gridToggleBtn=document.getElementById('gridToggleBtn');
   const gridDensity=document.getElementById('gridDensity');
   const gridDensityVal=document.getElementById('gridDensityVal');
-  const savePngBtn=document.getElementById('savePngBtn');
-  const saveJpegBtn=document.getElementById('saveJpegBtn');
+  const saveViewBtn=document.getElementById('saveViewBtn');
 
   const ideaBase=document.getElementById('ideaBase');
   const ideaResult=document.getElementById('ideaResult');
@@ -1001,24 +976,6 @@
   let sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
   let formCanvas = document.createElement('canvas');
   let formCtx = formCanvas.getContext('2d', { willReadFrequently: true });
-  let toneGrayCanvas = document.createElement('canvas');
-  let toneGrayCtx = toneGrayCanvas.getContext('2d', { willReadFrequently: true });
-  function rebuildToneGrayOriginal(){
-    if(!sourceCanvas.width || !sourceCanvas.height) return;
-    toneGrayCanvas.width=sourceCanvas.width; toneGrayCanvas.height=sourceCanvas.height;
-    toneGrayCtx.drawImage(sourceCanvas,0,0);
-    const im=toneGrayCtx.getImageData(0,0,toneGrayCanvas.width,toneGrayCanvas.height);
-    const d=im.data;
-    for(let i=0;i<d.length;i+=4){
-      const y=Math.round(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2]);
-      d[i]=y; d[i+1]=y; d[i+2]=y;
-    }
-    toneGrayCtx.putImageData(im,0,0);
-  }
-
-  let toneGrayBackgroundCanvas = document.createElement('canvas');
-  let toneGrayBackgroundCtx = toneGrayBackgroundCanvas.getContext('2d', { willReadFrequently: true });
-
   let processedCanvas = document.createElement('canvas');
   let processedCtx = processedCanvas.getContext('2d', { willReadFrequently: true });
   let originalBlendPercent=0;
@@ -1684,31 +1641,6 @@
     pickerCircle.style.top=(clientY-rect.top-radius)+'px';
   }
 
-  // 1.50: exakte Bildquelle für die Kreispipette.
-  // Bei "Nur diese Farbe zeigen" wird surfaceMarkCanvas ausgewertet,
-  // nicht das unsichtbare Originalbild.
-  function circlePickerVisibleContext(){
-    const c=document.createElement('canvas');
-    c.width=sourceCanvas.width; c.height=sourceCanvas.height;
-    const cc=c.getContext('2d',{willReadFrequently:true});
-
-    if(surfaceMarkCanvas) cc.drawImage(surfaceMarkCanvas,0,0);
-    else cc.drawImage(processedCanvas,0,0);
-
-    if(originalBlendPercent>0){
-      cc.save();
-      cc.globalAlpha=originalBlendPercent/100;
-      if(toneOriginalModeValue==='gray'){
-        if(toneView==='off') cc.drawImage(toneGrayCanvas,0,0);
-        else cc.drawImage(toneGrayBackgroundCanvas,0,0);
-      }else{
-        cc.drawImage(sourceCanvas,0,0);
-      }
-      cc.restore();
-    }
-    return cc;
-  }
-
   function sampleCircle(clientX,clientY,smart=false){
     if(!loaded) return;
     const p=canvasPoint(clientX,clientY);
@@ -1719,7 +1651,7 @@
     const x0=Math.max(0,Math.floor(ix-radius)), y0=Math.max(0,Math.floor(iy-radius));
     const x1=Math.min(img.width,Math.ceil(ix+radius)), y1=Math.min(img.height,Math.ceil(iy+radius));
     const w=Math.max(1,x1-x0), h=Math.max(1,y1-y0);
-    const data=readImageDataSRGB(circlePickerVisibleContext(),x0,y0,w,h).data;
+    const data=readImageDataSRGB(sourceContextForPicker(),x0,y0,w,h).data;
     const samples=[];
     const step=Math.max(1,Math.floor(Math.sqrt((w*h)/900)));
     for(let y=0;y<h;y+=step){
@@ -3208,35 +3140,12 @@
   function toneStrength(lum, band, sliderVal){
     const v = sliderVal/100;
     if(v>=0.999) return 1;
-
-    // Aquarell-Aufbau:
-    // Dunkel: bisheriges Verhalten – die dunkelsten Anteile verschwinden zuerst.
-    // Mittel + Hell: beim Zurücknehmen verschwinden die dunkleren Anteile zuerst,
-    // sodass innerhalb der jeweiligen Gruppe die hellsten Stellen bis zuletzt sichtbar bleiben.
-    if(paintMode==='water'){
-      let t;
-      if(band==='light'){
-        t=(lum-170)/85;                 // heller = größer
-        t=Math.max(0,Math.min(1,t));
-        return t>=(1-v)?1:0;
-      }
-      if(band==='mid'){
-        t=(lum-85)/85;                  // dunkler Mittelton -> heller Mittelton
-        t=Math.max(0,Math.min(1,t));
-        return t>=(1-v)?1:0;
-      }
-      t=(85-lum)/85;                    // dunkel: bisherige Richtung beibehalten
-      t=Math.max(0,Math.min(1,t));
-      return t<=v?1:0;
-    }
-
-    // Ölmodus unverändert.
     let t;
     if(band==='light') t=(lum-170)/85;
     else if(band==='mid') t=1-Math.abs(lum-128)/90;
     else t=(85-lum)/85;
     t=Math.max(0,Math.min(1,t));
-    return t>=(1-v)?1:0;
+    return paintMode==='water' ? (t<=v?1:0) : (t>=(1-v)?1:0);
   }
 
   function rebuildForms(){
@@ -3364,14 +3273,6 @@
 
     const src=formCtx.getImageData(0,0,w,h);
     const out=processedCtx.createImageData(w,h);
-
-    // Graustufen-Hintergrund für Tonwerte:
-    // Nicht ausgewählte Tonwerte werden Schwarz-Weiß,
-    // ausgewählte Tonwerte bleiben hier transparent und behalten dadurch ihre Farbe.
-    toneGrayBackgroundCanvas.width=w;
-    toneGrayBackgroundCanvas.height=h;
-    const grayBg=toneGrayBackgroundCtx.createImageData(w,h);
-
     const lv=+lightSlider.value, mv=+midSlider.value, dv=+darkSlider.value;
 
     for(let i=0;i<src.data.length;i+=4){
@@ -3386,14 +3287,6 @@
         band==='light' ? toneStrength(lum,'light',lv) :
         band==='mid' ? toneStrength(lum,'mid',mv) :
         toneStrength(lum,'dark',dv);
-
-      if(strength>0 && toneView!=='off'){
-        // Dieser Tonwert soll farbig sichtbar bleiben.
-        grayBg.data[i]=0; grayBg.data[i+1]=0; grayBg.data[i+2]=0; grayBg.data[i+3]=0;
-      }else{
-        const gray=Math.round(lum);
-        grayBg.data[i]=gray; grayBg.data[i+1]=gray; grayBg.data[i+2]=gray; grayBg.data[i+3]=255;
-      }
 
       if(toneView==='off'){
         out.data[i]=r; out.data[i+1]=g; out.data[i+2]=b; out.data[i+3]=a;
@@ -3418,7 +3311,6 @@
     }
     applyFamilyVisibility(out);
     processedCtx.putImageData(out,0,0);
-    toneGrayBackgroundCtx.putImageData(grayBg,0,0);
     draw();
   }
 
@@ -3461,18 +3353,7 @@
     if(originalBlendPercent>0){
       ctx.save();
       ctx.globalAlpha=originalBlendPercent/100;
-      if(toneOriginalModeValue==='gray'){
-        if(toneView==='off'){
-          // Bei Originalansicht darf das ganze Bild Schwarz-Weiß werden.
-          ctx.drawImage(toneGrayCanvas,0,0);
-        }else{
-          // Nur der Hintergrund wird Schwarz-Weiß eingeblendet.
-          // Die ausgewählten farbigen Tonwerte bleiben vollständig erhalten.
-          ctx.drawImage(toneGrayBackgroundCanvas,0,0);
-        }
-      }else{
-        ctx.drawImage(sourceCanvas,0,0);
-      }
+      ctx.drawImage(sourceCanvas,0,0);
       ctx.restore();
     }
     if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value);
@@ -3671,8 +3552,6 @@
   syncColorTolerance(12);
 
   toneOriginalBlend.addEventListener('input',()=>setOriginalBlend(toneOriginalBlend.value,'tone'));
-  toneOriginalColorBtn?.addEventListener('click',()=>setToneOriginalMode('color'));
-  toneOriginalGrayBtn?.addEventListener('click',()=>setToneOriginalMode('gray'));
   isolationOriginalBlend.addEventListener('input',()=>setOriginalBlend(isolationOriginalBlend.value,'isolation'));
 
   pickerShowOnlyBtn.addEventListener('click',()=>{
@@ -3872,29 +3751,15 @@
   gridToggleBtn.addEventListener('click',()=>{gridEnabled=!gridEnabled;gridToggleBtn.textContent=gridEnabled?'Raster aus':'Raster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);draw();});
 
   gridDensity.addEventListener('input',()=>{gridDensityVal.textContent=gridDensity.value;draw();});
-  function saveAtelierImage(type){
+  saveViewBtn.addEventListener('click',()=>{
     if(!loaded)return;
-    const isJpeg=type==='image/jpeg';
     const out=document.createElement('canvas');out.width=processedCanvas.width;out.height=processedCanvas.height;
-    const oc=out.getContext('2d');
-    if(isJpeg){oc.fillStyle='#fff';oc.fillRect(0,0,out.width,out.height);}
-    oc.drawImage(processedCanvas,0,0);
+    const oc=out.getContext('2d');oc.drawImage(processedCanvas,0,0);
     if(gridEnabled)drawGridOverlay(oc,out.width,out.height,gridDensity.value);
     out.toBlob(blob=>{
-      if(!blob)return;
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.href=url;
-      a.download=isJpeg?'AtelierAI_Bild.jpg':'AtelierAI_Bild.png';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url),2000);
-    },type,isJpeg?0.95:undefined);
-  }
-  savePngBtn.addEventListener('click',()=>saveAtelierImage('image/png'));
-  saveJpegBtn.addEventListener('click',()=>saveAtelierImage('image/jpeg'));
-
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='AtelierAI_Bild.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+    },'image/png');
+  });
 
 
 
@@ -4028,7 +3893,6 @@
       sourceCanvas.width=img.width; sourceCanvas.height=img.height;
       sourceCtx.clearRect(0,0,img.width,img.height);
       sourceCtx.drawImage(img,0,0);
-      rebuildToneGrayOriginal();
       rebuildForms();
       rebuildToneImage();
       fitImage();
@@ -4319,7 +4183,7 @@
     const variants=advisorVariants[advisorFamily.value]||[];
     const vi=Math.max(0,Math.min(variants.length-1,Number(advisorVariant?.value)||0));
     const rawTarget=(variants[vi]&&variants[vi][1])||d.rgb;
-    const targetRgb=rawTarget;
+    const targetRgb=advBrightnessRgb(rawTarget,advisorBrightness?.value||0);
     const {key,colors}=advPalette();
     let base=[];
 
@@ -4370,8 +4234,7 @@
       return advBrightnessRgb(raw,advisorBrightness?.value||0);
     }
     const total=active.reduce((s,x)=>s+x.parts,0)||1;
-    const mixed=[0,1,2].map(ch=>Math.round(active.reduce((s,x)=>s+x.rgb[ch]*x.parts,0)/total));
-    return advBrightnessRgb(mixed,advisorBrightness?.value||0);
+    return [0,1,2].map(ch=>Math.round(active.reduce((s,x)=>s+x.rgb[ch]*x.parts,0)/total));
   }
 
   function advRenderResult(){
@@ -4453,10 +4316,12 @@
   });
   advisorVariant?.addEventListener('change',advReset);
 
+  let advisorBrightnessTimer=null;
   advisorBrightness?.addEventListener('input',()=>{
     const v=Number(advisorBrightness.value)||0;
     if(advisorBrightnessVal) advisorBrightnessVal.textContent=(v>0?'+':'')+v;
-    advRenderResult();
+    clearTimeout(advisorBrightnessTimer);
+    advisorBrightnessTimer=setTimeout(advReset,90);
   });
 
   advisorResetBtn?.addEventListener('click',advReset);

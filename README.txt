@@ -1,4 +1,4 @@
-AtelierAI iPad 1.50
+AtelierAI iPad 1.32
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -80,37 +80,3 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 1.31: Am Anfang des Farbmischpults stehen jetzt die Grundfarbfamilien Rot, Gelb, Blau, Grün, Orange, Violett, Braun, Weiß, Grau und sehr dunkel/Schwarz. Jede Grundfarbe besitzt mehrere direkte Nuancen als Ausgangspunkt. Alle bisherigen Farbatlas- und Mischpultfunktionen bleiben erhalten.
 
 1.32: Direkt im Farbmischpult ist jetzt die komplette Palette wählbar: Winsor & Newton Artisan Öl, Schmincke Horadam Aquarell oder Schmincke Akademie Aquarell. Die Auswahl steuert Grundmischung, Vorschläge und Farbe hinzufügen.
-
-1.33: Fehlerkorrektur im Farbmischpult: Heller/Dunkler verändert jetzt die aktuell manuell eingestellte Mischung, ohne hinzugefügte Farben oder Reglerwerte zurückzusetzen. Die Mischung bleibt vollständig erhalten.
-
-1.34: Neuer Bildberater „Was fehlt meinem Bild?“. Vorbild normal öffnen, zusätzlich Foto des eigenen Gemäldes laden. Der Bildberater vergleicht große Bildbereiche malerisch nach Tonwert, Farbsättigung und Farbton/Temperatur und zeigt bewusst nur die drei wichtigsten Korrekturhinweise mit Bildstelle. Bestehende Werkzeuge bleiben unverändert.
-
-1.35: Bild öffnen im Bildberater für iPad/Safari korrigiert. Ein echter Button öffnet jetzt direkt die Foto-/Dateiauswahl. Sonstige Funktionen unverändert.
-
-1.36: Bildberater korrigiert: Das geladene Gemälde wird jetzt nach der Auswahl sichtbar im Bildberater angezeigt. Die Analyse arbeitet weiterhin mit dem vollständigen geladenen Gemälde; die sichtbare Vorschau ist nur für Kontrolle und Orientierung.
-
-1.37: Bildberater erweitert. Zusätzlich zu Tonwert, Sättigung und Farbton/Warm-Kalt werden jetzt dunkle und helle Großformen, wichtige Lichter, tiefe Dunkelheiten, Kontrast sowie zu harte oder fehlende wichtige Kanten geprüft. Weiterhin werden bewusst nur die drei stärksten malerischen Hinweise ausgegeben.
-
-1.38: Bildberater um Gesamtbild-Prüfungen erweitert: Lage der hellen und dunklen Hauptmassen (Proportion/Position) sowie Bildfokus/visueller Schwerpunkt. Der Fokus wird aus Kantenstärke, lokalem Kontrast und Farbsättigung beurteilt. Weiterhin nur drei wichtigste Hinweise.
-
-1.39: Bildberater weiter erweitert: Detailverteilung/Unruhe, zu wenig Forminformation, gesamte Warm-Kalt-Balance, globaler Tonwertkontrast (zu flach/zu hart), verlorene bzw. zu harte Kanten im Fokus sowie zu starke Kontraste an den Bildrändern. Bestehende Prüfungen bleiben erhalten; weiterhin nur drei wichtigste Hinweise.
-
-1.40: Bildberater um Farbharmonie erweitert. Vergleicht die Verteilung der Farbfamilien zwischen Vorbild und Gemälde, erkennt zu dominante Farbfamilien, fehlende verbindende Farbfamilien und größere Abweichungen der gesamten Farbharmonie. Weiterhin nur drei wichtigste Hinweise.
-
-1.41: Speichern erweitert: getrennte Schaltflächen für PNG und JPEG. JPEG wird mit 95 % Qualität erzeugt. Beide Formate werden als normale Bilddateien heruntergeladen; die bisherige Bilddarstellung und Rasteroption bleiben erhalten.
-
-1.43: Bildberater vollständig entfernt. Korrektur gegenüber 1.42: Der normale Hauptfoto-Öffnen-Code und die Navigation bleiben vollständig erhalten. PNG/JPEG-Speichern bleibt erhalten.
-
-1.44: Aquarell-Tonwerte geändert: Bei Mittel- und hellen Tönen verschwinden beim Zurücknehmen des Reglers zuerst die dunkleren Anteile; die hellsten Anteile bleiben bis zuletzt sichtbar. Dunkle Tonwerte und Ölmodus bleiben unverändert.
-
-1.45: In Tonwerte kann das Original beim vorhandenen 0–100%-Einblendregler jetzt wahlweise farbig oder Schwarz-Weiß als Hintergrund eingeblendet werden. Andere Module bleiben unverändert.
-
-1.46: Schwarz-Weiß-Einblendung repariert: echte Graustufen-Kopie statt Safari-Filter. Farbig und Schwarz-Weiß sind jetzt getrennte Original-Hintergründe.
-
-1.47: Tonwerte: Auswahl Farbig/Schwarz-Weiß jetzt über zwei direkte Buttons statt Dropdown. Die Schwarz-Weiß-Schaltung greift direkt auf die echte Graustufen-Kopie zu; die vorherige fehleranfällige Bereichserkennung wurde entfernt. Der 0–100%-Einblendregler bleibt unverändert.
-
-1.48: Tonwerte-Originalsteuerung neu aufgebaut: zwei direkte Buttons Farbig/Schwarz-Weiß und ein deutlich sichtbarer 0–100%-Regler über die volle Breite. Bei Umschaltung von 0% wird automatisch 50% eingeblendet, damit die Wirkung sofort sichtbar ist.
-
-1.49: Schwarz-Weiß-Einblendung in Tonwerte geändert: Das Schwarz-Weiß-Original wird nur in den ausgeblendeten Tonwertbereichen als Hintergrund eingeblendet. Die aktuell sichtbaren/ausgewählten Tonwerte bleiben farbig und werden nicht von Schwarz-Weiß überdeckt. Der 0–100%-Regler und die Buttons bleiben erhalten.
-
-1.50: Kreispipette gezielt korrigiert. Bei 'Nur diese Farbe zeigen' wird jetzt surfaceMarkCanvas, also genau die sichtbare gefilterte Darstellung, aufgenommen. Original nur entsprechend dem sichtbaren Original-Einblendregler.
