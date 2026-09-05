@@ -1,4 +1,4 @@
-AtelierAI iPad 1.50
+AtelierAI iPad 1.65
 
 WICHTIGE STRUKTURÄNDERUNG:
 index.html ist ab jetzt ein permanenter Start-Loader.
@@ -115,4 +115,32 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 
 1.50: Kreispipette gezielt korrigiert. Bei 'Nur diese Farbe zeigen' wird jetzt surfaceMarkCanvas, also genau die sichtbare gefilterte Darstellung, aufgenommen. Original nur entsprechend dem sichtbaren Original-Einblendregler.
 
-1.71: Wiederherstellungsstand. Technische Basis ist der stabile Stand 1.50 vor Mischdiagramm und den späteren Mischbereich-Änderungen. Kernfunktionen wurden nicht neu programmiert.
+1.51: Neues Werkzeug Zwei-Farben-Mischverlauf. Zwei echte Palettenfarben wählen, kontinuierlicher malerischer Mischverlauf, Antippen zeigt Mischungsverhältnis und Zwischenfarbe. Artisan/Horadam/Akademie.
+
+1.52: Zwei-Farben-Mischverlauf Fix: Farbe A/B werden jetzt zuverlässig mit den Farben der gewählten Herstellerpalette gefüllt.
+
+1.53: Zwei-Farben-Mischverlauf vollständig entfernt. Neues Mischdiagramm: jede Farbe mit jeder Farbe 1:1, für Artisan/Horadam/Akademie, plus gemeinsame Aufhellung 0–80 %. Antippen zeigt Farbpaar und Verhältnis.
+
+1.54: Mischdiagramm kann als eigenes Vollbildfenster geöffnet werden. Aufhellung korrigiert: keine milchige RGB-Aufhellung mehr, sondern optisch berechnete Weißzugabe/Titanweiß zur Farbmischung.
+
+1.55: Mischdiagramm standardmäßig nur mit den vom Nutzer ausgewählten Palettenfarben. Optional kann die komplette Herstellerpalette eingeblendet werden. Vollbild und Weißzugabe bleiben erhalten.
+
+1.56: Mischdiagramm sortierbar nach Wärme (warm→kühl) oder Helligkeit (hell→dunkel). Weißzugabe deutlich verstärkt und bis 100 % erweitert; nichtlineare Pigment-Aufhellung für klar sichtbare Tints.
+
+1.57: Mischdiagramm startet standardmäßig mit Helligkeit hell→dunkel. Bei ähnlich hellen Farben werden leuchtende Gelbtöne bevorzugt, sodass z.B. Zitronengelb am Anfang der malerischen Reihenfolge steht. Wärme-Sortierung bleibt optional.
+
+1.58: Mischdiagramm standardmäßig nach Farbfamilien gruppiert: Gelb, Orange, Rot, Violett, Blau, Grün, Braun/Erdfarben, Neutral. Innerhalb jeder Familie hell→dunkel. Alternative Sortierungen bleiben verfügbar.
+
+1.59: Farbfamilien-Sortierung korrigiert. Hersteller-Farbnamen haben Vorrang vor RGB/Hue; RGB dient nur noch als Fallback. Beschriftungen bleiben exakt an ihrer Farbe, Zeilen zeigen zusätzlich ein kleines Farbfeld zur Kontrolle. Vertikal gedrehte Kopfzeilen entfernt.
+
+1.60: iPad-Mischdiagramm Übersicht korrigiert. Nach Sortierung und beim Öffnen im Vollbild springt die Matrix automatisch ganz nach links/oben, damit Zeilen- und Spaltenanfang dieselbe Farbfamilie zeigen. Obere Spaltenbezeichnungen erhalten ebenfalls ein Farbfeld.
+
+1.61: Mischdiagramm visuell eindeutig gemacht. Kopf- und Zeilenbeschriftungen zeigen große reine Farbfelder, die Mischmatrix ist klar getrennt, die Diagonale ist schwarz markiert. Artisan-Blau-Swatches (Cerulean, Cobalt, Ultramarine, Phthalo, Prussian) wurden von zu grün/türkis wirkenden Bildschirmwerten auf plausiblere Blaureferenzen korrigiert.
+
+1.62: Farbfelder direkt bei den oberen und linken Farbbezeichnungen auf exakt dieselbe Größe wie die Mischfelder gesetzt (42 × 42 px).
+
+1.63: Farbfamilien jetzt strikt zusammenhängend nach Farbnamen gruppiert. Keine RGB/Hue-Zuordnung mehr für die Familien. Gelb bleibt geschlossen bei Gelb, Rot bei Rot, Blau bei Blau usw.; innerhalb einer Familie bleibt die Reihenfolge der Palette erhalten.
+
+1.64: Mischdiagramm-Farbfamilien exakt in gewünschter malerischer Reihenfolge: Gelb, Orange, Ocker, Rosa, Rot, Sienna, Umber, Grün, Blau, Violett, Neutral. Spezifische Erdfarben werden vor allgemeinen Farbnamen geprüft.
+
+1.65: Phthalo Blue (Red Shade) und andere Blue-Farben mit Shade-Zusatz werden korrekt der Familie Blau zugeordnet. Die eigentliche Farbfamilie hat Vorrang vor Wörtern wie Red Shade.
