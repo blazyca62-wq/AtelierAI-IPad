@@ -131,3 +131,11 @@ Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosi
 - Nach dem ersten Pipetten-Tap wird der Pointer auf dem iPad sofort beendet.
 - Dadurch wird der zweite Tap als eigene Zielfarbe erkannt.
 - Werkzeug, Großformen, Tonwerte, Farbanalyse und Mischpult unverändert.
+
+1.75:
+- Mischvorschläge priorisieren jetzt einfache Rezepte.
+- Alle 1-Farben- und alle 2-Farben-Kombinationen werden geprüft.
+- Zweiermischungen werden in 5-%-Schritten von 10:90 bis 90:10 geprüft.
+- 3–5 Farben erscheinen nur, wenn sie die beste 1-/2-Farben-Mischung um mindestens 1 Prozentpunkt verbessern.
+- Bei nahezu gleicher Übereinstimmung gewinnt die Mischung mit weniger Farben.
+- Sonstige Werkzeuge und die stabile 1.74-Basis bleiben unverändert.

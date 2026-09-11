@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.74</title>
+  <title>AtelierAI iPad 1.75</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.74-20260830';
+    const wanted='atelierai-1.75-20260830';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.74</div>
+    <div class="title">AtelierAI · iPad 1.75</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -396,7 +396,7 @@
           <button id="calcMixesBtn">Studio-Mischung berechnen</button>
         </div>
 
-        <div class="tiny" style="margin-top:6px;">Studio-Mischung · bis zu 5 Farben</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Punkt)</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Punkt- und Maler-Pipette berechnen die Studio-Mischung automatisch.</div><div id="mixResults"></div>
+        <div class="tiny" style="margin-top:6px;">Mischvorschläge · einfache Mischung zuerst</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Punkt)</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Punkt- und Maler-Pipette berechnen die Studio-Mischung automatisch.</div><div id="mixResults"></div>
       </div>
 
 
@@ -1533,7 +1533,7 @@
 
   function chooseMixes(target, paletteKey){
     const pal=effectivePaletteColors(paletteKey);
-    if(pal.length<2)return[];
+    if(pal.length<1)return[];
     const isWater=paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie';
     const candidates=pal.map(([name,rgb,series])=>({name,rgb,series}));
 
@@ -1554,7 +1554,6 @@
         let hd=Math.abs(th-mh)%360;if(hd>180)hd=360-hd;
         if(hd>25)cost+=(hd-25)*.10;
       }
-      // Malerische Plausibilität bei rosigen/hautfarbenen Zielen.
       const rosy=(th>=325||th<=35)&&ts>=.07;
       if(rosy){
         const earth=items.filter(x=>/ocker|siena|umbra|neapel|gold|gelb|orange/i.test(x.name)).length;
@@ -1563,25 +1562,46 @@
         if(earth&&!rose)cost+=10;
         if(cg&&earth>=rose)cost+=5*cg;
       }
-      // Mehr Farben nur leicht bestrafen; Studio darf bis 5 suchen.
-      cost+=Math.max(0,items.length-3)*.6;
       return cost;
     }
-    function pct(cost){return Math.max(0,Math.min(100,Math.round(100-cost*1.55)));}
+    function displayPct(rgb){
+      return similarityPct(target,rgb);
+    }
+    function recipeKey(items){
+      return items.map(i=>i.name+'@'+(i.series||'')).sort().join('|');
+    }
 
-    // PC-Prinzip: Studio, maximale Genauigkeit bis 5 Farben, force_best.
+    const pool=[];
+
+    // 1 Farbe: zuerst die einfachste mögliche Lösung prüfen.
+    for(const c of candidates){
+      const rgb=candidateRgb(c);
+      pool.push({items:[c],parts:[10],rgb,cost:studioCost(rgb,[c]),score:displayPct(rgb)});
+    }
+
+    // 2 Farben: ALLE Farbpaarungen und malerisch brauchbare Verhältnisse prüfen.
+    // Diese Suche entspricht bewusst der Logik der Mischpalette.
+    for(let i=0;i<candidates.length;i++){
+      for(let j=i+1;j<candidates.length;j++){
+        for(let pct=10;pct<=90;pct+=5){
+          const a=pct/100, b=1-a;
+          const rgb=[0,1,2].map(ch=>Math.round(candidates[i].rgb[ch]*a+candidates[j].rgb[ch]*b));
+          const parts=[pct,100-pct];
+          const items=[candidates[i],candidates[j]];
+          pool.push({items,parts,rgb,cost:studioCost(rgb,items),score:displayPct(rgb)});
+        }
+      }
+    }
+
+    // 3–5 Farben weiter mit Studio-Suche berechnen.
     const nearest=[...candidates].sort((a,b)=>
       studioCost(candidateRgb(a),[a])-studioCost(candidateRgb(b),[b])
     ).slice(0,Math.min(18,candidates.length));
 
     let beam=nearest.map(c=>{
       const items=[c],parts=[10],rgb=candidateRgb(c);
-      const cost=studioCost(rgb,items);
-      return {items,parts,rgb,cost};
+      return {items,parts,rgb,cost:studioCost(rgb,items),score:displayPct(rgb)};
     }).sort((a,b)=>a.cost-b.cost).slice(0,30);
-
-    const allBest=[...beam.slice(0,8)];
-    const alternatives=[];
 
     for(let count=2;count<=5;count++){
       const next=[];
@@ -1589,46 +1609,75 @@
         const used=new Set(state.items.map(x=>x.name+'|'+(x.series||'')));
         for(const c of nearest){
           if(used.has(c.name+'|'+(c.series||'')))continue;
-          // Praxisnahe Anteile, aber genügend fein für Studio.
           for(const add of [1,2,3,4,5,6,8,10]){
             const items=state.items.concat([c]);
             const parts=state.parts.concat([add]);
             const rgb=mixFor(items,parts);
             const cost=studioCost(rgb,items);
-            next.push({items,parts,rgb,cost});
+            next.push({items,parts,rgb,cost,score:displayPct(rgb)});
           }
         }
       }
       next.sort((a,b)=>a.cost-b.cost);
       const seen=new Set(),trim=[];
       for(const x of next){
-        const key=x.rgb.map(v=>Math.round(v/3)).join(',')+'|'+x.items.map(i=>i.name+'@'+(i.series||'')).sort().join('/');
+        const key=x.rgb.map(v=>Math.round(v/3)).join(',')+'|'+recipeKey(x.items);
         if(seen.has(key))continue;
         seen.add(key);trim.push(x);
         if(trim.length>=48)break;
       }
       if(!trim.length)break;
       beam=trim;
-      allBest.push(...beam.slice(0,10));
-      alternatives.push({color_count:count,match_percent:pct(beam[0].cost)});
+      if(count>=3) pool.push(...beam.slice(0,20));
     }
 
-    allBest.sort((a,b)=>a.cost-b.cost);
-    const chosen=[],seenRecipes=new Set();
-    for(const x of allBest){
-      const sig=x.items.map(i=>i.name+'@'+(i.series||'')).sort().join('|');
-      if(seenRecipes.has(sig))continue;
-      seenRecipes.add(sig);
+    // Pro Rezept nur die beste Variante behalten.
+    const bestByRecipe=new Map();
+    for(const x of pool){
+      const key=recipeKey(x.items);
+      const old=bestByRecipe.get(key);
+      if(!old || x.score>old.score || (x.score===old.score && x.cost<old.cost)){
+        bestByRecipe.set(key,x);
+      }
+    }
+
+    const recipes=[...bestByRecipe.values()];
+
+    // Beste einfache Mischung bestimmen.
+    const best1=Math.max(-1,...recipes.filter(x=>x.items.length===1).map(x=>x.score));
+    const best2=Math.max(-1,...recipes.filter(x=>x.items.length===2).map(x=>x.score));
+    const bestSimple=Math.max(best1,best2);
+
+    // 3–5 Farben nur dann zulassen, wenn sie die beste 1-/2-Farben-Lösung
+    // wirklich sichtbar verbessern (mindestens +1 Prozentpunkt).
+    const filtered=recipes.filter(x=>{
+      if(x.items.length<=2)return true;
+      return x.score>=bestSimple+1;
+    });
+
+    // Höhere Übereinstimmung zuerst; bei nahezu gleichem Treffer gewinnt
+    // die Mischung mit weniger Farben.
+    filtered.sort((a,b)=>{
+      if(Math.abs(b.score-a.score)<=1 && a.items.length!==b.items.length){
+        return a.items.length-b.items.length;
+      }
+      if(b.score!==a.score)return b.score-a.score;
+      return a.items.length-b.items.length || a.cost-b.cost;
+    });
+
+    const chosen=[];
+    for(const x of filtered){
       const total=x.parts.reduce((a,b)=>a+b,0)||1;
-      // auf gut lesbare Teile 1..10 normalisieren
-      const scaled=x.parts.map(v=>Math.max(1,Math.round(v/total*10)));
+      const scaled=x.items.length===2
+        ? x.parts.map(v=>Math.max(1,Math.round(v/10)))
+        : x.parts.map(v=>Math.max(1,Math.round(v/total*10)));
       chosen.push({
-        sig,
+        sig:recipeKey(x.items),
         names:x.items.map(i=>(isWater&&i.series)?`${i.name} (${i.series})`:i.name),
         parts:scaled,
         rgb:x.rgb,
-        score:pct(x.cost),
-        alternatives,
+        score:x.score,
+        color_count:x.items.length,
         watercolor:isWater
       });
       if(chosen.length===3)break;
@@ -1655,7 +1704,7 @@ const mixes=chooseMixes(target,paletteKey);
           <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${targetHex}"></div></div>
           <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex}"></div></div>
         </div>
-        <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i]} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · Studio-Mischung · bis 5 Farben':'Mischqualität: Studio · bis 5 Farben'}</span></div>
+        <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i]} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · möglichst wenige Farben':'Mischqualität · möglichst wenige Farben'}</span></div>
       `;
       mixResults.appendChild(card);
     });
