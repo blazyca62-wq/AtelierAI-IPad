@@ -1,3 +1,42 @@
+AtelierAI iPad 1.76 – flüssigere Bedienung
+24.09.2026
+
+INSTALLATION AUF GITHUB PAGES
+1. ZIP-Datei entpacken.
+2. Im vorhandenen AtelierAI-Projekt die app.html durch die neue app.html ersetzen.
+3. Die Änderung speichern und warten, bis GitHub Pages sie veröffentlicht hat.
+4. Den bisherigen Startlink neu öffnen. Oben muss „AtelierAI · iPad 1.76“ stehen.
+
+RÜCKKEHR ZU 1.75
+Im Ordner Sicherung_1.75 liegt die unveränderte bisherige app.html.
+Bei Bedarf diese Datei wieder als app.html im Projekt einsetzen.
+
+VERBESSERUNGEN
+- Verschieben, Zoomen, Raster und Originaleinblendung zeichnen höchstens einmal
+  pro Bildschirmaktualisierung. Die Anzeigefläche kann Grafikbeschleunigung nutzen.
+- Tonwert- und Farbregler bündeln schnell aufeinanderfolgende Eingaben.
+- Tonwertberechnungen verwenden vorhandene Pixelpuffer erneut.
+- Bei unveränderten Farbfamilien entfällt deren pixelweise Umrechnung.
+- Großformen benötigen keine neu angelegte Zähltabelle je Bildpunkt.
+- Die Flächenpipette liest den Bereich gemeinsam statt jeden Bildpunkt einzeln.
+- Mischvorschläge werden für bis zu zwölf Kombinationen aus Zielfarbe und Palette
+  wiederverwendet. Änderungen an eigenen Farben und der Farbauswahl werden erfasst.
+- Die Aquarell-Mischsuche berechnet feste Pigmentwerte einmal je Suche.
+
+PRÜFUNG
+Numerische Vergleichstests gegen Version 1.75: Großformen, Tonwerte in Öl und
+Aquarell, Farbfamilien, Flächenanalyse, Bildwechsel sowie Mischrezepte der drei
+Herstellerpaletten. Geprüfte Bilddaten und Rezeptvorschläge sind identisch.
+Auch die Bündelung von Aktualisierungen und das rechtzeitige Aktualisieren vor
+Pipettenabfragen wurden geprüft.
+Die Tests verwenden JavaScript und eine lokale Canvas-Implementierung.
+Ein Bedienungs- und Geschwindigkeitstest direkt in iPad-Safari steht noch aus.
+
+Bitte nach dem Update besonders Verschieben/Zoom, Tonwertregler, Großformen,
+Pipette und die zweite Farbe in der Farbreise auf deinem iPad ausprobieren.
+
+--- Bisherige Versionshinweise ---
+
 AtelierAI iPad 1.49
 
 WICHTIGE STRUKTURÄNDERUNG:

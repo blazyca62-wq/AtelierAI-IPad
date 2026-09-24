@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.75</title>
+  <title>AtelierAI iPad 1.76</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.75-20260830';
+    const wanted='atelierai-1.76-20260924';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.75</div>
+    <div class="title">AtelierAI · iPad 1.76</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -751,7 +751,8 @@
 <script>
 (() => {
   const canvas = document.getElementById('canvas');
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  // Die Anzeigefläche wird nur gezeichnet; Pixel liest die separate Analysefläche.
+  const ctx = canvas.getContext('2d');
   const viewer = document.getElementById('viewer');
   const fileInput = document.getElementById('fileInput');
   const placeholder = document.getElementById('placeholder');
@@ -1063,6 +1064,8 @@
   }
 
   function applyFamilyVisibility(imageData){
+    // Die unveränderte Palette benötigt keine HSL-Berechnung pro Bildpunkt.
+    if(Object.values(familyValues).every(value=>value>=99.9)) return imageData;
     const d=imageData.data;
     for(let i=0;i<d.length;i+=4){
       const r=d[i], g=d[i+1], b=d[i+2];
@@ -1531,24 +1534,45 @@
     return Math.max(0,Math.min(100,Math.round(pct)));
   }
 
+  const mixResultCache=new Map();
   function chooseMixes(target, paletteKey){
     const pal=effectivePaletteColors(paletteKey);
     if(pal.length<1)return[];
+    // Die vollständige Palette im Schlüssel berücksichtigt auch eigene Farben
+    // und Änderungen an der Auswahl. Kleine, begrenzte Ergebnissammlung.
+    const cacheKey=JSON.stringify([target,paletteKey,pal]);
+    if(mixResultCache.has(cacheKey)) return mixResultCache.get(cacheKey);
+    const targetLab=rgbToLabFast(target);
+    const [targetHue,targetSaturation]=rgbToHsv(target);
     const isWater=paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie';
     const candidates=pal.map(([name,rgb,series])=>({name,rgb,series}));
 
+    const waterRgb=new Map(), waterDensity=new Map();
+    if(isWater){
+      for(const c of candidates){
+        const rgb=paletteMixRgb(c.name,c.rgb,paletteKey);
+        waterRgb.set(c,rgb);
+        waterDensity.set(c,rgb.map(v=>-Math.log(Math.max(.015,Math.min(.995,v/255)))));
+      }
+    }
     function candidateRgb(c){
-      return isWater ? paletteMixRgb(c.name,c.rgb,paletteKey) : c.rgb;
+      return isWater ? waterRgb.get(c) : c.rgb;
     }
     function mixFor(items,parts){
-      if(isWater) return opticalDensityMix(items,parts,paletteKey);
       const total=parts.reduce((a,b)=>a+b,0)||1;
+      if(isWater){
+        return [0,1,2].map(ch=>{
+          let od=0;
+          for(let i=0;i<items.length;i++) od+=waterDensity.get(items[i])[ch]*(parts[i]/total);
+          return Math.round(255*Math.exp(-od));
+        });
+      }
       return [0,1,2].map(ch=>Math.round(items.reduce((sum,c,i)=>sum+candidateRgb(c)[ch]*parts[i],0)/total));
     }
     function studioCost(rgb,items){
-      const lab=deltaE76FromLab(rgbToLabFast(target),rgbToLabFast(rgb));
+      const lab=deltaE76FromLab(targetLab,rgbToLabFast(rgb));
       if(!isWater)return lab;
-      const [th,ts]=rgbToHsv(target),[mh,ms]=rgbToHsv(rgb);
+      const th=targetHue,ts=targetSaturation,[mh,ms]=rgbToHsv(rgb);
       let cost=lab;
       if(ts>.08&&ms>.08){
         let hd=Math.abs(th-mh)%360;if(hd>180)hd=360-hd;
@@ -1682,6 +1706,8 @@
       });
       if(chosen.length===3)break;
     }
+    if(mixResultCache.size>=12) mixResultCache.delete(mixResultCache.keys().next().value);
+    mixResultCache.set(cacheKey,chosen);
     return chosen;
   }
 
@@ -1986,6 +2012,7 @@ const mixes=chooseMixes(target,paletteKey);
   }
 
   function sourceContextForPicker(){
+    flushToneImage();
     return pickerSource && pickerSource.value==='original' ? sourceCtx : processedCtx;
   }
 
@@ -2812,10 +2839,13 @@ const mixes=chooseMixes(target,paletteKey);
     const isolatedLab=activeIsolatedColor ? rgbToLabFast(activeIsolatedColor) : null;
     const isolatedTolerance=currentColorTolerance();
 
+    if(x1<x0 || y1<y0) return [];
+    const regionWidth=x1-x0+1;
+    const pixels=srcCtx.getImageData(x0,y0,regionWidth,y1-y0+1).data;
     for(let y=y0;y<=y1;y+=step)for(let x=x0;x<=x1;x+=step){
       if(shape==='circle'){const dx=x-cx,dy=y-cy;if(dx*dx+dy*dy>half*half)continue;}
-      const q=srcCtx.getImageData(x,y,1,1).data;
-      const rgb=[q[0],q[1],q[2]];
+      const pixel=((y-y0)*regionWidth+x-x0)*4;
+      const rgb=[pixels[pixel],pixels[pixel+1],pixels[pixel+2]];
       if(isolatedLab && deltaE76FromLab(rgbToLabFast(rgb),isolatedLab)>isolatedTolerance) continue;
       pts.push(rgb);
     }
@@ -3174,8 +3204,9 @@ const mixes=chooseMixes(target,paletteKey);
   function resizeCanvas(){
     const r = viewer.getBoundingClientRect();
     const dpr = Math.max(1, window.devicePixelRatio || 1);
-    canvas.width = Math.round(r.width*dpr);
-    canvas.height = Math.round(r.height*dpr);
+    const width=Math.round(r.width*dpr), height=Math.round(r.height*dpr);
+    if(canvas.width!==width) canvas.width=width;
+    if(canvas.height!==height) canvas.height=height;
     canvas.style.width = r.width+'px';
     canvas.style.height = r.height+'px';
     ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -3269,8 +3300,13 @@ const mixes=chooseMixes(target,paletteKey);
     return t>=(1-v)?1:0;
   }
 
+  let toneSourcePixels=null, toneOutputPixels=null, toneBackgroundPixels=null;
+  let renderedFormLevel=null;
   function rebuildForms(){
     if(!loaded) return;
+    if(renderedFormLevel===formLevel) return;
+    renderedFormLevel=formLevel;
+    toneSourcePixels=null;
 
     const w = sourceCanvas.width, h = sourceCanvas.height;
     formCanvas.width = w; formCanvas.height = h;
@@ -3334,17 +3370,31 @@ const mixes=chooseMixes(target,paletteKey);
       return;
     }
 
+    // Kompakte Zähler statt einer neuen Map für jeden Bildpunkt.
+    // Besuchsmarken ersetzen das Leeren der Zähler. Die Reihenfolge und
+    // die Entscheidung bei Gleichstand entsprechen exakt der bisherigen Suche.
+    const levels=Math.round(255/q)+1;
+    const channelBins=new Uint16Array(256);
+    for(let v=0;v<256;v++) channelBins[v]=Math.round(v/q);
+    const counts=new Uint16Array(levels*levels*levels);
+    const visited=new Uint32Array(counts.length);
+    const labels=new Uint16Array(ww*wh);
+
     // 2) Kleine Inseln entfernen, starke Kanten respektieren.
     for(let pass=0; pass<cfg.passes; pass++){
       const next = wctx.createImageData(ww,wh);
       next.data.set(cur.data);
+      visited.fill(0);
+      for(let i=0,p=0;i<cur.data.length;i+=4,p++){
+        labels[p]=(channelBins[cur.data[i]]*levels+channelBins[cur.data[i+1]])*levels+channelBins[cur.data[i+2]];
+      }
 
       for(let y=0;y<wh;y++){
         for(let x=0;x<ww;x++){
           const idx=(y*ww+x)*4;
           const cr=cur.data[idx], cg=cur.data[idx+1], cb=cur.data[idx+2];
 
-          const counts = new Map();
+          const visit=y*ww+x+1;
           let bestCount=0;
           let br=cr,bg=cg,bb=cb;
 
@@ -3360,9 +3410,10 @@ const mixes=chooseMixes(target,paletteKey);
               const rr=cur.data[j], gg=cur.data[j+1], bb2=cur.data[j+2];
               if(dist3(cr,cg,cb,rr,gg,bb2) > threshold2) continue;
 
-              const key=(rr<<16)|(gg<<8)|bb2;
-              const n=(counts.get(key)||0)+1;
-              counts.set(key,n);
+              const key=labels[yy*ww+xx];
+              const n=visited[key]===visit ? counts[key]+1 : 1;
+              visited[key]=visit;
+              counts[key]=n;
               if(n>bestCount){
                 bestCount=n; br=rr; bg=gg; bb=bb2;
               }
@@ -3386,21 +3437,39 @@ const mixes=chooseMixes(target,paletteKey);
     formCtx.imageSmoothingQuality = 'high';
     formCtx.drawImage(work,0,0,ww,wh,0,0,w,h);
   }
+  let toneUpdateFrame=0;
+  function scheduleToneImage(){
+    if(toneUpdateFrame) return;
+    toneUpdateFrame=requestAnimationFrame(()=>{
+      toneUpdateFrame=0;
+      rebuildToneImage();
+    });
+  }
+  function flushToneImage(){
+    if(toneUpdateFrame) rebuildToneImage();
+  }
   function rebuildToneImage(){
+    if(toneUpdateFrame){cancelAnimationFrame(toneUpdateFrame);toneUpdateFrame=0;}
     if(!loaded) return;
 
     const w=formCanvas.width, h=formCanvas.height;
-    processedCanvas.width=w; processedCanvas.height=h;
+    if(processedCanvas.width!==w) processedCanvas.width=w;
+    if(processedCanvas.height!==h) processedCanvas.height=h;
 
-    const src=formCtx.getImageData(0,0,w,h);
-    const out=processedCtx.createImageData(w,h);
+    if(!toneSourcePixels) toneSourcePixels=formCtx.getImageData(0,0,w,h);
+    const src=toneSourcePixels;
+    if(!toneOutputPixels || toneOutputPixels.width!==w || toneOutputPixels.height!==h){
+      toneOutputPixels=processedCtx.createImageData(w,h);
+      toneBackgroundPixels=toneGrayBackgroundCtx.createImageData(w,h);
+    }
+    const out=toneOutputPixels;
 
     // Graustufen-Hintergrund für Tonwerte:
     // Nicht ausgewählte Tonwerte werden Schwarz-Weiß,
     // ausgewählte Tonwerte bleiben hier transparent und behalten dadurch ihre Farbe.
-    toneGrayBackgroundCanvas.width=w;
-    toneGrayBackgroundCanvas.height=h;
-    const grayBg=toneGrayBackgroundCtx.createImageData(w,h);
+    if(toneGrayBackgroundCanvas.width!==w) toneGrayBackgroundCanvas.width=w;
+    if(toneGrayBackgroundCanvas.height!==h) toneGrayBackgroundCanvas.height=h;
+    const grayBg=toneBackgroundPixels;
 
     const lv=+lightSlider.value, mv=+midSlider.value, dv=+darkSlider.value;
 
@@ -3475,7 +3544,15 @@ const mixes=chooseMixes(target,paletteKey);
     draw();
   }
 
+  let drawFrame=0;
   function draw(){
+    if(drawFrame) return;
+    drawFrame=requestAnimationFrame(()=>{
+      drawFrame=0;
+      paintViewer();
+    });
+  }
+  function paintViewer(){
     const r=viewer.getBoundingClientRect();
     ctx.clearRect(0,0,r.width,r.height);
     if(!loaded) return;
@@ -3580,7 +3657,7 @@ const mixes=chooseMixes(target,paletteKey);
       lightValue.textContent=lightSlider.value;
       midValue.textContent=midSlider.value;
       darkValue.textContent=darkSlider.value;
-      rebuildToneImage();
+      scheduleToneImage();
     });
   });
 
@@ -3651,7 +3728,7 @@ const mixes=chooseMixes(target,paletteKey);
       familyValues[sl.dataset.family]=Number(sl.value);
       const value=sl.parentElement.querySelector('.family-value');
       if(value) value.textContent=sl.value+'%';
-      rebuildToneImage();
+      scheduleToneImage();
     });
   });
 
@@ -3904,6 +3981,7 @@ const mixes=chooseMixes(target,paletteKey);
   gridDensity.addEventListener('input',()=>{gridDensityVal.textContent=gridDensity.value;draw();});
   function saveAtelierImage(type){
     if(!loaded)return;
+    flushToneImage();
     const isJpeg=type==='image/jpeg';
     const out=document.createElement('canvas');out.width=processedCanvas.width;out.height=processedCanvas.height;
     const oc=out.getContext('2d');
@@ -4059,6 +4137,7 @@ const mixes=chooseMixes(target,paletteKey);
       sourceCtx.clearRect(0,0,img.width,img.height);
       sourceCtx.drawImage(img,0,0);
       rebuildToneGrayOriginal();
+      renderedFormLevel=null;
       rebuildForms();
       rebuildToneImage();
       fitImage();
