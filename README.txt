@@ -1,3 +1,49 @@
+AtelierAI iPad 1.77 – Vorzeichnung für Öl und Aquarell
+24.09.2026
+
+SO BENUTZT DU DIE VORZEICHNUNG
+1. Dein Foto öffnen und im Werkzeugmenü „Vorzeichnung“ wählen.
+2. „Aquarell · zart“ oder „Öl · klar“ als Ausgangseinstellung wählen.
+3. Details nach links schieben, um mehr zu reduzieren; nach rechts für mehr
+   Einzelheiten. Bei Gesichtern die Augen, Nase und Lippen im Original prüfen.
+4. Linienkraft bestimmt, wie hell oder dunkel die Zeichnung wird.
+5. Linienbreite bestimmt, wie fein oder breit die Konturen sind.
+6. „Original vergleichen“ schaltet vorübergehend zum unveränderten Foto.
+7. „Vorzeichnung als PNG speichern“ speichert die fertige Zeichnung auf weißem
+   Grund. Zum Drucken die PNG-Datei in Fotos oder Dateien öffnen.
+
+RASTER
+Unter „Raster & Speichern“ bleibt die Vorzeichnung sichtbar. Ein eingeschaltetes
+Raster wird mitgespeichert. Dort funktioniert auch der JPEG-Export.
+Andere Werkzeuge zeigen wieder die normale Arbeitsansicht. Die Regler der
+Vorzeichnung bleiben bis zum nächsten Wechsel der Voreinstellung erhalten.
+
+HINWEISE ZUR ZEICHENVORLAGE
+Die Konturen werden direkt aus dem Originalfoto berechnet. Bei wenig Kontrast
+können Linien fehlen; sehr starke Reduktion kann kleine Gesichtszüge entfernen.
+Die Regler erlauben dir, den passenden Umfang selbst zu wählen.
+Der weiße Hintergrund bleibt frei von Schraffur und flächiger Schattierung.
+Große Fotos werden für die Zeichnung auf maximal 1800 Pixel an der langen Seite
+verkleinert. Die Originaldatei wird dabei nicht verändert.
+Während der Berechnung bleibt die letzte Vorzeichnung sichtbar; der Export
+wird erst freigegeben, wenn die gewählten Einstellungen fertig berechnet sind.
+
+INSTALLATION
+ZIP entpacken und im bestehenden GitHub-Projekt nur die app.html ersetzen.
+Nach der Veröffentlichung den bisherigen Startlink neu öffnen.
+Oben muss „AtelierAI · iPad 1.77“ stehen.
+Im Ordner Sicherung_1.76 liegt die vorherige app.html zur Rückkehr auf Version 1.76.
+
+PRÜFUNG
+Die Vorzeichnung wurde an einem Fotomotiv visuell geprüft. Getestet wurden
+Detailreduktion, Linienbreite, weißer Hintergrund, transparente und sehr kleine
+Bilder, beide Voreinstellungen, PNG/JPEG-Export, Raster, Bildwechsel,
+Abbruch veralteter Berechnungen und große Ausgangsbilder.
+Die Tests verwenden JavaScript und eine lokale Canvas-Implementierung.
+Der abschließende Bedienungstest direkt in iPad-Safari steht noch aus.
+
+--- Bisherige Versionshinweise ---
+
 AtelierAI iPad 1.76 – flüssigere Bedienung
 24.09.2026
 
