@@ -1,11 +1,12 @@
-AtelierAI iPad 1.77 – Vorzeichnung für Öl und Aquarell
+AtelierAI iPad 1.78 – Formführung für Öl und Aquarell
 24.09.2026
 
 SO BENUTZT DU DIE VORZEICHNUNG
 1. Dein Foto öffnen und im Werkzeugmenü „Vorzeichnung“ wählen.
-2. „Aquarell · zart“ oder „Öl · klar“ als Ausgangseinstellung wählen.
-3. Details nach links schieben, um mehr zu reduzieren; nach rechts für mehr
-   Einzelheiten. Bei Gesichtern die Augen, Nase und Lippen im Original prüfen.
+2. „Aquarell · ruhig“ oder „Öl · ausführlich“ als Ausgangseinstellung wählen.
+3. Den Regler „Formverlauf“ nach links schieben, um nur Hauptformen zu sehen;
+   nach rechts kommen mehr Linien für Locken, Wellen, Falten und Äste hinzu.
+   Bei Gesichtern bleiben Augen, Nase und Lippen als dunkle Formzüge bevorzugt.
 4. Linienkraft bestimmt, wie hell oder dunkel die Zeichnung wird.
 5. Linienbreite bestimmt, wie fein oder breit die Konturen sind.
 6. „Original vergleichen“ schaltet vorübergehend zum unveränderten Foto.
@@ -19,7 +20,10 @@ Andere Werkzeuge zeigen wieder die normale Arbeitsansicht. Die Regler der
 Vorzeichnung bleiben bis zum nächsten Wechsel der Voreinstellung erhalten.
 
 HINWEISE ZUR ZEICHENVORLAGE
-Die Konturen werden direkt aus dem Originalfoto berechnet. Bei wenig Kontrast
+Die Formlinien werden direkt aus dem Originalfoto berechnet. Eine Linie wird
+bevorzugt übernommen, wenn sie sich in derselben Richtung fortsetzt. So können
+parallel verlaufende Haarlocken oder Meerwellen sichtbar bleiben; einzelne
+Rauschpunkte und kurze zufällige Kanten werden entfernt. Bei wenig Kontrast
 können Linien fehlen; sehr starke Reduktion kann kleine Gesichtszüge entfernen.
 Die Regler erlauben dir, den passenden Umfang selbst zu wählen.
 Der weiße Hintergrund bleibt frei von Schraffur und flächiger Schattierung.
@@ -31,11 +35,11 @@ wird erst freigegeben, wenn die gewählten Einstellungen fertig berechnet sind.
 INSTALLATION
 ZIP entpacken und im bestehenden GitHub-Projekt nur die app.html ersetzen.
 Nach der Veröffentlichung den bisherigen Startlink neu öffnen.
-Oben muss „AtelierAI · iPad 1.77“ stehen.
-Im Ordner Sicherung_1.76 liegt die vorherige app.html zur Rückkehr auf Version 1.76.
+Oben muss „AtelierAI · iPad 1.78“ stehen.
+Im Ordner Sicherung_1.77 liegt die vorherige app.html zur Rückkehr auf Version 1.77.
 
 PRÜFUNG
-Die Vorzeichnung wurde an einem Fotomotiv visuell geprüft. Getestet wurden
+Die Formführung wurde an einem Fotomotiv und an parallelen Wellenlinien visuell geprüft. Getestet wurden
 Detailreduktion, Linienbreite, weißer Hintergrund, transparente und sehr kleine
 Bilder, beide Voreinstellungen, PNG/JPEG-Export, Raster, Bildwechsel,
 Abbruch veralteter Berechnungen und große Ausgangsbilder.

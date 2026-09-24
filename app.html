@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.77</title>
+  <title>AtelierAI iPad 1.78</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.77-20260924';
+    const wanted='atelierai-1.78-20260924';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.77</div>
+    <div class="title">AtelierAI · iPad 1.78</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -241,17 +241,17 @@
 
       <div class="section" id="sketchPanel">
         <h3>Vorzeichnung</h3>
-        <p>Konturen und Proportionen als Zeichenvorlage auf weißem Grund. Wähle eine Ausgangseinstellung und passe sie an dein Motiv an.</p>
+        <p>Formführung und Proportionen als Zeichenvorlage auf weißem Grund. Die Linien zeigen den Verlauf von Haarlocken, Meerwellen, Falten, Ästen und anderen Formen.</p>
         <div class="grid2">
-          <button id="sketchWaterBtn" class="active" type="button" aria-pressed="true">Aquarell · zart</button>
-          <button id="sketchOilBtn" class="secondary" type="button" aria-pressed="false">Öl · klar</button>
+          <button id="sketchWaterBtn" class="active" type="button" aria-pressed="true">Aquarell · ruhig</button>
+          <button id="sketchOilBtn" class="secondary" type="button" aria-pressed="false">Öl · ausführlich</button>
         </div>
         <div class="control-line" style="margin-top:14px;">
-          <label for="sketchDetails">Details</label>
-          <input id="sketchDetails" type="range" min="0" max="100" step="5" value="30">
-          <span id="sketchDetailsValue">30 %</span>
+          <label for="sketchDetails">Formverlauf</label>
+          <input id="sketchDetails" type="range" min="0" max="100" step="5" value="55">
+          <span id="sketchDetailsValue">55 %</span>
         </div>
-        <div class="tiny">Links: wenige Hauptlinien · Rechts: mehr Einzelheiten</div>
+        <div class="tiny">Links: nur Hauptformen · Rechts: mehr Locken-, Wellen- und Faltenverläufe</div>
         <div class="control-line" style="margin-top:10px;">
           <label for="sketchStrength">Linienkraft</label>
           <input id="sketchStrength" type="range" min="10" max="100" step="2" value="38">
@@ -265,7 +265,7 @@
         <button id="sketchCompareBtn" type="button" class="secondary" aria-pressed="false" style="width:100%;margin-top:12px;" disabled>Original vergleichen</button>
         <button id="sketchSaveBtn" type="button" style="width:100%;margin-top:8px;" disabled>Vorzeichnung als PNG speichern</button>
         <div id="sketchStatus" class="tiny" role="status" aria-live="polite" style="margin-top:10px;">Bitte zuerst ein Foto öffnen.</div>
-        <p class="tiny">Für Aquarell bleiben Flächen und Lichter weiß. Für Öl kannst du die Konturen kräftiger einstellen. Das Raster findest du unter „Raster &amp; Speichern“; dort bleibt die Vorzeichnung sichtbar. Die gespeicherte PNG-Datei lässt sich aus Fotos oder Dateien drucken.</p>
+        <p class="tiny">Für Aquarell bleiben Flächen und Lichter weiß. Für Öl kannst du die Formverläufe und Konturen kräftiger einstellen. Das Raster findest du unter „Raster &amp; Speichern“; dort bleibt die Vorzeichnung sichtbar. Die gespeicherte PNG-Datei lässt sich aus Fotos oder Dateien drucken.</p>
       </div>
 
       <div class="section" id="tonesPanel">
@@ -1066,7 +1066,7 @@
     let lower=Math.floor(Math.sqrt(4*sigma*sigma+1));if(lower%2===0)lower--;
     lower=Math.max(1,lower);
     const lowerPasses=Math.round((12*sigma*sigma-3*lower*lower-12*lower-9)/(-4*lower-4));
-    const gray=new Float32Array(n),temp=new Float32Array(n),smooth=new Float32Array(n);
+    const gray=new Float32Array(n),temp=new Float32Array(n),smooth=new Float32Array(n),coarse=new Float32Array(n),darkContrast=new Float32Array(n);
     for(let i=0,j=0;i<n;i++,j+=4){
       const alpha=rgba[j+3]/255;
       gray[i]=(.2126*rgba[j]+.7152*rgba[j+1]+.0722*rgba[j+2])*alpha+255*(1-alpha);
@@ -1095,6 +1095,29 @@
       }
       input=smooth;
     }
+
+    // Zweite, gröbere Ansicht: dunkle, zusammenhängende Formzüge wie Augen,
+    // Mundwinkel, Lockenbänder und Wellenkämme erhalten dadurch Priorität.
+    const coarseRadius=Math.max(2,Math.round((4+7*reduction)*analysisScale));
+    const coarseDivisor=2*coarseRadius+1;
+    for(let y=0;y<h;y++){
+      const row=y*w;let value=smooth[row]*(coarseRadius+1);
+      for(let k=1;k<=coarseRadius;k++)value+=smooth[row+Math.min(w-1,k)];
+      for(let x=0;x<w;x++){
+        temp[row+x]=value/coarseDivisor;
+        value+=smooth[row+Math.min(w-1,x+coarseRadius+1)]-smooth[row+Math.max(0,x-coarseRadius)];
+      }
+      if(y%100===99)await pause();
+    }
+    for(let x=0;x<w;x++){
+      let value=temp[x]*(coarseRadius+1);
+      for(let k=1;k<=coarseRadius;k++)value+=temp[Math.min(h-1,k)*w+x];
+      for(let y=0;y<h;y++){
+        coarse[y*w+x]=value/coarseDivisor;
+        value+=temp[Math.min(h-1,y+coarseRadius+1)*w+x]-temp[Math.max(0,y-coarseRadius)*w+x];
+      }
+    }
+
     const magnitude=new Float32Array(n), direction=new Uint8Array(n);
     for(let y=1;y<h-1;y++){
       for(let x=1;x<w-1;x++){
@@ -1102,12 +1125,13 @@
         const gx=-smooth[i-w-1]+smooth[i-w+1]-2*smooth[i-1]+2*smooth[i+1]-smooth[i+w-1]+smooth[i+w+1];
         const gy=-smooth[i-w-1]-2*smooth[i-w]-smooth[i-w+1]+smooth[i+w-1]+2*smooth[i+w]+smooth[i+w+1];
         magnitude[i]=Math.hypot(gx,gy)*analysisScale;
+        darkContrast[i]=Math.max(0,coarse[i]-smooth[i]);
         const ax=Math.abs(gx),ay=Math.abs(gy);
         direction[i]=ay<ax*.41421356?0:(ax<ay*.41421356?2:(gx*gy>=0?1:3));
       }
       if(y%80===79)await pause();
     }
-    const thin=new Float32Array(n),histogram=new Uint32Array(1024);
+    const thin=new Float32Array(n),flowScore=new Uint8Array(n),histogram=new Uint32Array(1024);
     let candidates=0;
     for(let y=1;y<h-1;y++){
       for(let x=1;x<w-1;x++){
@@ -1124,16 +1148,44 @@
     let accumulated=0,threshold=0;
     for(;threshold<1023;threshold++){accumulated+=histogram[threshold];if(accumulated>=candidates*quantile)break;}
     const high=Math.max(22+reduction*20,threshold), low=high*.42;
-    const minLength=Math.max(3,Math.round((6+reduction*30)*sizeScale));
+
+    // Eine Vorzeichnung soll dem Auge die Formführung zeigen. Einzelne
+    // Kantenpunkte aus Haarstruktur, Stoff oder Bildrauschen werden deshalb
+    // verworfen, wenn sie sich nicht in ihrer eigenen Tangentenrichtung
+    // fortsetzen. So bleiben Locken, Wellen, Falten und Gesichtskonturen als
+    // ruhige Linien erhalten.
+    for(let y=2;y<h-2;y++){
+      for(let x=2;x<w-2;x++){
+        const i=y*w+x, m=thin[i];
+        if(m<low) continue;
+        const tangent=direction[i]===0 ? 1 : direction[i]===2 ? w : direction[i]===1 ? w+1 : w-1;
+        let support=0;
+        for(let k=1;k<=5;k++){
+          if(thin[i-tangent*k]>=low) support++;
+          if(thin[i+tangent*k]>=low) support++;
+        }
+        flowScore[i]=support;
+      }
+      if(y%80===79)await pause();
+    }
+
+    const darkCut=Math.max(10,16-reduction*5);
+    const minLength=Math.max(3,Math.round((4+reduction*20)*sizeScale));
     const seen=new Uint8Array(n),edges=new Float32Array(n),queue=new Int32Array(n);
     let sincePause=0;
     for(let y=1;y<h-1;y++){
       for(let x=1;x<w-1;x++){
         const seed=y*w+x;
         if(seen[seed] || thin[seed]<low)continue;
-        let count=1,head=0,peak=0;queue[0]=seed;seen[seed]=1;
+        let count=1,head=0,peak=0,flowPixels=0,featurePixels=0;
+        let x0=x,x1=x,y0=y,y1=y;
+        queue[0]=seed;seen[seed]=1;
         while(head<count){
-          const i=queue[head++];peak=Math.max(peak,thin[i]);
+          const i=queue[head++],ix=i%w,iy=(i-ix)/w;
+          peak=Math.max(peak,thin[i]);
+          if(flowScore[i]>=2) flowPixels++;
+          if(darkContrast[i]>=darkCut && thin[i]>=low*.58) featurePixels++;
+          x0=Math.min(x0,ix);x1=Math.max(x1,ix);y0=Math.min(y0,iy);y1=Math.max(y1,iy);
           for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
             const j=i+dy*w+dx;
             // Randpixel sind null; die Suche erreicht daher nie den Außenrand.
@@ -1141,7 +1193,12 @@
           }
           if(++sincePause>=20000){sincePause=0;await pause();}
         }
-        if(peak>=high && (count>=minLength || (count>=3 && peak>=high*2.2))){
+        const span=Math.max(x1-x0+1,y1-y0+1);
+        const coherent=flowPixels>=Math.max(2,Math.round(minLength*.24)) && count>=minLength;
+        const strongFeature=peak>=high*1.55 && count>=4 && flowPixels>=1;
+        const longContour=span>=Math.max(12,Math.round(minLength*1.4)) && flowPixels>=2;
+        const darkFeature=featurePixels>=Math.max(2,Math.round(minLength*.16)) && count>=Math.max(4,Math.round(minLength*.45));
+        if(coherent || strongFeature || longContour || darkFeature){
           for(let k=0;k<count;k++){const i=queue[k];edges[i]=.65+.35*Math.min(1,thin[i]/(high*1.5));}
         }
       }
@@ -1250,7 +1307,7 @@
       const oc=output.getContext('2d');
       const image=oc.createImageData(output.width,output.height);image.data.set(pixels);oc.putImageData(image,0,0);
       sketchCanvas=output;sketchReadyKey=key;sketchBusy=false;
-      sketchStatus.textContent='Bereit · '+output.width+' × '+output.height+' Pixel. Weniger Details beruhigen die Zeichnung.';
+      sketchStatus.textContent='Bereit · '+output.width+' × '+output.height+' Pixel. Die Linien folgen den wichtigen Formverläufen.';
       syncSketchControls();draw();
     }catch(error){
       if(error===sketchCancelled || token!==sketchJob)return;
@@ -1260,7 +1317,7 @@
   }
   function sketchPreset(medium){
     sketchMedium=medium;
-    sketchDetails.value=medium==='water'?30:65;
+    sketchDetails.value=medium==='water'?55:70;
     sketchStrength.value=medium==='water'?38:72;
     sketchWidth.value=medium==='water'?1:1.4;
     sketchOriginalPreview=false;
