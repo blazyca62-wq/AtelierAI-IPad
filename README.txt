@@ -1,3 +1,33 @@
+AtelierAI iPad 1.85 – Grauer Hintergrund und flüssiger Farbregler
+
+INSTALLATION
+ZIP entpacken und app.html im bestehenden GitHub-Projekt ersetzen.
+Der Startlink bleibt gleich. Nach Neuladen muss oben 1.85 stehen.
+
+NEU
+- Schalter „Mittelgrauer Hintergrund: An/Aus“ neben der Farbisolierung.
+- Derselbe Schalter auch im Flächenberater; beide bleiben synchron.
+- Bei „Nur diese Farbe zeigen“ werden ausgeblendete Flächen wahlweise
+  mittelgrau (#808080) statt sehr hell. Erhaltene Bildpixel bleiben unverändert.
+- Farbähnlichkeit in halben Schritten einstellbar.
+- Farbvergleich läuft über einen eingebetteten Web Worker im Hintergrund.
+  Bei Reglerbewegungen werden vorberechnete Farbabstände wiederverwendet.
+  Zwischenstände werden übersprungen und veraltete Ergebnisse verworfen.
+- „Alle Farben zeigen“ bricht auch noch laufende Anzeigen korrekt ab.
+- Kein zusätzlicher Download oder Dienst für die Hintergrundberechnung nötig.
+- Die Mischberechnung aus Version 1.84 ist unverändert.
+
+PRÜFUNG
+JavaScript-Syntax, Maskierung, Hintergrundwechsel, Wiederverwendung der
+Farbdaten, Worker-Datenübertragung und Abbruch veralteter Ergebnisse geprüft.
+Kein direkter Safari-/iPad-Test. Ohne Worker wird dieselbe Berechnung lokal
+auf dem Hauptthread ausgeführt; dann kann die Bedienung langsamer sein.
+
+RÜCKKEHR
+Sicherung_1.84/app.html enthält die bisherige Version.
+
+VORHERIGE VERSION / LIZENZHINWEISE
+
 AtelierAI iPad 1.84 – Öl-Mischberechnung überarbeitet
 
 INSTALLATION

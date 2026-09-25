@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.84</title>
+  <title>AtelierAI iPad 1.85</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1010,7 +1010,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.84</div>
+    <div class="title">AtelierAI · iPad 1.85</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1231,13 +1231,14 @@
 
         <div class="control-line" style="margin-top:8px;">
           <label>Farbähnlichkeit</label>
-          <input id="pickerColorTolerance" type="range" min="5" max="30" value="12">
+          <input id="pickerColorTolerance" type="range" min="5" max="30" value="12" step="0.5">
           <span id="pickerColorToleranceVal">12</span>
         </div>
         <div class="grid2">
           <button id="pickerShowOnlyBtn" class="secondary">Nur diese Farbe zeigen</button>
           <button id="pickerShowAllBtn" class="secondary">Alle Farben zeigen</button>
         </div>
+        <button id="isolationGrayBtn" class="secondary" aria-pressed="false" style="width:100%;margin-top:8px;">Mittelgrauer Hintergrund: Aus</button>
         <div class="control-line" style="margin-top:8px;">
           <label for="isolationOriginalBlend">Original</label>
           <input id="isolationOriginalBlend" type="range" min="0" max="100" value="0" step="1">
@@ -1399,11 +1400,12 @@
           <button id="surfaceRectBtn" class="secondary">Rechteck analysieren</button>
         </div>
         <div class="control-line"><label>Größe</label><input id="surfaceSize" type="range" min="24" max="180" value="84"><span id="surfaceSizeVal">84</span></div>
-        <div class="control-line"><label>Farbähnlichkeit</label><input id="surfaceColorTolerance" type="range" min="5" max="30" value="12"><span id="surfaceColorToleranceVal">12</span></div>
+        <div class="control-line"><label>Farbähnlichkeit</label><input id="surfaceColorTolerance" type="range" min="5" max="30" value="12" step="0.5"><span id="surfaceColorToleranceVal">12</span></div>
         <div class="grid2">
           <button id="surfaceClearMarkBtn" class="secondary">Alle Farben zeigen</button>
           <button id="surfaceResetBtn" class="secondary">Flächenanalyse löschen</button>
         </div>
+        <button id="surfaceIsolationGrayBtn" class="secondary" aria-pressed="false" style="width:100%;margin-top:8px;">Mittelgrauer Hintergrund: Aus</button>
         <div id="surfaceResults" class="pc-card"><span class="tiny">Noch kein Bereich analysiert.</span></div>
       </div>
 
@@ -4245,37 +4247,131 @@ const mixes=chooseMixes(target,paletteKey);
   let activeIsolatedColor=null;
   let activeIsolatedLabel='Farbe';
 
-  function isolateColorAcrossImage(target,label='Farbe'){
-    activeIsolatedColor=target ? [...target] : null;
-    activeIsolatedLabel=label;
-    surfaceMarkCanvas=null;
-    if(!loaded || !target){ draw(); return; }
+  let isolationGray=false;
+  let isolationRevision=0, isolationSerial=0;
+  let isolationRequest=null, isolationBusy=false, isolationSentKey=null;
+  let isolationWorker=null, isolationFallback=null, isolationFailed=false;
 
-    const src=sourceContextForPicker();
-    const w=processedCanvas.width, h=processedCanvas.height;
-    const original=src.getImageData(0,0,w,h);
-    const out=document.createElement('canvas'); out.width=w; out.height=h;
-    const oc=out.getContext('2d');
-    const isolated=oc.createImageData(w,h);
-    const d=original.data, o=isolated.data;
-    const targetLab=rgbToLabFast(target);
-    const tolerance=currentColorTolerance();
-
-    // Nicht passende Farben werden sehr hell neutral dargestellt.
-    // Passende Pixel bleiben mit ihrer echten Bildfarbe sichtbar.
-    for(let i=0;i<d.length;i+=4){
-      const lab=rgbToLabFast([d[i],d[i+1],d[i+2]]);
-      if(deltaE76FromLab(lab,targetLab)<=tolerance){
-        o[i]=d[i]; o[i+1]=d[i+1]; o[i+2]=d[i+2]; o[i+3]=255;
-      }else{
-        o[i]=247; o[i+1]=247; o[i+2]=247; o[i+3]=255;
-      }
+  // The processor owns one source image and one distance map. Moving the
+  // tolerance slider only thresholds this map; source pixels remain intact.
+  function createIsolationProcessor(){
+    let pixels=null, distances=null, width=0, height=0;
+    function lab(r,g,b){
+      const lin=v=>{v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);};
+      r=lin(r);g=lin(g);b=lin(b);
+      const f=v=>v>.008856?Math.cbrt(v):7.787*v+16/116;
+      const x=f((r*.4124564+g*.3575761+b*.1804375)/.95047);
+      const y=f(r*.2126729+g*.7151522+b*.0721750);
+      const z=f((r*.0193339+g*.1191920+b*.9503041)/1.08883);
+      return [116*y-16,500*(x-y),200*(y-z)];
     }
-    oc.putImageData(isolated,0,0);
-    surfaceMarkCanvas=out;
-    draw();
-    hint.textContent=`${label}: ähnliche Farbe im ganzen Bild sichtbar`;
+    return function(message){
+      if(message.pixels){
+        pixels=new Uint8ClampedArray(message.pixels);
+        width=message.width;height=message.height;
+        distances=new Float32Array(width*height);
+        const t=lab(...message.target);
+        for(let n=0,i=0;n<distances.length;n++,i+=4){
+          const c=lab(pixels[i],pixels[i+1],pixels[i+2]);
+          distances[n]=(c[0]-t[0])**2+(c[1]-t[1])**2+(c[2]-t[2])**2;
+        }
+      }
+      if(!pixels)throw new Error('Keine Bilddaten');
+      const output=new Uint8ClampedArray(pixels.length);
+      const limit=message.tolerance**2,background=message.gray?128:247;
+      for(let n=0,i=0;n<distances.length;n++,i+=4){
+        const match=distances[n]<=limit;
+        output[i]=match?pixels[i]:background;
+        output[i+1]=match?pixels[i+1]:background;
+        output[i+2]=match?pixels[i+2]:background;
+        output[i+3]=255;
+      }
+      return {id:message.id,width,height,pixels:output.buffer};
+    };
   }
+
+  function finishIsolation(result){
+    isolationBusy=false;
+    if(isolationRequest && result.id===isolationRequest.id){
+      const out=surfaceMarkCanvas||document.createElement('canvas');
+      if(out.width!==result.width)out.width=result.width;
+      if(out.height!==result.height)out.height=result.height;
+      const oc=out.getContext('2d');
+      const frame=oc.createImageData(result.width,result.height);
+      frame.data.set(new Uint8ClampedArray(result.pixels));
+      oc.putImageData(frame,0,0);
+      surfaceMarkCanvas=out;
+      hint.textContent=`${activeIsolatedLabel}: ähnliche Farbe im ganzen Bild sichtbar`;
+      draw();
+    }else{
+      // At most one task is in flight. Skip intermediate slider positions.
+      dispatchIsolation();
+    }
+  }
+
+  function dispatchIsolation(){
+    if(isolationBusy||!isolationRequest)return;
+    if(!isolationWorker&&!isolationFailed){
+      try{
+        const code='const process=('+createIsolationProcessor.toString()+')();self.onmessage=e=>{const r=process(e.data);self.postMessage(r,[r.pixels]);};';
+        const url=URL.createObjectURL(new Blob([code],{type:'text/javascript'}));
+        try{isolationWorker=new Worker(url);}finally{URL.revokeObjectURL(url);}
+        isolationWorker.onmessage=e=>finishIsolation(e.data);
+        isolationWorker.onerror=()=>{
+          isolationWorker.terminate();isolationWorker=null;isolationFailed=true;
+          isolationBusy=false;isolationSentKey=null;dispatchIsolation();
+        };
+      }catch(e){isolationFailed=true;}
+    }
+    const request=isolationRequest;
+    const message={id:request.id,target:request.target,tolerance:request.tolerance,gray:request.gray};
+    if(request.key!==isolationSentKey){
+      const c=request.context.canvas;
+      const frame=request.context.getImageData(0,0,c.width,c.height);
+      Object.assign(message,{width:c.width,height:c.height,pixels:frame.data.buffer});
+      isolationSentKey=request.key;
+    }
+    isolationBusy=true;
+    if(isolationWorker){
+      try{isolationWorker.postMessage(message,message.pixels?[message.pixels]:[]);}
+      catch(e){
+        isolationWorker.terminate();isolationWorker=null;isolationFailed=true;
+        isolationBusy=false;isolationSentKey=null;dispatchIsolation();
+      }
+    }else{
+      if(!isolationFallback)isolationFallback=createIsolationProcessor();
+      setTimeout(()=>finishIsolation(isolationFallback(message)),0);
+    }
+  }
+
+  function cancelIsolation(){
+    isolationRequest=null;
+    activeIsolatedColor=null;
+    surfaceMarkCanvas=null;
+  }
+
+  function isolateColorAcrossImage(target,label='Farbe'){
+    if(!loaded||!target){cancelIsolation();draw();return;}
+    activeIsolatedColor=[...target];activeIsolatedLabel=label;
+    const context=sourceContextForPicker();
+    const key=[isolationRevision,context===sourceCtx?'original':'processed',...target].join(':');
+    isolationRequest={id:++isolationSerial,key,context,target:[...target],tolerance:currentColorTolerance(),gray:isolationGray};
+    dispatchIsolation();
+  }
+
+  function toggleIsolationBackground(){
+    isolationGray=!isolationGray;
+    for(const id of ['isolationGrayBtn','surfaceIsolationGrayBtn']){
+      const button=document.getElementById(id);
+      button.textContent='Mittelgrauer Hintergrund: '+(isolationGray?'An':'Aus');
+      button.setAttribute('aria-pressed',String(isolationGray));
+      button.classList.toggle('active',isolationGray);
+      button.classList.toggle('secondary',!isolationGray);
+    }
+    if(activeIsolatedColor)isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
+  }
+  document.getElementById('isolationGrayBtn').addEventListener('click',toggleIsolationBackground);
+  document.getElementById('surfaceIsolationGrayBtn').addEventListener('click',toggleIsolationBackground);
 
   function surfaceInsideSelection(x,y){
     if(!surfacePreview) return false;
@@ -4330,7 +4426,7 @@ const mixes=chooseMixes(target,paletteKey);
 
   function clearSurfaceMark(){
     surfaceSelectedIndex=null;
-    surfaceMarkCanvas=null;
+    cancelIsolation();
     draw();
   }
 
@@ -4862,6 +4958,9 @@ const mixes=chooseMixes(target,paletteKey);
     }
     applyFamilyVisibility(out);
     processedCtx.putImageData(out,0,0);
+    isolationRevision++;
+    isolationSentKey=null;
+    if(activeIsolatedColor){isolationRequest=null;refreshIsolationSmooth();}
     toneGrayBackgroundCtx.putImageData(grayBg,0,0);
     draw();
   }
@@ -4962,7 +5061,7 @@ const mixes=chooseMixes(target,paletteKey);
     const d=readImageDataSRGB(pc,Math.floor(ix),Math.floor(iy),1,1).data;
     const rgb=[d[0],d[1],d[2]];
     surfaceSelectedIndex=null;
-    surfaceMarkCanvas=null;
+    cancelIsolation();
     const hex=rgbHex(rgb);
     colorBox.style.background=rgbHex(adaptiveDisplayColor(rgb));
     colorText.innerHTML=`RGB: ${rgb.join(', ')}<br>HEX: ${hex}`;
@@ -5141,8 +5240,7 @@ const mixes=chooseMixes(target,paletteKey);
   });
   pickerShowAllBtn.addEventListener('click',()=>{
     surfaceSelectedIndex=null;
-    activeIsolatedColor=null;
-    surfaceMarkCanvas=null;
+    cancelIsolation();
     draw();
     hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette';
   });
@@ -5171,7 +5269,7 @@ const mixes=chooseMixes(target,paletteKey);
   });
   surfaceClearMarkBtn.addEventListener('click',clearSurfaceMark);
   surfaceResetBtn.addEventListener('click',()=>{
-    surfaceMode=null; surfacePreview=null; surfaceClusters=[]; surfaceSelectedIndex=null; surfaceMarkCanvas=null;
+    surfaceMode=null; surfacePreview=null; surfaceClusters=[]; surfaceSelectedIndex=null; cancelIsolation();
     surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>'; draw();
   });
 
@@ -5499,6 +5597,7 @@ const mixes=chooseMixes(target,paletteKey);
     const url=URL.createObjectURL(file);
     img=new Image();
     img.onload=()=>{
+      cancelIsolation();isolationRevision++;isolationSentKey=null;
       loaded=true;
       placeholder.style.display='none';
       sourceCanvas.width=img.width; sourceCanvas.height=img.height;
