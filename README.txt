@@ -1,280 +1,37 @@
-AtelierAI iPad 1.83 – Mischvorschläge wiederhergestellt
-
-app.html im bestehenden GitHub-Projekt ersetzen. Startlink bleibt gleich.
-Nach Neuladen muss oben AtelierAI iPad 1.83 stehen.
-
-Fehlerbehebung: Bei leerer oder fehlender persönlicher Farbauswahl wird wieder
-mit der Standardpalette gerechnet. Bei Öl enthält diese kein Schwarz.
-Ein Hinweis zeigt die Nutzung der Standardpalette an. Sobald eigene Farben
-aktiv ausgewählt sind, werden ausschließlich diese verwendet, auch bei nur
-einer Farbe. Bestehende gespeicherte Auswahlen werden nicht überschrieben.
-
-Geprüft mit tatsächlichen Funktionen für Palettenauswahl und Rezeptanzeige:
-leerer/neuer/fehlerhafter Speicher, ausgeschaltetes Schwarz, eine/zwei gewählte
-Farben, Artisan, Horadam, Akademie und kombinierte Aquarellpalette.
-Kein direkter Safari-Gerätetest. Mischungen bleiben unkalibrierte Näherungen.
-
-Sicherung_1.79/app.html enthält die vorherige Version.
-
-Versionsverlauf:
-
-AtelierAI iPad 1.79 – Mischberechnung korrigiert
-
-Installation: ZIP entpacken und app.html im bestehenden GitHub-Projekt ersetzen.
-Der bisherige Startlink bleibt. Nach Neuladen muss oben 1.79 stehen.
-Rückkehr: Sicherung_1.78/app.html enthält den unveränderten vorherigen Stand.
-
-Änderungen:
-- Einheitliche Mischgrundlage für Studio, Zweifarbenpalette und Mischpult.
-- Korrigierte Aquarell-Farbwerte statt Familien-Platzhalter; eigene RGB-Werte bleiben erhalten.
-- Exakte gekürzte Teileverhältnisse statt nachträglicher Mengenrundung.
-- Keine künstliche Aufhellung der aufgenommenen oder berechneten Farbfelder.
-- Aquarell: zusätzlicher simulierter Farbauftrag auf weißem Papier, separat vom Pigmentverhältnis.
-  Der Prozentwert ist KEIN Wasser-Mischverhältnis. Die Zweifarbenpalette zeigt den unverdünnten Ansatz.
-- Bildschirmnähe /100 bewertet nur die Modellfarbe, nicht die tatsächliche Farbmischung.
-- Höchstens drei Farben in Studio-Rezepten. Auswahl leer/eine Farbe wird respektiert.
-- Helligkeitsregler sind ausdrücklich Vorschauen; sie ändern nicht die aufgeführten Pigmentanteile.
-
-Grenzen:
-Die RGB-Farbwerte sind repräsentative Näherungen und keine gemessenen Spektren.
-Öl verwendet eine Dreikanal-Absorptions/Streuungs-Näherung; Aquarell eine Absorptions-
-Näherung mit weißem Papier. Färbekraft, reale Deckkraft, Trocknung, Untergrund und
-Pigmentkonzentration sind nicht kalibriert. Es wird keine physikalisch genaue
-Farbmischung versprochen. Rezepte auf Palette/Papier prüfen und anpassen.
-
-Geprüft: JavaScript-Syntax, Mengen/Vorschau-Konsistenz für alle drei Kataloge,
-Grundfarben-Endpunkte, Unterscheidung der Aquarellgelbtöne, leere Palette und
-bestehende Bündelung der Zeichen-/Tonwertaktualisierung. Kein Safari-Gerätetest.
-
-Vorherige Hinweise:
-
-AtelierAI iPad 1.78 – Formführung für Öl und Aquarell
-24.09.2026
-
-SO BENUTZT DU DIE VORZEICHNUNG
-1. Dein Foto öffnen und im Werkzeugmenü „Vorzeichnung“ wählen.
-2. „Aquarell · ruhig“ oder „Öl · ausführlich“ als Ausgangseinstellung wählen.
-3. Den Regler „Formverlauf“ nach links schieben, um nur Hauptformen zu sehen;
-   nach rechts kommen mehr Linien für Locken, Wellen, Falten und Äste hinzu.
-   Bei Gesichtern bleiben Augen, Nase und Lippen als dunkle Formzüge bevorzugt.
-4. Linienkraft bestimmt, wie hell oder dunkel die Zeichnung wird.
-5. Linienbreite bestimmt, wie fein oder breit die Konturen sind.
-6. „Original vergleichen“ schaltet vorübergehend zum unveränderten Foto.
-7. „Vorzeichnung als PNG speichern“ speichert die fertige Zeichnung auf weißem
-   Grund. Zum Drucken die PNG-Datei in Fotos oder Dateien öffnen.
-
-RASTER
-Unter „Raster & Speichern“ bleibt die Vorzeichnung sichtbar. Ein eingeschaltetes
-Raster wird mitgespeichert. Dort funktioniert auch der JPEG-Export.
-Andere Werkzeuge zeigen wieder die normale Arbeitsansicht. Die Regler der
-Vorzeichnung bleiben bis zum nächsten Wechsel der Voreinstellung erhalten.
-
-HINWEISE ZUR ZEICHENVORLAGE
-Die Formlinien werden direkt aus dem Originalfoto berechnet. Eine Linie wird
-bevorzugt übernommen, wenn sie sich in derselben Richtung fortsetzt. So können
-parallel verlaufende Haarlocken oder Meerwellen sichtbar bleiben; einzelne
-Rauschpunkte und kurze zufällige Kanten werden entfernt. Bei wenig Kontrast
-können Linien fehlen; sehr starke Reduktion kann kleine Gesichtszüge entfernen.
-Die Regler erlauben dir, den passenden Umfang selbst zu wählen.
-Der weiße Hintergrund bleibt frei von Schraffur und flächiger Schattierung.
-Große Fotos werden für die Zeichnung auf maximal 1800 Pixel an der langen Seite
-verkleinert. Die Originaldatei wird dabei nicht verändert.
-Während der Berechnung bleibt die letzte Vorzeichnung sichtbar; der Export
-wird erst freigegeben, wenn die gewählten Einstellungen fertig berechnet sind.
+AtelierAI iPad 1.84 – Öl-Mischberechnung überarbeitet
 
 INSTALLATION
-ZIP entpacken und im bestehenden GitHub-Projekt nur die app.html ersetzen.
-Nach der Veröffentlichung den bisherigen Startlink neu öffnen.
-Oben muss „AtelierAI · iPad 1.78“ stehen.
-Im Ordner Sicherung_1.77 liegt die vorherige app.html zur Rückkehr auf Version 1.77.
+ZIP entpacken und app.html im bestehenden GitHub-Projekt ersetzen.
+Der bisherige Startlink bleibt gleich. Neu laden: Oben muss 1.84 stehen.
+Die neue Mischberechnung ist vollständig in app.html enthalten und benötigt
+keinen zusätzlichen Onlinedienst. LICENSE-spectral.txt mit aufbewahren.
+
+ÄNDERUNGEN
+- Öl: spektrale Näherung mit Spectral.js statt der bisherigen
+  Berechnung aus nur drei Farbkanälen.
+- Gemeinsames Öl-Modell für Rezeptsuche, Mischpalette und Mischpult.
+- Kleine Farbzugaben werden bei Zweiermischungen mit geprüft.
+- Erweiterte Dreiermischungen: alle verfügbaren Farben als mögliche Zugabe,
+  anschließend Verfeinerung der Mengenverhältnisse.
+- Keine Rezeptvorschläge mit Titanweiß und Zinkweiß zusammen.
+- Lesbare Teileverhältnisse. Vorschau und Bewertung werden mit den tatsächlich
+  angezeigten, gerundeten Mengen erneut berechnet.
+- Aquarell behält seine bisherige Mischberechnung und Rezeptsuche.
+
+GRENZEN
+Rekonstruierte Spektren aus Bildschirmfarbwerten sind keine gemessenen
+Artisan-Pigmentdaten. Mengen sind Startrezepte für einen Mischversuch.
+Die Bildschirmnähe bewertet die simulierte Farbe, nicht die garantierte
+Übereinstimmung echter Farbe auf der Palette. Die Unterschiede in Deckkraft
+und Färbekraft der konkreten Tubenfarben sind nicht separat kalibriert.
+
+RÜCKKEHR
+Sicherung_1.83/app.html enthält den unveränderten Ausgangsstand.
+
+QUELLE UND LIZENZ
+Spectral.js, Ronald van Wijnen, MIT-Lizenz.
+https://github.com/rvanwijnen/spectral.js
+Lizenztext: LICENSE-spectral.txt und im eingebetteten Quelltext.
 
 PRÜFUNG
-Die Formführung wurde an einem Fotomotiv und an parallelen Wellenlinien visuell geprüft. Getestet wurden
-Detailreduktion, Linienbreite, weißer Hintergrund, transparente und sehr kleine
-Bilder, beide Voreinstellungen, PNG/JPEG-Export, Raster, Bildwechsel,
-Abbruch veralteter Berechnungen und große Ausgangsbilder.
-Die Tests verwenden JavaScript und eine lokale Canvas-Implementierung.
-Der abschließende Bedienungstest direkt in iPad-Safari steht noch aus.
-
---- Bisherige Versionshinweise ---
-
-AtelierAI iPad 1.76 – flüssigere Bedienung
-24.09.2026
-
-INSTALLATION AUF GITHUB PAGES
-1. ZIP-Datei entpacken.
-2. Im vorhandenen AtelierAI-Projekt die app.html durch die neue app.html ersetzen.
-3. Die Änderung speichern und warten, bis GitHub Pages sie veröffentlicht hat.
-4. Den bisherigen Startlink neu öffnen. Oben muss „AtelierAI · iPad 1.76“ stehen.
-
-RÜCKKEHR ZU 1.75
-Im Ordner Sicherung_1.75 liegt die unveränderte bisherige app.html.
-Bei Bedarf diese Datei wieder als app.html im Projekt einsetzen.
-
-VERBESSERUNGEN
-- Verschieben, Zoomen, Raster und Originaleinblendung zeichnen höchstens einmal
-  pro Bildschirmaktualisierung. Die Anzeigefläche kann Grafikbeschleunigung nutzen.
-- Tonwert- und Farbregler bündeln schnell aufeinanderfolgende Eingaben.
-- Tonwertberechnungen verwenden vorhandene Pixelpuffer erneut.
-- Bei unveränderten Farbfamilien entfällt deren pixelweise Umrechnung.
-- Großformen benötigen keine neu angelegte Zähltabelle je Bildpunkt.
-- Die Flächenpipette liest den Bereich gemeinsam statt jeden Bildpunkt einzeln.
-- Mischvorschläge werden für bis zu zwölf Kombinationen aus Zielfarbe und Palette
-  wiederverwendet. Änderungen an eigenen Farben und der Farbauswahl werden erfasst.
-- Die Aquarell-Mischsuche berechnet feste Pigmentwerte einmal je Suche.
-
-PRÜFUNG
-Numerische Vergleichstests gegen Version 1.75: Großformen, Tonwerte in Öl und
-Aquarell, Farbfamilien, Flächenanalyse, Bildwechsel sowie Mischrezepte der drei
-Herstellerpaletten. Geprüfte Bilddaten und Rezeptvorschläge sind identisch.
-Auch die Bündelung von Aktualisierungen und das rechtzeitige Aktualisieren vor
-Pipettenabfragen wurden geprüft.
-Die Tests verwenden JavaScript und eine lokale Canvas-Implementierung.
-Ein Bedienungs- und Geschwindigkeitstest direkt in iPad-Safari steht noch aus.
-
-Bitte nach dem Update besonders Verschieben/Zoom, Tonwertregler, Großformen,
-Pipette und die zweite Farbe in der Farbreise auf deinem iPad ausprobieren.
-
---- Bisherige Versionshinweise ---
-
-AtelierAI iPad 1.49
-
-WICHTIGE STRUKTURÄNDERUNG:
-index.html ist ab jetzt ein permanenter Start-Loader.
-Die eigentliche Anwendung liegt in app.html.
-
-Bei jedem Start lädt index.html die app.html mit einem neuen eindeutigen
-Zeitstempel und cache:'no-store'. Dadurch kann Safari/GitHub Pages nicht
-einfach die vorherige App-Version aus dem Browsercache verwenden.
-
-Für kommende Versionen:
-- index.html möglichst unverändert lassen.
-- Nur app.html durch die neue Programmversion ersetzen.
-- Dadurch öffnet der gleiche Start-Link automatisch immer die neueste App.
-
-Version 1.12 enthält außerdem die Funktionen aus 1.11:
-- Original ein-/ausblendbar bei Tonwerten.
-- Original ein-/ausblendbar bei „Nur diese Farbe zeigen“.
-- Farbreise-Fix aus 1.10 bleibt erhalten.
-
-Zielreferenz: AtelierAI PC 2.6.96.
-
-1.13: Statt Original-Ein/Aus gibt es bei Tonwerten und „Diese Farbe sehen“ einen stufenlosen Original-Überblendungsregler 0–100 %. 0 % = Arbeitsansicht, 100 % = Original, Zwischenwerte blenden das Original langsam darüber. Zoom, Position und Analyse bleiben erhalten.
-
-1.14: Neuer Farbberater mit Lavendel/Violett, Grün, sehr differenzierten Hautfarben und Blau. Farbige Nuancen und bis zu drei Mischvorschläge aus der bestehenden AtelierAI-Palettenlogik.
-
-1.15: Farbberater-Palettenanbindung korrigiert. Er verwendet jetzt die tatsächlich vorhandene AtelierAI-Palette und fällt nicht mehr wegen eines falschen Palettenschlüssels auf „keine Mischung gefunden“ zurück.
-
-1.16: Farbberater komplett als interaktives Farbmischpult neu aufgebaut. Grundmischung plus konkrete Tubenfarben aus der gewählten Palette, jede Zugabe mit eigenem Regler 0–5 Teile, großes Live-Ergebnisfeld, aktuelle Rezeptur und freie zusätzliche Palettenfarbe.
-
-1.17 Farbberater:
-- Farbwahl funktioniert auch dann, wenn noch keine persönliche Palette aktiviert wurde: im Farbberater wird dann die vollständige reale Herstellerpalette angeboten.
-- Eigene konkrete Tubenfarbe über Auswahl + „Farbe hinzufügen“.
-- Button „Ganzes Fenster“ vergrößert das Mischpult auf die komplette App-Fläche.
-- Im Vollbild werden die Mischregler größer und übersichtlicher dargestellt.
-
-1.18 Farbmischpult:
-- Das Werkzeug heißt jetzt eindeutig „Farbmischpult“.
-- Im Farbmischpult stehen immer alle Tubenfarben der aktuell gewählten Herstellerpalette zur Auswahl.
-- Die persönliche Farbauswahl begrenzt dieses Werkzeug nicht mehr.
-- Bereits vorhandene Farben können über die Auswahl erneut angewählt und direkt aktiviert werden.
-
-1.19 Farbmischpult – echte Korrektur:
-- Navigationsleiste zeigt nun „Farbmischpult“ statt „Werkzeug“.
-- Die versehentlich dreifach als „Farbmischpult“ beschrifteten Schaltflächen wurden zurückgesetzt:
-  Ganzes Fenster, Farbe hinzufügen, Grundmischung wiederherstellen, Mischung leeren.
-- Das Farbmischpult hat jetzt echten Zugriff auf die intern definierten Herstellerpaletten.
-- Ursache behoben: Die Paletten waren im Hauptprogramm in einem geschlossenen JavaScript-Bereich und für das neue Modul vorher nicht sichtbar.
-
-1.20 Farbmischpult:
-- Neue Farbzugäbe startet deutlich sanfter bei 0,1 Teilen statt 0,5.
-- Auch eine bereits vorhandene Farbe mit 0 wird beim Anwählen nur auf 0,1 gesetzt.
-- Regler feiner abgestuft: 0,05 Schritte.
-- Kleine Zugaben werden genauer mit zwei Nachkommastellen angezeigt.
-
-1.21: Haupt-Farbfeld im Farbmischpult deutlich vergrößert (260 px, im Vollbild 320 px). Alle übrigen Bedienelemente behalten ihre bisherige Größe.
-
-1.22: Farbmischpult um viele malerische Farbfamilien erweitert: Erde/Boden, Schnee, Herbst, Himmel, Wasser, Sand, Stein/Felsen, Holz, Laub/Naturgrün, natürliche Schatten, Wolken, Abendhimmel, Rosa und rote Blüten, Gelb/Sonnenlicht, Türkis, malerisches Grau, gebrochenes Weiß und sehr dunkle Mischungen. Bestehende Bedienung, Regler, Palettenzugriff, Vollbild und großes Farbfeld unverändert.
-
-1.23: Farbatlas als zusätzliche Ebene im bestehenden Farbmischpult. Jede Farbfamilie besitzt mehrere konkrete Ausgangsvorschläge. Auswahl eines Vorschlags erzeugt nur eine neue Grundmischung; alle bisherigen Regler, sanfte Dosierung, freies Hinzufügen jeder Tubenfarbe, großes Farbfeld und Vollbild bleiben unverändert verfügbar.
-
-1.24: Im Farbatlas/Farbmischpult gibt es jetzt den Regler „Grundton heller / dunkler“ (-40 bis +40). Er verändert den gewählten Ausgangston und berechnet daraus eine passende neue Grundmischung. Alle bisherigen Regler, freie Farbauswahl, sanfte Dosierung, großes Farbfeld und Vollbild bleiben erhalten.
-
-1.25: Großer Farbatlas stark erweitert. Insgesamt 385 konkrete Farbvorschläge.
-Besonders erweitert: Hauttöne mit vielen Licht-, Halbton-, Schatten-, Wangen-, Hals-, Ohr-, Kinder-, Männer- und Frauenhaut-Varianten.
-Neue Themen: Haare, Augen, Lippen, Wangen/Hautröte, Wiesen, Getreide, Berge, Nebel, Nacht/Mondlicht, Sturm, Ziegel/Terrakotta, Metall/Silber, Kupfer/Bronze, Gold/Messing, Stoff/Kleidung.
-Zusätzlich Künstler-inspirierte Farbstimmungen (keine historischen Originalrezepte), z.B. Rembrandt, Turner, Monet, Renoir, Sargent, Zorn, Sorolla, Cézanne, Van Gogh, Vermeer, Whistler, Degas, Matisse und Hopper.
-Bestehendes Mischpult unverändert: Regler, Grundton heller/dunkler, sanfte Dosierung, großes Farbfeld, Vollbild und freie Farbauswahl bleiben erhalten.
-
-1.26: Für jeden der 14 bereits vorhandenen Künstler gibt es jetzt eine eigene Kategorie mit genau 20 malerisch inspirierten Farbvorschlägen (280 insgesamt). Alle sind ausdrücklich als inspiriert gekennzeichnet, nicht als historische Originalrezepte. Bestehendes Mischpult unverändert.
-
-1.27: Sechs vom Nutzer bereitgestellte Monet-Bilder als eigene Farbmischpult-Kategorien ergänzt. Jedes Bild enthält 20 benannte Farbvorschläge (120 insgesamt), aus den Bildfarben abgeleitet. Alle bisherigen Mischpult-Funktionen bleiben unverändert.
-
-1.28: Monet-Bildkategorien korrigiert. In 1.27 waren die malerischen Bezeichnungen nach der Farbquantisierung teilweise den falschen RGB-Zielfarben zugeordnet. Jetzt wird jede Bezeichnung direkt aus ihrem tatsächlichen Ziel-Farbton bestimmt; dadurch stimmen Name, Ergebnisbalken und Zielwert zusammen. Mischlogik und übrige Funktionen unverändert.
-
-1.29: Bei allen 120 Farbvorschlägen der sechs Monet-Bilder wird jetzt zusätzlich eine repräsentative Fundstelle im jeweiligen Bild angegeben: verständlich als oben/mitte/unten + links/mitte/rechts und genauer als Prozentposition von links und oben. Die Position wurde durch Farbabgleich mit dem jeweiligen hochgeladenen Bild ermittelt. Mischpult unverändert.
-
-1.30: Künstler-Vorschläge vollständig entfernt, einschließlich Monet Bild 1–6. Allgemeiner Farbatlas und alle Funktionen des Farbmischpults bleiben erhalten.
-
-1.31: Am Anfang des Farbmischpults stehen jetzt die Grundfarbfamilien Rot, Gelb, Blau, Grün, Orange, Violett, Braun, Weiß, Grau und sehr dunkel/Schwarz. Jede Grundfarbe besitzt mehrere direkte Nuancen als Ausgangspunkt. Alle bisherigen Farbatlas- und Mischpultfunktionen bleiben erhalten.
-
-1.32: Direkt im Farbmischpult ist jetzt die komplette Palette wählbar: Winsor & Newton Artisan Öl, Schmincke Horadam Aquarell oder Schmincke Akademie Aquarell. Die Auswahl steuert Grundmischung, Vorschläge und Farbe hinzufügen.
-
-1.33: Fehlerkorrektur im Farbmischpult: Heller/Dunkler verändert jetzt die aktuell manuell eingestellte Mischung, ohne hinzugefügte Farben oder Reglerwerte zurückzusetzen. Die Mischung bleibt vollständig erhalten.
-
-1.34: Neuer Bildberater „Was fehlt meinem Bild?“. Vorbild normal öffnen, zusätzlich Foto des eigenen Gemäldes laden. Der Bildberater vergleicht große Bildbereiche malerisch nach Tonwert, Farbsättigung und Farbton/Temperatur und zeigt bewusst nur die drei wichtigsten Korrekturhinweise mit Bildstelle. Bestehende Werkzeuge bleiben unverändert.
-
-1.35: Bild öffnen im Bildberater für iPad/Safari korrigiert. Ein echter Button öffnet jetzt direkt die Foto-/Dateiauswahl. Sonstige Funktionen unverändert.
-
-1.36: Bildberater korrigiert: Das geladene Gemälde wird jetzt nach der Auswahl sichtbar im Bildberater angezeigt. Die Analyse arbeitet weiterhin mit dem vollständigen geladenen Gemälde; die sichtbare Vorschau ist nur für Kontrolle und Orientierung.
-
-1.37: Bildberater erweitert. Zusätzlich zu Tonwert, Sättigung und Farbton/Warm-Kalt werden jetzt dunkle und helle Großformen, wichtige Lichter, tiefe Dunkelheiten, Kontrast sowie zu harte oder fehlende wichtige Kanten geprüft. Weiterhin werden bewusst nur die drei stärksten malerischen Hinweise ausgegeben.
-
-1.38: Bildberater um Gesamtbild-Prüfungen erweitert: Lage der hellen und dunklen Hauptmassen (Proportion/Position) sowie Bildfokus/visueller Schwerpunkt. Der Fokus wird aus Kantenstärke, lokalem Kontrast und Farbsättigung beurteilt. Weiterhin nur drei wichtigste Hinweise.
-
-1.39: Bildberater weiter erweitert: Detailverteilung/Unruhe, zu wenig Forminformation, gesamte Warm-Kalt-Balance, globaler Tonwertkontrast (zu flach/zu hart), verlorene bzw. zu harte Kanten im Fokus sowie zu starke Kontraste an den Bildrändern. Bestehende Prüfungen bleiben erhalten; weiterhin nur drei wichtigste Hinweise.
-
-1.40: Bildberater um Farbharmonie erweitert. Vergleicht die Verteilung der Farbfamilien zwischen Vorbild und Gemälde, erkennt zu dominante Farbfamilien, fehlende verbindende Farbfamilien und größere Abweichungen der gesamten Farbharmonie. Weiterhin nur drei wichtigste Hinweise.
-
-1.41: Speichern erweitert: getrennte Schaltflächen für PNG und JPEG. JPEG wird mit 95 % Qualität erzeugt. Beide Formate werden als normale Bilddateien heruntergeladen; die bisherige Bilddarstellung und Rasteroption bleiben erhalten.
-
-1.43: Bildberater vollständig entfernt. Korrektur gegenüber 1.42: Der normale Hauptfoto-Öffnen-Code und die Navigation bleiben vollständig erhalten. PNG/JPEG-Speichern bleibt erhalten.
-
-1.44: Aquarell-Tonwerte geändert: Bei Mittel- und hellen Tönen verschwinden beim Zurücknehmen des Reglers zuerst die dunkleren Anteile; die hellsten Anteile bleiben bis zuletzt sichtbar. Dunkle Tonwerte und Ölmodus bleiben unverändert.
-
-1.45: In Tonwerte kann das Original beim vorhandenen 0–100%-Einblendregler jetzt wahlweise farbig oder Schwarz-Weiß als Hintergrund eingeblendet werden. Andere Module bleiben unverändert.
-
-1.46: Schwarz-Weiß-Einblendung repariert: echte Graustufen-Kopie statt Safari-Filter. Farbig und Schwarz-Weiß sind jetzt getrennte Original-Hintergründe.
-
-1.47: Tonwerte: Auswahl Farbig/Schwarz-Weiß jetzt über zwei direkte Buttons statt Dropdown. Die Schwarz-Weiß-Schaltung greift direkt auf die echte Graustufen-Kopie zu; die vorherige fehleranfällige Bereichserkennung wurde entfernt. Der 0–100%-Einblendregler bleibt unverändert.
-
-1.48: Tonwerte-Originalsteuerung neu aufgebaut: zwei direkte Buttons Farbig/Schwarz-Weiß und ein deutlich sichtbarer 0–100%-Regler über die volle Breite. Bei Umschaltung von 0% wird automatisch 50% eingeblendet, damit die Wirkung sofort sichtbar ist.
-
-1.49: Schwarz-Weiß-Einblendung in Tonwerte geändert: Das Schwarz-Weiß-Original wird nur in den ausgeblendeten Tonwertbereichen als Hintergrund eingeblendet. Die aktuell sichtbaren/ausgewählten Tonwerte bleiben farbig und werden nicht von Schwarz-Weiß überdeckt. Der 0–100%-Regler und die Buttons bleiben erhalten.
-
-1.72 WIEDERHERSTELLUNG:
-- Technische Basis: unveränderter Programmstand 1.49.
-- Kein Mischdiagramm.
-- Keine späteren Eingriffe in Pipette, Mischlogik oder Palettenlogik.
-- Loader-Struktur bleibt sauber: index.html lädt app.html mit no-store.
-- sw.js löscht alte Caches und registriert sich wieder ab.
-
-1.73:
-- Leere oder defekte gespeicherte Farbauswahl blockiert Mischvorschläge nicht mehr.
-- Unter 2 aktiven Farben wird automatisch die vollständige gewählte Herstellerpalette benutzt.
-- Eigene gespeicherte Farbauswahl wird nicht gelöscht.
-- Mischvorschläge, Farbreise, Lasuren und Farbpaar-Werkzeuge verwenden denselben robusten Palette-Fallback.
-
-1.74:
-- Nur Farbreise korrigiert.
-- Nach dem ersten Pipetten-Tap wird der Pointer auf dem iPad sofort beendet.
-- Dadurch wird der zweite Tap als eigene Zielfarbe erkannt.
-- Werkzeug, Großformen, Tonwerte, Farbanalyse und Mischpult unverändert.
-
-1.75:
-- Mischvorschläge priorisieren jetzt einfache Rezepte.
-- Alle 1-Farben- und alle 2-Farben-Kombinationen werden geprüft.
-- Zweiermischungen werden in 5-%-Schritten von 10:90 bis 90:10 geprüft.
-- 3–5 Farben erscheinen nur, wenn sie die beste 1-/2-Farben-Mischung um mindestens 1 Prozentpunkt verbessern.
-- Bei nahezu gleicher Übereinstimmung gewinnt die Mischung mit weniger Farben.
-- Sonstige Werkzeuge und die stabile 1.74-Basis bleiben unverändert.
+JavaScript-Syntax und Rechenfunktionen geprüft. Kein direkter Safari-/iPad-Test.
