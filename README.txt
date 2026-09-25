@@ -1,3 +1,33 @@
+AtelierAI iPad 1.79 – Mischberechnung korrigiert
+
+Installation: ZIP entpacken und app.html im bestehenden GitHub-Projekt ersetzen.
+Der bisherige Startlink bleibt. Nach Neuladen muss oben 1.79 stehen.
+Rückkehr: Sicherung_1.78/app.html enthält den unveränderten vorherigen Stand.
+
+Änderungen:
+- Einheitliche Mischgrundlage für Studio, Zweifarbenpalette und Mischpult.
+- Korrigierte Aquarell-Farbwerte statt Familien-Platzhalter; eigene RGB-Werte bleiben erhalten.
+- Exakte gekürzte Teileverhältnisse statt nachträglicher Mengenrundung.
+- Keine künstliche Aufhellung der aufgenommenen oder berechneten Farbfelder.
+- Aquarell: zusätzlicher simulierter Farbauftrag auf weißem Papier, separat vom Pigmentverhältnis.
+  Der Prozentwert ist KEIN Wasser-Mischverhältnis. Die Zweifarbenpalette zeigt den unverdünnten Ansatz.
+- Bildschirmnähe /100 bewertet nur die Modellfarbe, nicht die tatsächliche Farbmischung.
+- Höchstens drei Farben in Studio-Rezepten. Auswahl leer/eine Farbe wird respektiert.
+- Helligkeitsregler sind ausdrücklich Vorschauen; sie ändern nicht die aufgeführten Pigmentanteile.
+
+Grenzen:
+Die RGB-Farbwerte sind repräsentative Näherungen und keine gemessenen Spektren.
+Öl verwendet eine Dreikanal-Absorptions/Streuungs-Näherung; Aquarell eine Absorptions-
+Näherung mit weißem Papier. Färbekraft, reale Deckkraft, Trocknung, Untergrund und
+Pigmentkonzentration sind nicht kalibriert. Es wird keine physikalisch genaue
+Farbmischung versprochen. Rezepte auf Palette/Papier prüfen und anpassen.
+
+Geprüft: JavaScript-Syntax, Mengen/Vorschau-Konsistenz für alle drei Kataloge,
+Grundfarben-Endpunkte, Unterscheidung der Aquarellgelbtöne, leere Palette und
+bestehende Bündelung der Zeichen-/Tonwertaktualisierung. Kein Safari-Gerätetest.
+
+Vorherige Hinweise:
+
 AtelierAI iPad 1.78 – Formführung für Öl und Aquarell
 24.09.2026
 

@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.78</title>
+  <title>AtelierAI iPad 1.79</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.78-20260924';
+    const wanted='atelierai-1.79-20260925';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.78</div>
+    <div class="title">AtelierAI · iPad 1.79</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -505,7 +505,7 @@
           <select id="advisorVariant" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;"></select>
 
           <div class="control-line" style="margin-top:9px;">
-            <label for="advisorBrightness">Grundton heller / dunkler</label>
+            <label for="advisorBrightness">Helligkeitsvorschau (kein Rezeptanteil)</label>
             <input id="advisorBrightness" type="range" min="-40" max="40" value="0" step="1" style="flex:1;">
             <span id="advisorBrightnessVal" style="min-width:46px;text-align:right;">0</span>
           </div>
@@ -700,7 +700,7 @@
             <span id="pairEditInfo" class="tiny"></span>
           </div>
           <div class="control-line"><label>Verhältnis</label><input id="pairEditRatio" type="range" min="0" max="100" value="50"><span id="pairEditRatioVal">50 : 50</span></div>
-          <div class="control-line"><label>Helligkeit</label><input id="pairEditLight" type="range" min="-100" max="100" value="0"><span id="pairEditLightVal">Original</span></div>
+          <div class="control-line"><label>Helligkeitsvorschau</label><input id="pairEditLight" type="range" min="-100" max="100" value="0"><span id="pairEditLightVal">Original</span></div>
           <div class="control-line"><label>Korrekturfarbe</label><input id="pairEditAmount" type="range" min="5" max="50" value="20"><span id="pairEditAmountVal">20 %</span></div>
           <div class="tiny" style="margin:7px 0 4px;"><b>Heller machen</b></div>
           <div id="pairEditLighter"></div>
@@ -1554,14 +1554,7 @@
   }
 
   function effectivePaletteColors(key){
-    const selected=selectedPaletteColors(key);
-    if(selected && selected.length>=2) return selected;
-    if(key==='watercolor'){
-      const h=(PALETTES.horadam||[]).map(([name,rgb])=>[name,rgb,'Horadam']);
-      const a=(PALETTES.akademie||[]).map(([name,rgb])=>[name,rgb,'Akademie']);
-      return h.concat(a);
-    }
-    return (PALETTES[key]||[]).map(([name,rgb])=>[name,rgb]);
+    return selectedPaletteColors(key);
   }
 
   function updateOwnedSummary(){
@@ -1628,15 +1621,7 @@
     });
   }
   function adaptiveDisplayColor(c){
-    // Anzeige-Korrektur nur für Farbfelder:
-    // helle und sehr dunkle Farben bleiben nahezu unverändert,
-    // nur mittlere Töne werden sanft aufgehellt.
-    if(!c) return c;
-    const y=0.2126*c[0]+0.7152*c[1]+0.0722*c[2];
-    const mid=Math.max(0,1-Math.abs(y-135)/95);
-    const light=(y>175) ? Math.min(1,(y-175)/65) : 0;
-    const strength=Math.min(0.24,0.22*mid + 0.07*light);
-    return c.map(v=>Math.round(v+(255-v)*strength));
+    return c;
   }
 
   function rgbHex(rgb){
@@ -1687,7 +1672,7 @@
       [/kadmiumrot.*mittel/, [199,48,44]],
       [/kadmiumrot.*dunkel/, [158,45,44]],
       [/saturnrot/, [214,64,51]],
-      [/magenta/, [190,40,119]],
+      [/^magenta$/, [190,40,119]],
       [/purpur magenta/, [167,42,112]],
       [/chinacridon magenta/, [182,39,111]],
       [/chinacridon purpur/, [137,49,109]],
@@ -1735,7 +1720,7 @@
       [/chromorangeton/, [220,92,42]],
       [/kadmiumorange dunkel/, [207,76,38]],
       [/lasurorange/, [222,91,40]],
-      [/orange/, [226,103,43]],
+      [/^orange$/, [226,103,43]],
       [/neonorange/, [245,104,45]],
 
       // Braun / Erden
@@ -1811,24 +1796,39 @@
     return fallback;
   }
 
+  // Representative screen swatches, not measured pigment spectra.
+  for(const key of ['horadam','akademie']){
+    PALETTES[key]=PALETTES[key].map(([name,rgb])=>[name,watercolorRepresentativeRgb(name,rgb)]);
+  }
+
+  function pigmentMix(colors,parts,key){
+    const total=parts.reduce((a,b)=>a+Math.max(0,b),0);
+    if(!total)return [255,255,255];
+    const water=key==='watercolor'||key==='horadam'||key==='akademie';
+    // Three-channel approximation: absorption for transparent washes,
+    // K/S proxy for opaque paint. No measured spectra or tinting strengths.
+    return [0,1,2].map(ch=>{
+      let value=0;
+      colors.forEach((rgb,i)=>{
+        const v=Math.max(.0001,Math.min(1,rgb[ch]/255));
+        const r=v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);
+        value+=(water?-Math.log(Math.max(.00001,r)):(1-r)*(1-r)/(2*Math.max(.00001,r)))*Math.max(0,parts[i])/total;
+      });
+      const r=water?Math.exp(-value):1/(1+value+Math.sqrt(value*value+2*value));
+      return Math.round(255*(r<=.0031308?12.92*r:1.055*Math.pow(r,1/2.4)-.055));
+    });
+  }
+
+  function washRgb(rgb,coverage){
+    return rgb.map(v=>Math.round(255+(v-255)*coverage));
+  }
+
   function paletteMixRgb(name,rgb,paletteKey){
-    return paletteKey==='watercolor'||paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie'
-      ? watercolorRepresentativeRgb(name,rgb)
-      : rgb;
+    return rgb;
   }
 
   function opticalDensityMix(items,parts,paletteKey){
-    const total=parts.reduce((a,b)=>a+b,0)||1;
-    const out=[0,1,2].map(ch=>{
-      let od=0;
-      for(let i=0;i<items.length;i++){
-        const rgb=paletteMixRgb(items[i].name,items[i].rgb,paletteKey);
-        const norm=Math.max(.015,Math.min(.995,rgb[ch]/255));
-        od+=(-Math.log(norm))*(parts[i]/total);
-      }
-      return Math.round(255*Math.exp(-od));
-    });
-    return out;
+    return pigmentMix(items.map(x=>x.rgb),parts,paletteKey);
   }
 
   function perceptualMixScore(target,rgb,items,paletteKey){
@@ -1866,9 +1866,8 @@
   }
 
   function similarityPct(a,b){
-    const d=colorDistance(a,b);
-    const pct=100-(d/255*100);
-    return Math.max(0,Math.min(100,Math.round(pct)));
+    const d=deltaE76FromLab(rgbToLabFast(a),rgbToLabFast(b));
+    return Math.max(0,Math.min(100,Math.round(100-d*1.35)));
   }
 
   const mixResultCache=new Map();
@@ -1896,34 +1895,25 @@
       return isWater ? waterRgb.get(c) : c.rgb;
     }
     function mixFor(items,parts){
-      const total=parts.reduce((a,b)=>a+b,0)||1;
+      return pigmentMix(items.map(c=>c.rgb),parts,paletteKey);
+    }
+    function finishMix(base){
+      let best={rgb:base,coverage:1,d:deltaE76FromLab(targetLab,rgbToLabFast(base))};
       if(isWater){
-        return [0,1,2].map(ch=>{
-          let od=0;
-          for(let i=0;i<items.length;i++) od+=waterDensity.get(items[i])[ch]*(parts[i]/total);
-          return Math.round(255*Math.exp(-od));
-        });
+        // Project the target onto the white-to-pigment line, then check
+        // neighbouring printable coverage values in perceptual space.
+        let num=0,den=0;
+        for(let ch=0;ch<3;ch++){num+=(255-target[ch])*(255-base[ch]);den+=(255-base[ch])**2;}
+        const estimate=Math.max(.01,Math.min(1,Math.round(100*num/(den||1))/100));
+        for(const coverage of [...new Set([estimate,Math.max(.01,estimate-.03),Math.min(1,estimate+.03)])]){
+          const rgb=washRgb(base,coverage),d=deltaE76FromLab(targetLab,rgbToLabFast(rgb));
+          if(d<best.d)best={rgb,coverage,d};
+        }
       }
-      return [0,1,2].map(ch=>Math.round(items.reduce((sum,c,i)=>sum+candidateRgb(c)[ch]*parts[i],0)/total));
+      return best;
     }
     function studioCost(rgb,items){
-      const lab=deltaE76FromLab(targetLab,rgbToLabFast(rgb));
-      if(!isWater)return lab;
-      const th=targetHue,ts=targetSaturation,[mh,ms]=rgbToHsv(rgb);
-      let cost=lab;
-      if(ts>.08&&ms>.08){
-        let hd=Math.abs(th-mh)%360;if(hd>180)hd=360-hd;
-        if(hd>25)cost+=(hd-25)*.10;
-      }
-      const rosy=(th>=325||th<=35)&&ts>=.07;
-      if(rosy){
-        const earth=items.filter(x=>/ocker|siena|umbra|neapel|gold|gelb|orange/i.test(x.name)).length;
-        const rose=items.filter(x=>/rosa|pink|karmin|krap|magenta|rot|rubin|purpur|alizarin|potters/i.test(x.name)).length;
-        const cg=items.filter(x=>/cyan|türkis|grün/i.test(x.name)).length;
-        if(earth&&!rose)cost+=10;
-        if(cg&&earth>=rose)cost+=5*cg;
-      }
-      return cost;
+      return deltaE76FromLab(targetLab,rgbToLabFast(rgb));
     }
     function displayPct(rgb){
       return similarityPct(target,rgb);
@@ -1936,8 +1926,8 @@
 
     // 1 Farbe: zuerst die einfachste mögliche Lösung prüfen.
     for(const c of candidates){
-      const rgb=candidateRgb(c);
-      pool.push({items:[c],parts:[10],rgb,cost:studioCost(rgb,[c]),score:displayPct(rgb)});
+      const finished=finishMix(candidateRgb(c)),rgb=finished.rgb;
+      pool.push({items:[c],parts:[10],coverage:finished.coverage,rgb,cost:studioCost(rgb,[c]),score:displayPct(rgb)});
     }
 
     // 2 Farben: ALLE Farbpaarungen und malerisch brauchbare Verhältnisse prüfen.
@@ -1946,10 +1936,10 @@
       for(let j=i+1;j<candidates.length;j++){
         for(let pct=10;pct<=90;pct+=5){
           const a=pct/100, b=1-a;
-          const rgb=[0,1,2].map(ch=>Math.round(candidates[i].rgb[ch]*a+candidates[j].rgb[ch]*b));
+          const finished=finishMix(mixFor([candidates[i],candidates[j]],[pct,100-pct])),rgb=finished.rgb;
           const parts=[pct,100-pct];
           const items=[candidates[i],candidates[j]];
-          pool.push({items,parts,rgb,cost:studioCost(rgb,items),score:displayPct(rgb)});
+          pool.push({items,parts,coverage:finished.coverage,rgb,cost:studioCost(rgb,items),score:displayPct(rgb)});
         }
       }
     }
@@ -1964,7 +1954,7 @@
       return {items,parts,rgb,cost:studioCost(rgb,items),score:displayPct(rgb)};
     }).sort((a,b)=>a.cost-b.cost).slice(0,30);
 
-    for(let count=2;count<=5;count++){
+    for(let count=2;count<=3;count++){
       const next=[];
       for(const state of beam){
         const used=new Set(state.items.map(x=>x.name+'|'+(x.series||'')));
@@ -1973,9 +1963,9 @@
           for(const add of [1,2,3,4,5,6,8,10]){
             const items=state.items.concat([c]);
             const parts=state.parts.concat([add]);
-            const rgb=mixFor(items,parts);
+            const finished=finishMix(mixFor(items,parts)),rgb=finished.rgb;
             const cost=studioCost(rgb,items);
-            next.push({items,parts,rgb,cost,score:displayPct(rgb)});
+            next.push({items,parts,coverage:finished.coverage,rgb,cost,score:displayPct(rgb)});
           }
         }
       }
@@ -2018,20 +2008,15 @@
 
     // Höhere Übereinstimmung zuerst; bei nahezu gleichem Treffer gewinnt
     // die Mischung mit weniger Farben.
-    filtered.sort((a,b)=>{
-      if(Math.abs(b.score-a.score)<=1 && a.items.length!==b.items.length){
-        return a.items.length-b.items.length;
-      }
-      if(b.score!==a.score)return b.score-a.score;
-      return a.items.length-b.items.length || a.cost-b.cost;
-    });
+    filtered.sort((a,b)=>(b.score-(b.items.length-1)*.5)-(a.score-(a.items.length-1)*.5)||a.cost-b.cost);
+
 
     const chosen=[];
     for(const x of filtered){
       const total=x.parts.reduce((a,b)=>a+b,0)||1;
-      const scaled=x.items.length===2
-        ? x.parts.map(v=>Math.max(1,Math.round(v/10)))
-        : x.parts.map(v=>Math.max(1,Math.round(v/total*10)));
+      const gcd=(a,b)=>b?gcd(b,a%b):a;
+      const divisor=x.parts.reduce(gcd);
+      const scaled=x.parts.map(v=>v/divisor);
       chosen.push({
         sig:recipeKey(x.items),
         names:x.items.map(i=>(isWater&&i.series)?`${i.name} (${i.series})`:i.name),
@@ -2039,6 +2024,7 @@
         rgb:x.rgb,
         score:x.score,
         color_count:x.items.length,
+        coverage:x.coverage||1,
         watercolor:isWater
       });
       if(chosen.length===3)break;
@@ -2056,18 +2042,18 @@
     }
     const paletteKey=paintPalette.value;
 const mixes=chooseMixes(target,paletteKey);
-    mixResults.innerHTML='';
+    mixResults.innerHTML=mixes.length?'':'<p>Bitte zuerst vorhandene Farben in der Palette auswählen.</p>';
     mixes.forEach((m,idx)=>{
       const card=document.createElement('div');
       card.className='mix-card';
-      const targetHex=rgbHex(adaptiveDisplayColor(target)), mixHex=rgbHex(adaptiveDisplayColor(m.rgb));
+      const targetHex=rgbHex(target), mixHex=rgbHex(m.rgb);
       card.innerHTML=`
-        <div class="mix-head"><b>Vorschlag ${idx+1}</b><span>${m.score}% Annäherung</span></div>
+        <div class="mix-head"><b>Vorschlag ${idx+1}</b><span>${m.score}/100 Bildschirmnähe</span></div>
         <div class="mix-swatches">
           <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${targetHex}"></div></div>
           <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex}"></div></div>
         </div>
-        <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i]} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · möglichst wenige Farben':'Mischqualität · möglichst wenige Farben'}</span></div>
+        <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i]} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)':'Öl · Näherung ohne gemessene Pigmentdaten'}. Auf Papier/Palette prüfen.</span></div>
       `;
       mixResults.appendChild(card);
     });
@@ -2219,9 +2205,7 @@ const mixes=chooseMixes(target,paletteKey);
       return isWater ? paletteMixRgb(c.name,c.rgb,paletteKey) : c.rgb;
     }
     function weightedRgb(items,parts){
-      if(isWater) return opticalDensityMix(items,parts,paletteKey);
-      const total=parts.reduce((s,v)=>s+v,0)||1;
-      return [0,1,2].map(ch=>Math.round(items.reduce((s,c,i)=>s+paintRgb(c)[ch]*parts[i],0)/total));
+      return pigmentMix(items.map(c=>paintRgb(c)),parts,paletteKey);
     }
     function targetCost(rgb){
       return deltaE76FromLab(rgbToLabFast(rgb),rgbToLabFast(target));
@@ -3383,8 +3367,8 @@ const mixes=chooseMixes(target,paletteKey);
   let selectedAdjustColor=null;
 
   function pairMixRgb(a,b,pct){
-    const f=Math.max(0,Math.min(1,Number(pct)/100));
-    return [0,1,2].map(ch=>Math.round(a[ch]*f+b[ch]*(1-f)));
+    const f=Math.max(0,Math.min(100,Number(pct)));
+    return pigmentMix([a,b],[f,100-f],paintPalette.value);
   }
   function pairLum(rgb){return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];}
   function pairClamp(v){return Math.max(0,Math.min(255,Math.round(v)));}
@@ -3393,8 +3377,8 @@ const mixes=chooseMixes(target,paletteKey);
     return rgb.map(x=>t>=0?pairClamp(x+(255-x)*t):pairClamp(x*(1+t)));
   }
   function pairAdd(rgb,c,amount){
-    const f=Math.max(0,Math.min(1,Number(amount)/100));
-    return [0,1,2].map(ch=>pairClamp(rgb[ch]*(1-f)+c[ch]*f));
+    const f=Math.max(0,Math.min(100,Number(amount)));
+    return pigmentMix([rgb,c],[100-f,f],paintPalette.value);
   }
   function pairColorByName(name){
     const colors=effectivePaletteColors(paintPalette.value);
@@ -3442,9 +3426,9 @@ const mixes=chooseMixes(target,paletteKey);
     pairEditLightVal.textContent=Math.abs(lv)<3?'Original':(lv>0?`${Math.abs(lv)} % heller`:`${Math.abs(lv)} % dunkler`);
     pairEditAmountVal.textContent=`${Number(pairEditAmount.value).toFixed(0)} %`;
 
-    const p1=Math.max(1,Math.round(ratio/10)), p2=Math.max(1,Math.round(other/10));
+    const p1=ratio, p2=other;
     let txt=`${p1} Teile ${selectedPairMix.n1} · ${p2} Teile ${selectedPairMix.n2}`;
-    if(lv>3)txt+=' · langsam Titanweiß einarbeiten';
+    if(lv>3)txt+=paintPalette.value==='artisan'?' · Helligkeit nur Vorschau; Weißzugabe separat erproben':' · heller durch verdünnten Auftrag auf weißem Papier';
     if(lv<-3)txt+=' · vorsichtig mit dunkler Tubenfarbe vertiefen';
     if(selectedAdjustColor)txt+=` · + ${Number(pairEditAmount.value).toFixed(0)} % ${selectedAdjustColor.name}`;
     pairEditRecipe.textContent=txt;
@@ -3489,7 +3473,7 @@ const mixes=chooseMixes(target,paletteKey);
         // für jedes Farbpaar automatisch 10:90 bis 90:10 prüfen.
         for(let pct=10;pct<=90;pct+=5){
           const a=pct/100, b=1-a;
-          const rgb=[0,1,2].map(ch=>Math.round(colors[i][1][ch]*a+colors[j][1][ch]*b));
+          const rgb=pairMixRgb(colors[i][1],colors[j][1],pct);
           const score=similarityPct(target,rgb);
           if(!best || score>best.score){
             best={n1:colors[i][0],n2:colors[j][0],rgb,score,p1:pct,p2:100-pct};
@@ -3507,7 +3491,7 @@ const mixes=chooseMixes(target,paletteKey);
     const intro=document.createElement('div');
     intro.className='tiny';
     intro.style.marginBottom='8px';
-    intro.innerHTML='<b>Treffer</b> = Ähnlichkeit zur aufgenommenen Zielfarbe. Je höher, desto näher. Das Verhältnis zeigt die vorgeschlagenen Anteile der beiden Tubenfarben.';
+    intro.innerHTML='Bildschirmnähe bewertet nur die Simulation. Mengen sind Startvorschläge, keine gemessenen Rezepte. Aquarell hier als unverdünnte Mischung; helle Lasuren siehe Studio-Mischung.';
     pairResults.appendChild(intro);
 
     shown.forEach((m,i)=>{
@@ -3518,7 +3502,7 @@ const mixes=chooseMixes(target,paletteKey);
         <div class="swatch-line">
           <div class="small-swatch" style="background:${rgbHex(m.rgb)}"></div>
           <div style="min-width:0">
-            <b>Treffer ${m.score} %</b> <span class="tiny">(${quality})</span><br>
+            <b>Bildschirmnähe ${m.score}/100</b> <span class="tiny">(${quality})</span><br>
             <span class="tiny"><b>${m.p1} %</b> ${m.n1}<br><b>${m.p2} %</b> ${m.n2}</span>
           </div>
         </div>`;
@@ -4619,12 +4603,14 @@ const mixes=chooseMixes(target,paletteKey);
     currentKey:()=>paintPalette.value,
     fullPalette:(key)=>{
       const k=key||paintPalette.value;
-      return (PALETTES[k]||[]).map(x=>[x[0],x[1],x[2]]);
+      return effectivePaletteColors(k).map(x=>[x[0],x[1],x[2]]);
     },
     selectedPalette:(key)=>{
       const k=key||paintPalette.value;
       return selectedPaletteColors(k)||[];
     },
+    mixRgb:(colors,parts,key)=>pigmentMix(colors,parts,key||paintPalette.value),
+    washRgb,
     mixes:(target,key)=>chooseMixes(target,key||paintPalette.value)
   };
 
@@ -4764,6 +4750,7 @@ const mixes=chooseMixes(target,paletteKey);
   }
 
   let advisorItems=[];
+  let advisorCoverage=1;
 
   function advEsc(s){
     return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -4794,14 +4781,16 @@ const mixes=chooseMixes(target,paletteKey);
     const targetRgb=rawTarget;
     const {key,colors}=advPalette();
     let base=[];
+    advisorCoverage=1;
 
     // Erst AtelierAI-Mischlogik versuchen.
     try{
       const mixes=window.AtelierPaletteAPI?.mixes?.(targetRgb,key)||[];
       if(mixes.length){
         const m=mixes[0];
+        advisorCoverage=m.coverage||1;
         (m.names||[]).forEach((name,i)=>{
-          const c=colors.find(x=>x[0]===name);
+          const c=colors.find(x=>(x[2]?x[0]+' ('+x[2]+')':x[0])===name);
           if(c) base.push({
             name:c[0],rgb:c[1],
             parts:Math.max(.1,Number((m.parts||[])[i]||1)),
@@ -4842,7 +4831,8 @@ const mixes=chooseMixes(target,paletteKey);
       return advBrightnessRgb(raw,advisorBrightness?.value||0);
     }
     const total=active.reduce((s,x)=>s+x.parts,0)||1;
-    const mixed=[0,1,2].map(ch=>Math.round(active.reduce((s,x)=>s+x.rgb[ch]*x.parts,0)/total));
+    let mixed=window.AtelierPaletteAPI.mixRgb(active.map(x=>x.rgb),active.map(x=>x.parts),advPalette().key);
+    mixed=window.AtelierPaletteAPI.washRgb(mixed,advisorCoverage);
     return advBrightnessRgb(mixed,advisorBrightness?.value||0);
   }
 
@@ -4856,6 +4846,7 @@ const mixes=chooseMixes(target,paletteKey);
           return `${q} Teile ${advEsc(x.name)}`;
         }).join(' + ')
       : '<b>Aktuelle Mischung:</b> leer';
+    advisorRecipe.innerHTML+='<br><small>Unkalibrierte Mischvorschau · Farbprobe erforderlich. '+(advPalette().key!=='artisan'?Math.round(advisorCoverage*100)+' % Farbauftrag auf Weiß; kein Wasserverhältnis. ':'')+'Helligkeitsregler verändert nur die Vorschau.</small>';
   }
 
   function advRenderRows(){
@@ -4866,7 +4857,7 @@ const mixes=chooseMixes(target,paletteKey);
           <div style="min-width:0;flex:1"><b>${advEsc(x.name)}</b><div class="tiny">${advEsc(x.role)}</div></div>
           <span id="advVal${i}" class="tiny">${Number(x.parts)<1?Number(x.parts).toFixed(2):Number(x.parts).toFixed(1)}</span>
         </div>
-        <input class="adv-slider" data-i="${i}" type="range" min="0" max="5" step="0.05" value="${x.parts}" style="width:100%;margin-top:7px;">
+        <input class="adv-slider" data-i="${i}" type="range" min="0" max="${Math.max(5,x.parts)}" step="0.05" value="${x.parts}" style="width:100%;margin-top:7px;">
       </div>`).join('');
 
     advisorMixerRows.querySelectorAll('.adv-slider').forEach(s=>s.addEventListener('input',()=>{
