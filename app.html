@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.87</title>
+  <title>AtelierAI iPad 1.88</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1016,7 +1016,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.87</div>
+    <div class="title">AtelierAI · iPad 1.88</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1240,6 +1240,8 @@
           <input id="pickerColorTolerance" type="range" min="5" max="30" value="12" step="0.5">
           <span id="pickerColorToleranceVal">12</span>
         </div>
+        <div class="control-line" style="margin-top:8px"><label for="pickerLightnessRange">Helligkeitsbereich</label><input id="pickerLightnessRange" type="range" min="-100" max="100" step="1" value="0"><span id="pickerLightnessRangeVal">Nur Auswahl</span></div>
+        <p class="tiny">← zusätzlich dunklere · Mitte: bisherige Auswahl · zusätzlich hellere →</p>
         <div class="grid2">
           <button id="pickerShowOnlyBtn" class="secondary">Nur diese Farbe zeigen</button>
           <button id="pickerShowAllBtn" class="secondary">Alle Farben zeigen</button>
@@ -1406,6 +1408,8 @@
           <button id="surfaceRectBtn" class="secondary">Rechteck analysieren</button>
         </div>
         <div class="control-line"><label>Größe</label><input id="surfaceSize" type="range" min="24" max="180" value="84"><span id="surfaceSizeVal">84</span></div>
+        <div class="control-line" style="margin-top:8px"><label for="surfaceLightnessRange">Helligkeitsbereich</label><input id="surfaceLightnessRange" type="range" min="-100" max="100" step="1" value="0"><span id="surfaceLightnessRangeVal">Nur Auswahl</span></div>
+        <p class="tiny">← zusätzlich dunklere · Mitte: bisherige Auswahl · zusätzlich hellere →</p>
         <div class="control-line"><label>Farbähnlichkeit</label><input id="surfaceColorTolerance" type="range" min="5" max="30" value="12" step="0.5"><span id="surfaceColorToleranceVal">12</span></div>
         <div class="grid2">
           <button id="surfaceClearMarkBtn" class="secondary">Alle Farben zeigen</button>
@@ -4270,6 +4274,17 @@ const mixes=chooseMixes(target,paletteKey);
   let activeIsolatedColor=null;
   let activeIsolatedLabel='Farbe';
 
+  let isolationLightness=0;
+  for(const prefix of ['picker','surface']){
+    document.getElementById(prefix+'LightnessRange').addEventListener('input',e=>{
+      isolationLightness=Number(e.target.value);
+      for(const other of ['picker','surface']){
+        document.getElementById(other+'LightnessRange').value=String(isolationLightness);
+        document.getElementById(other+'LightnessRangeVal').textContent=isolationLightness===0?'Nur Auswahl':(isolationLightness>0?'Heller +':'Dunkler +')+Math.abs(isolationLightness);
+      }
+      refreshIsolationSmooth();
+    });
+  }
   let isolationGray=false;
   let isolationRevision=0, isolationSerial=0;
   let isolationRequest=null, isolationBusy=false, isolationSentKey=null;
@@ -4278,7 +4293,7 @@ const mixes=chooseMixes(target,paletteKey);
   // The processor owns one source image and one distance map. Moving the
   // tolerance slider only thresholds this map; source pixels remain intact.
   function createIsolationProcessor(){
-    let pixels=null, distances=null, width=0, height=0;
+    let pixels=null, distances=null, lightDeltas=null, chromaDistances=null, width=0, height=0;
     function lab(r,g,b){
       const lin=v=>{v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);};
       r=lin(r);g=lin(g);b=lin(b);
@@ -4293,9 +4308,13 @@ const mixes=chooseMixes(target,paletteKey);
         pixels=new Uint8ClampedArray(message.pixels);
         width=message.width;height=message.height;
         distances=new Float32Array(width*height);
+        lightDeltas=new Float32Array(width*height);
+        chromaDistances=new Float32Array(width*height);
         const t=lab(...message.target);
         for(let n=0,i=0;n<distances.length;n++,i+=4){
           const c=lab(pixels[i],pixels[i+1],pixels[i+2]);
+          lightDeltas[n]=c[0]-t[0];
+          chromaDistances[n]=(c[1]-t[1])**2+(c[2]-t[2])**2;
           distances[n]=(c[0]-t[0])**2+(c[1]-t[1])**2+(c[2]-t[2])**2;
         }
       }
@@ -4303,7 +4322,10 @@ const mixes=chooseMixes(target,paletteKey);
       const output=new Uint8ClampedArray(pixels.length);
       const limit=message.tolerance**2,background=message.gray?128:247;
       for(let n=0,i=0;n<distances.length;n++,i+=4){
-        const match=distances[n]<=limit;
+        const extension=Number(message.lightness)||0;
+        const delta=lightDeltas[n];
+        const nearest=extension>=0?Math.max(0,Math.min(extension,delta)):Math.min(0,Math.max(extension,delta));
+        const match=distances[n]<=limit || (extension!==0 && (delta-nearest)**2+chromaDistances[n]<=limit);
         output[i]=match?pixels[i]:background;
         output[i+1]=match?pixels[i+1]:background;
         output[i+2]=match?pixels[i+2]:background;
@@ -4347,7 +4369,7 @@ const mixes=chooseMixes(target,paletteKey);
       }catch(e){isolationFailed=true;}
     }
     const request=isolationRequest;
-    const message={id:request.id,target:request.target,tolerance:request.tolerance,gray:request.gray};
+    const message={id:request.id,target:request.target,tolerance:request.tolerance,gray:request.gray,lightness:request.lightness};
     if(request.key!==isolationSentKey){
       const c=request.context.canvas;
       const frame=request.context.getImageData(0,0,c.width,c.height);
@@ -4378,7 +4400,7 @@ const mixes=chooseMixes(target,paletteKey);
     activeIsolatedColor=[...target];activeIsolatedLabel=label;
     const context=sourceContextForPicker();
     const key=[isolationRevision,context===sourceCtx?'original':'processed',...target].join(':');
-    isolationRequest={id:++isolationSerial,key,context,target:[...target],tolerance:currentColorTolerance(),gray:isolationGray};
+    isolationRequest={id:++isolationSerial,key,context,target:[...target],tolerance:currentColorTolerance(),gray:isolationGray,lightness:isolationLightness};
     dispatchIsolation();
   }
 
