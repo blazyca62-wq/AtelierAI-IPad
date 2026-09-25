@@ -1,3 +1,23 @@
+AtelierAI iPad 1.80 – Mischvorschläge wiederhergestellt
+
+app.html im bestehenden GitHub-Projekt ersetzen. Startlink bleibt gleich.
+Nach Neuladen muss oben AtelierAI iPad 1.80 stehen.
+
+Fehlerbehebung: Bei leerer oder fehlender persönlicher Farbauswahl wird wieder
+mit der Standardpalette gerechnet. Bei Öl enthält diese kein Schwarz.
+Ein Hinweis zeigt die Nutzung der Standardpalette an. Sobald eigene Farben
+aktiv ausgewählt sind, werden ausschließlich diese verwendet, auch bei nur
+einer Farbe. Bestehende gespeicherte Auswahlen werden nicht überschrieben.
+
+Geprüft mit tatsächlichen Funktionen für Palettenauswahl und Rezeptanzeige:
+leerer/neuer/fehlerhafter Speicher, ausgeschaltetes Schwarz, eine/zwei gewählte
+Farben, Artisan, Horadam, Akademie und kombinierte Aquarellpalette.
+Kein direkter Safari-Gerätetest. Mischungen bleiben unkalibrierte Näherungen.
+
+Sicherung_1.79/app.html enthält die vorherige Version.
+
+Versionsverlauf:
+
 AtelierAI iPad 1.79 – Mischberechnung korrigiert
 
 Installation: ZIP entpacken und app.html im bestehenden GitHub-Projekt ersetzen.

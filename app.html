@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.79</title>
+  <title>AtelierAI iPad 1.80</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -170,7 +170,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.79-20260925';
+    const wanted='atelierai-1.80-20260925';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -187,7 +187,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.79</div>
+    <div class="title">AtelierAI · iPad 1.80</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1554,13 +1554,24 @@
   }
 
   function effectivePaletteColors(key){
-    return selectedPaletteColors(key);
+    const selected=selectedPaletteColors(key);
+    if(selected.length)return selected;
+    // Compatibility: earlier versions worked without a saved personal palette.
+    // A single selected colour remains a valid restricted palette.
+    if(key==='watercolor'){
+      return ['horadam','akademie'].flatMap(k=>PALETTES[k].map(([name,rgb])=>[name,rgb,k==='horadam'?'Horadam':'Akademie']));
+    }
+    return (PALETTES[key]||[]).filter(([name])=>key!=='artisan'||!(/black|schwarz/i.test(name))).map(([name,rgb])=>[name,rgb]);
   }
 
   function updateOwnedSummary(){
     const key=currentCatalogueKey(), owned=loadOwned();
     const n=(PALETTES[key]||[]).filter(x=>owned[paletteId(key,x[0])]===true).length;
     const custom=loadCustom().filter(x=>x.enabled!==false).length;
+    if(!selectedPaletteColors(key).length){
+      ownedSummary.textContent='Keine persönliche Auswahl aktiv · Standardpalette für Mischvorschläge'+(key==='artisan'?' (ohne Schwarz)':'');
+      return;
+    }
     ownedSummary.textContent=(key==='artisan')?`${n} von 40 Farben aktiv${custom?` + ${custom} eigene`:''}`:
       `Ausgewählt: ${n} Herstellerfarben${custom?` + ${custom} eigene`:''}. Mischungen benutzen nur diese Farben.`;
   }
@@ -2043,6 +2054,9 @@
     const paletteKey=paintPalette.value;
 const mixes=chooseMixes(target,paletteKey);
     mixResults.innerHTML=mixes.length?'':'<p>Bitte zuerst vorhandene Farben in der Palette auswählen.</p>';
+    if(!selectedPaletteColors(paletteKey).length){
+      mixResults.innerHTML+='<p class="tiny">Keine persönliche Auswahl aktiv: Vorschläge aus der Standardpalette'+(paletteKey==='artisan'?' ohne Schwarz':'')+'. Unter Palette kannst du deine vorhandenen Farben auswählen.</p>';
+    }
     mixes.forEach((m,idx)=>{
       const card=document.createElement('div');
       card.className='mix-card';
@@ -4025,7 +4039,10 @@ const mixes=chooseMixes(target,paletteKey);
     window.setTimeout(()=>{
       try{
         if(typeof showMixes==='function') showMixes();
-      }catch(e){}
+      }catch(e){
+        console.error('Atelier Mischberechnung',e);
+        mixResults.textContent='Die Mischberechnung konnte nicht abgeschlossen werden. Bitte erneut berechnen oder die aktive Palette prüfen.';
+      }
     },0);
   }
   pickerRadius.addEventListener('input',()=>{ pickerRadiusVal.textContent=pickerRadius.value; });
