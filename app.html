@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.92</title>
+  <title>AtelierAI iPad 1.93</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1016,7 +1016,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.92</div>
+    <div class="title">AtelierAI · iPad 1.93</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1059,6 +1059,10 @@
         <div id="build32Palette" style="display:flex;margin-top:16px;gap:1px"></div>
         <p id="build32Status" role="status">Foto öffnen und Farben erkennen lassen.</p>
         <p class="tiny">0: leer · 32: vollständiges Bild aus bis zu 32 festen Farben. Die Farbauswahl berücksichtigt auch kleine, markante Farbbereiche.</p>
+        <button id="build32Extras" class="secondary" disabled style="width:100%;margin-bottom:8px">Nur Ergänzungen zeigen</button>
+        <label for="build32Difference">Abweichung: <span id="build32DifferenceVal">5</span></label>
+        <input id="build32Difference" type="range" min="1" max="20" step="1" value="5" style="width:100%">
+        <p class="tiny">Nach Stufe 32: nur abweichende Bereiche in den Farben der Arbeitsansicht. Links: auch feine Unterschiede · rechts: nur deutliche.</p>
         <button id="build32Original" class="secondary" style="width:100%">Zurück zur Arbeitsansicht</button>
       </div>
       <div class="section" id="formsPanel">
@@ -4334,9 +4338,10 @@ const mixes=chooseMixes(target,paletteKey);
     for(let i=0,n=0;i<pixels.length;i+=4,n++)ranks[n]=lut[key(pixels[i],pixels[i+1],pixels[i+2])];
     return {width:data.width,height:data.height,palette,ranks:ranks.buffer};
   }
-  let build32Data=null,build32Canvas=null,build32Active=false,build32Worker=null,build32Generation=0,build32Direction='light';
+  let build32Data=null,build32Canvas=null,build32Active=false,build32Worker=null,build32Generation=0,build32Direction='light',build32Extras=false;
   const build32Status=document.getElementById('build32Status');
   function resetBuild32(){
+    build32Extras=false;document.getElementById('build32Extras').disabled=true;document.getElementById('build32Extras').textContent='Nur Ergänzungen zeigen';
     build32Generation++;if(build32Worker)build32Worker.terminate();build32Worker=null;
     build32Data=null;build32Canvas=null;build32Active=false;
     document.getElementById('build32Analyze').disabled=false;
@@ -4346,6 +4351,8 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function renderBuild32(direction){
     if(!build32Data)return;
+    build32Extras=false;document.getElementById('build32Extras').textContent='Nur Ergänzungen zeigen';
+    document.getElementById('build32Extras').disabled=Number(document.getElementById('build32'+direction).value)!==32;
     build32Direction=direction;build32Active=true;
     const count=Number(document.getElementById('build32'+direction).value),{palette,ranks,width,height}=build32Data;
     for(const d of ['light','dark']){
@@ -4394,6 +4401,44 @@ const mixes=chooseMixes(target,paletteKey);
   });
   for(const d of ['light','dark'])document.getElementById('build32'+d).addEventListener('input',()=>renderBuild32(d));
   document.getElementById('build32Original').addEventListener('click',()=>{build32Active=false;build32Status.textContent='Arbeitsansicht · Regler bewegen, um den Farbaufbau fortzusetzen.';draw();});
+
+  function build32DifferenceMask(reference,palette,ranks,threshold,background){
+    const output=new Uint8ClampedArray(reference.length),labs=palette.map(rgbToLabFast);
+    let changed=0;
+    for(let i=0,n=0;i<reference.length;i+=4,n++){
+      const rgb=[reference[i],reference[i+1],reference[i+2]];
+      const show=deltaE76FromLab(rgbToLabFast(rgb),labs[ranks[n]])>threshold;
+      if(show)changed++;
+      output[i]=show?rgb[0]:background;output[i+1]=show?rgb[1]:background;output[i+2]=show?rgb[2]:background;output[i+3]=255;
+    }
+    return {pixels:output,changed};
+  }
+  function showBuild32Extras(){
+    if(!build32Data || Number(document.getElementById('build32'+build32Direction).value)!==32)return;
+    flushToneImage();
+    const {width,height,palette,ranks}=build32Data;
+    const reference=document.createElement('canvas');reference.width=width;reference.height=height;
+    const rc=reference.getContext('2d');rc.fillStyle='#fff';rc.fillRect(0,0,width,height);
+    rc.drawImage(surfaceMarkCanvas||processedCanvas,0,0,width,height);
+    if(originalBlendPercent>0){
+      rc.globalAlpha=originalBlendPercent/100;
+      const overlay=toneOriginalModeValue==='gray'?(toneView==='off'?toneGrayCanvas:toneGrayBackgroundCanvas):sourceCanvas;
+      rc.drawImage(overlay,0,0,width,height);rc.globalAlpha=1;
+    }
+    const threshold=Number(document.getElementById('build32Difference').value);
+    const result=build32DifferenceMask(rc.getImageData(0,0,width,height).data,palette,ranks,threshold,build32Direction==='light'?128:255);
+    const bc=build32Canvas.getContext('2d'),frame=bc.createImageData(width,height);frame.data.set(result.pixels);bc.putImageData(frame,0,0);
+    build32Active=true;build32Extras=true;
+    document.getElementById('build32Extras').textContent='32 Farben wieder anzeigen';
+    document.getElementById('build32DifferenceVal').textContent=String(threshold);
+    build32Status.textContent='Nur Ergänzungen zur Arbeitsansicht · '+Math.round(result.changed/ranks.length*100)+' % der Bildfläche. Passende Bereiche sind ausgeblendet.';
+    draw();
+  }
+  document.getElementById('build32Extras').addEventListener('click',()=>{if(build32Extras)renderBuild32(build32Direction);else showBuild32Extras();});
+  document.getElementById('build32Difference').addEventListener('input',e=>{
+    document.getElementById('build32DifferenceVal').textContent=e.target.value;
+    if(build32Extras)showBuild32Extras();
+  });
 
   function currentColorTolerance(){
     return Number(pickerColorTolerance ? pickerColorTolerance.value : 12);
