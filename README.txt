@@ -1,3 +1,15 @@
+AtelierAI iPad 1.81 – ruhigere Aquarell-Vorzeichnung
+
+Neu in 1.81:
+- Aquarell-Vorzeichnung deutlich stärker reduziert und geglättet.
+- Wichtige Konturen und charakteristische Innenlinien haben Vorrang.
+- Kleine Foto-, Haut- und Schattenstrukturen werden stärker unterdrückt.
+- Standardwerte Aquarell: Formverlauf 32 %, Linienkraft 46 %, Linienbreite 1,0.
+- Öl-Vorzeichnung und alle übrigen Werkzeuge bleiben unverändert.
+
+Hinweis: Die lokale Browser-Vorzeichnung kann eine generative ChatGPT-Zeichnung nicht pixelgenau ersetzen, nähert sich aber bewusst deren ruhiger, malbarer Linienführung an.
+
+--- Vorherige Hinweise ---
 AtelierAI iPad 1.80 – Mischvorschläge wiederhergestellt
 
 app.html im bestehenden GitHub-Projekt ersetzen. Startlink bleibt gleich.
