@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.90</title>
+  <title>AtelierAI iPad 1.92</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1016,7 +1016,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.90</div>
+    <div class="title">AtelierAI · iPad 1.92</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -1058,7 +1058,7 @@
         <div style="margin-top:18px"><label for="build32dark">Dunkel → Hell · auf Weiß</label><input id="build32dark" aria-label="Dunkel nach Hell" type="range" min="0" max="32" step="1" value="0" disabled style="display:block;width:100%;height:40px;touch-action:pan-y"><span id="build32darkVal">0 / 32</span></div>
         <div id="build32Palette" style="display:flex;margin-top:16px;gap:1px"></div>
         <p id="build32Status" role="status">Foto öffnen und Farben erkennen lassen.</p>
-        <p class="tiny">0: leer · 32: vollständig. Bei farbarmen Bildern werden weniger Farben erkannt.</p>
+        <p class="tiny">0: leer · 32: vollständiges Bild aus bis zu 32 festen Farben. Die Farbauswahl berücksichtigt auch kleine, markante Farbbereiche.</p>
         <button id="build32Original" class="secondary" style="width:100%">Zurück zur Arbeitsansicht</button>
       </div>
       <div class="section" id="formsPanel">
@@ -4288,24 +4288,48 @@ const mixes=chooseMixes(target,paletteKey);
       h[0]+=pixels[i];h[1]+=pixels[i+1];h[2]+=pixels[i+2];h[3]++;
     }
     const entries=[...hist.values()].map(h=>[h[0]/h[3],h[1]/h[3],h[2]/h[3],h[3],h[4]]);
-    const box=items=>{
-      let ranges=[0,1,2].map(c=>{let lo=255,hi=0;for(const p of items){lo=Math.min(lo,p[c]);hi=Math.max(hi,p[c]);}return hi-lo;});
-      const axis=ranges.indexOf(Math.max(...ranges));
-      return {items,axis,weight:items.reduce((sum,p)=>sum+p[3],0),range:ranges[axis]};
+    // Perceptual clustering: preserve small distinctive colors as well as large areas.
+    const toLab=rgb=>{
+      const v=rgb.map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;});
+      const f=x=>x>.008856?Math.cbrt(x):7.787*x+16/116;
+      const x=f((v[0]*.4124564+v[1]*.3575761+v[2]*.1804375)/.95047),y=f(v[0]*.2126729+v[1]*.7151522+v[2]*.0721750),z=f((v[0]*.0193339+v[1]*.1191920+v[2]*.9503041)/1.08883);
+      return [116*y-16,500*(x-y),200*(y-z)];
     };
-    const boxes=[box(entries)];
-    while(boxes.length<32){
-      let idx=-1,score=-1;
-      boxes.forEach((b,i)=>{const s=b.range*Math.sqrt(b.weight);if(b.items.length>1&&s>score){idx=i;score=s;}});
-      if(idx<0)break;
-      const b=boxes.splice(idx,1)[0];b.items.sort((a,c)=>a[b.axis]-c[b.axis]);
-      let sum=0,split=1;for(let i=0;i<b.items.length-1;i++){sum+=b.items[i][3];split=i+1;if(sum>=b.weight/2)break;}
-      boxes.push(box(b.items.slice(0,split)),box(b.items.slice(split)));
+    const points=entries.map(p=>({rgb:p.slice(0,3),lab:toLab(p.slice(0,3)),count:p[3],key:p[4]}));
+    const distance=(a,b)=>(a[0]-b[0])**2+1.3*((a[1]-b[1])**2+(a[2]-b[2])**2);
+    for(const p of points)p.weight=Math.pow(p.count,.65)*(1+Math.min(1,Math.hypot(p.lab[1],p.lab[2])/80));
+    const k=Math.min(32,points.length),centers=[];
+    const ordered=[...points].sort((a,b)=>a.lab[0]-b.lab[0]);
+    // Seed robust dark/light endpoints, excluding isolated noise pixels.
+    const total=points.reduce((sum,p)=>sum+p.count,0);
+    const quantile=q=>{let sum=0;for(const p of ordered){sum+=p.count;if(sum>=total*q)return p;}return ordered[ordered.length-1];};
+    if(k)centers.push([...quantile(.005).lab]);
+    if(k>1)centers.push([...quantile(.995).lab]);
+    while(centers.length<k){
+      let best=points[0],score=-1;
+      for(const p of points){let d=Infinity;for(const c of centers)d=Math.min(d,distance(p.lab,c));const s=d*Math.pow(p.weight,.25);if(s>score){score=s;best=p;}}
+      centers.push([...best.lab]);
     }
-    const luminance=c=>c.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;}).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
-    const palette=boxes.map(b=>[0,1,2].map(c=>Math.round(b.items.reduce((sum,p)=>sum+p[c]*p[3],0)/b.weight))).sort((a,b)=>luminance(a)-luminance(b));
-    const lut=new Uint8Array(32768);
-    for(const p of entries){let best=Infinity,id=0;palette.forEach((c,i)=>{const d=(p[0]-c[0])**2+(p[1]-c[1])**2+(p[2]-c[2])**2;if(d<best){best=d;id=i;}});lut[p[4]]=id;}
+    const assignments=new Uint8Array(points.length);
+    for(let iteration=0;iteration<18;iteration++){
+      const sums=centers.map(()=>[0,0,0,0]);let changes=0;
+      points.forEach((p,n)=>{
+        let best=Infinity,id=0;centers.forEach((c,i)=>{const d=distance(p.lab,c);if(d<best){best=d;id=i;}});
+        if(assignments[n]!==id)changes++;assignments[n]=id;
+        for(let c=0;c<3;c++)sums[id][c]+=p.lab[c]*p.weight;sums[id][3]+=p.weight;
+      });
+      sums.forEach((v,i)=>{if(v[3])centers[i]=v.slice(0,3).map(x=>x/v[3]);});
+      if(iteration>1&&!changes)break;
+    }
+    // Use representative image colors, avoiding RGB averages across unrelated hues.
+    const chosen=centers.map((center,id)=>{
+      let best=null,cost=Infinity;
+      points.forEach((p,n)=>{if(assignments[n]!==id)return;const d=distance(center,p.lab);if(d<cost){cost=d;best=p;}});
+      return best;
+    }).filter(Boolean);
+    const palette=chosen.sort((a,b)=>a.lab[0]-b.lab[0]).map(p=>p.rgb.map(Math.round));
+    const paletteLab=palette.map(toLab),lut=new Uint8Array(32768);
+    for(const p of points){let best=Infinity,id=0;paletteLab.forEach((c,i)=>{const d=distance(p.lab,c);if(d<best){best=d;id=i;}});lut[p.key]=id;}
     const ranks=new Uint8Array(pixels.length/4);
     for(let i=0,n=0;i<pixels.length;i+=4,n++)ranks[n]=lut[key(pixels[i],pixels[i+1],pixels[i+2])];
     return {width:data.width,height:data.height,palette,ranks:ranks.buffer};
