@@ -1,7 +1,7 @@
-AtelierAI iPad 1.80 – Mischvorschläge wiederhergestellt
+AtelierAI iPad 1.83 – Mischvorschläge wiederhergestellt
 
 app.html im bestehenden GitHub-Projekt ersetzen. Startlink bleibt gleich.
-Nach Neuladen muss oben AtelierAI iPad 1.80 stehen.
+Nach Neuladen muss oben AtelierAI iPad 1.83 stehen.
 
 Fehlerbehebung: Bei leerer oder fehlender persönlicher Farbauswahl wird wieder
 mit der Standardpalette gerechnet. Bei Öl enthält diese kein Schwarz.
