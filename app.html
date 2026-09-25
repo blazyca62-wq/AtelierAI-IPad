@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.85</title>
+  <title>AtelierAI iPad 1.86</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1010,7 +1010,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.85</div>
+    <div class="title">AtelierAI · iPad 1.86</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -3363,7 +3363,7 @@ const mixes=chooseMixes(target,paletteKey);
     return pickerSource && pickerSource.value==='original' ? sourceCtx : processedCtx;
   }
 
-  function drawGridOverlay(targetCtx, w, h, density){
+  function drawGridOverlay(targetCtx, w, h, density, highContrast=false){
     const n=Math.max(2,Number(density)||8);
     targetCtx.save();
 
@@ -3375,9 +3375,26 @@ const mixes=chooseMixes(target,paletteKey);
     const cell=Math.min(w,h)/n;
     const cx=w/2, cy=h/2;
 
-    targetCtx.globalCompositeOperation='difference';
+    targetCtx.globalCompositeOperation=highContrast?'source-over':'difference';
     targetCtx.strokeStyle='rgba(255,255,255,.88)';
     targetCtx.lineWidth=Math.max(1, Math.min(w,h)/1200);
+
+    const transform=targetCtx.getTransform();
+    const gridWidth=highContrast
+      ?Math.max(targetCtx.lineWidth,1/(Math.hypot(transform.a,transform.b)||1))
+      :targetCtx.lineWidth;
+    function strokeGridLine(){
+      if(highContrast){
+        targetCtx.strokeStyle='rgba(255,255,255,.95)';
+        targetCtx.lineWidth=gridWidth*3;
+        targetCtx.stroke();
+        targetCtx.strokeStyle='rgba(25,25,25,.95)';
+        targetCtx.lineWidth=gridWidth;
+        targetCtx.stroke();
+      }else{
+        targetCtx.stroke();
+      }
+    }
 
     const firstX=cx-Math.ceil(cx/cell)*cell;
     for(let x=firstX; x<=w+0.001; x+=cell){
@@ -3386,7 +3403,7 @@ const mixes=chooseMixes(target,paletteKey);
       targetCtx.beginPath();
       targetCtx.moveTo(px,0);
       targetCtx.lineTo(px,h);
-      targetCtx.stroke();
+      strokeGridLine();
     }
 
     const firstY=cy-Math.ceil(cy/cell)*cell;
@@ -3396,7 +3413,7 @@ const mixes=chooseMixes(target,paletteKey);
       targetCtx.beginPath();
       targetCtx.moveTo(0,py);
       targetCtx.lineTo(w,py);
-      targetCtx.stroke();
+      strokeGridLine();
     }
     targetCtx.restore();
   }
@@ -5031,7 +5048,7 @@ const mixes=chooseMixes(target,paletteKey);
       }
       ctx.restore();
     }
-    if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value);
+    if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value,!!surfaceMarkCanvas && isolationGray && !sketchActive);
     ctx.restore();
     if(surfacePreview && !sketchActive){
       const sx=offsetX+surfacePreview.x*scale, sy=offsetY+surfacePreview.y*scale;

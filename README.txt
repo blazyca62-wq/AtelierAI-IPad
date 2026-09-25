@@ -1,3 +1,21 @@
+AtelierAI iPad 1.86 – Raster auf Mittelgrau sichtbar
+
+app.html im bestehenden GitHub-Projekt ersetzen und neu laden.
+Oben muss danach 1.86 stehen. Der Startlink bleibt gleich.
+
+Bei aktiver Farbisolierung mit mittelgrauem Hintergrund verwendet das Raster
+dunkle Linien mit einer hellen Kontur. So bleibt es auf Mittelgrau und auf den
+hellen ausgewählten Farbflächen sichtbar. Die normale Rasterdarstellung mit
+automatischem Hell-Dunkel-Kontrast bleibt unverändert.
+
+Geprüft: tatsächliche Canvas-Ausgabe auf Grau und Hellgelb, unveränderte
+Pixel-Ausgabe des normalen Rasters und JavaScript-Syntax.
+Kein direkter iPad-Test.
+
+Sicherung_1.85/app.html enthält die vorherige Version.
+
+VORHERIGE VERSIONEN / LIZENZHINWEISE
+
 AtelierAI iPad 1.85 – Grauer Hintergrund und flüssiger Farbregler
 
 INSTALLATION
