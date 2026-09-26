@@ -1,3 +1,16 @@
+AtelierAI iPad 2.01 – Einzelansicht mit gespeicherter Auswahl
+
+app.html im GitHub-Projekt ersetzen und neu laden.
+Mehrere Farben zusammenstellen, dann „Eine Farbe ansehen“ antippen.
+Die bisherige Auswahl wird gespeichert; Farbfelder zeigen jetzt jeweils
+nur eine Farbe mit ihrer Mischung.
+„Zurück zur Auswahl“ stellt die vorherige Zusammenstellung wieder her.
+Danach können weitere Farben zu- und ausgeschaltet werden.
+Ein neues Foto oder eine neue Farbanalyse setzt die gespeicherte Auswahl zurück.
+
+Geprüft: Einzelansicht, Wechsel zwischen Farben, wiederholtes Antippen,
+Wiederherstellung und Weiterführen der Auswahl sowie Syntax. Kein iPad-Test.
+
 AtelierAI iPad 2.00 – Alle Farbfelder erreichbar
 
 app.html im GitHub-Projekt ersetzen und neu laden.
