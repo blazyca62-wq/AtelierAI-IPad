@@ -293,3 +293,13 @@ Die Glättung gilt für alle Darstellungen im Modul 32 / 48 / 64 Farben.
 Nur sichtbare Bildfarben fließen in die Glättung ein; ausgeblendete Flächen bleiben erhalten.
 Mischrezepte und Anzahl bleiben gleich. Zwischenfarben entstehen nur in der Bildansicht.
 Die Pipette nimmt die dargestellte Farbe auf. Hohe Werte können kleine Details verwischen.
+
+
+Version 2.12 – Farbgrenzen mit Konturenschutz
+Die flächige Weichzeichnung aus 2.11 wurde ersetzt.
+Regler: „Farbübergänge · Konturen schützen“.
+Nur ein schmaler Rand zwischen ähnlichen Farben wird angeglichen.
+Das Originalbild dient zur Erkennung deutlicher Konturen.
+Die Stärke verändert den Übergang, nicht die Breite des bearbeiteten Randes.
+0 % bleibt unverändert; ausgeblendete Bereiche werden nicht eingemischt.
+Mischrezepte und Farbanzahl bleiben erhalten.

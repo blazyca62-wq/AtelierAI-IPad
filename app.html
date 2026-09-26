@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.11</title>
+  <title>AtelierAI iPad 2.12</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1036,7 +1036,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.11</div>
+    <div class="title">AtelierAI · iPad 2.12</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
@@ -1052,7 +1052,7 @@
     </div>
 
     <div id="build32Dock" hidden>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="build32Collapse" class="secondary" type="button" aria-expanded="true">Farben einklappen</button><label>Darstellung <select id="build32PaintMode"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Artisan – einfache Mischungen</option></select></label><label id="build32SimpleLimitLabel" hidden>Mischungen <select id="build32SimpleLimit" aria-label="Anzahl einfacher Artisan-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><label>Farben <select id="build32Count" aria-label="Anzahl Bildfarben"><option value="32">32</option><option value="48">48</option><option value="64">64</option></select></label><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap" title="Weiche Übergänge in der Bildansicht; Mischrezepte bleiben gleich.">Farbgrenzen glätten <input id="build32Smooth" aria-label="Farbgrenzen glätten" type="range" min="0" max="100" step="1" value="0" style="width:140px;min-height:32px"><span id="build32SmoothVal">0 %</span></label><button id="build32Add" class="secondary" type="button" aria-pressed="false">Farben zuschalten: Aus</button><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">Original S/W <input id="build32GrayBlend" aria-label="Schwarz-Weiß-Original zur Orientierung einblenden" type="range" min="0" max="100" step="1" value="0" style="width:140px;min-height:32px"><span id="build32GrayBlendVal">0 %</span></label><button id="build32Solo" class="secondary" type="button" aria-pressed="false">Eine Farbe ansehen</button><button id="build32All" class="secondary" type="button">Alle Farben</button><label>Hintergrund <select id="build32Background" aria-label="Hintergrund der Bildfarben"><option value="auto">Automatisch</option><option value="white">Weiß</option><option value="gray">Grau</option></select></label><select id="build32MixPalette" aria-label="Palette für die Mischung"><option value="watercolor">Eigene Aquarellpalette · Horadam + Akademie</option><option value="artisan" selected>Artisan · Öl</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="build32Collapse" class="secondary" type="button" aria-expanded="true">Farben einklappen</button><label>Darstellung <select id="build32PaintMode"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Artisan – einfache Mischungen</option></select></label><label id="build32SimpleLimitLabel" hidden>Mischungen <select id="build32SimpleLimit" aria-label="Anzahl einfacher Artisan-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><label>Farben <select id="build32Count" aria-label="Anzahl Bildfarben"><option value="32">32</option><option value="48">48</option><option value="64">64</option></select></label><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap" title="Schmale Übergänge zwischen ähnlichen Farben. Konturen werden anhand des Originalbildes geschützt; Mischrezepte bleiben gleich.">Farbübergänge · Konturen schützen <input id="build32Smooth" aria-label="Farbübergänge glätten und Konturen schützen" type="range" min="0" max="100" step="1" value="0" style="width:140px;min-height:32px"><span id="build32SmoothVal">0 %</span></label><button id="build32Add" class="secondary" type="button" aria-pressed="false">Farben zuschalten: Aus</button><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">Original S/W <input id="build32GrayBlend" aria-label="Schwarz-Weiß-Original zur Orientierung einblenden" type="range" min="0" max="100" step="1" value="0" style="width:140px;min-height:32px"><span id="build32GrayBlendVal">0 %</span></label><button id="build32Solo" class="secondary" type="button" aria-pressed="false">Eine Farbe ansehen</button><button id="build32All" class="secondary" type="button">Alle Farben</button><label>Hintergrund <select id="build32Background" aria-label="Hintergrund der Bildfarben"><option value="auto">Automatisch</option><option value="white">Weiß</option><option value="gray">Grau</option></select></label><select id="build32MixPalette" aria-label="Palette für die Mischung"><option value="watercolor">Eigene Aquarellpalette · Horadam + Akademie</option><option value="artisan" selected>Artisan · Öl</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select></div>
       <div id="build32Pages" aria-label="Farbseiten"></div>
       <div id="build32Palette" aria-label="Erkannte Bildfarben"></div>
       <div id="build32Similar" hidden style="margin:6px 0"></div>
@@ -4512,7 +4512,7 @@ const mixes=chooseMixes(target,paletteKey);
     return {width:data.width,height:data.height,palette,ranks:ranks.buffer};
   }
   let build32GrayBlend=0,build32Foreground=null;
-  let build32Smoothing=0,build32RawFrame=null,build32SmoothPending=false;
+  let build32Smoothing=0,build32RawFrame=null,build32SmoothPending=false,build32SmoothGuide=null;
   let build32Data=null,build32Canvas=null,build32Active=false,build32Worker=null,build32Generation=0,build32Direction='light',build32Extras=false,build32VisibleMask=null;
   let build32Selected=null,build32MixRequest=0,build32Additive=false,build32Manual=false;
   const build32Selection=new Set();
@@ -4611,7 +4611,7 @@ const mixes=chooseMixes(target,paletteKey);
   const build32Status=document.getElementById('build32Status');
   function resetBuild32(){
     build32FamilyStates.clear();
-    build32Foreground=null;build32RawFrame=null;
+    build32Foreground=null;build32RawFrame=null;build32SmoothGuide=null;
     build32SoloPrevious=null;build32SoloAdditive=false;build32SimilarAnchor=null;build32AllPrevious=null;syncBuild32ReturnButtons();
     build32Extras=false;document.getElementById('build32Extras').disabled=true;document.getElementById('build32Extras').textContent='Nur Ergänzungen zeigen';
     build32Selection.clear();build32Manual=false;
@@ -4780,30 +4780,42 @@ const mixes=chooseMixes(target,paletteKey);
     for(let i=0;i<mask.length;i++)pixels[i*4+3]=mask[i]?255:0;
     return pixels;
   }
-  function smoothBuild32Pixels(pixels,mask,width,height,amount){
+  function smoothBuild32Pixels(pixels,mask,width,height,amount,guide){
     const out=new Uint8ClampedArray(pixels);
     if(amount<=0||!width||!height)return out;
-    const t=Math.max(0,Math.min(1,amount/100));
-    const radius=Math.max(1,Math.round(Math.min(width,height)*.012*t));
-    // Mask-normalized box filter: hidden areas never introduce gray or white.
-    const horizontal=new Float32Array(width*height*4);
-    for(let y=0;y<height;y++){
-      const sums=[0,0,0,0];
-      const add=(x,sign)=>{if(x<0||x>=width)return;const i=y*width+x;if(!mask[i])return;const j=i*4;for(let c=0;c<3;c++)sums[c]+=pixels[j+c]*sign;sums[3]+=sign;};
-      for(let x=0;x<=radius&&x<width;x++)add(x,1);
-      for(let x=0;x<width;x++){
-        const j=(y*width+x)*4;for(let c=0;c<4;c++)horizontal[j+c]=sums[c];
-        add(x-radius,-1);add(x+radius+1,1);
+    const t=Math.max(0,Math.min(1,amount/100)),reference=guide||pixels;
+    // Always a narrow two-pixel transition, independent of the slider strength.
+    // The original photo protects real contours that quantization can obscure.
+    const radius=2,neighbors=[];
+    for(let dy=-radius;dy<=radius;dy++)for(let dx=-radius;dx<=radius;dx++)
+      if(dx||dy)neighbors.push([dx,dy,Math.exp(-(dx*dx+dy*dy)/2)]);
+    const diff=(array,j,k)=>(array[j]-array[k])**2+(array[j+1]-array[k+1])**2+(array[j+2]-array[k+2])**2;
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+      const i=y*width+x,j=i*4;if(!mask[i])continue;
+      let contour=false,boundary=false;
+      for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]){
+        const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=width||yy>=height)continue;
+        const n=yy*width+xx;if(!mask[n])continue;
+        if(diff(reference,j,n*4)>1800){contour=true;break;}
       }
-    }
-    for(let x=0;x<width;x++){
-      const sums=[0,0,0,0];
-      const add=(y,sign)=>{if(y<0||y>=height)return;const j=(y*width+x)*4;for(let c=0;c<4;c++)sums[c]+=horizontal[j+c]*sign;};
-      for(let y=0;y<=radius&&y<height;y++)add(y,1);
-      for(let y=0;y<height;y++){
-        const i=y*width+x,j=i*4;
-        if(mask[i]&&sums[3]>0)for(let c=0;c<3;c++)out[j+c]=Math.round(pixels[j+c]*(1-t)+sums[c]/sums[3]*t);
-        add(y-radius,-1);add(y+radius+1,1);
+      if(contour)continue;
+      let weight=1,r=pixels[j],g=pixels[j+1],b=pixels[j+2];
+      for(const [dx,dy,spatial] of neighbors){
+        const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=width||yy>=height)continue;
+        const n=yy*width+xx,k=n*4;if(!mask[n])continue;
+        const pd=diff(pixels,j,k),gd=diff(reference,j,k);
+        // Do not cross contrasting colors or a real edge in the source image.
+        if(pd>12675||gd>1800)continue;
+        const mx=x+Math.sign(dx),my=y+Math.sign(dy),middle=my*width+mx;
+        if(!mask[middle]||diff(reference,j,middle*4)>1800)continue;
+        const w=spatial*Math.exp(-gd/450)*Math.exp(-pd/7200);
+        weight+=w;r+=pixels[k]*w;g+=pixels[k+1]*w;b+=pixels[k+2]*w;
+        if(pd>0)boundary=true;
+      }
+      if(boundary){
+        out[j]=Math.round(pixels[j]*(1-t)+r/weight*t);
+        out[j+1]=Math.round(pixels[j+1]*(1-t)+g/weight*t);
+        out[j+2]=Math.round(pixels[j+2]*(1-t)+b/weight*t);
       }
     }
     return out;
@@ -4811,8 +4823,13 @@ const mixes=chooseMixes(target,paletteKey);
   function applyBuild32Smoothing(){
     if(!build32RawFrame||!build32Canvas||!build32VisibleMask)return;
     const {width,height}=build32Canvas,c=build32Canvas.getContext('2d');
+    if(build32Smoothing>0&&!build32SmoothGuide){
+      const guide=document.createElement('canvas');guide.width=width;guide.height=height;
+      const gc=guide.getContext('2d');gc.fillStyle='#fff';gc.fillRect(0,0,width,height);gc.drawImage(sourceCanvas,0,0,width,height);
+      build32SmoothGuide=gc.getImageData(0,0,width,height).data;
+    }
     const frame=c.createImageData(width,height);
-    frame.data.set(smoothBuild32Pixels(build32RawFrame.data,build32VisibleMask,width,height,build32Smoothing));
+    frame.data.set(smoothBuild32Pixels(build32RawFrame.data,build32VisibleMask,width,height,build32Smoothing,build32SmoothGuide));
     c.putImageData(frame,0,0);
     if(!build32Foreground)build32Foreground=document.createElement('canvas');
     build32Foreground.width=width;build32Foreground.height=height;
