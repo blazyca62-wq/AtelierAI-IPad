@@ -254,3 +254,14 @@ Version 2.07 – Farbfamilien im Farbaufbau
 - Die Zuordnung von Bildfarben zu Familien erfolgt anhand von Farbton,
   Helligkeit und Buntheit; Grenztöne werden einer Familie zugeordnet.
 - Syntax und Regler-/Auswahllogik automatisch geprüft. Kein Safari-Gerätetest.
+
+
+Version 2.08 – Nur ungemischte Farben
+Im Modul 32 / 48 / 64 Farben unter Darstellung umschalten.
+Öl: ausschließlich reine Farben der gewählten Palette, kein Ausmischen.
+Aquarell: einzelne Palettenfarben in sieben Auftragsstärken und Papierweiß.
+Die Anzahl ergibt sich aus den im Bild verwendeten Farben bzw. Lasurstufen.
+Palette oben bei den Farbfeldern wählen; persönliche Farbauswahl unter Mischen.
+Farbname und Farbauftrag erscheinen beim Antippen eines Farbfeldes.
+Farbfamilien, Hell-Dunkel-Regler und Originalansicht bleiben nutzbar.
+Bildschirm-Simulation: Wasserangaben sind keine Mischverhältnisse.

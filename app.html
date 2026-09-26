@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.07</title>
+  <title>AtelierAI iPad 2.08</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1036,7 +1036,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.07</div>
+    <div class="title">AtelierAI · iPad 2.08</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
@@ -1052,7 +1052,7 @@
     </div>
 
     <div id="build32Dock" hidden>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="build32Collapse" class="secondary" type="button" aria-expanded="true">Farben einklappen</button><label>Farben <select id="build32Count" aria-label="Anzahl Bildfarben"><option value="32">32</option><option value="48">48</option><option value="64">64</option></select></label><button id="build32Add" class="secondary" type="button" aria-pressed="false">Farben zuschalten: Aus</button><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">Original S/W <input id="build32GrayBlend" aria-label="Schwarz-Weiß-Original zur Orientierung einblenden" type="range" min="0" max="100" step="1" value="0" style="width:140px;min-height:32px"><span id="build32GrayBlendVal">0 %</span></label><button id="build32Solo" class="secondary" type="button" aria-pressed="false">Eine Farbe ansehen</button><button id="build32All" class="secondary" type="button">Alle Farben</button><label>Hintergrund <select id="build32Background" aria-label="Hintergrund der Bildfarben"><option value="auto">Automatisch</option><option value="white">Weiß</option><option value="gray">Grau</option></select></label><select id="build32MixPalette" aria-label="Palette für die Mischung"><option value="artisan">Artisan · Öl</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="build32Collapse" class="secondary" type="button" aria-expanded="true">Farben einklappen</button><label>Darstellung <select id="build32PaintMode"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option></select></label><label>Farben <select id="build32Count" aria-label="Anzahl Bildfarben"><option value="32">32</option><option value="48">48</option><option value="64">64</option></select></label><button id="build32Add" class="secondary" type="button" aria-pressed="false">Farben zuschalten: Aus</button><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">Original S/W <input id="build32GrayBlend" aria-label="Schwarz-Weiß-Original zur Orientierung einblenden" type="range" min="0" max="100" step="1" value="0" style="width:140px;min-height:32px"><span id="build32GrayBlendVal">0 %</span></label><button id="build32Solo" class="secondary" type="button" aria-pressed="false">Eine Farbe ansehen</button><button id="build32All" class="secondary" type="button">Alle Farben</button><label>Hintergrund <select id="build32Background" aria-label="Hintergrund der Bildfarben"><option value="auto">Automatisch</option><option value="white">Weiß</option><option value="gray">Grau</option></select></label><select id="build32MixPalette" aria-label="Palette für die Mischung"><option value="watercolor">Eigene Aquarellpalette · Horadam + Akademie</option><option value="artisan" selected>Artisan · Öl</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select></div>
       <div id="build32Pages" aria-label="Farbseiten"></div>
       <div id="build32Palette" aria-label="Erkannte Bildfarben"></div>
       <div id="build32Similar" hidden style="margin:6px 0"></div>
@@ -1086,7 +1086,7 @@
         <div class="grid2" style="margin-bottom:8px"><button id="build32Grid" class="secondary">Raster ein</button><button id="build32Pick" class="secondary">Mischung aufnehmen</button></div>
         <div class="control-line"><label for="build32GridDensity">Rastergröße</label><input id="build32GridDensity" type="range" min="2" max="20" value="8"><span id="build32GridDensityVal">8</span></div>
         <p class="tiny">Mischung aufnehmen: eine sichtbare Farbfläche antippen. Das Raster wird nicht mitgemessen.</p>
-        <label for="build32CountSide">Anzahl Farben</label><select id="build32CountSide" style="min-height:44px;margin:8px"><option value="32">32</option><option value="48">48</option><option value="64">64</option></select>
+        <label>Darstellung <select id="build32PaintModeSide"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option></select></label><p class="tiny">Ungemischt: Farben der gewählten Palette. Aquarell mit Wasserverdünnung und Papierweiß; Öl ohne Ausmischen. Bildschirm-Simulation.</p><label for="build32CountSide">Anzahl Farben</label><select id="build32CountSide" style="min-height:44px;margin:8px"><option value="32">32</option><option value="48">48</option><option value="64">64</option></select>
         <button id="build32Analyze" style="width:100%">32 Farben erkennen</button>
         <div style="margin-top:14px"><label for="build32Family">Einblendung</label>
         <select id="build32Family" style="display:block;width:100%;min-height:44px;margin-top:6px">
@@ -4326,6 +4326,54 @@ const mixes=chooseMixes(target,paletteKey);
   }
 
   // Quantization is shared by the background worker and its fallback.
+  function quantizeBuild32Pure(data){
+    const pixels=new Uint8ClampedArray(data.pixels);
+    const toLab=rgb=>{
+      const v=rgb.map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;});
+      const f=x=>x>.008856?Math.cbrt(x):7.787*x+16/116;
+      const x=f((v[0]*.4124564+v[1]*.3575761+v[2]*.1804375)/.95047),y=f(v[0]*.2126729+v[1]*.7151522+v[2]*.0721750),z=f((v[0]*.0193339+v[1]*.1191920+v[2]*.9503041)/1.08883);
+      return [116*y-16,500*(x-y),200*(y-z)];
+    };
+    const candidates=data.pureColors.map(c=>({...c,lab:toLab(c.rgb)}));
+    if(!candidates.length)throw new Error('Keine Palettenfarben');
+    const cache=new Map(),raw=new Uint16Array(pixels.length/4),used=new Set();
+    for(let i=0;i<raw.length;i++){
+      const rgb=[pixels[i*4],pixels[i*4+1],pixels[i*4+2]];
+      const key=((rgb[0]>>2)<<12)|((rgb[1]>>2)<<6)|(rgb[2]>>2);
+      let best=cache.get(key);
+      if(best===undefined){
+        const lab=toLab(rgb);let distance=Infinity;best=0;
+        for(let j=0;j<candidates.length;j++){
+          const c=candidates[j].lab,d=(lab[0]-c[0])**2+(lab[1]-c[1])**2+(lab[2]-c[2])**2;
+          if(d<distance){distance=d;best=j;}
+        }
+        cache.set(key,best);
+      }
+      raw[i]=best;used.add(best);
+    }
+    const order=[...used].sort((a,b)=>candidates[a].lab[0]-candidates[b].lab[0]);
+    const remap=new Map(order.map((id,i)=>[id,i]));
+    const ranks=raw.map(id=>remap.get(id));
+    return {width:data.width,height:data.height,pure:true,palette:order.map(i=>candidates[i].rgb),
+      paintInfo:order.map(i=>({name:candidates[i].name,coverage:candidates[i].coverage,watercolor:data.watercolor})),ranks:ranks.buffer};
+  }
+  function build32PureColors(key){
+    const water=['watercolor','horadam','akademie'].includes(key),out=[];
+    for(const [name,rgb,brand] of effectivePaletteColors(key)){
+      for(const coverage of (water?[1,.8,.6,.4,.25,.12,.05]:[1]))
+        out.push({name:(brand?brand+' · ':'')+name,rgb:water?washRgb(rgb,coverage):rgb.slice(),coverage});
+    }
+    if(water)out.push({name:'Papierweiß – aussparen',rgb:[255,255,255],coverage:0});
+    return out;
+  }
+  function build32IsPure(){return document.getElementById('build32PaintMode').value==='pure';}
+  for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).addEventListener('change',e=>{
+    for(const other of ['build32PaintMode','build32PaintModeSide'])document.getElementById(other).value=e.target.value;
+    for(const other of ['build32Count','build32CountSide'])document.getElementById(other).disabled=build32IsPure();
+    resetBuild32();
+    document.getElementById('build32Analyze').textContent=build32IsPure()?'Ungemischte Farben anzeigen':build32ColorCount()+' Farben erkennen';
+    if(loaded)document.getElementById('build32Analyze').click();
+  });
   function quantizeBuild32(data){
     const pixels=new Uint8ClampedArray(data.pixels), hist=new Map();
     // Keep near-white samples exact: 255 must not average down into 248.
@@ -4466,7 +4514,7 @@ const mixes=chooseMixes(target,paletteKey);
       renderBuild32('light');
     }
   });
-  function build32ColorCount(){return Number(document.getElementById('build32Count').value);}
+  function build32ColorCount(){if(build32IsPure()&&build32Data)return build32Data.palette.length;return Number(document.getElementById('build32Count').value);}
   for(const id of ['build32Count','build32CountSide'])document.getElementById(id).addEventListener('change',e=>{
     for(const other of ['build32Count','build32CountSide'])document.getElementById(other).value=e.target.value;
     resetBuild32();
@@ -4531,23 +4579,26 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function acceptBuild32(result,generation){
     if(generation!==build32Generation)return;
-    build32Data={...result,ranks:new Uint8Array(result.ranks)};
+    build32Data={...result,ranks:result.pure?new Uint16Array(result.ranks):new Uint8Array(result.ranks)};
     build32Canvas=document.createElement('canvas');build32Canvas.width=result.width;build32Canvas.height=result.height;
     document.getElementById('build32Analyze').disabled=false;
     const strip=document.getElementById('build32Palette');strip.replaceChildren();
-    result.palette.forEach((rgb,index)=>{const el=document.createElement('button');el.type='button';el.style.background=rgbHex(rgb);el.style.color=rgbToLabFast(rgb)[0]>55?'#111':'#fff';el.textContent=String(index+1);el.setAttribute('aria-label','Farbe '+(index+1)+' '+rgbHex(rgb));el.setAttribute('aria-pressed','false');el.addEventListener('click',()=>selectBuild32Color(index));strip.appendChild(el);});
+    result.palette.forEach((rgb,index)=>{const el=document.createElement('button');el.type='button';el.style.background=rgbHex(rgb);el.style.color=rgbToLabFast(rgb)[0]>55?'#111':'#fff';el.textContent=String(index+1);el.setAttribute('aria-label','Farbe '+(index+1)+' '+(result.pure?result.paintInfo[index].name+' ':'')+rgbHex(rgb));el.setAttribute('aria-pressed','false');el.addEventListener('click',()=>selectBuild32Color(index));strip.appendChild(el);});
     showBuild32PalettePage(0);
     document.getElementById('build32Dock').hidden=false;
-    document.getElementById('build32MixPalette').value=paintPalette.value;
+    if(!result.pure)document.getElementById('build32MixPalette').value=paintPalette.value;
     requestAnimationFrame(()=>{resizeCanvas();fitImage();});
     for(const d of ['light','dark']){document.getElementById('build32'+d).disabled=false;document.getElementById('build32'+d).value=0;}
+    if(result.pure){build32Family='all';document.getElementById('build32Family').value='all';syncBuild32FamilyRanges();document.getElementById('build32light').value=build32ColorCount();}
     renderBuild32('light');
   }
   function updateBuild32Recipe(){
     const index=build32Selected,request=++build32MixRequest;
     if(index===null||!build32Data)return;
     const rgb=build32Data.palette[index],key=document.getElementById('build32MixPalette').value;
-    const box=document.getElementById('build32Recipe');box.textContent='Mischung für Farbe '+(index+1)+' wird berechnet …';
+    const box=document.getElementById('build32Recipe');
+    if(build32Data.pure){const info=build32Data.paintInfo[index];box.textContent=info.name+' · '+(info.watercolor?(info.coverage===0?'Papierweiß erhalten':Math.round(info.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)'):'Reine Tubenfarbe · ohne Mischung');return;}
+    box.textContent='Mischung für Farbe '+(index+1)+' wird berechnet …';
     setTimeout(()=>{
       if(request!==build32MixRequest)return;
       try{
@@ -4610,7 +4661,7 @@ const mixes=chooseMixes(target,paletteKey);
     }
     else [...document.getElementById('build32Palette').children].forEach((el,i)=>el.setAttribute('aria-pressed',String(build32Additive&&build32Selection.has(i))));
   });
-  document.getElementById('build32MixPalette').addEventListener('change',updateBuild32Recipe);
+  document.getElementById('build32MixPalette').addEventListener('change',()=>{if(build32IsPure()){document.getElementById('build32Analyze').click();}else updateBuild32Recipe();});
   document.getElementById('build32Solo').addEventListener('click',()=>{
     if(!build32Data)return;
     if(build32SoloPrevious){
@@ -4712,10 +4763,13 @@ const mixes=chooseMixes(target,paletteKey);
     work.width=Math.max(1,Math.round(sourceCanvas.width*ratio));work.height=Math.max(1,Math.round(sourceCanvas.height*ratio));
     const wc=work.getContext('2d');wc.fillStyle='#fff';wc.fillRect(0,0,work.width,work.height);wc.drawImage(sourceCanvas,0,0,work.width,work.height);
     const data={colorCount:build32ColorCount(),pixels:wc.getImageData(0,0,work.width,work.height).data.buffer,width:work.width,height:work.height};
+    const key=document.getElementById('build32MixPalette').value;
+    const quantizer=build32IsPure()?quantizeBuild32Pure:quantizeBuild32;
+    if(build32IsPure()){data.pureColors=build32PureColors(key);data.watercolor=['watercolor','horadam','akademie'].includes(key);build32Status.textContent='Ungemischte Palettenfarben werden zugeordnet …';}
     const fail=()=>{if(generation!==build32Generation)return;document.getElementById('build32Analyze').disabled=false;build32Status.textContent='Farberkennung fehlgeschlagen. Bitte erneut versuchen.';};
-    const fallback=()=>setTimeout(()=>{if(generation!==build32Generation)return;try{acceptBuild32(quantizeBuild32(data),generation);}catch(e){fail();}},20);
+    const fallback=()=>setTimeout(()=>{if(generation!==build32Generation)return;try{acceptBuild32(quantizer(data),generation);}catch(e){fail();}},20);
     try{
-      const url=URL.createObjectURL(new Blob(['self.onmessage=e=>{const r=('+quantizeBuild32.toString()+')(e.data);self.postMessage(r,[r.ranks]);};'],{type:'text/javascript'}));
+      const url=URL.createObjectURL(new Blob(['self.onmessage=e=>{const r=('+quantizer.toString()+')(e.data);self.postMessage(r,[r.ranks]);};'],{type:'text/javascript'}));
       try{build32Worker=new Worker(url);}finally{URL.revokeObjectURL(url);}
       build32Worker.onmessage=e=>{build32Worker.terminate();build32Worker=null;acceptBuild32(e.data,generation);};
       build32Worker.onerror=()=>{if(build32Worker)build32Worker.terminate();build32Worker=null;fallback();};
@@ -5728,7 +5782,7 @@ const mixes=chooseMixes(target,paletteKey);
   updateStandardPaletteInfo();
 
   managePaletteBtn.addEventListener('click',()=>{paletteManager.style.display='block';paletteSearch.value='';renderPaletteChecklist();});
-  closePaletteBtn.addEventListener('click',()=>{paletteManager.style.display='none';updateOwnedSummary();mixResults.innerHTML='';refreshGlazePaletteStatus();});
+  closePaletteBtn.addEventListener('click',()=>{paletteManager.style.display='none';updateOwnedSummary();mixResults.innerHTML='';refreshGlazePaletteStatus();if(build32IsPure()&&loaded)document.getElementById('build32Analyze').click();});
   paletteSearch.addEventListener('input',renderPaletteChecklist);
   selectAllColors.addEventListener('click',()=>{
     const key=currentCatalogueKey(),o=loadOwned();
@@ -5747,7 +5801,7 @@ const mixes=chooseMixes(target,paletteKey);
     const c=loadCustom();c.push({name,rgb,enabled:true});saveCustom(c);
     customColorName.value='';renderCustomColors();updateOwnedSummary();
   });
-  paintPalette.addEventListener('change',()=>{updateOwnedSummary();if(paletteManager.style.display!=='none')renderPaletteChecklist();});
+  paintPalette.addEventListener('change',()=>{document.getElementById('build32MixPalette').value=paintPalette.value;if(build32IsPure()&&loaded)document.getElementById('build32Analyze').click();updateOwnedSummary();if(paletteManager.style.display!=='none')renderPaletteChecklist();});
   updateOwnedSummary();
 
   function autoStudioMixAfterPick(){
