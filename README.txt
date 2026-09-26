@@ -241,3 +241,16 @@ Lizenztext: LICENSE-spectral.txt und im eingebetteten Quelltext.
 
 PRÜFUNG
 JavaScript-Syntax und Rechenfunktionen geprüft. Kein direkter Safari-/iPad-Test.
+
+Version 2.07 – Farbfamilien im Farbaufbau
+- Für alle vorhandenen Farbanzahlen: 32, 48 und 64.
+- Unter „Einblendung“ Normal oder eine Farbfamilie wählen.
+- Beide Regler funktionieren innerhalb der gewählten Familie.
+- Hell nach Dunkel: vorhandenes Weiß und sehr helle neutrale Bildfarben zuerst,
+  danach die Farbtöne der Familie. Dunkel nach Hell kehrt diese Reihenfolge um.
+- Es werden nur im Bild vorhandene Farben angezeigt; Weiß wird nicht erfunden.
+- Beim Wechsel bleibt die Auswahl jeder Familie bis zur nächsten Farberkennung erhalten.
+- „Alle Farben“ zeigt weiterhin das ganze Bild und kehrt zur Auswahl zurück.
+- Die Zuordnung von Bildfarben zu Familien erfolgt anhand von Farbton,
+  Helligkeit und Buntheit; Grenztöne werden einer Familie zugeordnet.
+- Syntax und Regler-/Auswahllogik automatisch geprüft. Kein Safari-Gerätetest.

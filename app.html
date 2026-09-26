@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.06</title>
+  <title>AtelierAI iPad 2.07</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1036,7 +1036,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.06</div>
+    <div class="title">AtelierAI · iPad 2.07</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
@@ -1088,11 +1088,20 @@
         <p class="tiny">Mischung aufnehmen: eine sichtbare Farbfläche antippen. Das Raster wird nicht mitgemessen.</p>
         <label for="build32CountSide">Anzahl Farben</label><select id="build32CountSide" style="min-height:44px;margin:8px"><option value="32">32</option><option value="48">48</option><option value="64">64</option></select>
         <button id="build32Analyze" style="width:100%">32 Farben erkennen</button>
+        <div style="margin-top:14px"><label for="build32Family">Einblendung</label>
+        <select id="build32Family" style="display:block;width:100%;min-height:44px;margin-top:6px">
+        <option value="all">Normal · alle Farbfamilien</option>
+        <option value="yellow">Gelb</option><option value="orange">Orange</option>
+        <option value="ochre">Ocker</option><option value="red">Rot / Rosa</option>
+        <option value="brown">Braun / Siena / Umbra</option><option value="green">Grün</option>
+        <option value="turquoise">Türkis</option><option value="blue">Blau</option>
+        <option value="violet">Violett</option><option value="neutral">Neutral · Weiß / Grau / Schwarz</option>
+        </select><p class="tiny">Farbfamilie wählen, dann einen Regler bewegen. Hell → Dunkel beginnt mit Weiß und sehr hellen neutralen Bildfarben, danach folgen die Töne der Familie. Deine Auswahl je Familie bleibt beim Wechsel erhalten.</p></div>
         <div style="margin-top:18px"><label for="build32light">Hell → Dunkel</label><input id="build32light" aria-label="Hell nach Dunkel" type="range" min="0" max="32" step="1" value="0" disabled style="display:block;width:100%;height:40px;touch-action:pan-y"><span id="build32lightVal">0 / 32</span></div>
         <div style="margin-top:18px"><label for="build32dark">Dunkel → Hell</label><input id="build32dark" aria-label="Dunkel nach Hell" type="range" min="0" max="32" step="1" value="0" disabled style="display:block;width:100%;height:40px;touch-action:pan-y"><span id="build32darkVal">0 / 32</span></div>
         <p class="tiny">Die Farbfelder und die passende Mischung findest du unten direkt unter dem Bild.</p>
         <p id="build32Status" role="status">Foto öffnen und Farben erkennen lassen.</p>
-        <p class="tiny">0: leer · Regler ganz rechts: vollständiges Bild mit der gewählten Farbanzahl. Die Farbauswahl berücksichtigt auch kleine, markante Farbbereiche.</p>
+        <p class="tiny">0: leer · Regler ganz rechts: alle Farben der gewählten Familie; bei „Normal“ das vollständige Bild. Die Farbauswahl berücksichtigt auch kleine, markante Farbbereiche.</p>
         <button id="build32Extras" class="secondary" disabled style="width:100%;margin-bottom:8px">Nur Ergänzungen zeigen</button>
         <label for="build32Difference">Abweichung: <span id="build32DifferenceVal">5</span></label>
         <input id="build32Difference" type="range" min="1" max="20" step="1" value="5" style="width:100%">
@@ -4409,6 +4418,54 @@ const mixes=chooseMixes(target,paletteKey);
     else renderBuild32(build32Direction);
     build32Active=active;syncBuild32ReturnButtons();draw();
   });
+  let build32Family='all';
+  const build32FamilyStates=new Map();
+  function build32FamilyOf(rgb){
+    const [h,s,v]=rgbToHsv(rgb),lab=rgbToLabFast(rgb),chroma=Math.hypot(lab[1],lab[2]);
+    if(lab[0]>=92 && chroma<=12)return 'white';
+    if(chroma<8 || s<.075)return 'neutral';
+    if(h>=15 && h<75){
+      if(lab[0]<58 && (h<48 || s<.65))return 'brown';
+      if(h<48 && s<.72)return 'ochre';
+    }
+    if(h<15 || h>=335)return 'red';
+    if(h<43)return 'orange';
+    if(h<70)return 'yellow';
+    if(h<165)return 'green';
+    if(h<195)return 'turquoise';
+    if(h<265)return 'blue';
+    if(h<335)return 'violet';
+    return 'red';
+  }
+  function build32FamilyOrder(palette,family,direction){
+    const indices=palette.map((rgb,index)=>({index,family:build32FamilyOf(rgb),light:rgbToLabFast(rgb)[0]}))
+      .filter(item=>family==='all'||item.family==='white'||item.family===family);
+    indices.sort((a,b)=>{
+      if(family!=='all' && (a.family==='white')!==(b.family==='white'))return a.family==='white'?-1:1;
+      return b.light-a.light || b.index-a.index;
+    });
+    if(direction==='dark')indices.reverse();
+    return indices.map(item=>item.index);
+  }
+  function syncBuild32FamilyRanges(){
+    const max=build32Family==='all'?build32ColorCount():build32Data?build32FamilyOrder(build32Data.palette,build32Family,'light').length:0;
+    for(const d of ['light','dark']){
+      const el=document.getElementById('build32'+d);el.max=max;el.disabled=!build32Data||max===0;
+      el.value=Math.min(Number(el.value),max);document.getElementById('build32'+d+'Val').textContent=el.value+' / '+max;
+    }
+  }
+  document.getElementById('build32Family').addEventListener('change',e=>{
+    if(build32Data)build32FamilyStates.set(build32Family,captureBuild32State());
+    build32Family=e.target.value;
+    build32AllPrevious=null;build32SoloPrevious=null;build32SoloAdditive=false;
+    syncBuild32FamilyRanges();
+    const saved=build32FamilyStates.get(build32Family);
+    if(saved)restoreBuild32State(saved);
+    else{
+      for(const d of ['light','dark'])document.getElementById('build32'+d).value=0;
+      renderBuild32('light');
+    }
+  });
   function build32ColorCount(){return Number(document.getElementById('build32Count').value);}
   for(const id of ['build32Count','build32CountSide'])document.getElementById(id).addEventListener('change',e=>{
     for(const other of ['build32Count','build32CountSide'])document.getElementById(other).value=e.target.value;
@@ -4428,6 +4485,7 @@ const mixes=chooseMixes(target,paletteKey);
   });
   const build32Status=document.getElementById('build32Status');
   function resetBuild32(){
+    build32FamilyStates.clear();
     build32Foreground=null;
     build32SoloPrevious=null;build32SoloAdditive=false;build32SimilarAnchor=null;build32AllPrevious=null;syncBuild32ReturnButtons();
     build32Extras=false;document.getElementById('build32Extras').disabled=true;document.getElementById('build32Extras').textContent='Nur Ergänzungen zeigen';
@@ -4443,30 +4501,32 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function renderBuild32(direction){
     if(!build32Data)return;
+    syncBuild32FamilyRanges();
     build32Manual=false;
     build32Selected=null;build32MixRequest++;document.getElementById('build32Recipe').textContent='Eine Farbe antippen – Farbfläche und Mischung erscheinen.';
     build32Extras=false;document.getElementById('build32Extras').textContent='Nur Ergänzungen zeigen';
-    document.getElementById('build32Extras').disabled=Number(document.getElementById('build32'+direction).value)!==build32ColorCount();
+    document.getElementById('build32Extras').disabled=build32Family!=='all'||Number(document.getElementById('build32'+direction).value)!==build32ColorCount();
     build32Direction=direction;build32Active=true;
     const count=Number(document.getElementById('build32'+direction).value),{palette,ranks,width,height}=build32Data;
     for(const d of ['light','dark']){
-      document.getElementById('build32'+d+'Val').textContent=document.getElementById('build32'+d).value+' / '+build32ColorCount();
+      document.getElementById('build32'+d+'Val').textContent=document.getElementById('build32'+d).value+' / '+document.getElementById('build32'+d).max;
       document.getElementById('build32'+d).parentElement.style.fontWeight=d===direction?'700':'400';
     }
-    const n=Math.ceil(count*palette.length/build32ColorCount()),bg=build32BackgroundValue(direction==='light'?128:255);
+    const order=build32FamilyOrder(palette,build32Family,direction);
+    const n=build32Family==='all'?Math.ceil(count*palette.length/build32ColorCount()):Math.min(count,order.length),bg=build32BackgroundValue(direction==='light'?128:255);
     build32Selection.clear();
-    palette.forEach((rgb,i)=>{if(direction==='light'?i>=palette.length-n:i<n)build32Selection.add(i);});
+    order.slice(0,n).forEach(i=>build32Selection.add(i));
     const c=build32Canvas.getContext('2d'),frame=c.createImageData(width,height);
     build32VisibleMask=new Uint8Array(ranks.length);
     for(let i=0;i<ranks.length;i++){
-      const rank=ranks[i],show=direction==='light'?rank>=palette.length-n:rank<n;
+      const rank=ranks[i],show=build32Selection.has(rank);
       build32VisibleMask[i]=show?1:0;
       const rgb=show?palette[rank]:[bg,bg,bg];
       frame.data[i*4]=rgb[0];frame.data[i*4+1]=rgb[1];frame.data[i*4+2]=rgb[2];frame.data[i*4+3]=255;
     }
     c.putImageData(frame,0,0);rebuildBuild32Foreground(frame);
-    [...document.getElementById('build32Palette').children].forEach((el,i)=>{const show=direction==='light'?i>=palette.length-n:i<n;el.style.opacity='1';el.setAttribute('aria-pressed',String(build32Additive&&show));el.title='Farbe '+(i+1)+(show?' · sichtbar':' · ausgeblendet');});
-    build32Status.textContent=(direction==='light'?'Hell → Dunkel':'Dunkel → Hell')+' · '+(bg===255?'Weiß':'Mittelgrau')+' · '+n+' von '+palette.length+' Farben sichtbar';
+    [...document.getElementById('build32Palette').children].forEach((el,i)=>{const show=build32Selection.has(i);el.style.opacity='1';el.setAttribute('aria-pressed',String(build32Additive&&show));el.title='Farbe '+(i+1)+(show?' · sichtbar':' · ausgeblendet');});
+    build32Status.textContent=(direction==='light'?'Hell → Dunkel':'Dunkel → Hell')+' · '+(bg===255?'Weiß':'Mittelgrau')+' · '+n+' von '+order.length+' Farben sichtbar · '+document.getElementById('build32Family').selectedOptions[0].textContent+(order.length===0?' · Keine passenden Bildfarben vorhanden':'');
     syncBuild32ReturnButtons();draw();
   }
   function acceptBuild32(result,generation){
@@ -4621,12 +4681,13 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function forgetBuild32AllPrevious(){build32AllPrevious=null;syncBuild32ReturnButtons();}
   function captureBuild32State(){
-    return {manual:build32Manual,selection:[...build32Selection],selected:build32Selected,
+    return {family:build32Family,manual:build32Manual,selection:[...build32Selection],selected:build32Selected,
       direction:build32Direction,extras:build32Extras,active:build32Active,
       light:document.getElementById('build32light').value,dark:document.getElementById('build32dark').value,
       difference:document.getElementById('build32Difference').value};
   }
   function restoreBuild32State(state){
+    build32Family=state.family||'all';document.getElementById('build32Family').value=build32Family;syncBuild32FamilyRanges();
     document.getElementById('build32light').value=state.light;
     document.getElementById('build32dark').value=state.dark;
     document.getElementById('build32Difference').value=state.difference;
@@ -4640,7 +4701,7 @@ const mixes=chooseMixes(target,paletteKey);
   document.getElementById('build32All').addEventListener('click',()=>{
     if(!build32Data)return;
     if(build32AllPrevious){const previous=build32AllPrevious;build32AllPrevious=null;restoreBuild32State(previous);}
-    else{build32AllPrevious=captureBuild32State();document.getElementById('build32light').value=build32ColorCount();renderBuild32('light');}
+    else{build32AllPrevious=captureBuild32State();build32Family='all';document.getElementById('build32Family').value='all';syncBuild32FamilyRanges();document.getElementById('build32light').value=build32ColorCount();renderBuild32('light');}
     syncBuild32ReturnButtons();
   });
   document.getElementById('build32Analyze').addEventListener('click',()=>{
