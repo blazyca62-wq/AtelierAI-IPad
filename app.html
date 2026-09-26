@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.05</title>
+  <title>AtelierAI iPad 2.06</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -998,7 +998,7 @@
     ],
     LMS_LAB: [
       [0.210454268309314, 0.7936177747023054, -0.0040720430116193],
-      [2.0579985324311684, -2.4285922420485799, 0.450593709617411],
+      [2.0679985324311684, -2.4285922420485799, 0.450593709617411],
       [0.0259040424655478, 0.7827717124575296, -0.8086757549230774],
     ],
     LAB_LMS: [
@@ -1036,7 +1036,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.05</div>
+    <div class="title">AtelierAI · iPad 2.06</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
@@ -3783,7 +3783,7 @@ const mixes=chooseMixes(target,paletteKey);
 
       const coarse={...best};
       // Feinsuche um den besten Bereich.
-      for(let rotation=coarse.rotation-2;rotation<=coarse.rotation+2.051;rotation+=.5){
+      for(let rotation=coarse.rotation-2;rotation<=coarse.rotation+2.061;rotation+=.5){
         for(let scale=Math.max(.80,coarse.scale-.04);scale<=Math.min(1.20,coarse.scale+.04)+.001;scale+=.01){
           for(let dy=coarse.dy-4;dy<=coarse.dy+4;dy+=1){
             for(let dx=coarse.dx-4;dx<=coarse.dx+4;dx+=1){
@@ -4319,7 +4319,10 @@ const mixes=chooseMixes(target,paletteKey);
   // Quantization is shared by the background worker and its fallback.
   function quantizeBuild32(data){
     const pixels=new Uint8ClampedArray(data.pixels), hist=new Map();
-    const key=(r,g,b)=>((r>>3)<<10)|((g>>3)<<5)|(b>>3);
+    // Keep near-white samples exact: 255 must not average down into 248.
+    const key=(r,g,b)=>r>=240&&g>=240&&b>=240
+      ?32768+((r-240)<<8)+((g-240)<<4)+(b-240)
+      :((r>>3)<<10)|((g>>3)<<5)|(b>>3);
     for(let i=0;i<pixels.length;i+=4){
       const k=key(pixels[i],pixels[i+1],pixels[i+2]);
       let h=hist.get(k);if(!h){h=[0,0,0,0,k];hist.set(k,h);}
@@ -4338,11 +4341,13 @@ const mixes=chooseMixes(target,paletteKey);
     for(const p of points)p.weight=Math.pow(p.count,.65)*(1+Math.min(1,Math.hypot(p.lab[1],p.lab[2])/80));
     const k=Math.min(data.colorCount||32,points.length),centers=[];
     const ordered=[...points].sort((a,b)=>a.lab[0]-b.lab[0]);
-    // Seed robust dark/light endpoints, excluding isolated noise pixels.
+    // Preserve the brightest existing highlight, even when it occupies a tiny area.
+    const highlight=ordered.length&&ordered[ordered.length-1].lab[0]>=90?ordered[ordered.length-1]:null;
+    // Keep the dark endpoint robust; pin bright highlights throughout clustering.
     const total=points.reduce((sum,p)=>sum+p.count,0);
     const quantile=q=>{let sum=0;for(const p of ordered){sum+=p.count;if(sum>=total*q)return p;}return ordered[ordered.length-1];};
     if(k)centers.push([...quantile(.005).lab]);
-    if(k>1)centers.push([...quantile(.995).lab]);
+    if(k>1)centers.push([...(highlight||quantile(.995)).lab]);
     while(centers.length<k){
       let best=points[0],score=-1;
       for(const p of points){let d=Infinity;for(const c of centers)d=Math.min(d,distance(p.lab,c));const s=d*Math.pow(p.weight,.25);if(s>score){score=s;best=p;}}
@@ -4356,17 +4361,18 @@ const mixes=chooseMixes(target,paletteKey);
         if(assignments[n]!==id)changes++;assignments[n]=id;
         for(let c=0;c<3;c++)sums[id][c]+=p.lab[c]*p.weight;sums[id][3]+=p.weight;
       });
-      sums.forEach((v,i)=>{if(v[3])centers[i]=v.slice(0,3).map(x=>x/v[3]);});
+      sums.forEach((v,i)=>{if(highlight&&i===1)return;if(v[3])centers[i]=v.slice(0,3).map(x=>x/v[3]);});
       if(iteration>1&&!changes)break;
     }
     // Use representative image colors, avoiding RGB averages across unrelated hues.
     const chosen=centers.map((center,id)=>{
+      if(highlight&&id===1)return highlight;
       let best=null,cost=Infinity;
       points.forEach((p,n)=>{if(assignments[n]!==id)return;const d=distance(center,p.lab);if(d<cost){cost=d;best=p;}});
       return best;
     }).filter(Boolean);
     const palette=chosen.sort((a,b)=>a.lab[0]-b.lab[0]).map(p=>p.rgb.map(Math.round));
-    const paletteLab=palette.map(toLab),lut=new Uint8Array(32768);
+    const paletteLab=palette.map(toLab),lut=new Uint8Array(36864);
     for(const p of points){let best=Infinity,id=0;paletteLab.forEach((c,i)=>{const d=distance(p.lab,c);if(d<best){best=d;id=i;}});lut[p.key]=id;}
     const ranks=new Uint8Array(pixels.length/4);
     for(let i=0,n=0;i<pixels.length;i+=4,n++)ranks[n]=lut[key(pixels[i],pixels[i+1],pixels[i+2])];

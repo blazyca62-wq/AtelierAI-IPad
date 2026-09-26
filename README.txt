@@ -1,3 +1,16 @@
+AtelierAI iPad 2.06 – Weiß und helle Lichtstellen erhalten
+
+app.html im GitHub-Projekt ersetzen, neu laden und Farben erneut erkennen.
+Sehr helle nahezu weiße Eingangstöne werden nicht mehr vorab zu dunkleren
+Sammelfarben gemittelt. Der hellste vorhandene Lichtton wird bei der
+Palettenberechnung geschützt. Es wird kein künstliches Weiß hinzugefügt.
+Die übrigen Bildfarben bleiben weiterhin eine Näherung mit 32/48/64 Farben.
+
+Geprüft: Kleine weiße und fast weiße Stellen bei allen drei Farbanzahlen.
+Reproduktion: Weiß 255 wurde bisher zu 248; jetzt bleibt es 255.
+Keine künstlichen weißen Töne bei dunklen Bildern. Syntax und Farbzuordnung
+geprüft. Kein direkter iPad-Test.
+
 AtelierAI iPad 2.05 – Schwarz-Weiß-Original stufenlos einblenden
 
 app.html im GitHub-Projekt ersetzen und neu laden.
