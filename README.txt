@@ -1,3 +1,14 @@
+AtelierAI iPad 2.00 – Alle Farbfelder erreichbar
+
+app.html im GitHub-Projekt ersetzen und neu laden.
+Die Palette zeigt nun 16 Farben je Seite in zwei Reihen.
+Sichtbare Tasten: 1–16, 17–32, bei 48 zusätzlich 33–48, bei 64 auch 49–64.
+Die Gesamtzahl wird neben den Seitentasten angezeigt.
+Beim Blättern bleiben zugeschaltete Bildfarben und Mischung erhalten.
+
+Geprüft: Quantisierung mit 32/48/64, Erreichbarkeit aller Farbfelder,
+Seitenzahl, Erhalt der Auswahl und JavaScript-Syntax. Kein direkter iPad-Test.
+
 AtelierAI iPad 1.99 – 32 / 48 / 64 Farben und größere Bildansicht
 
 Zum Aktualisieren app.html und index.html ersetzen; manifest.webmanifest
