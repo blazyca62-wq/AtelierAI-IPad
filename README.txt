@@ -1,3 +1,15 @@
+AtelierAI iPad 2.04 – Original in Schwarz-Weiß
+
+app.html im GitHub-Projekt ersetzen und neu laden.
+Unten „Original in Schwarz-Weiß“ antippen: vollständiges Originalfoto
+in Graustufen vergleichen. „Zurück zur Farbansicht“ bringt exakt die
+vorherige Ansicht zurück. Auswahl, temporäre Farbgruppe und Hintergrundwahl
+bleiben erhalten. Das Raster ist auch über dem Schwarz-Weiß-Original sichtbar.
+Beim Auswählen einer Farbe wird wieder die Farbansicht gezeigt.
+
+Geprüft: Syntax, Graustufenwerte und Hin-/Zurückschalten ohne Änderung
+der gespeicherten Farbauswahl. Kein direkter iPad-Test.
+
 AtelierAI iPad 2.03 – Ähnliche Farben vorübergehend zuschalten
 
 app.html im GitHub-Projekt ersetzen und neu laden.
