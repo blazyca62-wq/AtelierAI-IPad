@@ -1,3 +1,16 @@
+AtelierAI iPad 1.97 – Farben ausschalten und automatischer Hintergrund
+
+app.html im GitHub-Projekt ersetzen und neu laden.
+Farbfeld antippen: einschalten. Erneut antippen: ausschalten.
+Bei „Farben zuschalten: Ein“ bleiben die anderen Farben sichtbar.
+Dunkle Farbe: weißer Hintergrund. Helle Farbe: Mittelgrau.
+Bei mehreren Farben entscheidet die zuletzt zugeschaltete sichtbare Farbe.
+Wird diese ausgeschaltet, gilt die zuletzt davor gewählte, noch sichtbare Farbe.
+Die Mischung folgt derselben Auswahl.
+
+Geprüft: Ein-/Ausschalten, Mehrfachauswahl, leere Auswahl, Hintergrundwechsel
+und Auswahl beim Neuzeichnen. Kein direkter iPad-Test.
+
 AtelierAI iPad 1.96 – Farben zuschalten
 
 app.html im GitHub-Projekt ersetzen und neu laden.
