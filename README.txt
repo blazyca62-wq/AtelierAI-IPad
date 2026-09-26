@@ -314,3 +314,9 @@ An Stellen, wo mehrere Farben zusammentreffen, wird pro Pixel eine Nachbarfarbe 
 Ausgeblendete Farben und der Hintergrund werden nicht eingemischt.
 Die ursprünglichen Mischrezepte und die Anzahl der Farbfelder bleiben erhalten.
 Die Bildansicht erhält Zwischenfarben; breite Übergänge können kleine Flächen überlagern.
+
+
+Version 2.14 – Verblenden fein dosieren
+Regler „Angrenzende Farben verblenden“ jetzt von 0 bis 20 % in 1-%-Schritten.
+Die bisherige Wirkung bleibt gleich: 11 % entsprechen weiterhin 11 % aus Version 2.13.
+Der kleinere Bereich verteilt die niedrigen Werte über die gesamte Reglerbreite.
