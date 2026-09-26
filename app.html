@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.15</title>
+  <title>AtelierAI iPad 2.16</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1036,7 +1036,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.15</div>
+    <div class="title">AtelierAI · iPad 2.16</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
@@ -1096,7 +1096,7 @@
         <option value="brown">Braun / Siena / Umbra</option><option value="green">Grün</option>
         <option value="turquoise">Türkis</option><option value="blue">Blau</option>
         <option value="violet">Violett</option><option value="neutral">Neutral · Weiß / Grau / Schwarz</option>
-        </select><p class="tiny">Farbfamilie wählen, dann einen Regler bewegen. Übergangstöne gehören zu mehreren Familien – beispielsweise Gelbgrün zu Gelb und Grün. Hell → Dunkel beginnt mit Weiß und sehr hellen neutralen Bildfarben, danach folgen die Töne der Familie. Deine Auswahl je Familie bleibt beim Wechsel erhalten.</p></div>
+        </select><p class="tiny">Farbfamilie wählen, dann einen Regler bewegen. Passende Übergangstöne können zu mehreren Familien gehören. Rot/Rosa, Orange und Gelb werden von erdigen Ockertönen unterschieden. Hell → Dunkel beginnt mit Weiß und sehr hellen neutralen Bildfarben, danach folgen die Töne der Familie. Deine Auswahl je Familie bleibt beim Wechsel erhalten.</p></div>
         <div style="margin-top:18px"><label for="build32light">Hell → Dunkel</label><input id="build32light" aria-label="Hell nach Dunkel" type="range" min="0" max="32" step="1" value="0" disabled style="display:block;width:100%;height:40px;touch-action:pan-y"><span id="build32lightVal">0 / 32</span></div>
         <div style="margin-top:18px"><label for="build32dark">Dunkel → Hell</label><input id="build32dark" aria-label="Dunkel nach Hell" type="range" min="0" max="32" step="1" value="0" disabled style="display:block;width:100%;height:40px;touch-action:pan-y"><span id="build32darkVal">0 / 32</span></div>
         <p class="tiny">Die Farbfelder und die passende Mischung findest du unten direkt unter dem Bild.</p>
@@ -4564,20 +4564,26 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function build32MatchesFamily(rgb,family){
     const primary=build32FamilyOf(rgb);
-    if(family==='all'||primary==='white'||primary===family)return true;
+    if(family==='all'||primary==='white')return true;
     const [h,s]=rgbToHsv(rgb),lab=rgbToLabFast(rgb),chroma=Math.hypot(lab[1],lab[2]);
-    // Low-chroma grays retain Neutral but may also show their visible hue bias.
+    // Warm families need their own checks before the old primary assignment:
+    // hue alone cannot distinguish orange from ochre or warm brown.
+    if(['red','orange','yellow','ochre'].includes(family)){
+      if(chroma<4||s<.025)return false;
+      const earthy=h>=20&&h<=75&&(lab[0]<58||(lab[0]<72&&s<.85)||(h<48&&lab[0]<90&&s<.55));
+      if(family==='red')return h>=335||h<=18||(!earthy&&h<28&&lab[1]>.85*lab[2]);
+      if(family==='orange')return h>=16&&h<=48&&!earthy;
+      if(family==='yellow')return h>=45&&h<=95&&!earthy;
+      if(family==='ochre')return h>=25&&h<=70&&earthy;
+    }
+    // Preserve the established cool-family and neutral behavior exactly.
+    if(primary===family)return true;
     if(family==='neutral')return chroma<14||s<.12;
     if(chroma<3||s<.02)return false;
-    // Overlapping ranges intentionally include transitional and tinted colors.
-    if(family==='yellow')return h>=32&&h<=95;
-    if(family==='orange')return h>=12&&h<=58;
-    if(family==='red')return h<=32||h>=315;
     if(family==='green')return h>=55&&h<=180;
     if(family==='turquoise')return h>=145&&h<=210;
     if(family==='blue')return h>=180&&h<=285;
     if(family==='violet')return h>=250&&h<=340;
-    if(family==='ochre')return h>=22&&h<=78&&lab[0]<90&&(s<.9||lab[0]<72);
     if(family==='brown')return h>=5&&h<=78&&lab[0]<72&&(s<.85||lab[0]<48);
     return false;
   }

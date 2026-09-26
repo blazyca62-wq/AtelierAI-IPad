@@ -330,3 +330,11 @@ Bisherige Zuordnungen bleiben erhalten. Weiß erscheint weiterhin in jeder Famil
 Farbige Grautöne können zusätzlich in ihrer Farbfamilie erscheinen.
 Die Zuordnung basiert auf Bildschirmfarbton, Helligkeit und Sättigung.
 Die normale Gesamtansicht, Mischrezepte und Verblenden von 0 bis 20 % bleiben unverändert.
+
+
+Version 2.16 – Warme Farbfamilien genauer abgrenzen
+Rot/Rosa, Orange und Gelb werden vor der bisherigen Hauptzuordnung geprüft.
+Ocker wird anhand von Farbton, Helligkeit und Sättigung von klaren warmen Farben getrennt.
+Die großzügige Rot-Überlappung mit gelblich-erdigen Tönen wurde entfernt.
+Helles Gelb und Rosa bleiben enthalten; Weiß bleibt in jeder Familie.
+Blau, Grün, Türkis, Violett, Neutral und Braun behalten die Zuordnung aus 2.15.
