@@ -320,3 +320,13 @@ Version 2.14 – Verblenden fein dosieren
 Regler „Angrenzende Farben verblenden“ jetzt von 0 bis 20 % in 1-%-Schritten.
 Die bisherige Wirkung bleibt gleich: 11 % entsprechen weiterhin 11 % aus Version 2.13.
 Der kleinere Bereich verteilt die niedrigen Werte über die gesamte Reglerbreite.
+
+
+Version 2.15 – Überlappende Farbfamilien
+Übergangstöne können jetzt in mehreren passenden Familien erscheinen.
+Beispiele: Gelbgrün bei Gelb und Grün; gelblicher Ocker bei Gelb und Ocker;
+Türkisblau bei Türkis und Blau; Rotviolett bei Rot/Rosa und Violett.
+Bisherige Zuordnungen bleiben erhalten. Weiß erscheint weiterhin in jeder Familie.
+Farbige Grautöne können zusätzlich in ihrer Farbfamilie erscheinen.
+Die Zuordnung basiert auf Bildschirmfarbton, Helligkeit und Sättigung.
+Die normale Gesamtansicht, Mischrezepte und Verblenden von 0 bis 20 % bleiben unverändert.
