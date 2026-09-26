@@ -284,3 +284,12 @@ Die Anzahl ist eine Höchstzahl; Bilder mit wenigen Farben benötigen weniger.
 Der hellste und dunkelste verwendete Ton bleiben erhalten.
 Die Farbfelder zeigen weiterhin die zugehörigen Mischanteile.
 Aquarell und reine Tubenfarben bleiben unverändert.
+
+
+Version 2.11 – Farbgrenzen glätten
+Regler oben neben der Farbauswahl: 0 bis 100 %.
+0 % zeigt die ursprünglichen klaren Farbgrenzen; höhere Werte machen Übergänge weicher.
+Die Glättung gilt für alle Darstellungen im Modul 32 / 48 / 64 Farben.
+Nur sichtbare Bildfarben fließen in die Glättung ein; ausgeblendete Flächen bleiben erhalten.
+Mischrezepte und Anzahl bleiben gleich. Zwischenfarben entstehen nur in der Bildansicht.
+Die Pipette nimmt die dargestellte Farbe auf. Hohe Werte können kleine Details verwischen.
