@@ -1,3 +1,19 @@
+AtelierAI iPad 2.03 – Ähnliche Farben vorübergehend zuschalten
+
+app.html im GitHub-Projekt ersetzen und neu laden.
+
+Alle Farben oder eine eigene Auswahl anzeigen, dann „Eine Farbe ansehen“.
+Gewünschtes Farbfeld wählen. Unter der Palette erscheinen bis zu sechs
+wahrnehmungsähnliche Farben zur gewählten Ausgangsfarbe. Antippen schaltet
+diese zusätzlich ein, erneutes Antippen wieder aus.
+Mit „Farben zuschalten: Ein“ sind auch beliebige weitere Farbfelder wählbar.
+Mischrezepte gelten jeweils für die zuletzt gewählte sichtbare Farbe, nicht
+für eine gemeinsame Mischung aller eingeblendeten Farben.
+„Zurück zur Auswahl“ stellt den Zustand vor der Einzelansicht wieder her.
+
+Geprüft: Syntax, Zu-/Ausschalten in der Einzelansicht, Rückkehr zur
+ursprünglichen Gruppe und Erhalt der Hintergrundwahl. Kein direkter iPad-Test.
+
 AtelierAI iPad 2.02 – Hintergrund selbst wählen
 
 app.html im GitHub-Projekt ersetzen und neu laden.
