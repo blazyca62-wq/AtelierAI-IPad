@@ -1,3 +1,16 @@
+AtelierAI iPad 2.05 – Schwarz-Weiß-Original stufenlos einblenden
+
+app.html im GitHub-Projekt ersetzen und neu laden.
+Der Regler „Original S/W“ ersetzt den bisherigen Umschaltknopf.
+0 %: gewählter weißer/grauer Hintergrund.
+100 %: Schwarz-Weiß-Original als Orientierung im Hintergrund.
+Die ausgewählten Farbflächen bleiben bei jeder Reglerstellung vollständig
+farbig sichtbar. Auswahl und gespeicherte Zusammenstellung bleiben erhalten.
+Sind alle Farben eingeblendet, verdecken diese das Schwarz-Weiß-Original.
+
+Geprüft: Syntax, Reglerwerte 0/25/50/100, unveränderte ausgewählte Farbwerte
+und Erhalt der Auswahl. Kein direkter iPad-Test.
+
 AtelierAI iPad 2.04 – Original in Schwarz-Weiß
 
 app.html im GitHub-Projekt ersetzen und neu laden.
