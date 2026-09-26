@@ -303,3 +303,14 @@ Das Originalbild dient zur Erkennung deutlicher Konturen.
 Die Stärke verändert den Übergang, nicht die Breite des bearbeiteten Randes.
 0 % bleibt unverändert; ausgeblendete Bereiche werden nicht eingemischt.
 Mischrezepte und Farbanzahl bleiben erhalten.
+
+
+Version 2.13 – Angrenzende Farben verblenden
+Der Regler erzeugt Verläufe aus jeweils zwei angrenzenden Bildfarben.
+0 %: ursprüngliche Farbgrenzen. Höhere Werte verbreitern die Übergangszone.
+An der Grenze nähern sich beide Seiten einer Mischung zu gleichen Anteilen.
+Innenbereiche außerhalb des Übergangs bleiben unverändert.
+An Stellen, wo mehrere Farben zusammentreffen, wird pro Pixel eine Nachbarfarbe verwendet.
+Ausgeblendete Farben und der Hintergrund werden nicht eingemischt.
+Die ursprünglichen Mischrezepte und die Anzahl der Farbfelder bleiben erhalten.
+Die Bildansicht erhält Zwischenfarben; breite Übergänge können kleine Flächen überlagern.
