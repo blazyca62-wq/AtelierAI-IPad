@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.17</title>
+  <title>AtelierAI iPad 2.18</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1036,7 +1036,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.17</div>
+    <div class="title">AtelierAI · iPad 2.18</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
@@ -1096,7 +1096,7 @@
         <option value="brown">Braun / Siena / Umbra</option><option value="green">Grün</option>
         <option value="turquoise">Türkis</option><option value="blue">Blau</option>
         <option value="violet">Violett</option><option value="neutral">Neutral · Weiß / Grau / Schwarz</option>
-        </select><p class="tiny">Farbfamilie wählen, dann einen Regler bewegen. Passende Übergangstöne können zu mehreren Familien gehören. Rot/Rosa, Orange und Gelb werden von erdigen Ockertönen unterschieden. Hell → Dunkel beginnt mit Weiß und sehr hellen neutralen Bildfarben, danach folgen die Töne der Familie. Deine Auswahl je Familie bleibt beim Wechsel erhalten.</p></div>
+        </select><p class="tiny">Farbfamilie wählen, dann einen Regler bewegen. Passende Übergangstöne können zu mehreren Familien gehören. Rot/Rosa, Orange und Gelb werden von erdigen Ockertönen unterschieden. Neutral zeigt nur Weiß, Grau und Schwarz; farbige Grautöne gehören zu ihrer Farbfamilie. Hell → Dunkel beginnt mit Weiß und sehr hellen neutralen Bildfarben, danach folgen die Töne der Familie. Deine Auswahl je Familie bleibt beim Wechsel erhalten.</p></div>
         <div style="margin-top:18px"><label for="build32light">Hell → Dunkel</label><input id="build32light" aria-label="Hell nach Dunkel" type="range" min="0" max="32" step="1" value="0" disabled style="display:block;width:100%;height:40px;touch-action:pan-y"><span id="build32lightVal">0 / 32</span></div>
         <div style="margin-top:18px"><label for="build32dark">Dunkel → Hell</label><input id="build32dark" aria-label="Dunkel nach Hell" type="range" min="0" max="32" step="1" value="0" disabled style="display:block;width:100%;height:40px;touch-action:pan-y"><span id="build32darkVal">0 / 32</span></div>
         <p class="tiny">Die Farbfelder und die passende Mischung findest du unten direkt unter dem Bild.</p>
@@ -4545,10 +4545,25 @@ const mixes=chooseMixes(target,paletteKey);
   });
   let build32Family='all';
   const build32FamilyStates=new Map();
+  function build32IsNeutral(rgb){
+    const lab=rgbToLabFast(rgb);
+    // Require both near-equal channels and very little perceptual color.
+    return Math.max(...rgb)-Math.min(...rgb)<=5&&Math.hypot(lab[1],lab[2])<=3.5;
+  }
+  function build32TintedGrayFamily(rgb){
+    const [h]=rgbToHsv(rgb),[L,a,b]=rgbToLabFast(rgb);
+    if(h>=335||h<22)return h<22&&L<65&&b>0?'brown':'red';
+    if(h<45)return L<60?'brown':'ochre';
+    if(h<=68)return rgb[1]>rgb[0]*1.04?'green':'yellow';
+    if(h<165)return 'green';
+    if(h<195)return 'turquoise';
+    if(h<265)return 'blue';
+    return 'violet';
+  }
   function build32FamilyOf(rgb){
     const [h,s,v]=rgbToHsv(rgb),lab=rgbToLabFast(rgb),chroma=Math.hypot(lab[1],lab[2]);
-    if(lab[0]>=92 && chroma<=12)return 'white';
-    if(chroma<8 || s<.075)return 'neutral';
+    if(build32IsNeutral(rgb))return lab[0]>=92?'white':'neutral';
+    if(chroma<14||s<.12)return build32TintedGrayFamily(rgb);
     if(h>=15 && h<75){
       if(lab[0]<58 && (h<48 || s<.65))return 'brown';
       if(h<48 && s<.72)return 'ochre';
@@ -4566,6 +4581,10 @@ const mixes=chooseMixes(target,paletteKey);
     const primary=build32FamilyOf(rgb);
     if(family==='all'||primary==='white')return true;
     const [h,s]=rgbToHsv(rgb),lab=rgbToLabFast(rgb),chroma=Math.hypot(lab[1],lab[2]);
+    if(family==='neutral')return build32IsNeutral(rgb);
+    if(build32IsNeutral(rgb))return false;
+    // Muted but visibly tinted grays belong to their hue family, not Neutral.
+    if(chroma<14||s<.12)return family===build32TintedGrayFamily(rgb);
     // Use hue, perceptual red/green bias, and lightness together.
     // Green-dominant olives must not enter Yellow, Ochre or Brown.
     if(['red','orange','yellow','ochre','brown'].includes(family)){
@@ -4579,9 +4598,8 @@ const mixes=chooseMixes(target,paletteKey);
       if(family==='ochre')return h>=25&&h<=65&&earthy;
       if(family==='brown')return h>=0&&h<=60&&!greenDominant&&r>g&&g>=b&&L<78&&(s<.85||L<48)&&a<Math.max(12,2.2*yellowAxis);
     }
-    // Preserve the established cool-family and neutral behavior exactly.
+    // Saturated cool colors keep their existing overlapping ranges.
     if(primary===family)return true;
-    if(family==='neutral')return chroma<14||s<.12;
     if(chroma<3||s<.02)return false;
     if(family==='green')return h>=55&&h<=180;
     if(family==='turquoise')return h>=145&&h<=210;

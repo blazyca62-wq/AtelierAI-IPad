@@ -346,3 +346,11 @@ Rot prüft den Rotanteil gegenüber Gelb sowie Helligkeit und Farbstärke.
 Dadurch werden sehr dunkle Brauntöne nicht mehr nur anhand ihres Farbtonwinkels als Rot behandelt.
 Prüfung mit aus den bereitgestellten Screenshots entnommenen Farbwerten.
 Weiß bleibt in jeder Familie; die kühlen Familien und Verblenden bleiben unverändert.
+
+
+Version 2.18 – Nur echte neutrale Farben
+Neutral zeigt Weiß, Grau und Schwarz mit höchstens sehr geringer Farbtönung.
+Farbige Grautöne werden ihrer Farbfamilie zugeordnet: beispielsweise Blaugrau zu Blau und Grüngrau zu Grün.
+Auch getönte helle Farben werden nicht mehr automatisch als neutrales Weiß geführt.
+Weiß bleibt in jeder Familie sichtbar.
+Geprüft mit neutralen Graustufen, getönten Grautönen und den bisherigen Screenshot-Farbwerten.
