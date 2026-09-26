@@ -1,3 +1,16 @@
+AtelierAI iPad 1.95 – Anklickbare 32 Farben und Mischung
+
+app.html im bestehenden GitHub-Projekt ersetzen und neu laden.
+Oben muss danach 1.95 stehen. Der Startlink bleibt gleich.
+
+32 Farben erkennen: Die nummerierten Farbfelder erscheinen unter dem Bild.
+Eine Farbe antippen: nur deren Flächen auf Mittelgrau und passendes Mischrezept.
+Palette unten wählen: Artisan (Öl), Horadam oder Akademie (Aquarell).
+Alle Farben zeigt das komplette 32-Farben-Bild. Die bisherigen Regler bleiben nutzbar.
+
+Geprüft: JavaScript-Syntax, Farbmasken, Hintergrund und Auswahlwechsel.
+Kein Browser- oder direkter iPad-Test möglich.
+
 AtelierAI iPad 1.86 – Raster auf Mittelgrau sichtbar
 
 app.html im bestehenden GitHub-Projekt ersetzen und neu laden.
