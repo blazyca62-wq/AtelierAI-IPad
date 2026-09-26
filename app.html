@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#f2f1ed" />
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.98</title>
+  <title>AtelierAI iPad 1.99</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -31,7 +33,14 @@
     .viewer-column > .viewer{flex:1;min-height:0;}
     #build32Dock{background:var(--panel);border-radius:14px;padding:10px;max-height:42%;overflow:auto;}
     #build32Dock[hidden]{display:none;}
-    #build32Palette{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;margin:8px 0;}
+    #build32Palette{display:grid;grid-template-columns:none;grid-template-rows:repeat(2,44px);grid-auto-flow:column;grid-auto-columns:48px;gap:6px;margin:8px 0;padding:3px;overflow-x:auto;touch-action:pan-x;}
+    #build32Dock.collapsed #build32Palette,#build32Dock.collapsed #build32Recipe{display:none;}
+    #build32Dock button,#build32Dock select{min-height:44px;font-size:14px;padding:8px;}
+    body.image-focus .workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);}
+    body.image-focus .side{display:none;}
+    body.image-focus .app{padding:4px;gap:4px;}
+    body.image-focus .topbar{padding:4px 8px;}
+    body.image-focus .title{display:none;}
     #build32Palette button{min-height:44px;padding:4px;border:2px solid transparent;border-radius:8px;font-size:13px;}
     #build32Palette button[aria-pressed="true"]{border-color:#fff;outline:2px solid #222;outline-offset:0;}
     #build32Recipe{font-size:14px;line-height:1.45;}
@@ -986,7 +995,7 @@
     ],
     LMS_LAB: [
       [0.210454268309314, 0.7936177747023054, -0.0040720430116193],
-      [1.9879985324311684, -2.4285922420485799, 0.450593709617411],
+      [1.9979985324311684, -2.4285922420485799, 0.450593709617411],
       [0.0259040424655478, 0.7827717124575296, -0.8086757549230774],
     ],
     LAB_LMS: [
@@ -1024,8 +1033,9 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.98</div>
+    <div class="title">AtelierAI · iPad 1.99</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
+    <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
   </div>
@@ -1039,7 +1049,7 @@
     </div>
 
     <div id="build32Dock" hidden>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>Farben auswählen</b><button id="build32Add" class="secondary" type="button" aria-pressed="false">Farben zuschalten: Aus</button><button id="build32All" class="secondary" type="button">Alle Farben</button><select id="build32MixPalette" aria-label="Palette für die Mischung"><option value="artisan">Artisan · Öl</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="build32Collapse" class="secondary" type="button" aria-expanded="true">Farben einklappen</button><label>Farben <select id="build32Count" aria-label="Anzahl Bildfarben"><option value="32">32</option><option value="48">48</option><option value="64">64</option></select></label><button id="build32Add" class="secondary" type="button" aria-pressed="false">Farben zuschalten: Aus</button><button id="build32All" class="secondary" type="button">Alle Farben</button><select id="build32MixPalette" aria-label="Palette für die Mischung"><option value="artisan">Artisan · Öl</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select></div>
       <div id="build32Palette" aria-label="Erkannte Bildfarben"></div>
       <div id="build32Recipe" role="status">Eine Farbe antippen – Farbfläche und Mischung erscheinen.</div>
     </div>
@@ -1066,21 +1076,22 @@
       </div>
 
       <div class="section" id="build32Panel">
-        <h3>Farbaufbau · 32 Farben</h3>
+        <h3>Farbaufbau · 32 / 48 / 64 Farben</h3>
         <p>Farbbereiche Schritt für Schritt einblenden. Der zuletzt bewegte Regler bestimmt die Ansicht.</p>
         <div class="grid2" style="margin-bottom:8px"><button id="build32Grid" class="secondary">Raster ein</button><button id="build32Pick" class="secondary">Mischung aufnehmen</button></div>
         <div class="control-line"><label for="build32GridDensity">Rastergröße</label><input id="build32GridDensity" type="range" min="2" max="20" value="8"><span id="build32GridDensityVal">8</span></div>
         <p class="tiny">Mischung aufnehmen: eine sichtbare Farbfläche antippen. Das Raster wird nicht mitgemessen.</p>
+        <label for="build32CountSide">Anzahl Farben</label><select id="build32CountSide" style="min-height:44px;margin:8px"><option value="32">32</option><option value="48">48</option><option value="64">64</option></select>
         <button id="build32Analyze" style="width:100%">32 Farben erkennen</button>
         <div style="margin-top:18px"><label for="build32light">Hell → Dunkel · auf Mittelgrau</label><input id="build32light" aria-label="Hell nach Dunkel" type="range" min="0" max="32" step="1" value="0" disabled style="display:block;width:100%;height:40px;touch-action:pan-y"><span id="build32lightVal">0 / 32</span></div>
         <div style="margin-top:18px"><label for="build32dark">Dunkel → Hell · auf Weiß</label><input id="build32dark" aria-label="Dunkel nach Hell" type="range" min="0" max="32" step="1" value="0" disabled style="display:block;width:100%;height:40px;touch-action:pan-y"><span id="build32darkVal">0 / 32</span></div>
         <p class="tiny">Die Farbfelder und die passende Mischung findest du unten direkt unter dem Bild.</p>
         <p id="build32Status" role="status">Foto öffnen und Farben erkennen lassen.</p>
-        <p class="tiny">0: leer · 32: vollständiges Bild aus bis zu 32 festen Farben. Die Farbauswahl berücksichtigt auch kleine, markante Farbbereiche.</p>
+        <p class="tiny">0: leer · Regler ganz rechts: vollständiges Bild mit der gewählten Farbanzahl. Die Farbauswahl berücksichtigt auch kleine, markante Farbbereiche.</p>
         <button id="build32Extras" class="secondary" disabled style="width:100%;margin-bottom:8px">Nur Ergänzungen zeigen</button>
         <label for="build32Difference">Abweichung: <span id="build32DifferenceVal">5</span></label>
         <input id="build32Difference" type="range" min="1" max="20" step="1" value="5" style="width:100%">
-        <p class="tiny">Nach Stufe 32: nur abweichende Bereiche in den Farben der Arbeitsansicht. Links: auch feine Unterschiede · rechts: nur deutliche.</p>
+        <p class="tiny">Wenn alle Farben sichtbar sind: nur abweichende Bereiche in den Farben der Arbeitsansicht. Links: auch feine Unterschiede · rechts: nur deutliche.</p>
         <button id="build32Original" class="secondary" style="width:100%">Zurück zur Arbeitsansicht</button>
       </div>
       <div class="section" id="formsPanel">
@@ -4320,7 +4331,7 @@ const mixes=chooseMixes(target,paletteKey);
     const points=entries.map(p=>({rgb:p.slice(0,3),lab:toLab(p.slice(0,3)),count:p[3],key:p[4]}));
     const distance=(a,b)=>(a[0]-b[0])**2+1.3*((a[1]-b[1])**2+(a[2]-b[2])**2);
     for(const p of points)p.weight=Math.pow(p.count,.65)*(1+Math.min(1,Math.hypot(p.lab[1],p.lab[2])/80));
-    const k=Math.min(32,points.length),centers=[];
+    const k=Math.min(data.colorCount||32,points.length),centers=[];
     const ordered=[...points].sort((a,b)=>a.lab[0]-b.lab[0]);
     // Seed robust dark/light endpoints, excluding isolated noise pixels.
     const total=points.reduce((sum,p)=>sum+p.count,0);
@@ -4360,6 +4371,23 @@ const mixes=chooseMixes(target,paletteKey);
   let build32Selected=null,build32MixRequest=0,build32Additive=false,build32Manual=false;
   const build32Selection=new Set();
   let build32AllPrevious=null;
+  function build32ColorCount(){return Number(document.getElementById('build32Count').value);}
+  for(const id of ['build32Count','build32CountSide'])document.getElementById(id).addEventListener('change',e=>{
+    for(const other of ['build32Count','build32CountSide'])document.getElementById(other).value=e.target.value;
+    resetBuild32();
+    document.getElementById('build32Analyze').textContent=build32ColorCount()+' Farben erkennen';
+    if(loaded)document.getElementById('build32Analyze').click();
+  });
+  document.getElementById('imageFocusBtn').addEventListener('click',()=>{
+    const on=document.body.classList.toggle('image-focus'),button=document.getElementById('imageFocusBtn');
+    button.textContent=on?'Werkzeuge anzeigen':'Bild größer';button.setAttribute('aria-pressed',String(on));
+    requestAnimationFrame(()=>{resizeCanvas();fitImage();});
+  });
+  document.getElementById('build32Collapse').addEventListener('click',()=>{
+    const collapsed=document.getElementById('build32Dock').classList.toggle('collapsed');
+    const button=document.getElementById('build32Collapse');button.textContent=collapsed?'Farben ausklappen':'Farben einklappen';button.setAttribute('aria-expanded',String(!collapsed));
+    requestAnimationFrame(()=>{resizeCanvas();fitImage();});
+  });
   const build32Status=document.getElementById('build32Status');
   function resetBuild32(){
     build32AllPrevious=null;syncBuild32ReturnButtons();
@@ -4369,7 +4397,7 @@ const mixes=chooseMixes(target,paletteKey);
     build32Generation++;if(build32Worker)build32Worker.terminate();build32Worker=null;
     build32Data=null;build32Canvas=null;build32Active=false;build32VisibleMask=null;
     document.getElementById('build32Analyze').disabled=false;
-    for(const d of ['light','dark']){document.getElementById('build32'+d).value=0;document.getElementById('build32'+d).disabled=true;document.getElementById('build32'+d+'Val').textContent='0 / 32';}
+    for(const d of ['light','dark']){document.getElementById('build32'+d).value=0;document.getElementById('build32'+d).max=build32ColorCount();document.getElementById('build32'+d).disabled=true;document.getElementById('build32'+d+'Val').textContent='0 / '+build32ColorCount();}
     document.getElementById('build32Palette').replaceChildren();
     build32Status.textContent='Foto öffnen und Farben erkennen lassen.';
   }
@@ -4378,14 +4406,14 @@ const mixes=chooseMixes(target,paletteKey);
     build32Manual=false;
     build32Selected=null;build32MixRequest++;document.getElementById('build32Recipe').textContent='Eine Farbe antippen – Farbfläche und Mischung erscheinen.';
     build32Extras=false;document.getElementById('build32Extras').textContent='Nur Ergänzungen zeigen';
-    document.getElementById('build32Extras').disabled=Number(document.getElementById('build32'+direction).value)!==32;
+    document.getElementById('build32Extras').disabled=Number(document.getElementById('build32'+direction).value)!==build32ColorCount();
     build32Direction=direction;build32Active=true;
     const count=Number(document.getElementById('build32'+direction).value),{palette,ranks,width,height}=build32Data;
     for(const d of ['light','dark']){
-      document.getElementById('build32'+d+'Val').textContent=document.getElementById('build32'+d).value+' / 32';
+      document.getElementById('build32'+d+'Val').textContent=document.getElementById('build32'+d).value+' / '+build32ColorCount();
       document.getElementById('build32'+d).parentElement.style.fontWeight=d===direction?'700':'400';
     }
-    const n=Math.ceil(count*palette.length/32),bg=direction==='light'?128:255;
+    const n=Math.ceil(count*palette.length/build32ColorCount()),bg=direction==='light'?128:255;
     build32Selection.clear();
     palette.forEach((rgb,i)=>{if(direction==='light'?i>=palette.length-n:i<n)build32Selection.add(i);});
     const c=build32Canvas.getContext('2d'),frame=c.createImageData(width,height);
@@ -4501,17 +4529,17 @@ const mixes=chooseMixes(target,paletteKey);
   document.getElementById('build32All').addEventListener('click',()=>{
     if(!build32Data)return;
     if(build32AllPrevious){const previous=build32AllPrevious;build32AllPrevious=null;restoreBuild32State(previous);}
-    else{build32AllPrevious=captureBuild32State();document.getElementById('build32light').value=32;renderBuild32('light');}
+    else{build32AllPrevious=captureBuild32State();document.getElementById('build32light').value=build32ColorCount();renderBuild32('light');}
     syncBuild32ReturnButtons();
   });
   document.getElementById('build32Analyze').addEventListener('click',()=>{
     if(!loaded){build32Status.textContent='Bitte zuerst ein Foto öffnen.';return;}
     resetBuild32();const generation=build32Generation;
-    build32Status.textContent='32 Farben werden ermittelt …';document.getElementById('build32Analyze').disabled=true;
+    build32Status.textContent=build32ColorCount()+' Farben werden ermittelt …';document.getElementById('build32Analyze').disabled=true;
     const work=document.createElement('canvas'),ratio=Math.min(1,1600/Math.max(sourceCanvas.width,sourceCanvas.height));
     work.width=Math.max(1,Math.round(sourceCanvas.width*ratio));work.height=Math.max(1,Math.round(sourceCanvas.height*ratio));
     const wc=work.getContext('2d');wc.fillStyle='#fff';wc.fillRect(0,0,work.width,work.height);wc.drawImage(sourceCanvas,0,0,work.width,work.height);
-    const data={pixels:wc.getImageData(0,0,work.width,work.height).data.buffer,width:work.width,height:work.height};
+    const data={colorCount:build32ColorCount(),pixels:wc.getImageData(0,0,work.width,work.height).data.buffer,width:work.width,height:work.height};
     const fail=()=>{if(generation!==build32Generation)return;document.getElementById('build32Analyze').disabled=false;build32Status.textContent='Farberkennung fehlgeschlagen. Bitte erneut versuchen.';};
     const fallback=()=>setTimeout(()=>{if(generation!==build32Generation)return;try{acceptBuild32(quantizeBuild32(data),generation);}catch(e){fail();}},20);
     try{
@@ -4540,7 +4568,7 @@ const mixes=chooseMixes(target,paletteKey);
     return {pixels:output,changed,visible};
   }
   function showBuild32Extras(){
-    if(!build32Data || Number(document.getElementById('build32'+build32Direction).value)!==32)return;
+    if(!build32Data || Number(document.getElementById('build32'+build32Direction).value)!==build32ColorCount())return;
     flushToneImage();
     const {width,height,palette,ranks}=build32Data;
     const reference=document.createElement('canvas');reference.width=width;reference.height=height;
@@ -4556,7 +4584,7 @@ const mixes=chooseMixes(target,paletteKey);
     const bc=build32Canvas.getContext('2d'),frame=bc.createImageData(width,height);frame.data.set(result.pixels);bc.putImageData(frame,0,0);
     build32VisibleMask=result.visible;
     build32Active=true;build32Extras=true;
-    document.getElementById('build32Extras').textContent='32 Farben wieder anzeigen';
+    document.getElementById('build32Extras').textContent='Farbaufbau wieder anzeigen';
     document.getElementById('build32DifferenceVal').textContent=String(threshold);
     build32Status.textContent='Nur Ergänzungen zur Arbeitsansicht · '+Math.round(result.changed/ranks.length*100)+' % der Bildfläche. Passende Bereiche sind ausgeblendet.';
     syncBuild32ReturnButtons();draw();
@@ -4584,7 +4612,7 @@ const mixes=chooseMixes(target,paletteKey);
   document.getElementById('build32Grid').addEventListener('click',()=>{gridToggleBtn.click();syncBuild32Grid();});
   document.getElementById('build32GridDensity').addEventListener('input',e=>{gridDensity.value=e.target.value;gridDensity.dispatchEvent(new Event('input'));syncBuild32Grid();});
   document.getElementById('build32Pick').addEventListener('click',()=>{
-    if(!build32Data){build32Status.textContent='Bitte zuerst 32 Farben erkennen lassen.';return;}
+    if(!build32Data){build32Status.textContent='Bitte zuerst Farben erkennen lassen.';return;}
     if(build32Manual)renderBuild32Selection();else if(build32Extras)showBuild32Extras();else renderBuild32(build32Direction);
     areaPickerMode=null;smartPickerArmed=false;surfaceMode=null;surfacePreview=null;
     for(const id of ['areaPickerBtn','smartAreaPickerBtn','smartPickerBtn']){const b=document.getElementById(id);if(b){b.classList.remove('active');b.classList.add('secondary');}}
@@ -5871,7 +5899,7 @@ const mixes=chooseMixes(target,paletteKey);
     const labels={
       toolPanel:'Werkzeug',
       formsPanel:'Großformen',
-      build32Panel:'32 Farben',
+      build32Panel:'32 / 48 / 64 Farben',
       sketchPanel:'Vorzeichnung',
       tonesPanel:'Tonwerte',
       paintMixPanel:'Mischen',

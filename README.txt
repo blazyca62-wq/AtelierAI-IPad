@@ -1,3 +1,22 @@
+AtelierAI iPad 1.99 – 32 / 48 / 64 Farben und größere Bildansicht
+
+Zum Aktualisieren app.html und index.html ersetzen; manifest.webmanifest
+aus dem Paket im selben Ordner belassen bzw. mit hochladen.
+
+Im Farbaufbau 32, 48 oder 64 wählen. Bei geladenem Foto startet die neue
+Analyse automatisch; die bisherige Farbauswahl wird dabei zurückgesetzt.
+Die Farbfelder haben zwei Reihen, horizontal wischen für weitere Farben.
+„Bild größer“ blendet die Werkzeugspalte aus. „Werkzeuge anzeigen“ holt sie zurück.
+„Farben einklappen“ schafft zusätzlich Platz für das Bild.
+Ein-/Ausschalten, Zuschaltemodus, Mischungen und Rückkehrknöpfe bleiben erhalten.
+
+iPad: In Safari Teilen > Zum Home-Bildschirm > Als Web-App öffnen aktivieren.
+Anschließend über das neue Symbol starten.
+
+Geprüft: 32/48/64 Quantisierung, gültige Pixelzuordnung, Farbumschaltung,
+Hintergrund und Zustandswiederherstellung, JavaScript-Syntax.
+Kein Browser-/iPad-Test der neuen Anordnung möglich.
+
 AtelierAI iPad 1.98 – Zur vorherigen Ansicht zurückkehren
 
 app.html im GitHub-Projekt ersetzen und neu laden.
