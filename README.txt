@@ -274,3 +274,13 @@ Bevorzugt: Titanium White, Lemon Yellow, French Ultramarine; sonst passende vorh
 Gelb- und Blaumischungen können zusätzlich mit Weiß aufgehellt werden.
 Beim Antippen: Farbanteile in Prozent als Startrezept, keine gemessene Pigmentsimulation.
 Aquarell und die reine Tubenfarben-Ansicht bleiben erhalten.
+
+
+Version 2.10 – Artisan-Mischungen begrenzen
+Unter Darstellung „Artisan – einfache Mischungen“ auswählen.
+Daneben unter „Mischungen“: 32, 48, 64 (Startwert) oder Alle Mischungen.
+Die Anzahl ist eine Höchstzahl; Bilder mit wenigen Farben benötigen weniger.
+Ähnliche Farbtöne werden auf vorhandene Mischrezepte zusammengefasst.
+Der hellste und dunkelste verwendete Ton bleiben erhalten.
+Die Farbfelder zeigen weiterhin die zugehörigen Mischanteile.
+Aquarell und reine Tubenfarben bleiben unverändert.

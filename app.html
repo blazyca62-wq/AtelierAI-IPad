@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.09</title>
+  <title>AtelierAI iPad 2.10</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1036,7 +1036,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.09</div>
+    <div class="title">AtelierAI · iPad 2.10</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
@@ -1052,7 +1052,7 @@
     </div>
 
     <div id="build32Dock" hidden>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="build32Collapse" class="secondary" type="button" aria-expanded="true">Farben einklappen</button><label>Darstellung <select id="build32PaintMode"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Artisan – einfache Mischungen</option></select></label><label>Farben <select id="build32Count" aria-label="Anzahl Bildfarben"><option value="32">32</option><option value="48">48</option><option value="64">64</option></select></label><button id="build32Add" class="secondary" type="button" aria-pressed="false">Farben zuschalten: Aus</button><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">Original S/W <input id="build32GrayBlend" aria-label="Schwarz-Weiß-Original zur Orientierung einblenden" type="range" min="0" max="100" step="1" value="0" style="width:140px;min-height:32px"><span id="build32GrayBlendVal">0 %</span></label><button id="build32Solo" class="secondary" type="button" aria-pressed="false">Eine Farbe ansehen</button><button id="build32All" class="secondary" type="button">Alle Farben</button><label>Hintergrund <select id="build32Background" aria-label="Hintergrund der Bildfarben"><option value="auto">Automatisch</option><option value="white">Weiß</option><option value="gray">Grau</option></select></label><select id="build32MixPalette" aria-label="Palette für die Mischung"><option value="watercolor">Eigene Aquarellpalette · Horadam + Akademie</option><option value="artisan" selected>Artisan · Öl</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="build32Collapse" class="secondary" type="button" aria-expanded="true">Farben einklappen</button><label>Darstellung <select id="build32PaintMode"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Artisan – einfache Mischungen</option></select></label><label id="build32SimpleLimitLabel" hidden>Mischungen <select id="build32SimpleLimit" aria-label="Anzahl einfacher Artisan-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><label>Farben <select id="build32Count" aria-label="Anzahl Bildfarben"><option value="32">32</option><option value="48">48</option><option value="64">64</option></select></label><button id="build32Add" class="secondary" type="button" aria-pressed="false">Farben zuschalten: Aus</button><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">Original S/W <input id="build32GrayBlend" aria-label="Schwarz-Weiß-Original zur Orientierung einblenden" type="range" min="0" max="100" step="1" value="0" style="width:140px;min-height:32px"><span id="build32GrayBlendVal">0 %</span></label><button id="build32Solo" class="secondary" type="button" aria-pressed="false">Eine Farbe ansehen</button><button id="build32All" class="secondary" type="button">Alle Farben</button><label>Hintergrund <select id="build32Background" aria-label="Hintergrund der Bildfarben"><option value="auto">Automatisch</option><option value="white">Weiß</option><option value="gray">Grau</option></select></label><select id="build32MixPalette" aria-label="Palette für die Mischung"><option value="watercolor">Eigene Aquarellpalette · Horadam + Akademie</option><option value="artisan" selected>Artisan · Öl</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select></div>
       <div id="build32Pages" aria-label="Farbseiten"></div>
       <div id="build32Palette" aria-label="Erkannte Bildfarben"></div>
       <div id="build32Similar" hidden style="margin:6px 0"></div>
@@ -1086,7 +1086,7 @@
         <div class="grid2" style="margin-bottom:8px"><button id="build32Grid" class="secondary">Raster ein</button><button id="build32Pick" class="secondary">Mischung aufnehmen</button></div>
         <div class="control-line"><label for="build32GridDensity">Rastergröße</label><input id="build32GridDensity" type="range" min="2" max="20" value="8"><span id="build32GridDensityVal">8</span></div>
         <p class="tiny">Mischung aufnehmen: eine sichtbare Farbfläche antippen. Das Raster wird nicht mitgemessen.</p>
-        <label>Darstellung <select id="build32PaintModeSide"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Artisan – einfache Mischungen</option></select></label><p class="tiny">Ungemischt: Farben der gewählten Palette. Aquarell mit Wasserverdünnung und Papierweiß; Öl ohne Ausmischen. Artisan – einfache Mischungen: mit Weiß, Gelb oder Blau, bei Bedarf zusätzlich Weiß. Bildschirm-Simulation.</p><label for="build32CountSide">Anzahl Farben</label><select id="build32CountSide" style="min-height:44px;margin:8px"><option value="32">32</option><option value="48">48</option><option value="64">64</option></select>
+        <label>Darstellung <select id="build32PaintModeSide"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Artisan – einfache Mischungen</option></select></label><label id="build32SimpleLimitLabelSide" hidden>Mischungen <select id="build32SimpleLimitSide" aria-label="Anzahl einfacher Artisan-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><p class="tiny">Ungemischt: Farben der gewählten Palette. Aquarell mit Wasserverdünnung und Papierweiß; Öl ohne Ausmischen. Artisan – einfache Mischungen: mit Weiß, Gelb oder Blau, bei Bedarf zusätzlich Weiß. Bildschirm-Simulation.</p><label for="build32CountSide">Anzahl Farben</label><select id="build32CountSide" style="min-height:44px;margin:8px"><option value="32">32</option><option value="48">48</option><option value="64">64</option></select>
         <button id="build32Analyze" style="width:100%">32 Farben erkennen</button>
         <div style="margin-top:14px"><label for="build32Family">Einblendung</label>
         <select id="build32Family" style="display:block;width:100%;min-height:44px;margin-top:6px">
@@ -4351,6 +4351,40 @@ const mixes=chooseMixes(target,paletteKey);
       }
       raw[i]=best;used.add(best);
     }
+    // Reduce only the Artisan simple-mix view; keep actual recipes, never average RGBs.
+    const limit=Number(data.simpleLimit)||0;
+    if(limit>0&&used.size>limit){
+      const ids=[...used],counts=new Uint32Array(candidates.length);
+      for(const id of raw)counts[id]++;
+      const distance=(a,b)=>{const x=candidates[a].lab,y=candidates[b].lab;return (x[0]-y[0])**2+(x[1]-y[1])**2+(x[2]-y[2])**2;};
+      const lightOrder=ids.slice().sort((a,b)=>candidates[a].lab[0]-candidates[b].lab[0]);
+      const selected=[lightOrder[0],lightOrder[lightOrder.length-1]];
+      const nearest=new Float64Array(candidates.length).fill(Infinity);
+      for(const id of ids)for(const center of selected)nearest[id]=Math.min(nearest[id],distance(id,center));
+      while(selected.length<limit){
+        let best=-1,score=-1;
+        for(const id of ids){const value=nearest[id]*Math.pow(counts[id],.65);if(value>score&&!selected.includes(id)){score=value;best=id;}}
+        if(best<0)break;selected.push(best);
+        for(const id of ids)nearest[id]=Math.min(nearest[id],distance(id,best));
+      }
+      // Refine each cluster to an existing recipe nearest its weighted center.
+      for(let pass=0;pass<5;pass++){
+        const groups=selected.map(()=>[]);
+        for(const id of ids){let best=0,d=Infinity;selected.forEach((c,j)=>{const v=distance(id,c);if(v<d){d=v;best=j;}});groups[best].push(id);}
+        for(let j=2;j<selected.length;j++){
+          if(!groups[j].length)continue;
+          const mean=[0,0,0];let total=0;
+          for(const id of groups[j]){const weight=Math.pow(counts[id],.8);total+=weight;candidates[id].lab.forEach((v,k)=>mean[k]+=v*weight);}
+          mean.forEach((v,k)=>mean[k]=v/total);
+          let best=selected[j],d=Infinity;
+          for(const id of groups[j]){const lab=candidates[id].lab,v=lab.reduce((sum,x,k)=>sum+(x-mean[k])**2,0);if(v<d){d=v;best=id;}}
+          selected[j]=best;
+        }
+      }
+      const mapping=new Uint16Array(candidates.length);
+      for(const id of ids){let best=selected[0],d=Infinity;for(const c of selected){const v=distance(id,c);if(v<d){d=v;best=c;}}mapping[id]=best;}
+      used.clear();for(let i=0;i<raw.length;i++){raw[i]=mapping[raw[i]];used.add(raw[i]);}
+    }
     const order=[...used].sort((a,b)=>candidates[a].lab[0]-candidates[b].lab[0]);
     const remap=new Map(order.map((id,i)=>[id,i]));
     const ranks=raw.map(id=>remap.get(id));
@@ -4398,11 +4432,19 @@ const mixes=chooseMixes(target,paletteKey);
     }
     return out;
   }
+  function syncBuild32SimpleLimit(){
+    for(const suffix of ['', 'Side'])document.getElementById('build32SimpleLimitLabel'+suffix).hidden=!build32IsSimple();
+  }
+  for(const id of ['build32SimpleLimit','build32SimpleLimitSide'])document.getElementById(id).addEventListener('change',e=>{
+    for(const other of ['build32SimpleLimit','build32SimpleLimitSide'])document.getElementById(other).value=e.target.value;
+    if(build32IsSimple()&&loaded)document.getElementById('build32Analyze').click();
+  });
   function build32IsSimple(){return document.getElementById('build32PaintMode').value==='simple';}
   function build32IsPure(){return document.getElementById('build32PaintMode').value!=='mixed';}
   for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).addEventListener('change',e=>{
     for(const other of ['build32PaintMode','build32PaintModeSide'])document.getElementById(other).value=e.target.value;
     if(build32IsSimple())document.getElementById('build32MixPalette').value='artisan';
+    syncBuild32SimpleLimit();
     for(const other of ['build32Count','build32CountSide'])document.getElementById(other).disabled=build32IsPure();
     resetBuild32();
     document.getElementById('build32Analyze').textContent=build32IsSimple()?'Einfache Artisan-Mischungen anzeigen':build32IsPure()?'Ungemischte Farben anzeigen':build32ColorCount()+' Farben erkennen';
@@ -4695,7 +4737,7 @@ const mixes=chooseMixes(target,paletteKey);
     }
     else [...document.getElementById('build32Palette').children].forEach((el,i)=>el.setAttribute('aria-pressed',String(build32Additive&&build32Selection.has(i))));
   });
-  document.getElementById('build32MixPalette').addEventListener('change',()=>{if(build32IsSimple()&&document.getElementById('build32MixPalette').value!=='artisan'){for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).value='pure';document.getElementById('build32Analyze').textContent='Ungemischte Farben anzeigen';}if(build32IsPure()){document.getElementById('build32Analyze').click();}else updateBuild32Recipe();});
+  document.getElementById('build32MixPalette').addEventListener('change',()=>{if(build32IsSimple()&&document.getElementById('build32MixPalette').value!=='artisan'){for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).value='pure';document.getElementById('build32Analyze').textContent='Ungemischte Farben anzeigen';syncBuild32SimpleLimit();}if(build32IsPure()){document.getElementById('build32Analyze').click();}else updateBuild32Recipe();});
   document.getElementById('build32Solo').addEventListener('click',()=>{
     if(!build32Data)return;
     if(build32SoloPrevious){
@@ -4800,7 +4842,7 @@ const mixes=chooseMixes(target,paletteKey);
     if(build32IsSimple())document.getElementById('build32MixPalette').value='artisan';
     const key=document.getElementById('build32MixPalette').value;
     const quantizer=build32IsPure()?quantizeBuild32Pure:quantizeBuild32;
-    if(build32IsPure()){data.pureColors=build32IsSimple()?build32SimpleColors():build32PureColors(key);data.watercolor=['watercolor','horadam','akademie'].includes(key);build32Status.textContent=build32IsSimple()?'Einfache Artisan-Mischungen werden zugeordnet …':'Ungemischte Palettenfarben werden zugeordnet …';}
+    if(build32IsPure()){data.pureColors=build32IsSimple()?build32SimpleColors():build32PureColors(key);data.simpleLimit=build32IsSimple()?Number(document.getElementById('build32SimpleLimit').value):0;data.watercolor=['watercolor','horadam','akademie'].includes(key);build32Status.textContent=build32IsSimple()?'Einfache Artisan-Mischungen werden zugeordnet …':'Ungemischte Palettenfarben werden zugeordnet …';}
     const fail=()=>{if(generation!==build32Generation)return;document.getElementById('build32Analyze').disabled=false;build32Status.textContent='Farberkennung fehlgeschlagen. Bitte erneut versuchen.';};
     const fallback=()=>setTimeout(()=>{if(generation!==build32Generation)return;try{acceptBuild32(quantizer(data),generation);}catch(e){fail();}},20);
     try{
