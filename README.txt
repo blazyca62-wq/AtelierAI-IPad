@@ -338,3 +338,11 @@ Ocker wird anhand von Farbton, Helligkeit und Sättigung von klaren warmen Farbe
 Die großzügige Rot-Überlappung mit gelblich-erdigen Tönen wurde entfernt.
 Helles Gelb und Rosa bleiben enthalten; Weiß bleibt in jeder Familie.
 Blau, Grün, Türkis, Violett, Neutral und Braun behalten die Zuordnung aus 2.15.
+
+
+Version 2.17 – Grün aus Gelb und Braun ausschließen
+Gelb, Ocker und Braun prüfen zusätzlich den Grünanteil der Bildschirmfarbe.
+Rot prüft den Rotanteil gegenüber Gelb sowie Helligkeit und Farbstärke.
+Dadurch werden sehr dunkle Brauntöne nicht mehr nur anhand ihres Farbtonwinkels als Rot behandelt.
+Prüfung mit aus den bereitgestellten Screenshots entnommenen Farbwerten.
+Weiß bleibt in jeder Familie; die kühlen Familien und Verblenden bleiben unverändert.

@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.16</title>
+  <title>AtelierAI iPad 2.17</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1036,7 +1036,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.16</div>
+    <div class="title">AtelierAI · iPad 2.17</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
@@ -4566,15 +4566,18 @@ const mixes=chooseMixes(target,paletteKey);
     const primary=build32FamilyOf(rgb);
     if(family==='all'||primary==='white')return true;
     const [h,s]=rgbToHsv(rgb),lab=rgbToLabFast(rgb),chroma=Math.hypot(lab[1],lab[2]);
-    // Warm families need their own checks before the old primary assignment:
-    // hue alone cannot distinguish orange from ochre or warm brown.
-    if(['red','orange','yellow','ochre'].includes(family)){
+    // Use hue, perceptual red/green bias, and lightness together.
+    // Green-dominant olives must not enter Yellow, Ochre or Brown.
+    if(['red','orange','yellow','ochre','brown'].includes(family)){
       if(chroma<4||s<.025)return false;
-      const earthy=h>=20&&h<=75&&(lab[0]<58||(lab[0]<72&&s<.85)||(h<48&&lab[0]<90&&s<.55));
-      if(family==='red')return h>=335||h<=18||(!earthy&&h<28&&lab[1]>.85*lab[2]);
-      if(family==='orange')return h>=16&&h<=48&&!earthy;
-      if(family==='yellow')return h>=45&&h<=95&&!earthy;
-      if(family==='ochre')return h>=25&&h<=70&&earthy;
+      const [r,g,b]=rgb,L=lab[0],a=lab[1],yellowAxis=lab[2];
+      const greenDominant=h>68||g>r*1.04||a<-.34*Math.max(1,yellowAxis);
+      const earthy=h>=8&&h<=65&&!greenDominant&&(L<58||(L<72&&s<.85)||(h<48&&L<90&&s<.55));
+      if(family==='red')return (h>=335||h<=24)&&a>Math.max(4,1.05*yellowAxis)&&(L>=45||chroma>=14);
+      if(family==='orange')return h>=16&&h<=48&&!earthy&&!greenDominant;
+      if(family==='yellow')return h>=40&&h<=68&&!greenDominant&&!earthy;
+      if(family==='ochre')return h>=25&&h<=65&&earthy;
+      if(family==='brown')return h>=0&&h<=60&&!greenDominant&&r>g&&g>=b&&L<78&&(s<.85||L<48)&&a<Math.max(12,2.2*yellowAxis);
     }
     // Preserve the established cool-family and neutral behavior exactly.
     if(primary===family)return true;
@@ -4584,7 +4587,6 @@ const mixes=chooseMixes(target,paletteKey);
     if(family==='turquoise')return h>=145&&h<=210;
     if(family==='blue')return h>=180&&h<=285;
     if(family==='violet')return h>=250&&h<=340;
-    if(family==='brown')return h>=5&&h<=78&&lab[0]<72&&(s<.85||lab[0]<48);
     return false;
   }
   function build32FamilyOrder(palette,family,direction){
