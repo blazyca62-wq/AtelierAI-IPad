@@ -1,3 +1,17 @@
+AtelierAI iPad 2.19 – Testversion: Feine Farbverläufe
+
+Separate Kopie auf Basis von 2.18.
+Die Mischfarben-Erkennung bei 32 / 48 / 64 Farben verwendet feinere Farbschritte
+und berücksichtigt den Flächenanteil stärker. Kleine kräftige Farbakzente
+werden weiterhin berücksichtigt, das hellste Weiß bleibt erhalten.
+Farbfamilien, ungemischte Farben und Mischrezepte sind unverändert.
+
+Geprüft: synthetische Himmelsverläufe allein und mit Vegetation, Wasser
+und kleinem rotem Akzent bei 32, 48 und 64 Farben. In allen sechs
+Vergleichen geringere Farbabweichung im Himmel als in Version 2.18.
+Kein Test mit dem Originalfoto und kein iPad-Safari-Test durchgeführt.
+Zum Vergleichen dasselbe Foto neu öffnen und 64 Mischfarben erkennen lassen.
+
 AtelierAI iPad 2.06 – Weiß und helle Lichtstellen erhalten
 
 app.html im GitHub-Projekt ersetzen, neu laden und Farben erneut erkennen.

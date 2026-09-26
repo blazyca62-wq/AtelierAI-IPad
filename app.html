@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.18</title>
+  <title>AtelierAI iPad 2.19</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1036,7 +1036,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.18</div>
+    <div class="title">AtelierAI · iPad 2.19</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
@@ -4454,15 +4454,16 @@ const mixes=chooseMixes(target,paletteKey);
     const pixels=new Uint8ClampedArray(data.pixels), hist=new Map();
     // Keep near-white samples exact: 255 must not average down into 248.
     const key=(r,g,b)=>r>=240&&g>=240&&b>=240
-      ?32768+((r-240)<<8)+((g-240)<<4)+(b-240)
-      :((r>>3)<<10)|((g>>3)<<5)|(b>>3);
+      ?262144+((r-240)<<8)+((g-240)<<4)+(b-240)
+      :((r>>2)<<12)|((g>>2)<<6)|(b>>2);
     for(let i=0;i<pixels.length;i+=4){
       const k=key(pixels[i],pixels[i+1],pixels[i+2]);
       let h=hist.get(k);if(!h){h=[0,0,0,0,k];hist.set(k,h);}
       h[0]+=pixels[i];h[1]+=pixels[i+1];h[2]+=pixels[i+2];h[3]++;
     }
     const entries=[...hist.values()].map(h=>[h[0]/h[3],h[1]/h[3],h[2]/h[3],h[3],h[4]]);
-    // Perceptual clustering: preserve small distinctive colors as well as large areas.
+    // Finer histogram and area-aware clustering preserve subtle broad gradients.
+    // Sublinear area weights still retain small distinctive accents.
     const toLab=rgb=>{
       const v=rgb.map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;});
       const f=x=>x>.008856?Math.cbrt(x):7.787*x+16/116;
@@ -4471,7 +4472,7 @@ const mixes=chooseMixes(target,paletteKey);
     };
     const points=entries.map(p=>({rgb:p.slice(0,3),lab:toLab(p.slice(0,3)),count:p[3],key:p[4]}));
     const distance=(a,b)=>(a[0]-b[0])**2+1.3*((a[1]-b[1])**2+(a[2]-b[2])**2);
-    for(const p of points)p.weight=Math.pow(p.count,.65)*(1+Math.min(1,Math.hypot(p.lab[1],p.lab[2])/80));
+    for(const p of points)p.weight=Math.pow(p.count,.9)*(1+.25*Math.min(1,Math.hypot(p.lab[1],p.lab[2])/80));
     const k=Math.min(data.colorCount||32,points.length),centers=[];
     const ordered=[...points].sort((a,b)=>a.lab[0]-b.lab[0]);
     // Preserve the brightest existing highlight, even when it occupies a tiny area.
@@ -4483,7 +4484,7 @@ const mixes=chooseMixes(target,paletteKey);
     if(k>1)centers.push([...(highlight||quantile(.995)).lab]);
     while(centers.length<k){
       let best=points[0],score=-1;
-      for(const p of points){let d=Infinity;for(const c of centers)d=Math.min(d,distance(p.lab,c));const s=d*Math.pow(p.weight,.25);if(s>score){score=s;best=p;}}
+      for(const p of points){let d=Infinity;for(const c of centers)d=Math.min(d,distance(p.lab,c));const s=d*Math.pow(p.weight,.7);if(s>score){score=s;best=p;}}
       centers.push([...best.lab]);
     }
     const assignments=new Uint8Array(points.length);
@@ -4505,7 +4506,7 @@ const mixes=chooseMixes(target,paletteKey);
       return best;
     }).filter(Boolean);
     const palette=chosen.sort((a,b)=>a.lab[0]-b.lab[0]).map(p=>p.rgb.map(Math.round));
-    const paletteLab=palette.map(toLab),lut=new Uint8Array(36864);
+    const paletteLab=palette.map(toLab),lut=new Uint8Array(266240);
     for(const p of points){let best=Infinity,id=0;paletteLab.forEach((c,i)=>{const d=distance(p.lab,c);if(d<best){best=d;id=i;}});lut[p.key]=id;}
     const ranks=new Uint8Array(pixels.length/4);
     for(let i=0,n=0;i<pixels.length;i+=4,n++)ranks[n]=lut[key(pixels[i],pixels[i+1],pixels[i+2])];
