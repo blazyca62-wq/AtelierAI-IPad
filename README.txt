@@ -1,3 +1,16 @@
+AtelierAI iPad 1.96 – Farben zuschalten
+
+app.html im GitHub-Projekt ersetzen und neu laden.
+
+Unten „Farben zuschalten: Ein“ aktivieren. Jede angetippte Farbe kommt zur
+bisherigen Auswahl hinzu. Erneutes Antippen lässt die Farbe sichtbar.
+Die Mischung gehört jeweils zur zuletzt angetippten Farbe.
+„Farben zuschalten: Aus“ kehrt zur einzelnen Farbe zurück.
+„Alle Farben“ zeigt das vollständige Bild.
+
+Geprüft: Syntax, kumulative Farbmasken, unveränderte Farbwerte, wiederholtes
+Antippen und Rückkehr zur Einzelansicht. Kein direkter iPad-Test.
+
 AtelierAI iPad 1.95 – Anklickbare 32 Farben und Mischung
 
 app.html im bestehenden GitHub-Projekt ersetzen und neu laden.
