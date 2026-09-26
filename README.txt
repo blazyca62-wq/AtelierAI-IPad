@@ -1,3 +1,14 @@
+AtelierAI iPad 1.98 – Zur vorherigen Ansicht zurückkehren
+
+app.html im GitHub-Projekt ersetzen und neu laden.
+„Alle Farben“ wird zu „Zurück zur Farbauswahl“: erneut antippen stellt die
+vorherige Auswahl oder Regler-/Ergänzungsansicht wieder her.
+„Zur Arbeitsansicht“ wird zu „Zurück zum Farbaufbau“ und schaltet zurück.
+Bei neuer Farbauswahl oder Reglerbedienung beginnt eine neue Auswahl.
+
+Geprüft: Rückkehr mit Mehrfachauswahl, Reglern, Ergänzungen, leerer Auswahl
+und Arbeitsansicht sowie JavaScript-Syntax. Kein direkter iPad-Test.
+
 AtelierAI iPad 1.97 – Farben ausschalten und automatischer Hintergrund
 
 app.html im GitHub-Projekt ersetzen und neu laden.

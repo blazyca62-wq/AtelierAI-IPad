@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 1.97</title>
+  <title>AtelierAI iPad 1.98</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -986,7 +986,7 @@
     ],
     LMS_LAB: [
       [0.210454268309314, 0.7936177747023054, -0.0040720430116193],
-      [1.9779985324311684, -2.4285922420485799, 0.450593709617411],
+      [1.9879985324311684, -2.4285922420485799, 0.450593709617411],
       [0.0259040424655478, 0.7827717124575296, -0.8086757549230774],
     ],
     LAB_LMS: [
@@ -1024,7 +1024,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 1.97</div>
+    <div class="title">AtelierAI · iPad 1.98</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -4359,8 +4359,10 @@ const mixes=chooseMixes(target,paletteKey);
   let build32Data=null,build32Canvas=null,build32Active=false,build32Worker=null,build32Generation=0,build32Direction='light',build32Extras=false,build32VisibleMask=null;
   let build32Selected=null,build32MixRequest=0,build32Additive=false,build32Manual=false;
   const build32Selection=new Set();
+  let build32AllPrevious=null;
   const build32Status=document.getElementById('build32Status');
   function resetBuild32(){
+    build32AllPrevious=null;syncBuild32ReturnButtons();
     build32Extras=false;document.getElementById('build32Extras').disabled=true;document.getElementById('build32Extras').textContent='Nur Ergänzungen zeigen';
     build32Selection.clear();build32Manual=false;
     build32Selected=null;build32MixRequest++;document.getElementById('build32Dock').hidden=true;
@@ -4397,7 +4399,7 @@ const mixes=chooseMixes(target,paletteKey);
     c.putImageData(frame,0,0);
     [...document.getElementById('build32Palette').children].forEach((el,i)=>{const show=direction==='light'?i>=palette.length-n:i<n;el.style.opacity='1';el.setAttribute('aria-pressed',String(build32Additive&&show));el.title='Farbe '+(i+1)+(show?' · sichtbar':' · ausgeblendet');});
     build32Status.textContent=(direction==='light'?'Hell → Dunkel · Mittelgrau':'Dunkel → Hell · Weiß')+' · '+n+' von '+palette.length+' Farben sichtbar';
-    draw();
+    syncBuild32ReturnButtons();draw();
   }
   function acceptBuild32(result,generation){
     if(generation!==build32Generation)return;
@@ -4431,6 +4433,7 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function selectBuild32Color(index){
     if(!build32Data)return;
+    forgetBuild32AllPrevious();
     const remove=build32Selection.has(index)&&(build32Additive||build32Manual);
     if(!build32Additive)build32Selection.clear();
     if(remove){
@@ -4453,9 +4456,10 @@ const mixes=chooseMixes(target,paletteKey);
     build32Status.textContent=build32Selection.size+' von '+palette.length+' Farben sichtbar · auf '+(bg===255?'Weiß':'Mittelgrau');
     if(build32Selected!==null){setMixTarget(palette[build32Selected],'Farbe '+(build32Selected+1));updateBuild32Recipe();}
     else{build32MixRequest++;document.getElementById('build32Recipe').textContent='Keine Farbe ausgewählt. Eine Farbe antippen, um sie einzublenden.';}
-    draw();
+    syncBuild32ReturnButtons();draw();
   }
   document.getElementById('build32Add').addEventListener('click',()=>{
+    forgetBuild32AllPrevious();
     build32Additive=!build32Additive;
     const button=document.getElementById('build32Add');
     button.textContent='Farben zuschalten: '+(build32Additive?'Ein':'Aus');
@@ -4468,7 +4472,38 @@ const mixes=chooseMixes(target,paletteKey);
     else [...document.getElementById('build32Palette').children].forEach((el,i)=>el.setAttribute('aria-pressed',String(build32Additive&&build32Selection.has(i))));
   });
   document.getElementById('build32MixPalette').addEventListener('change',updateBuild32Recipe);
-  document.getElementById('build32All').addEventListener('click',()=>{document.getElementById('build32light').value=32;renderBuild32('light');});
+  function syncBuild32ReturnButtons(){
+    const all=document.getElementById('build32All');
+    all.textContent=build32AllPrevious?'Zurück zur Farbauswahl':'Alle Farben';
+    all.setAttribute('aria-pressed',String(!!build32AllPrevious));
+    const original=document.getElementById('build32Original');
+    original.textContent=build32Data&&!build32Active?'Zurück zum Farbaufbau':'Zur Arbeitsansicht';
+    original.setAttribute('aria-pressed',String(!!build32Data&&!build32Active));
+  }
+  function forgetBuild32AllPrevious(){build32AllPrevious=null;syncBuild32ReturnButtons();}
+  function captureBuild32State(){
+    return {manual:build32Manual,selection:[...build32Selection],selected:build32Selected,
+      direction:build32Direction,extras:build32Extras,active:build32Active,
+      light:document.getElementById('build32light').value,dark:document.getElementById('build32dark').value,
+      difference:document.getElementById('build32Difference').value};
+  }
+  function restoreBuild32State(state){
+    document.getElementById('build32light').value=state.light;
+    document.getElementById('build32dark').value=state.dark;
+    document.getElementById('build32Difference').value=state.difference;
+    build32Direction=state.direction;build32Manual=state.manual;build32Selected=state.selected;
+    build32Selection.clear();state.selection.forEach(i=>build32Selection.add(i));
+    if(state.manual)renderBuild32Selection();
+    else if(state.extras)showBuild32Extras();
+    else renderBuild32(state.direction);
+    build32Active=state.active;syncBuild32ReturnButtons();draw();syncBuild32ReturnButtons();
+  }
+  document.getElementById('build32All').addEventListener('click',()=>{
+    if(!build32Data)return;
+    if(build32AllPrevious){const previous=build32AllPrevious;build32AllPrevious=null;restoreBuild32State(previous);}
+    else{build32AllPrevious=captureBuild32State();document.getElementById('build32light').value=32;renderBuild32('light');}
+    syncBuild32ReturnButtons();
+  });
   document.getElementById('build32Analyze').addEventListener('click',()=>{
     if(!loaded){build32Status.textContent='Bitte zuerst ein Foto öffnen.';return;}
     resetBuild32();const generation=build32Generation;
@@ -4487,8 +4522,11 @@ const mixes=chooseMixes(target,paletteKey);
       build32Worker.postMessage(data);
     }catch(e){fallback();}
   });
-  for(const d of ['light','dark'])document.getElementById('build32'+d).addEventListener('input',()=>renderBuild32(d));
-  document.getElementById('build32Original').addEventListener('click',()=>{build32Active=false;build32Status.textContent='Arbeitsansicht · Regler bewegen, um den Farbaufbau fortzusetzen.';draw();});
+  for(const d of ['light','dark'])document.getElementById('build32'+d).addEventListener('input',()=>{forgetBuild32AllPrevious();renderBuild32(d);});
+  document.getElementById('build32Original').addEventListener('click',()=>{
+    if(!build32Data)return;
+    build32Active=!build32Active;syncBuild32ReturnButtons();draw();syncBuild32ReturnButtons();
+  });
 
   function build32DifferenceMask(reference,palette,ranks,threshold,background){
     const output=new Uint8ClampedArray(reference.length),visible=new Uint8Array(ranks.length),labs=palette.map(rgbToLabFast);
@@ -4521,10 +4559,11 @@ const mixes=chooseMixes(target,paletteKey);
     document.getElementById('build32Extras').textContent='32 Farben wieder anzeigen';
     document.getElementById('build32DifferenceVal').textContent=String(threshold);
     build32Status.textContent='Nur Ergänzungen zur Arbeitsansicht · '+Math.round(result.changed/ranks.length*100)+' % der Bildfläche. Passende Bereiche sind ausgeblendet.';
-    draw();
+    syncBuild32ReturnButtons();draw();
   }
-  document.getElementById('build32Extras').addEventListener('click',()=>{if(build32Extras)renderBuild32(build32Direction);else showBuild32Extras();});
+  document.getElementById('build32Extras').addEventListener('click',()=>{forgetBuild32AllPrevious();if(build32Extras)renderBuild32(build32Direction);else showBuild32Extras();});
   document.getElementById('build32Difference').addEventListener('input',e=>{
+    forgetBuild32AllPrevious();
     document.getElementById('build32DifferenceVal').textContent=e.target.value;
     if(build32Extras)showBuild32Extras();
   });
