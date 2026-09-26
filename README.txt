@@ -1,3 +1,14 @@
+AtelierAI iPad 2.02 – Hintergrund selbst wählen
+
+app.html im GitHub-Projekt ersetzen und neu laden.
+Unten Hintergrund wählen: Automatisch, Weiß oder Grau.
+Weiß/Grau bleibt beim Farbwechsel, beim Blättern und bei der Rückkehr zur
+gespeicherten Auswahl bestehen. Gilt für Einzelansicht, Mehrfachauswahl,
+Regleraufbau und Ergänzungen. Die Bildfarben selbst bleiben unverändert.
+
+Geprüft: Syntax, Hintergrundwahl, Erhalt der Farbauswahl und Einzelansicht.
+Kein direkter iPad-Test.
+
 AtelierAI iPad 2.01 – Einzelansicht mit gespeicherter Auswahl
 
 app.html im GitHub-Projekt ersetzen und neu laden.
