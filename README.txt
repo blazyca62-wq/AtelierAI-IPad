@@ -265,3 +265,12 @@ Palette oben bei den Farbfeldern wählen; persönliche Farbauswahl unter Mischen
 Farbname und Farbauftrag erscheinen beim Antippen eines Farbfeldes.
 Farbfamilien, Hell-Dunkel-Regler und Originalansicht bleiben nutzbar.
 Bildschirm-Simulation: Wasserangaben sind keine Mischverhältnisse.
+
+
+Version 2.09 – Artisan: einfache Mischungen
+Im Modul 32 / 48 / 64 Farben unter Darstellung wählen.
+Zusätzlich zu reinen Tubenfarben werden Mischungen mit vorhandenem Weiß, Gelb und Blau angeboten.
+Bevorzugt: Titanium White, Lemon Yellow, French Ultramarine; sonst passende vorhandene Farben.
+Gelb- und Blaumischungen können zusätzlich mit Weiß aufgehellt werden.
+Beim Antippen: Farbanteile in Prozent als Startrezept, keine gemessene Pigmentsimulation.
+Aquarell und die reine Tubenfarben-Ansicht bleiben erhalten.
