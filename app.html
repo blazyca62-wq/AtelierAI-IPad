@@ -4792,9 +4792,13 @@ const mixes=chooseMixes(target,paletteKey);
     const nDark=build32SelectedFamilies().includes('all')
       ? Math.ceil(darkCount*palette.length/build32ColorCount())
       : Math.min(darkCount,darkOrder.length);
+    // Build one persistent visible set from BOTH sliders. The second slider
+    // only adds/removes its own end of the scale; it never replaces the first.
+    const combinedSelection=new Set();
+    lightOrder.slice(0,nLight).forEach(i=>combinedSelection.add(i));
+    darkOrder.slice(0,nDark).forEach(i=>combinedSelection.add(i));
     build32Selection.clear();
-    lightOrder.slice(0,nLight).forEach(i=>build32Selection.add(i));
-    darkOrder.slice(0,nDark).forEach(i=>build32Selection.add(i));
+    combinedSelection.forEach(i=>build32Selection.add(i));
     const bg=(lightCount>0&&darkCount===0)?128:(darkCount>0&&lightCount===0?255:128);
     const c=build32Canvas.getContext('2d'),frame=c.createImageData(width,height);
     build32VisibleMask=new Uint8Array(ranks.length);
@@ -5095,7 +5099,12 @@ const mixes=chooseMixes(target,paletteKey);
       build32Worker.postMessage(data);
     }catch(e){fallback();}
   });
-  for(const d of ['light','dark'])document.getElementById('build32'+d).addEventListener('input',()=>{forgetBuild32AllPrevious();renderBuild32(d);});
+  // Hell/Dunkel are additive: each slider contributes its own group.
+  // Changing one slider must never clear the group selected by the other.
+  for(const d of ['light','dark'])document.getElementById('build32'+d).addEventListener('input',()=>{
+    forgetBuild32AllPrevious();
+    if(build32Data) renderBuild32(d);
+  });
   document.getElementById('build32Original').addEventListener('click',()=>{
     if(!build32Data)return;
     build32Active=!build32Active;syncBuild32ReturnButtons();draw();syncBuild32ReturnButtons();
