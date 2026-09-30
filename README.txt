@@ -1,4 +1,4 @@
-AtelierAI iPad 2.19 – Testversion: Feine Farbverläufe
+AtelierAI iPad 2.20 – Testversion: Feine Farbverläufe
 
 Separate Kopie auf Basis von 2.18.
 Die Mischfarben-Erkennung bei 32 / 48 / 64 Farben verwendet feinere Farbschritte
