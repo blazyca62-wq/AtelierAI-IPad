@@ -6567,6 +6567,15 @@ const mixes=chooseMixes(target,paletteKey);
   viewer.addEventListener('pointerdown',e=>{
     viewer.setPointerCapture?.(e.pointerId);
     touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    // Beim Ersetzen einer Bildfarbe hat die Originalstellen-Auswahl Vorrang vor
+    // Pipette/Verschieben: Der Benutzer darf das Originalbild direkt antippen,
+    // ohne vorher den allgemeinen Pipettenmodus aktivieren zu müssen.
+    if(build32ReplaceArmed&&touches.size===1&&!sketchActive){
+      pickColor(e.clientX,e.clientY);
+      touches.delete(e.pointerId);
+      e.preventDefault();
+      return;
+    }
     if(areaPickerMode&&touches.size===1&&!sketchActive){
       updatePickerCircle(e.clientX,e.clientY,true);
       sampleCircle(e.clientX,e.clientY,areaPickerMode==='smart');
