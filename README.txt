@@ -1,3 +1,7 @@
+AtelierAI iPad 2.25 – Farbfamilien wechseln ohne Helligkeitsauswahl zu verlieren
+
+Im 8/16/32/48/64-Farben-Modul bleiben die zuletzt eingestellten Hell-/Dunkelwerte erhalten, wenn Farbfamilien an- oder ausgeschaltet werden. Beispiel: Hell auf 5, danach Ocker und Orange zuschalten – die Regler bleiben auf 5 und die Auswahl wird sofort mit den neuen Familien berechnet.
+
 AtelierAI iPad 2.21 – Testversion: Feine Farbverläufe
 
 Separate Kopie auf Basis von 2.18.
