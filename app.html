@@ -4815,6 +4815,8 @@ const mixes=chooseMixes(target,paletteKey);
     }else{build32Selection.add(index);build32Selected=index;}
     build32Manual=true;renderBuild32Selection();
     document.getElementById('build32ResetColor').disabled=!build32ColorOverrides.has(index);
+    syncBuild32ReturnButtons();
+    build32Status.textContent='Farbe '+(index+1)+' ausgewählt · jetzt „Originalfarbe ersetzen“ antippen.';
   }
   function renderBuild32Selection(){
     if(!build32Data)return;
