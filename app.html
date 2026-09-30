@@ -4772,17 +4772,29 @@ const mixes=chooseMixes(target,paletteKey);
     build32Manual=false;
     build32Selected=null;build32MixRequest++;document.getElementById('build32Recipe').textContent='Eine Farbe antippen – Farbfläche und Mischung erscheinen.';
     build32Extras=false;document.getElementById('build32Extras').textContent='Nur Ergänzungen zeigen';
-    document.getElementById('build32Extras').disabled=!build32SelectedFamilies().includes('all')||Number(document.getElementById('build32'+direction).value)!==build32ColorCount();
     build32Direction=direction;build32Active=true;
-    const count=Number(document.getElementById('build32'+direction).value),{palette,ranks,width,height}=build32Data;
-    for(const d of ['light','dark']){
-      document.getElementById('build32'+d+'Val').textContent=document.getElementById('build32'+d).value+' / '+document.getElementById('build32'+d).max;
-      document.getElementById('build32'+d).parentElement.style.fontWeight=d===direction?'700':'400';
-    }
-    const order=build32FamilyOrder(palette,build32SelectedFamilies(),direction);
-    const n=build32SelectedFamilies().includes('all')?Math.ceil(count*palette.length/build32ColorCount()):Math.min(count,order.length),bg=build32BackgroundValue(direction==='light'?128:255);
+    const lightEl=document.getElementById('build32light'),darkEl=document.getElementById('build32dark');
+    const lightCount=Number(lightEl.value),darkCount=Number(darkEl.value);
+    const {palette,ranks,width,height}=build32Data;
+    const families=build32SelectedFamilies();
+    const orderLight=build32FamilyOrder(palette,families,'light');
+    const orderDark=build32FamilyOrder(palette,families,'dark');
+    const max=orderLight.length;
+    lightEl.max=max;darkEl.max=max;
+    lightEl.value=Math.min(lightCount,max);darkEl.value=Math.min(darkCount,max);
+    const lc=Number(lightEl.value),dc=Number(darkEl.value);
+    document.getElementById('build32lightVal').textContent=lc+' / '+max;
+    document.getElementById('build32darkVal').textContent=dc+' / '+max;
+    lightEl.parentElement.style.fontWeight=lc>0?'700':'400';
+    darkEl.parentElement.style.fontWeight=dc>0?'700':'400';
+
+    // Both sliders are cumulative and independent: colors from the light end
+    // and colors from the dark end can be visible at the same time.
     build32Selection.clear();
-    order.slice(0,n).forEach(i=>build32Selection.add(i));
+    orderLight.slice(0,lc).forEach(i=>build32Selection.add(i));
+    orderDark.slice(0,dc).forEach(i=>build32Selection.add(i));
+
+    const bg=build32BackgroundValue((dc>0 && lc===0)?255:128);
     const c=build32Canvas.getContext('2d'),frame=c.createImageData(width,height);
     build32VisibleMask=new Uint8Array(ranks.length);
     for(let i=0;i<ranks.length;i++){
@@ -4792,8 +4804,19 @@ const mixes=chooseMixes(target,paletteKey);
       frame.data[i*4]=rgb[0];frame.data[i*4+1]=rgb[1];frame.data[i*4+2]=rgb[2];frame.data[i*4+3]=255;
     }
     c.putImageData(frame,0,0);rebuildBuild32Foreground(frame);
-    [...document.getElementById('build32Palette').children].forEach((el,i)=>{const show=build32Selection.has(i);el.style.opacity='1';el.setAttribute('aria-pressed',String(build32Additive&&show));el.title='Farbe '+(i+1)+(show?' · sichtbar':' · ausgeblendet');});
-    build32Status.textContent=(direction==='light'?'Hell → Dunkel':'Dunkel → Hell')+' · '+(bg===255?'Weiß':'Mittelgrau')+' · '+n+' von '+order.length+' Farben sichtbar · '+(build32SelectedFamilies().includes('all')?'Alle Farbfamilien':build32SelectedFamilies().map(f=>({yellow:'Gelb',ochre:'Ocker',orange:'Orange',red:'Rot / Rosa',brown:'Braun / Siena / Umbra',green:'Grün',turquoise:'Türkis',blue:'Blau',violet:'Violett',neutral:'Neutral'}[f]||f)).join(' + '))+(order.length===0?' · Keine passenden Bildfarben vorhanden':'');
+    [...document.getElementById('build32Palette').children].forEach((el,i)=>{
+      const show=build32Selection.has(i);el.style.opacity='1';
+      el.setAttribute('aria-pressed',String(build32Additive&&show));
+      el.title='Farbe '+(i+1)+(show?' · sichtbar':' · ausgeblendet');
+    });
+    const selectedLabel=families.includes('all')?'Alle Farbfamilien':families.map(f=>({yellow:'Gelb',ochre:'Ocker',orange:'Orange',red:'Rot / Rosa',brown:'Braun / Siena / Umbra',green:'Grün',turquoise:'Türkis',blue:'Blau',violet:'Violett',neutral:'Neutral'}[f]||f)).join(' + ');
+    const visible=build32Selection.size;
+    let mode='';
+    if(lc&&dc) mode='Hellste '+lc+' + dunkelste '+dc+' (gemeinsam)';
+    else if(lc) mode='Hell → Dunkel · kumulativ: '+lc+' von '+max;
+    else if(dc) mode='Dunkel → Hell · kumulativ: '+dc+' von '+max;
+    else mode='Keine Farben ausgewählt';
+    build32Status.textContent=mode+' · '+visible+' unterschiedliche Farben sichtbar · '+selectedLabel+(orderLight.length===0?' · Keine passenden Bildfarben vorhanden':'');
     syncBuild32ReturnButtons();draw();
   }
   function acceptBuild32(result,generation){
