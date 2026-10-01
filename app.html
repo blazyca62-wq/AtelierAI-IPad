@@ -6219,6 +6219,12 @@ const mixes=chooseMixes(target,paletteKey);
           if(build32Foreground)ctx.drawImage(build32Foreground,0,0,sourceCanvas.width,sourceCanvas.height);
         }
       }
+      // Detail-Kästchen zuletzt nochmals zeichnen: Die lokal ausgewählten
+      // Hell-/Dunkelfarben müssen im Kästchen sichtbar bleiben, auch wenn
+      // danach noch Tonwert-/Original-Überblendungen verarbeitet wurden.
+      if(build32DetailLocalRendered&&build32DetailCell&&build32DetailCanvas){
+        ctx.drawImage(build32DetailCanvas,build32DetailCell.x,build32DetailCell.y,build32DetailCell.w,build32DetailCell.h);
+      }
     }
     else if(sketchActive){
       if(sketchOriginalPreview)ctx.drawImage(sourceCanvas,0,0);
