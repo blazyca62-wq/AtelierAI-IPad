@@ -4914,6 +4914,15 @@ const mixes=chooseMixes(target,paletteKey);
       frame.data.set(smoothed);
     }
     dc.putImageData(frame,0,0);
+    // Keep the local palette in sync with the actual colors currently visible
+    // in the selected detail cell. Slider changes must visibly select the
+    // corresponding palette swatches, even when additive mode is off.
+    [...document.getElementById('build32Palette').children].forEach((el,i)=>{
+      const show=build32Selection.has(i);
+      el.setAttribute('aria-pressed',String(show));
+      el.textContent=String(i+1)+(build32DetailColorOverrides.has(i)?' ✓':'');
+      el.title='Lokale Farbe '+(i+1)+(show?' · aktuell sichtbar':' · ausgeblendet');
+    });
     // Restore the frozen global view, then replace only the selected cell.
     const c=build32Canvas.getContext('2d');c.clearRect(0,0,build32Canvas.width,build32Canvas.height);
     c.drawImage(build32DetailBaseCanvas,0,0);
@@ -4974,7 +4983,7 @@ const mixes=chooseMixes(target,paletteKey);
     }
     c.putImageData(frame,0,0);rebuildBuild32Foreground(frame);
     [...document.getElementById('build32Palette').children].forEach((el,i)=>{
-      const show=build32Selection.has(i);el.style.opacity='1';el.setAttribute('aria-pressed',String(build32Additive&&show));el.title='Farbe '+(i+1)+(show?' · sichtbar':' · ausgeblendet');
+      const show=build32Selection.has(i);el.style.opacity='1';el.setAttribute('aria-pressed',String(show));el.title='Farbe '+(i+1)+(show?' · sichtbar':' · ausgeblendet');
     });
     const familyLabel=build32SelectedFamilies().includes('all')?'Alle Farbfamilien':build32SelectedFamilies().map(f=>({yellow:'Gelb',ochre:'Ocker',orange:'Orange',red:'Rot / Rosa',brown:'Braun / Siena / Umbra',green:'Grün',turquoise:'Türkis',blue:'Blau',violet:'Violett',neutral:'Neutral'}[f]||f)).join(' + ');
     const visibleCount=build32Selection.size;
