@@ -3786,29 +3786,41 @@ const mixes=chooseMixes(target,paletteKey);
       const mov=imageGrayThumb(glazePaintingImg,size);
       let best={score:Infinity,scale:1,rotation:0,dx:0,dy:0};
 
-      // Grobsuche: leichte Drehung + Größe + Verschiebung.
-      for(let rotation=-8;rotation<=8;rotation+=2){
-        for(let scale=.86;scale<=1.1401;scale+=.04){
-          for(let dy=-14;dy<=14;dy+=4){
-            for(let dx=-14;dx<=14;dx+=4){
+      // Konservatives Alignment: Bei nahezu identischen Fotos darf die App
+      // nur kleine Lagekorrekturen vornehmen. Große Skalierungen/Drehungen
+      // würden ein zweites, fast identisches Foto unnötig verformen.
+      const aspectA=glazeOriginalImg.width/glazeOriginalImg.height;
+      const aspectB=glazePaintingImg.width/glazePaintingImg.height;
+      const aspectClose=Math.abs(aspectA-aspectB)/Math.max(aspectA,aspectB)<0.025;
+      const scaleMin=aspectClose?.97:.90, scaleMax=aspectClose?1.03:1.10;
+      const rotMax=aspectClose?2:5, shiftMax=aspectClose?8:14;
+      const rotStep=aspectClose?1:2, scaleStep=aspectClose?.01:.03, shiftStep=aspectClose?2:4;
+      for(let rotation=-rotMax;rotation<=rotMax;rotation+=rotStep){
+        for(let scale=scaleMin;scale<=scaleMax+0.001;scale+=scaleStep){
+          for(let dy=-shiftMax;dy<=shiftMax;dy+=shiftStep){
+            for(let dx=-shiftMax;dx<=shiftMax;dx+=shiftStep){
               const score=alignScore(ref,mov,size,scale,rotation,dx,dy);
               if(score<best.score)best={score,scale,rotation,dx,dy};
             }
           }
         }
       }
-
       const coarse={...best};
-      // Feinsuche um den besten Bereich.
-      for(let rotation=coarse.rotation-2;rotation<=coarse.rotation+2.061;rotation+=.5){
-        for(let scale=Math.max(.80,coarse.scale-.04);scale<=Math.min(1.20,coarse.scale+.04)+.001;scale+=.01){
-          for(let dy=coarse.dy-4;dy<=coarse.dy+4;dy+=1){
-            for(let dx=coarse.dx-4;dx<=coarse.dx+4;dx+=1){
+      for(let rotation=coarse.rotation-(aspectClose?1:.75);rotation<=coarse.rotation+(aspectClose?1:.75)+.001;rotation+=.25){
+        for(let scale=Math.max(aspectClose?.96:.86,coarse.scale-(aspectClose?.015:.03));scale<=Math.min(aspectClose?1.04:1.14,coarse.scale+(aspectClose?.015:.03))+.001;scale+=.005){
+          for(let dy=coarse.dy-(aspectClose?3:4);dy<=coarse.dy+(aspectClose?3:4);dy+=1){
+            for(let dx=coarse.dx-(aspectClose?3:4);dx<=coarse.dx+(aspectClose?3:4);dx+=1){
               const score=alignScore(ref,mov,size,scale,rotation,dx,dy);
               if(score<best.score)best={score,scale,rotation,dx,dy};
             }
           }
         }
+      }
+      if(aspectClose){
+        best.scale=Math.max(.97,Math.min(1.03,best.scale));
+        best.rotation=Math.max(-2,Math.min(2,best.rotation));
+        best.dx=Math.max(-8,Math.min(8,best.dx));
+        best.dy=Math.max(-8,Math.min(8,best.dy));
       }
 
       glazeAlign={
@@ -3888,7 +3900,7 @@ const mixes=chooseMixes(target,paletteKey);
     });
   }
 
-  function pickGlazeComparisonPoint(clientX,clientY){
+  function pickGlazeComparisonPoint(clientX,clientY,source='painting'){
     if(!glazePaintingImg||!glazeOriginalImg){
       glazeColorInfo.textContent='Bitte zuerst Originalfoto und Gemälde laden.';
       return;
@@ -3923,6 +3935,36 @@ const mixes=chooseMixes(target,paletteKey);
     glazePoint=originalPoint;glazeBase=[...base];glazeTarget=[...target];
     renderGlazePoints();redrawGlazePreviews();refreshGlazeColors();
     glazeResults.innerHTML='<span class="tiny">Punkt '+glazePoints.length+' aufgenommen. Weitere Punkte können sofort hinzugefügt werden.</span>';
+  }
+
+  function pickGlazeFromOriginal(clientX,clientY){
+    if(!glazePaintingImg||!glazeOriginalImg){
+      glazeColorInfo.textContent='Bitte zuerst Originalfoto und Gemälde laden.';
+      return;
+    }
+    const r=glazeOriginalCanvas.getBoundingClientRect();
+    const dpr=window.devicePixelRatio||1;
+    const cw=glazeOriginalCanvas.width,ch=glazeOriginalCanvas.height;
+    const sx=(clientX-r.left)*dpr, sy=(clientY-r.top)*dpr;
+    const fit=Math.min(cw/glazeOriginalImg.width,ch/glazeOriginalImg.height);
+    const dw=glazeOriginalImg.width*fit,dh=glazeOriginalImg.height*fit;
+    const ox=(cw-dw)/2,oy=(ch-dh)/2;
+    const originalPoint={x:(sx-ox)/dw,y:(sy-oy)/dh};
+    if(originalPoint.x<0||originalPoint.y<0||originalPoint.x>1||originalPoint.y>1)return;
+    const paintingPoint=originalToPaintingNorm(originalPoint);
+    if(paintingPoint.x<0||paintingPoint.y<0||paintingPoint.x>1||paintingPoint.y>1){
+      glazeColorInfo.textContent='Diese Stelle liegt nach der Ausrichtung außerhalb des Gemäldefotos.';
+      return;
+    }
+    const rad=Number(glazeSampleRadius.value);
+    const target=sampleImageNormalized(glazeOriginalImg,originalPoint,rad);
+    const base=sampleImageNormalized(glazePaintingImg,paintingPoint,rad*(glazePaintingImg.width/glazeOriginalImg.width));
+    if(!base||!target)return;
+    glazePoints.push({originalPoint,paintingPoint,base,target});
+    glazeActivePoint=glazePoints.length-1;
+    glazePoint=originalPoint;glazeBase=[...base];glazeTarget=[...target];
+    renderGlazePoints();redrawGlazePreviews();refreshGlazeColors();redrawGlazeFullscreen();
+    glazeResults.innerHTML='<span class="tiny">Punkt '+glazePoints.length+' aufgenommen: Original + Gemälde.</span>';
   }
 
   function setGlazeMedium(m){
@@ -6535,6 +6577,10 @@ const mixes=chooseMixes(target,paletteKey);
   glazePaintingInput.addEventListener('change',e=>loadGlazeImage(e.target.files&&e.target.files[0],'painting'));
   glazeAutoAlignBtn.addEventListener('click',autoAlignGlaze);
 
+  glazeOriginalCanvas.addEventListener('pointerup',e=>{
+    pickGlazeFromOriginal(e.clientX,e.clientY);
+    e.preventDefault();
+  });
   glazePaintingCanvas.addEventListener('pointerup',e=>{
     pickGlazeComparisonPoint(e.clientX,e.clientY);
     e.preventDefault();
