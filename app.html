@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.25</title>
+  <title>AtelierAI iPad 2.26</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1036,7 +1036,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.25</div>
+    <div class="title">AtelierAI · iPad 2.26</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
@@ -1085,6 +1085,8 @@
         <p>Farbbereiche Schritt für Schritt einblenden. Der zuletzt bewegte Regler bestimmt die Ansicht.</p>
         <div class="grid2" style="margin-bottom:8px"><button id="build32Grid" class="secondary">Raster ein</button><button id="build32Pick" class="secondary">Mischung aufnehmen</button></div>
         <div class="control-line"><label for="build32GridDensity">Rastergröße</label><input id="build32GridDensity" type="range" min="2" max="20" value="8"><span id="build32GridDensityVal">8</span></div>
+        <button id="build32DetailCell" class="secondary" type="button" style="width:100%;margin-top:7px" aria-pressed="false">Detail-Kästchen auswählen: Aus</button>
+        <p id="build32DetailCellStatus" class="tiny">Raster einschalten → Detail-Kästchen auswählen → ein Kästchen antippen. Die aktuell gewählte 8/16/32/48/64-Farbzahl wird dann nur in diesem Kästchen neu berechnet.</p>
         <p class="tiny">Mischung aufnehmen: eine sichtbare Farbfläche antippen. Das Raster wird nicht mitgemessen.</p>
         <label>Darstellung <select id="build32PaintModeSide"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Artisan – einfache Mischungen</option></select></label><label id="build32SimpleLimitLabelSide" hidden>Mischungen <select id="build32SimpleLimitSide" aria-label="Anzahl einfacher Artisan-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><p class="tiny">Ungemischt: Farben der gewählten Palette. Aquarell mit Wasserverdünnung und Papierweiß; Öl ohne Ausmischen. Artisan – einfache Mischungen: mit Weiß, Gelb oder Blau, bei Bedarf zusätzlich Weiß. Bildschirm-Simulation.</p><label for="build32CountSide">Anzahl Farben</label><select id="build32CountSide" style="min-height:44px;margin:8px"><option value="8">8</option><option value="16">16</option><option value="32" selected>32</option><option value="48">48</option><option value="64">64</option></select>
         <button id="build32Analyze" style="width:100%">32 Farben erkennen</button>
@@ -4523,6 +4525,7 @@ const mixes=chooseMixes(target,paletteKey);
   let build32Data=null,build32Canvas=null,build32Active=false,build32Worker=null,build32Generation=0,build32Direction='light',build32Extras=false,build32VisibleMask=null;
   let build32Selected=null,build32MixRequest=0,build32Additive=false,build32Manual=false;
   let build32OriginalPalette=null,build32ColorOverrides=new Map(),build32ReplaceArmed=false;
+  let build32DetailCellArmed=false, build32DetailCell=null, build32DetailCanvas=null;
   const build32Selection=new Set();
   let build32AllPrevious=null,build32PalettePage=0,build32SoloPrevious=null,build32SoloAdditive=false,build32SimilarAnchor=null;
   function showBuild32PalettePage(page){
@@ -4539,6 +4542,69 @@ const mixes=chooseMixes(target,paletteKey);
       button.addEventListener('click',()=>showBuild32PalettePage(p));pages.appendChild(button);
     }
   }
+  function build32GridCellAt(ix,iy){
+    if(!loaded)return null;
+    const n=Math.max(2,Number(gridDensity.value)||8);
+    const cell=Math.min(sourceCanvas.width,sourceCanvas.height)/n;
+    const cx=sourceCanvas.width/2, cy=sourceCanvas.height/2;
+    const firstX=cx-Math.ceil(cx/cell)*cell, firstY=cy-Math.ceil(cy/cell)*cell;
+    const col=Math.floor((ix-firstX)/cell), row=Math.floor((iy-firstY)/cell);
+    if(col<0||row<0)return null;
+    const x0=Math.max(0,firstX+col*cell), y0=Math.max(0,firstY+row*cell);
+    const x1=Math.min(sourceCanvas.width,firstX+(col+1)*cell), y1=Math.min(sourceCanvas.height,firstY+(row+1)*cell);
+    if(x1<=x0||y1<=y0||ix<x0||ix>x1||iy<y0||iy>y1)return null;
+    return {col,row,x:Math.floor(x0),y:Math.floor(y0),w:Math.max(1,Math.floor(x1)-Math.floor(x0)),h:Math.max(1,Math.floor(y1)-Math.floor(y0))};
+  }
+  function syncBuild32DetailCellButton(){
+    const b=document.getElementById('build32DetailCell'),status=document.getElementById('build32DetailCellStatus');
+    if(!b)return;
+    b.textContent='Detail-Kästchen auswählen: '+(build32DetailCellArmed?'Ein':'Aus');
+    b.setAttribute('aria-pressed',String(build32DetailCellArmed));
+    b.classList.toggle('active',build32DetailCellArmed);b.classList.toggle('secondary',!build32DetailCellArmed);
+    if(build32DetailCell){
+      status.textContent='Detail-Kästchen '+(build32DetailCell.col+1)+' / '+(build32DetailCell.row+1)+' aktiv · '+build32ColorCount()+' Farben nur in diesem Kästchen. Erneut ein Kästchen antippen ersetzt die Detailanalyse.';
+    }else{
+      status.textContent=build32DetailCellArmed?'Jetzt ein Raster-Kästchen im Bild antippen. Die globale Farbauswahl bleibt erhalten.':'Raster einschalten → Detail-Kästchen auswählen → ein Kästchen antippen. Die aktuell gewählte 8/16/32/48/64-Farbzahl wird dann nur in diesem Kästchen neu berechnet.';
+    }
+  }
+  function clearBuild32DetailCell(){
+    build32DetailCell=null;build32DetailCanvas=null;syncBuild32DetailCellButton();
+  }
+  function analyzeBuild32DetailCell(cell){
+    if(!build32Data||!cell)return;
+    flushToneImage();
+    const crop=document.createElement('canvas');crop.width=cell.w;crop.height=cell.h;
+    const cc=crop.getContext('2d');cc.drawImage(sourceCanvas,cell.x,cell.y,cell.w,cell.h,0,0,cell.w,cell.h);
+    const pixels=cc.getImageData(0,0,cell.w,cell.h).data.buffer;
+    const data={colorCount:build32ColorCount(),pixels,width:cell.w,height:cell.h};
+    let result;
+    try{
+      if(build32IsPure()){
+        const key=document.getElementById('build32MixPalette').value;
+        data.pureColors=build32IsSimple()?build32SimpleColors():build32PureColors(key);
+        data.simpleLimit=build32IsSimple()?Number(document.getElementById('build32SimpleLimit').value):0;
+        data.watercolor=['watercolor','horadam','akademie'].includes(key);
+        result=quantizeBuild32Pure(data);
+      }else{
+        result=quantizeBuild32(data);
+      }
+      build32DetailCell={...cell,palette:result.palette,ranks:new Uint8Array(result.ranks)};
+      build32DetailCanvas=document.createElement('canvas');build32DetailCanvas.width=cell.w;build32DetailCanvas.height=cell.h;
+      const dc=build32DetailCanvas.getContext('2d'),frame=dc.createImageData(cell.w,cell.h);
+      for(let i=0;i<build32DetailCell.ranks.length;i++){const rgb=build32DetailCell.palette[build32DetailCell.ranks[i]]||[128,128,128];frame.data[i*4]=rgb[0];frame.data[i*4+1]=rgb[1];frame.data[i*4+2]=rgb[2];frame.data[i*4+3]=255;}
+      dc.putImageData(frame,0,0);
+      build32Active=true;syncBuild32DetailCellButton();build32Status.textContent='Detail-Kästchen '+(cell.col+1)+' / '+(cell.row+1)+' · '+result.palette.length+' lokale Farben. Die globale Farbanalyse bleibt unverändert.';draw();
+    }catch(err){
+      build32Status.textContent='Detailanalyse konnte nicht berechnet werden.';
+    }
+  }
+  function drawBuild32DetailOverlay(targetCtx){
+    if(!build32DetailCell||!build32DetailCanvas)return;
+    targetCtx.drawImage(build32DetailCanvas,build32DetailCell.x,build32DetailCell.y,build32DetailCell.w,build32DetailCell.h);
+    targetCtx.save();targetCtx.globalCompositeOperation='difference';targetCtx.strokeStyle='rgba(255,255,255,.95)';targetCtx.lineWidth=Math.max(2,Math.min(sourceCanvas.width,sourceCanvas.height)/700);
+    targetCtx.strokeRect(build32DetailCell.x+.5,build32DetailCell.y+.5,build32DetailCell.w-1,build32DetailCell.h-1);targetCtx.restore();
+  }
+
   function build32BackgroundValue(automatic){
     const value=document.getElementById('build32Background').value;
     return value==='white'?255:value==='gray'?128:automatic;
@@ -4707,6 +4773,7 @@ const mixes=chooseMixes(target,paletteKey);
     build32Extras=false;document.getElementById('build32Extras').disabled=true;document.getElementById('build32Extras').textContent='Nur Ergänzungen zeigen';
     build32Selection.clear();build32Manual=false;
     build32RememberedLight=0;build32RememberedDark=0;
+    build32DetailCellArmed=false;build32DetailCell=null;build32DetailCanvas=null;syncBuild32DetailCellButton();
     build32Selected=null;build32MixRequest++;document.getElementById('build32Dock').hidden=true;
     build32Generation++;if(build32Worker)build32Worker.terminate();build32Worker=null;
     build32Data=null;build32Canvas=null;build32Active=false;build32VisibleMask=null;
@@ -4843,6 +4910,7 @@ const mixes=chooseMixes(target,paletteKey);
     if(!result.pure)document.getElementById('build32MixPalette').value=paintPalette.value;
     requestAnimationFrame(()=>{resizeCanvas();fitImage();});
     build32RememberedLight=0;build32RememberedDark=0;
+    build32DetailCell=null;build32DetailCanvas=null;build32DetailCellArmed=false;syncBuild32DetailCellButton();
     for(const d of ['light','dark']){document.getElementById('build32'+d).disabled=false;document.getElementById('build32'+d).value=0;}
     if(result.pure){build32Families=new Set(['all']);build32Family='all';build32RememberedLight=build32ColorCount();syncBuild32FamilyRanges();document.getElementById('build32light').value=build32ColorCount();}
     renderBuild32('light');
@@ -5179,7 +5247,18 @@ const mixes=chooseMixes(target,paletteKey);
     document.getElementById('build32GridDensityVal').textContent=gridDensity.value;
   }
   document.getElementById('build32Grid').addEventListener('click',()=>{gridToggleBtn.click();syncBuild32Grid();});
-  document.getElementById('build32GridDensity').addEventListener('input',e=>{gridDensity.value=e.target.value;gridDensity.dispatchEvent(new Event('input'));syncBuild32Grid();});
+  document.getElementById('build32GridDensity').addEventListener('input',e=>{gridDensity.value=e.target.value;gridDensity.dispatchEvent(new Event('input'));syncBuild32Grid();clearBuild32DetailCell();draw();});
+  document.getElementById('build32DetailCell').addEventListener('click',()=>{
+    if(!build32Data){build32Status.textContent='Bitte zuerst Farben erkennen lassen.';return;}
+    build32DetailCellArmed=!build32DetailCellArmed;
+    if(build32DetailCellArmed){
+      if(!gridEnabled){gridEnabled=true;syncBuild32Grid();}
+      setMode('picker');hint.textContent='Jetzt ein Raster-Kästchen antippen. Nur dieses Kästchen wird mit der gewählten Farbzahl neu berechnet.';
+    }else{
+      clearBuild32DetailCell();hint.textContent='Detail-Kästchen-Auswahl ausgeschaltet.';
+    }
+    syncBuild32DetailCellButton();draw();
+  });
   document.getElementById('build32Pick').addEventListener('click',()=>{
     if(!build32Data){build32Status.textContent='Bitte zuerst Farben erkennen lassen.';return;}
     if(build32Manual)renderBuild32Selection();else if(build32Extras)showBuild32Extras();else renderBuild32(build32Direction);
@@ -5998,6 +6077,7 @@ const mixes=chooseMixes(target,paletteKey);
     // 1.13: Original stufenlos über die aktuelle Arbeitsansicht blenden.
     if(build32Active && build32Canvas){
       ctx.drawImage(build32Canvas,0,0,sourceCanvas.width,sourceCanvas.height);
+      drawBuild32DetailOverlay(ctx);
       if(build32GrayBlend>0){
         ctx.save();ctx.globalAlpha=build32GrayBlend/100;ctx.drawImage(toneGrayCanvas,0,0);ctx.restore();
         if(build32Foreground)ctx.drawImage(build32Foreground,0,0,sourceCanvas.width,sourceCanvas.height);
@@ -6644,6 +6724,16 @@ const mixes=chooseMixes(target,paletteKey);
   viewer.addEventListener('pointerdown',e=>{
     viewer.setPointerCapture?.(e.pointerId);
     touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    // Detail-Kästchen: ein Rasterfeld auswählen und nur dort die aktuelle
+    // 8/16/32/48/64-Farbzahl neu berechnen.
+    if(build32DetailCellArmed&&build32Data&&touches.size===1&&!sketchActive){
+      const p=canvasPoint(e.clientX,e.clientY);
+      const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
+      if(ix>=0&&iy>=0&&ix<sourceCanvas.width&&iy<sourceCanvas.height){
+        const cell=build32GridCellAt(ix,iy);
+        if(cell){analyzeBuild32DetailCell(cell);build32DetailCellArmed=false;syncBuild32DetailCellButton();touches.delete(e.pointerId);e.preventDefault();return;}
+      }
+    }
     // Beim Ersetzen einer Bildfarbe hat die Originalstellen-Auswahl Vorrang vor
     // Pipette/Verschieben: Der Benutzer darf das Originalbild direkt antippen,
     // ohne vorher den allgemeinen Pipettenmodus aktivieren zu müssen.
