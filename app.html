@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.31</title>
+  <title>AtelierAI iPad 2.32</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -38,6 +38,14 @@
     #build32Pages{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px;}
     #build32Pages button[aria-pressed="true"]{outline:2px solid #555;}
     #build32Dock.collapsed #build32Similar,#build32Dock.collapsed #build32Pages,#build32Dock.collapsed #build32Palette,#build32Dock.collapsed #build32Recipe{display:none;}
+    /* Collapsing releases the control rows as well as the palette. */
+    #build32Dock.collapsed{flex:0 0 auto;padding:4px 8px;max-height:none;}
+    #build32Dock.collapsed > div:first-child > :not(#build32Collapse):not(#build32All){display:none!important;}
+    body.image-focus .topbar > .filelabel,body.image-focus #resetBtn{display:none;}
+    body.image-focus .topbar{flex-wrap:nowrap;}
+    body.image-focus .topbar button{min-height:44px;padding:8px 12px;}
+    body.image-focus .viewer{border-radius:8px;}
+    body.image-focus .viewer-column{gap:4px;}
     #build32Dock button,#build32Dock select{min-height:44px;font-size:14px;padding:8px;}
     body.image-focus .workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);}
     body.image-focus .side{display:none;}
@@ -1036,7 +1044,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.31</div>
+    <div class="title">AtelierAI · iPad 2.32</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
@@ -4839,15 +4847,28 @@ const mixes=chooseMixes(target,paletteKey);
     document.getElementById('build32Analyze').textContent=build32ColorCount()+' Farben erkennen';
     if(loaded)document.getElementById('build32Analyze').click();
   });
+  let build32CollapsedBeforeFocus=false;
+  function setBuild32Collapsed(collapsed){
+    document.getElementById('build32Dock').classList.toggle('collapsed',collapsed);
+    const button=document.getElementById('build32Collapse');
+    button.textContent=collapsed?'Farben ausklappen':'Farben einklappen';
+    button.setAttribute('aria-expanded',String(!collapsed));
+  }
+  function refitViewerAfterLayout(){
+    requestAnimationFrame(()=>{resizeCanvas();fitImage();});
+  }
   document.getElementById('imageFocusBtn').addEventListener('click',()=>{
     const on=document.body.classList.toggle('image-focus'),button=document.getElementById('imageFocusBtn');
     button.textContent=on?'Werkzeuge anzeigen':'Bild größer';button.setAttribute('aria-pressed',String(on));
-    requestAnimationFrame(()=>{resizeCanvas();fitImage();});
+    if(on){
+      build32CollapsedBeforeFocus=document.getElementById('build32Dock').classList.contains('collapsed');
+      setBuild32Collapsed(true);
+    }else setBuild32Collapsed(build32CollapsedBeforeFocus);
+    refitViewerAfterLayout();
   });
   document.getElementById('build32Collapse').addEventListener('click',()=>{
-    const collapsed=document.getElementById('build32Dock').classList.toggle('collapsed');
-    const button=document.getElementById('build32Collapse');button.textContent=collapsed?'Farben ausklappen':'Farben einklappen';button.setAttribute('aria-expanded',String(!collapsed));
-    requestAnimationFrame(()=>{resizeCanvas();fitImage();});
+    setBuild32Collapsed(!document.getElementById('build32Dock').classList.contains('collapsed'));
+    refitViewerAfterLayout();
   });
   const build32Status=document.getElementById('build32Status');
   function resetBuild32(){
@@ -7025,8 +7046,12 @@ const mixes=chooseMixes(target,paletteKey);
   viewer.addEventListener('pointerup',endPointer);
   viewer.addEventListener('pointercancel',endPointer);
 
-  window.addEventListener('resize',resizeCanvas);
-  if('ResizeObserver' in window) new ResizeObserver(resizeCanvas).observe(viewer);
+  function resizeViewerLayout(){
+    resizeCanvas();
+    if(document.body.classList.contains('image-focus')) fitImage();
+  }
+  window.addEventListener('resize',resizeViewerLayout);
+  if('ResizeObserver' in window) new ResizeObserver(resizeViewerLayout).observe(viewer);
   resizeCanvas();
 
   // 1.19: kontrollierter Zugriff des Farbmischpults auf die echten internen Paletten.

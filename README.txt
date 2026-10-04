@@ -1,3 +1,11 @@
+Version 2.32 – Größere Bildansicht
+
+Bild größer: blendet die Werkzeuge aus und klappt die Farbpalette automatisch ein.
+Farben einklappen: verkleinert jetzt auch die übrige Bedienleiste.
+Alle Farben und Farben ausklappen bleiben erreichbar. Das vollständige Bild wird neu eingepasst.
+Mit zwei Fingern kann weiterhin gezoomt und verschoben werden.
+Beim Zurückgehen wird der vorherige Zustand der Palette wiederhergestellt.
+
 AtelierAI iPad 2.27 – Farbfamilien wechseln ohne Helligkeitsauswahl zu verlieren
 
 Im 8/16/32/48/64-Farben-Modul bleiben die zuletzt eingestellten Hell-/Dunkelwerte erhalten, wenn Farbfamilien an- oder ausgeschaltet werden. Beispiel: Hell auf 5, danach Ocker und Orange zuschalten – die Regler bleiben auf 5 und die Auswahl wird sofort mit den neuen Familien berechnet.
