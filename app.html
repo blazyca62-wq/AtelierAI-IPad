@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.32</title>
+  <title>AtelierAI iPad 2.33</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1027,7 +1027,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-1.80-20260925';
+    const wanted='atelierai-2.33-20261005';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -1044,9 +1044,10 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.32</div>
+    <div class="title">AtelierAI · iPad 2.33</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
+    <button id="saveCurrentViewBtn" type="button">Ansicht speichern</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
   </div>
@@ -1660,6 +1661,7 @@
         <button id="glazeFsAutoAlign" style="margin-left:auto;">Automatisch ausrichten</button>
         <button id="glazeFsFit" class="secondary">Einpassen</button>
         <button id="glazeFsClear" class="secondary">Messpunkte löschen</button>
+        <button id="glazeFsSave" type="button">Ansicht speichern</button>
         <button id="glazeFsClose" class="secondary">Schließen</button>
       </div>
       <div id="glazeFsAlignInfo" class="tiny" style="color:#ddd;">Noch nicht ausgerichtet.</div>
@@ -6258,15 +6260,8 @@ const mixes=chooseMixes(target,paletteKey);
       paintViewer();
     });
   }
-  function paintViewer(){
-    const r=viewer.getBoundingClientRect();
-    ctx.clearRect(0,0,r.width,r.height);
-    if(!loaded) return;
-    ctx.save();
-    ctx.imageSmoothingEnabled=true;
-    ctx.imageSmoothingQuality='high';
-    ctx.translate(offsetX,offsetY);
-    ctx.scale(scale,scale);
+  // Shared composition keeps display and export in sync in every photo module.
+  function renderCurrentArtwork(ctx){
     // 1.13: Original stufenlos über die aktuelle Arbeitsansicht blenden.
     if(build32Active && build32Canvas){
       ctx.drawImage(build32Canvas,0,0,sourceCanvas.width,sourceCanvas.height);
@@ -6315,6 +6310,18 @@ const mixes=chooseMixes(target,paletteKey);
       ctx.restore();
     }
     if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value,(build32Active || (!!surfaceMarkCanvas && isolationGray && !sketchActive)));
+  }
+
+  function paintViewer(){
+    const r=viewer.getBoundingClientRect();
+    ctx.clearRect(0,0,r.width,r.height);
+    if(!loaded) return;
+    ctx.save();
+    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingQuality='high';
+    ctx.translate(offsetX,offsetY);
+    ctx.scale(scale,scale);
+    renderCurrentArtwork(ctx);
     ctx.restore();
     if(surfacePreview && !sketchActive && !build32Active){
       const sx=offsetX+surfacePreview.x*scale, sy=offsetY+surfacePreview.y*scale;
@@ -6732,28 +6739,93 @@ const mixes=chooseMixes(target,paletteKey);
   gridToggleBtn.addEventListener('click',()=>{gridEnabled=!gridEnabled;gridToggleBtn.textContent=gridEnabled?'Raster aus':'Raster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);draw();});
 
   gridDensity.addEventListener('input',()=>{gridDensityVal.textContent=gridDensity.value;draw();});
-  function saveAtelierImage(type){
-    if(!loaded)return;
-    if(sketchActive){saveSketchImage(type);return;}
-    flushToneImage();
-    const isJpeg=type==='image/jpeg';
-    const out=document.createElement('canvas');out.width=processedCanvas.width;out.height=processedCanvas.height;
-    const oc=out.getContext('2d');
-    if(isJpeg){oc.fillStyle='#fff';oc.fillRect(0,0,out.width,out.height);}
-    oc.drawImage(processedCanvas,0,0);
-    if(gridEnabled)drawGridOverlay(oc,out.width,out.height,gridDensity.value);
-    out.toBlob(blob=>{
-      if(!blob)return;
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.href=url;
-      a.download=isJpeg?'AtelierAI_Bild.jpg':'AtelierAI_Bild.png';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url),2000);
-    },type,isJpeg?0.95:undefined);
+  const exportDialog=document.createElement('dialog');
+  exportDialog.id='exportDialog';
+  exportDialog.setAttribute('aria-labelledby','exportTitle');
+  exportDialog.style.cssText='width:min(680px,90vw);max-height:90dvh;overflow:auto;border:1px solid #888;border-radius:16px;padding:18px;background:#f7f5f0;color:#222;';
+  exportDialog.innerHTML=`<h3 id="exportTitle" style="margin-top:0">Aktuelle Ansicht speichern</h3>
+    <label id="exportScopeLabel">Bildbereich <select id="exportScope"><option value="full">Ganzes Bild mit aktuellen Einstellungen</option><option value="viewport">Sichtbarer Ausschnitt (Zoom und Position)</option></select></label>
+    <p id="exportInfo" style="font-size:14px">Sichtbare Farben, Hintergrund, Überblendungen und Raster werden übernommen.</p>
+    <img id="exportPreview" alt="Vorschau des zu speichernden Bildes" style="display:block;max-width:100%;max-height:48dvh;margin:12px auto;object-fit:contain">
+    <p id="exportStatus" role="status" style="font-size:14px"></p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="exportShare" type="button">Teilen / In Fotos sichern</button><a id="exportDownload" style="padding:12px;color:#174c75" download>PNG herunterladen</a><button id="exportClose" type="button" class="secondary">Schließen</button></div>
+    <p style="font-size:13px">Auf dem iPad: „Teilen“ → „Bild sichern“ oder „In Dateien sichern“. Alternativ die Vorschau länger berühren.</p>`;
+  document.body.appendChild(exportDialog);
+  const exportScope=document.getElementById('exportScope');
+  const exportPreview=document.getElementById('exportPreview');
+  const exportStatus=document.getElementById('exportStatus');
+  const exportShare=document.getElementById('exportShare');
+  const exportDownload=document.getElementById('exportDownload');
+  let exportUrl=null,exportFile=null,exportType='image/png',exportGlaze=false,exportFullscreen=false,exportRequest=0,exportReturnFocus=null;
+
+  function composeCurrentExport(){
+    const out=document.createElement('canvas');
+    if(exportGlaze){
+      // Snapshot the actual two comparison views, including alignment and markers.
+      if(exportFullscreen)redrawGlazeFullscreen();else redrawGlazePreviews();
+      const left=exportFullscreen?glazeFsOriginalCanvas:glazeOriginalCanvas;
+      const right=exportFullscreen?glazeFsPaintingCanvas:glazePaintingCanvas;
+      const gap=16,heading=36;
+      out.width=left.width+right.width+gap;out.height=Math.max(left.height,right.height)+heading;
+      const c=out.getContext('2d');c.fillStyle='#222';c.fillRect(0,0,out.width,out.height);
+      c.fillStyle='#fff';c.font='18px sans-serif';c.fillText('Original / Ziel',10,25);c.fillText('Aktuelles Gemälde',left.width+gap+10,25);
+      c.drawImage(left,0,heading);c.drawImage(right,left.width+gap,heading);
+    }else{
+      flushToneImage();
+      if(exportScope.value==='viewport'){
+        paintViewer();out.width=canvas.width;out.height=canvas.height;
+        const c=out.getContext('2d');c.fillStyle=getComputedStyle(viewer).backgroundColor;c.fillRect(0,0,out.width,out.height);c.drawImage(canvas,0,0);
+      }else{
+        out.width=sourceCanvas.width;out.height=sourceCanvas.height;
+        const c=out.getContext('2d');c.fillStyle=getComputedStyle(viewer).backgroundColor;c.fillRect(0,0,out.width,out.height);renderCurrentArtwork(c);
+      }
+    }
+    return out;
   }
+  function refreshExportPreview(){
+    const request=++exportRequest;
+    exportFile=null;exportShare.disabled=true;exportDownload.hidden=true;
+    exportPreview.removeAttribute('src');exportStatus.textContent='Vorschau wird erstellt …';
+    try{
+      const out=composeCurrentExport();
+      out.toBlob(blob=>{
+        if(request!==exportRequest||!exportDialog.open)return;
+        if(!blob){exportStatus.textContent='Bild konnte nicht erstellt werden. Bitte erneut versuchen.';return;}
+        if(exportUrl)URL.revokeObjectURL(exportUrl);
+        exportUrl=URL.createObjectURL(blob);
+        const ext=exportType==='image/jpeg'?'jpg':'png';
+        const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+        exportFile=new File([blob],`AtelierAI_Ansicht_${stamp}.${ext}`,{type:exportType});
+        exportPreview.src=exportUrl;exportDownload.href=exportUrl;exportDownload.download=exportFile.name;
+        exportDownload.textContent=ext.toUpperCase()+' herunterladen';exportDownload.hidden=false;
+        exportShare.disabled=!(navigator.canShare&&navigator.canShare({files:[exportFile]}));
+        exportStatus.textContent=out.width+' × '+out.height+' Pixel'+(exportShare.disabled?' · Zum Speichern „Herunterladen“ wählen.':'');
+      },exportType,0.95);
+    }catch(error){exportStatus.textContent='Speichern nicht möglich: '+error.message;}
+  }
+  function saveAtelierImage(type='image/png'){
+    exportFullscreen=glazeFullscreen.style.display!=='none';
+    exportGlaze=exportFullscreen||document.getElementById('glazePanel').classList.contains('tool-page-active');
+    if(exportGlaze?(!glazeOriginalImg&&!glazePaintingImg):!loaded){alert('Bitte zuerst ein Foto öffnen.');return;}
+    exportType=type;exportReturnFocus=document.activeElement;
+    document.getElementById('exportScopeLabel').hidden=exportGlaze;
+    document.getElementById('exportInfo').textContent=exportGlaze?'Beide Lasurenansichten mit aktueller Ausrichtung und Messpunkten.':'Sichtbare Farben, Hintergrund, Überblendungen und Raster werden übernommen.';
+    exportDialog.showModal();refreshExportPreview();
+  }
+  exportScope.addEventListener('change',refreshExportPreview);
+  document.getElementById('exportClose').addEventListener('click',()=>exportDialog.close());
+  exportDialog.addEventListener('close',()=>{
+    ++exportRequest;exportFile=null;exportPreview.removeAttribute('src');exportDownload.removeAttribute('href');
+    if(exportUrl){URL.revokeObjectURL(exportUrl);exportUrl=null;}
+    exportReturnFocus?.focus();
+  });
+  exportShare.addEventListener('click',async()=>{
+    if(!exportFile)return;
+    try{await navigator.share({files:[exportFile]});}
+    catch(error){if(error.name!=='AbortError')exportStatus.textContent='Teilen nicht möglich. Bitte „Herunterladen“ wählen oder die Vorschau länger berühren.';}
+  });
+  document.getElementById('saveCurrentViewBtn').addEventListener('click',()=>saveAtelierImage());
+  document.getElementById('glazeFsSave').addEventListener('click',()=>saveAtelierImage());
   savePngBtn.addEventListener('click',()=>saveAtelierImage('image/png'));
   saveJpegBtn.addEventListener('click',()=>saveAtelierImage('image/jpeg'));
 

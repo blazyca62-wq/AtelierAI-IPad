@@ -1,3 +1,7 @@
+AtelierAI iPad 2.33 – Aktuelle Ansicht speichern
+
+Oben in jedem Modul: Ansicht speichern. Vorschau mit allen sichtbaren Farben, Original-/S/W-Einblendungen, Hintergrund und Raster. Ganzes Bild oder sichtbarer Zoom-Ausschnitt wählbar. PNG, über Raster & Speichern auch JPEG. Auf dem iPad Teilen → Bild sichern / In Dateien sichern; alternativ herunterladen oder Vorschau länger berühren. Lasuren: beide Vergleichsbilder einschließlich Ausrichtung und Messpunkten, auch im Vollbild. Gespeichert wird ein Bild, kein wieder bearbeitbares Projekt.
+
 Version 2.32 – Größere Bildansicht
 
 Bild größer: blendet die Werkzeuge aus und klappt die Farbpalette automatisch ein.
