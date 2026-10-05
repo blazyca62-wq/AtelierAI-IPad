@@ -1,3 +1,34 @@
+AtelierAI iPad 2.35 – Offline-Version
+
+EINRICHTUNG (einmal Internet erforderlich)
+1. Die ZIP entpacken. Dateien im vorhandenen GitHub-Repository ersetzen.
+   Wichtig: app.html, index.html, START.html, sw.js, manifest.webmanifest,
+   icon-192.png und icon-512.png gemeinsam hochladen.
+2. Warten, bis die Veröffentlichung bei GitHub erfolgreich/grün ist.
+3. Alte AtelierAI-Tabs schließen. Die AtelierAI-Webadresse in Safari öffnen. Oben muss Version 2.35 stehen.
+4. Teilen → Zum Home-Bildschirm. Falls angezeigt: „Als Web-App öffnen“ aktivieren.
+5. AtelierAI vom Home-Bildschirm einmal MIT Internet öffnen.
+6. Auf „✓ Offline bereit“ warten. Falls nötig, kurz schließen und erneut öffnen.
+7. WLAN und mobile Daten ausschalten (oder Flugmodus, WLAN ebenfalls aus).
+   Die App schließen und vom Symbol neu öffnen. Dann ein lokal gespeichertes
+   Foto laden, Farben aufnehmen und „Ansicht speichern“ ausprobieren.
+
+Nach erfolgreicher Einrichtung braucht die App zum Öffnen und Malen kein
+GitHub und kein Internet mehr. Für Neuinstallation und Updates ist wieder
+Internet erforderlich. Das Öffnen der ZIP in der Dateien-App installiert
+keine Offline-App. Diese Version ist eine Web-App, keine App-Store-App.
+
+Die Offlineanzeige antippen, um die Anleitung erneut zu sehen.
+Updates werden vollständig im Hintergrund vorbereitet. Bei „Update bereit“
+kannst du den Wechsel selbst auslösen. Vorher die Ansicht speichern.
+
+WICHTIG
+Das Programm wird offline gespeichert, nicht automatisch das geladene Foto
+oder der aktuelle Arbeitsstand. Fotos aus iCloud vorher auf das iPad laden.
+„Ansicht speichern“ sichert ein Bild, kein später fortsetzbares Projekt.
+Website-Daten nicht löschen. iPadOS kann gespeicherte Webdaten entfernen;
+eine dauerhafte Garantie ist nicht möglich. ZIP zusätzlich sicher aufbewahren.
+
 AtelierAI iPad 2.34 – Direkte Bildgesten
 
 Bei aktiver Pipette: kurz tippen = Farbe aufnehmen.

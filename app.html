@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <link rel="manifest" href="./manifest.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="./icon-192.png">
   <meta name="theme-color" content="#f2f1ed" />
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.34</title>
+  <title>AtelierAI iPad 2.35</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1024,27 +1025,11 @@
 });
 
 </script>
-<script>
-(function(){
-  try{
-    const wanted='atelierai-2.34-20261005';
-    const u=new URL(location.href);
-    if(u.searchParams.get('v')!==wanted){
-      u.searchParams.set('v',wanted);
-      history.replaceState(null,'',u.toString());
-    }
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});
-    }
-    if('caches' in window){
-      caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))).catch(()=>{});
-    }
-  }catch(e){}
-})();
-</script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.34</div>
+    <div class="title">AtelierAI · iPad 2.35</div>
+    <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
+    <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="saveCurrentViewBtn" type="button">Ansicht speichern</button>
@@ -7493,6 +7478,44 @@ const mixes=chooseMixes(target,paletteKey);
   if(advisorBrightnessVal) advisorBrightnessVal.textContent='0';
   advReset();
 
+</script>
+
+
+<script>
+(()=>{
+  const badge=document.getElementById('offlineInfo'), update=document.getElementById('offlineUpdate');
+  let registration,ready=false;
+  const label=()=>{badge.textContent=ready ? (navigator.onLine?'✓ Offline bereit':'✓ Offline aktiv') : 'Offline: noch nicht bereit';};
+  async function check(){
+    const worker=navigator.serviceWorker.controller;
+    if(!worker){ready=false;label();return;}
+    const channel=new MessageChannel();
+    const timer=setTimeout(()=>{channel.port1.close();ready=false;label();},5000);
+    channel.port1.onmessage=e=>{clearTimeout(timer);channel.port1.close();ready=e.data.ready===true;label();};
+    worker.postMessage({type:'OFFLINE_STATUS'},[channel.port2]);
+  }
+  badge.addEventListener('click',async()=>{
+    try{await navigator.storage?.persist?.();}catch(e){}
+    alert('AtelierAI offline auf dem iPad\n\n1. In Safari: Teilen → Zum Home-Bildschirm (als Web-App öffnen).\n2. Vom neuen Symbol einmal mit Internet öffnen.\n3. Warten, bis „Offline bereit“ erscheint.\n4. Im Flugmodus die App schließen und vom Symbol erneut öffnen.\n\nFotos bitte auf dem iPad herunterladen. Das aktuell geöffnete Foto und der Arbeitsstand werden nicht automatisch gespeichert; nutze „Ansicht speichern“.\n\nBeim Löschen der Website-Daten oder der App kann die Offlinekopie verloren gehen. Bewahre die ZIP-Sicherung auf.');
+    if(registration){try{await registration.update();}catch(e){}await check();}
+  });
+  update.addEventListener('click',()=>{
+    if(registration?.waiting && confirm('Neue Version laden? Bitte vorher die aktuelle Ansicht speichern; das geöffnete Foto und die Auswahl werden zurückgesetzt.')){
+      navigator.serviceWorker.addEventListener('controllerchange',()=>location.reload(),{once:true});
+      registration.waiting.postMessage({type:'ACTIVATE_UPDATE'});
+    }
+  });
+  window.addEventListener('online',label);window.addEventListener('offline',label);
+  if(!('serviceWorker' in navigator)||!window.isSecureContext){badge.textContent='Offline: über Safari-Webadresse einrichten';return;}
+  navigator.serviceWorker.addEventListener('controllerchange',check);
+  navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).then(async reg=>{
+    registration=reg;
+    const waiting=()=>{update.hidden=!reg.waiting;};waiting();
+    reg.addEventListener('updatefound',()=>{const worker=reg.installing;worker?.addEventListener('statechange',()=>{waiting();if(worker.state==='activated')check();});});
+    await navigator.serviceWorker.ready;await check();
+    try{await navigator.storage?.persist?.();}catch(e){}
+  }).catch(()=>{badge.textContent='Offline-Speicherung fehlgeschlagen · antippen';});
+})();
 </script>
 
 </body>

@@ -1,8 +1,23 @@
 {
-  "name": "AtelierAI iPad 2.27",
+  "id": "./",
+  "name": "AtelierAI Offline",
   "short_name": "AtelierAI",
-  "start_url": "./index.html",
+  "lang": "de",
+  "start_url": "./app.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#f4f4f4",
-  "theme_color": "#f4f4f4"
+  "background_color": "#f2f1ed",
+  "theme_color": "#f2f1ed",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
