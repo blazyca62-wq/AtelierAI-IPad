@@ -9,7 +9,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.33</title>
+  <title>AtelierAI iPad 2.34</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1027,7 +1027,7 @@
 <script>
 (function(){
   try{
-    const wanted='atelierai-2.33-20261005';
+    const wanted='atelierai-2.34-20261005';
     const u=new URL(location.href);
     if(u.searchParams.get('v')!==wanted){
       u.searchParams.set('v',wanted);
@@ -1044,7 +1044,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.33</div>
+    <div class="title">AtelierAI · iPad 2.34</div>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="saveCurrentViewBtn" type="button">Ansicht speichern</button>
@@ -1079,7 +1079,7 @@
           <input id="globalZoom" type="range" min="25" max="600" value="100">
           <span id="globalZoomVal">100 %</span>
         </div>
-        <div class="tiny">Gilt in allen Werkzeugen · Zwei Finger zum Zoomen</div>
+        <div class="tiny">Tippen: Farbe aufnehmen · Ziehen: Verschieben · Zwei Finger: Zoom</div>
       </div>
       <div class="section" id="toolPanel">
         <h3>Werkzeug</h3>
@@ -5933,7 +5933,7 @@ const mixes=chooseMixes(target,paletteKey);
     pickerMode.classList.toggle('active', mode==='picker');
     moveMode.classList.toggle('secondary', mode!=='move');
     pickerMode.classList.toggle('secondary', mode!=='picker');
-    hint.textContent = mode==='move' ? 'Modus: Verschieben / Zoom' : 'Modus: Pipette';
+    hint.textContent = mode==='move' ? 'Modus: Verschieben / Zoom' : 'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger';
     syncGlobalViewControls();
   }
 
@@ -6465,14 +6465,14 @@ const mixes=chooseMixes(target,paletteKey);
     areaPickerBtn.classList.toggle('active',areaPickerMode==='avg');
     areaPickerBtn.classList.toggle('secondary',areaPickerMode!=='avg');
     smartAreaPickerBtn.classList.remove('active'); smartAreaPickerBtn.classList.add('secondary');
-    hint.textContent=areaPickerMode ? 'Kreis-Pipette: im Bild antippen' : (mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette');
+    hint.textContent=areaPickerMode ? 'Kreis-Pipette: im Bild antippen' : (mode==='move'?'Modus: Verschieben / Zoom':'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger');
   });
   smartAreaPickerBtn.addEventListener('click',()=>{
     areaPickerMode = areaPickerMode==='smart' ? null : 'smart';
     smartAreaPickerBtn.classList.toggle('active',areaPickerMode==='smart');
     smartAreaPickerBtn.classList.toggle('secondary',areaPickerMode!=='smart');
     areaPickerBtn.classList.remove('active'); areaPickerBtn.classList.add('secondary');
-    hint.textContent=areaPickerMode ? 'Smart-Kreis: im Bild antippen' : (mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette');
+    hint.textContent=areaPickerMode ? 'Smart-Kreis: im Bild antippen' : (mode==='move'?'Modus: Verschieben / Zoom':'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger');
   });
   mediumOilBtn.addEventListener('click',()=>setMedium('oil'));
   mediumWaterBtn.addEventListener('click',()=>setMedium('water'));
@@ -6503,7 +6503,7 @@ const mixes=chooseMixes(target,paletteKey);
     smartPickerArmed=!smartPickerArmed;
     smartPickerBtn.classList.toggle('active',smartPickerArmed);
     smartPickerBtn.classList.toggle('secondary',!smartPickerArmed);
-    hint.textContent=smartPickerArmed ? 'Smart-Pipette: im Bild antippen' : (mode==='move' ? 'Modus: Verschieben / Zoom' : 'Modus: Pipette');
+    hint.textContent=smartPickerArmed ? 'Smart-Pipette: im Bild antippen' : (mode==='move' ? 'Modus: Verschieben / Zoom' : 'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger');
   });
 
 
@@ -6547,7 +6547,7 @@ const mixes=chooseMixes(target,paletteKey);
     surfaceSelectedIndex=null;
     cancelIsolation();
     draw();
-    hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette';
+    hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger';
   });
 
   surfaceSize.addEventListener('input',()=>{
@@ -6578,11 +6578,11 @@ const mixes=chooseMixes(target,paletteKey);
     surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>'; draw();
   });
 
-  viewer.addEventListener('pointerdown',e=>{
-    if(!surfaceMode||!loaded||sketchActive)return;
+  function pickSurfaceAt(e){
+    if(!surfaceMode||!loaded||sketchActive)return false;
     const p=canvasPoint(e.clientX,e.clientY);
     const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
-    if(ix<0||iy<0||ix>=img.width||iy>=img.height)return;
+    if(ix<0||iy<0||ix>=img.width||iy>=img.height)return true;
     const realSize=Number(surfaceSize.value)/Math.max(scale,.05);
     surfacePreview={shape:surfaceMode,x:ix,y:iy,size:realSize};
     const clusters=clusterArea(ix,iy,realSize,surfaceMode);
@@ -6593,10 +6593,10 @@ const mixes=chooseMixes(target,paletteKey);
       hint.textContent='Vier Nuancen der angezeigten Farbe bestimmt';
     }else{
       draw();
-      hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Modus: Pipette';
+      hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger';
     }
-    e.preventDefault(); e.stopImmediatePropagation();
-  },true);
+    return true;
+  }
 
 
   glazeWaterBtn.addEventListener('click',()=>setGlazeMedium('water'));
@@ -6966,8 +6966,7 @@ const mixes=chooseMixes(target,paletteKey);
   setupCompactSidebar();
 
 
-  // Punkt-Pipette wird zentral im Viewer-pointerdown verarbeitet.
-  // Kein zweiter pointerup-Aufruf: verhindert doppelte Farbaufnahme auf dem iPad.
+  // Punkt-Pipette wird nach einem echten Tippen beim Loslassen verarbeitet.
 
   fileInput.addEventListener('change',e=>{
     const file=e.target.files&&e.target.files[0];
@@ -7003,120 +7002,114 @@ const mixes=chooseMixes(target,paletteKey);
   toneOnly.addEventListener('click',()=>setToneView('only'));
   toneOff.addEventListener('click',()=>setToneView('off'));
 
-  viewer.addEventListener('pointerdown',e=>{
-    viewer.setPointerCapture?.(e.pointerId);
-    touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  // Select only on release: a second finger or a drag never samples a color.
+  function selectViewerPoint(e){
+    if(pickSurfaceAt(e)) return;
     // Detail-Kästchen: ein Rasterfeld auswählen und nur dort die aktuelle
     // 8/16/32/48/64-Farbzahl neu berechnen.
-    if(build32DetailCellArmed&&build32Data&&touches.size===1&&!sketchActive){
+    if(build32DetailCellArmed&&build32Data&&!sketchActive){
       const p=canvasPoint(e.clientX,e.clientY);
       const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
       if(ix>=0&&iy>=0&&ix<sourceCanvas.width&&iy<sourceCanvas.height){
         const cell=build32GridCellAt(ix,iy);
-        if(cell){analyzeBuild32DetailCell(cell);build32DetailCellArmed=false;syncBuild32DetailCellButton();touches.delete(e.pointerId);e.preventDefault();return;}
+        if(cell){analyzeBuild32DetailCell(cell);build32DetailCellArmed=false;syncBuild32DetailCellButton();e.preventDefault();return;}
       }
     }
     // Beim Ersetzen einer Bildfarbe hat die Originalstellen-Auswahl Vorrang vor
     // Pipette/Verschieben: Der Benutzer darf das Originalbild direkt antippen,
     // ohne vorher den allgemeinen Pipettenmodus aktivieren zu müssen.
-    if(build32ReplaceArmed&&touches.size===1&&!sketchActive){
+    if(build32ReplaceArmed&&!sketchActive){
       pickColor(e.clientX,e.clientY);
-      touches.delete(e.pointerId);
+      
       e.preventDefault();
       return;
     }
-    if(areaPickerMode&&touches.size===1&&!sketchActive){
+    if(areaPickerMode&&!sketchActive){
       updatePickerCircle(e.clientX,e.clientY,true);
       sampleCircle(e.clientX,e.clientY,areaPickerMode==='smart');
       areaPickerMode=null;
       areaPickerBtn.classList.remove('active'); areaPickerBtn.classList.add('secondary');
       smartAreaPickerBtn.classList.remove('active'); smartAreaPickerBtn.classList.add('secondary');
-      hint.textContent=mode==='move' ? 'Modus: Verschieben / Zoom' : 'Modus: Pipette';
+      hint.textContent=mode==='move' ? 'Modus: Verschieben / Zoom' : 'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger';
       setTimeout(()=>updatePickerCircle(0,0,false),500);
-      touches.delete(e.pointerId);
+      
       e.preventDefault();
       return;
     }
-    if(smartPickerArmed&&touches.size===1&&!sketchActive){
+    if(smartPickerArmed&&!sketchActive){
       sampleSmartAt(e.clientX,e.clientY,12);
       smartPickerArmed=false;
       smartPickerBtn.classList.remove('active');
       smartPickerBtn.classList.add('secondary');
-      hint.textContent=mode==='move' ? 'Modus: Verschieben / Zoom' : 'Modus: Pipette';
-      touches.delete(e.pointerId);
+      hint.textContent=mode==='move' ? 'Modus: Verschieben / Zoom' : 'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger';
+      
       return;
     }
-    if(mode==='picker'&&touches.size===1){
+    if(mode==='picker'){
       pickColor(e.clientX,e.clientY);
-      touches.delete(e.pointerId);
+      
       e.preventDefault();
       return;
     }
-    if(mode==='move'){
-      if(touches.size===1){
-        const p=[...touches.values()][0];
-        gestureStart={type:'pan',startX:p.x,startY:p.y,offsetX,offsetY};
-      }else if(touches.size===2){
-        const pts=[...touches.values()];
-        const dx=pts[1].x-pts[0].x, dy=pts[1].y-pts[0].y;
-        const dist=Math.hypot(dx,dy);
-        const midX=(pts[0].x+pts[1].x)/2, midY=(pts[0].y+pts[1].y)/2;
-        const local=canvasPoint(midX,midY);
-        gestureStart={type:'pinch',dist,scale,imageX:(local.x-offsetX)/scale,imageY:(local.y-offsetY)/scale};
-      }
-    }
-  });
+  }
 
-  viewer.addEventListener('pointermove',e=>{
-    if(!touches.has(e.pointerId)) return;
+  function startViewerPinch(){
+    const pts=[...touches.values()];
+    const local=canvasPoint((pts[0].x+pts[1].x)/2,(pts[0].y+pts[1].y)/2);
+    gestureStart={type:'pinch',dist:Math.max(1,Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y)),
+      scale,imageX:(local.x-offsetX)/scale,imageY:(local.y-offsetY)/scale};
+  }
+  viewer.addEventListener('pointerdown',e=>{
+    if(!loaded || (e.pointerType==='mouse' && e.button!==0)) return;
+    viewer.setPointerCapture?.(e.pointerId);
     touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(mode!=='move'||!gestureStart) return;
-
-    if(touches.size===1&&gestureStart.type==='pan'){
-      const p=[...touches.values()][0];
-      offsetX=gestureStart.offsetX+(p.x-gestureStart.startX);
-      offsetY=gestureStart.offsetY+(p.y-gestureStart.startY);
-      syncGlobalViewControls();
-      draw();
-    }else if(touches.size===2){
-      const pts=[...touches.values()];
-      const dx=pts[1].x-pts[0].x, dy=pts[1].y-pts[0].y;
-      const dist=Math.hypot(dx,dy);
-      const midX=(pts[0].x+pts[1].x)/2, midY=(pts[0].y+pts[1].y)/2;
-      if(gestureStart.type!=='pinch'){
-        const local=canvasPoint(midX,midY);
-        gestureStart={type:'pinch',dist,scale,imageX:(local.x-offsetX)/scale,imageY:(local.y-offsetY)/scale};
+    if(touches.size===1){
+      gestureStart={type:'tap',startX:e.clientX,startY:e.clientY,offsetX,offsetY};
+    }else if(touches.size>=2){
+      startViewerPinch();
+    }
+    e.preventDefault();
+  });
+  viewer.addEventListener('pointermove',e=>{
+    if(!touches.has(e.pointerId)||!gestureStart) return;
+    touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(touches.size===1){
+      const dx=e.clientX-gestureStart.startX,dy=e.clientY-gestureStart.startY;
+      if(gestureStart.type==='tap' && Math.hypot(dx,dy)>8) gestureStart.type='pan';
+      if(gestureStart.type==='pan'){
+        offsetX=gestureStart.offsetX+dx;
+        offsetY=gestureStart.offsetY+dy;
+        syncGlobalViewControls();draw();
       }
-      const newScale=Math.max(.05,Math.min(20,gestureStart.scale*dist/gestureStart.dist));
-      const local=canvasPoint(midX,midY);
-      scale=newScale;
+    }else{
+      const pts=[...touches.values()];
+      if(gestureStart.type!=='pinch') startViewerPinch();
+      const dist=Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y);
+      const local=canvasPoint((pts[0].x+pts[1].x)/2,(pts[0].y+pts[1].y)/2);
+      scale=Math.max(.05,Math.min(20,gestureStart.scale*dist/gestureStart.dist));
       offsetX=local.x-gestureStart.imageX*scale;
       offsetY=local.y-gestureStart.imageY*scale;
-      syncGlobalViewControls();
-      draw();
+      syncGlobalViewControls();draw();
     }
+    e.preventDefault();
   });
-
   function endPointer(e){
+    if(!touches.has(e.pointerId)) return;
+    const tap=e.type==='pointerup' && touches.size===1 && gestureStart?.type==='tap'
+      && Math.hypot(e.clientX-gestureStart.startX,e.clientY-gestureStart.startY)<=8;
     touches.delete(e.pointerId);
     if(touches.size===0){
       gestureStart=null;
-
-      const farbreiseAktiv =
-        document.getElementById('colorJourneyPanel')?.classList.contains('tool-page-active');
-
-      if(farbreiseAktiv && mode==='move'){
-        setMode('picker');
-        renderColorJourney();
-      }
-    }else if(touches.size===1&&mode==='move'){
+      if(tap) selectViewerPoint(e);
+    }else if(touches.size===1){
       const p=[...touches.values()][0];
+      // Remaining finger may pan, but may never become a new tap.
       gestureStart={type:'pan',startX:p.x,startY:p.y,offsetX,offsetY};
-    }
+    }else startViewerPinch();
   }
-
   viewer.addEventListener('pointerup',endPointer);
   viewer.addEventListener('pointercancel',endPointer);
+  viewer.addEventListener('lostpointercapture',endPointer);
 
   function resizeViewerLayout(){
     resizeCanvas();

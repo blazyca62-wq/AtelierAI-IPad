@@ -1,3 +1,11 @@
+AtelierAI iPad 2.34 – Direkte Bildgesten
+
+Bei aktiver Pipette: kurz tippen = Farbe aufnehmen.
+Mit einem Finger ziehen = Bild verschieben, auch im Pipettenmodus.
+Mit zwei Fingern zoomen und verschieben = jederzeit möglich.
+Kreis-/Smart-Pipette und Rasterauswahl bleiben beim Zoomen bereit.
+Nach dem Zoomen kann sofort wieder eine Farbe aufgenommen werden.
+
 AtelierAI iPad 2.33 – Aktuelle Ansicht speichern
 
 Oben in jedem Modul: Ansicht speichern. Vorschau mit allen sichtbaren Farben, Original-/S/W-Einblendungen, Hintergrund und Raster. Ganzes Bild oder sichtbarer Zoom-Ausschnitt wählbar. PNG, über Raster & Speichern auch JPEG. Auf dem iPad Teilen → Bild sichern / In Dateien sichern; alternativ herunterladen oder Vorschau länger berühren. Lasuren: beide Vergleichsbilder einschließlich Ausrichtung und Messpunkten, auch im Vollbild. Gespeichert wird ein Bild, kein wieder bearbeitbares Projekt.
