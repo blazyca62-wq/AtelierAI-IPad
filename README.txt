@@ -1,3 +1,18 @@
+AtelierAI iPad 2.37 – Raster fein einstellen
+
+Die fünf neuen Rasterregler starten im Feinmodus: Verschieben reagiert
+10-mal langsamer, Größe/Breite/Höhe rund 14-mal langsamer als in 2.36.
+Nach dem Loslassen wird der Regler um den aktuellen Wert neu zentriert.
+Weiterziehen verändert das Raster weiter; das Raster selbst springt nicht.
+− / +: Verschiebung um 0,02 Prozentpunkte, Größenänderung um 0,1 Prozentpunkte.
+Für große Änderungen auf „Fein einstellen · langsam“ tippen: Grobmodus.
+Die Fixierung sperrt auch Fein/Grob und die kleinen Schritttasten.
+
+UPDATE: Paketdateien auf GitHub ersetzen (app.html UND sw.js), erfolgreiche
+Veröffentlichung abwarten, App online öffnen, „Update bereit“ antippen.
+Danach Version 2.37 und „Offline bereit“ prüfen. iPad-Symbol bleibt bestehen.
+Prüfung: JavaScript-Syntax und Rechenlogik; kein direkter iPad-Test.
+
 AtelierAI iPad 2.36 – Verstellbares Raster (offlinefähig)
 
 UPDATE EINER BEREITS EINGERICHTETEN OFFLINE-APP

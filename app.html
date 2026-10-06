@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.36</title>
+  <title>AtelierAI iPad 2.37</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1027,7 +1027,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.36</div>
+    <div class="title">AtelierAI · iPad 2.37</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1082,12 +1082,12 @@
         <details class="grid-adjust" style="margin-top:10px">
           <summary style="cursor:pointer;padding:8px 0;font-weight:bold">Raster an Ölbild anpassen</summary>
           <p class="tiny">Nur das Raster verändern. Danach fixieren; beim Bildzoom bleibt es am Motiv. Verschiebung in % der Bildbreite / Bildhöhe.</p>
-          <div class="grid-adjust-fields">
-<label style="display:block;margin:10px 0">Größe <output data-grid-value="size">100 %</output><input aria-label="Raster Größe" data-grid-adjust="size" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"></label>
-<label style="display:block;margin:10px 0">Links / rechts <output data-grid-value="x">0 %</output><input aria-label="Raster Links / rechts" data-grid-adjust="x" type="range" min="-100" max="100" step="0.1" value="0" style="display:block;width:100%"></label>
-<label style="display:block;margin:10px 0">Oben / unten <output data-grid-value="y">0 %</output><input aria-label="Raster Oben / unten" data-grid-adjust="y" type="range" min="-100" max="100" step="0.1" value="0" style="display:block;width:100%"></label>
-<label style="display:block;margin:10px 0">Breite <output data-grid-value="width">100 %</output><input aria-label="Raster Breite" data-grid-adjust="width" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"></label>
-<label style="display:block;margin:10px 0">Höhe <output data-grid-value="height">100 %</output><input aria-label="Raster Höhe" data-grid-adjust="height" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"></label>
+          <button type="button" data-grid-precision class="secondary" style="width:100%">Fein einstellen · langsam</button><p class="tiny">Fein: langsame Bewegung. Nach dem Loslassen steht der Regler wieder mittig – zum Weiterverstellen erneut ziehen. − / + für kleinste Schritte.</p><div class="grid-adjust-fields">
+<label style="display:block;margin:10px 0">Größe <output data-grid-value="size">100 %</output><input aria-label="Raster Größe" data-grid-adjust="size" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"><span style="display:flex;gap:8px;margin-top:5px"><button type="button" class="secondary" data-grid-nudge="size" data-direction="-1" aria-label="Größe verringern" style="flex:1;min-height:40px">−</button><button type="button" class="secondary" data-grid-nudge="size" data-direction="1" aria-label="Größe erhöhen" style="flex:1;min-height:40px">+</button></span></label>
+<label style="display:block;margin:10px 0">Links / rechts <output data-grid-value="x">0 %</output><input aria-label="Raster Links / rechts" data-grid-adjust="x" type="range" min="-100" max="100" step="0.1" value="0" style="display:block;width:100%"><span style="display:flex;gap:8px;margin-top:5px"><button type="button" class="secondary" data-grid-nudge="x" data-direction="-1" aria-label="Links / rechts verringern" style="flex:1;min-height:40px">−</button><button type="button" class="secondary" data-grid-nudge="x" data-direction="1" aria-label="Links / rechts erhöhen" style="flex:1;min-height:40px">+</button></span></label>
+<label style="display:block;margin:10px 0">Oben / unten <output data-grid-value="y">0 %</output><input aria-label="Raster Oben / unten" data-grid-adjust="y" type="range" min="-100" max="100" step="0.1" value="0" style="display:block;width:100%"><span style="display:flex;gap:8px;margin-top:5px"><button type="button" class="secondary" data-grid-nudge="y" data-direction="-1" aria-label="Oben / unten verringern" style="flex:1;min-height:40px">−</button><button type="button" class="secondary" data-grid-nudge="y" data-direction="1" aria-label="Oben / unten erhöhen" style="flex:1;min-height:40px">+</button></span></label>
+<label style="display:block;margin:10px 0">Breite <output data-grid-value="width">100 %</output><input aria-label="Raster Breite" data-grid-adjust="width" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"><span style="display:flex;gap:8px;margin-top:5px"><button type="button" class="secondary" data-grid-nudge="width" data-direction="-1" aria-label="Breite verringern" style="flex:1;min-height:40px">−</button><button type="button" class="secondary" data-grid-nudge="width" data-direction="1" aria-label="Breite erhöhen" style="flex:1;min-height:40px">+</button></span></label>
+<label style="display:block;margin:10px 0">Höhe <output data-grid-value="height">100 %</output><input aria-label="Raster Höhe" data-grid-adjust="height" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"><span style="display:flex;gap:8px;margin-top:5px"><button type="button" class="secondary" data-grid-nudge="height" data-direction="-1" aria-label="Höhe verringern" style="flex:1;min-height:40px">−</button><button type="button" class="secondary" data-grid-nudge="height" data-direction="1" aria-label="Höhe erhöhen" style="flex:1;min-height:40px">+</button></span></label>
 </div><div class="grid2"><button type="button" data-grid-lock class="secondary">Raster fixieren</button><button type="button" data-grid-reset class="secondary">Raster zurücksetzen</button></div>
           <p class="tiny">Eine aktive Detail-Kästchenanalyse wird bei Rasteränderungen aufgehoben. Die Anpassung gilt für alle Module und gespeicherten Ansichten.</p>
         </details>
@@ -1644,12 +1644,12 @@
         <details class="grid-adjust" style="margin-top:10px">
           <summary style="cursor:pointer;padding:8px 0;font-weight:bold">Raster an Ölbild anpassen</summary>
           <p class="tiny">Nur das Raster verändern. Danach fixieren; beim Bildzoom bleibt es am Motiv. Verschiebung in % der Bildbreite / Bildhöhe.</p>
-          <div class="grid-adjust-fields">
-<label style="display:block;margin:10px 0">Größe <output data-grid-value="size">100 %</output><input aria-label="Raster Größe" data-grid-adjust="size" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"></label>
-<label style="display:block;margin:10px 0">Links / rechts <output data-grid-value="x">0 %</output><input aria-label="Raster Links / rechts" data-grid-adjust="x" type="range" min="-100" max="100" step="0.1" value="0" style="display:block;width:100%"></label>
-<label style="display:block;margin:10px 0">Oben / unten <output data-grid-value="y">0 %</output><input aria-label="Raster Oben / unten" data-grid-adjust="y" type="range" min="-100" max="100" step="0.1" value="0" style="display:block;width:100%"></label>
-<label style="display:block;margin:10px 0">Breite <output data-grid-value="width">100 %</output><input aria-label="Raster Breite" data-grid-adjust="width" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"></label>
-<label style="display:block;margin:10px 0">Höhe <output data-grid-value="height">100 %</output><input aria-label="Raster Höhe" data-grid-adjust="height" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"></label>
+          <button type="button" data-grid-precision class="secondary" style="width:100%">Fein einstellen · langsam</button><p class="tiny">Fein: langsame Bewegung. Nach dem Loslassen steht der Regler wieder mittig – zum Weiterverstellen erneut ziehen. − / + für kleinste Schritte.</p><div class="grid-adjust-fields">
+<label style="display:block;margin:10px 0">Größe <output data-grid-value="size">100 %</output><input aria-label="Raster Größe" data-grid-adjust="size" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"><span style="display:flex;gap:8px;margin-top:5px"><button type="button" class="secondary" data-grid-nudge="size" data-direction="-1" aria-label="Größe verringern" style="flex:1;min-height:40px">−</button><button type="button" class="secondary" data-grid-nudge="size" data-direction="1" aria-label="Größe erhöhen" style="flex:1;min-height:40px">+</button></span></label>
+<label style="display:block;margin:10px 0">Links / rechts <output data-grid-value="x">0 %</output><input aria-label="Raster Links / rechts" data-grid-adjust="x" type="range" min="-100" max="100" step="0.1" value="0" style="display:block;width:100%"><span style="display:flex;gap:8px;margin-top:5px"><button type="button" class="secondary" data-grid-nudge="x" data-direction="-1" aria-label="Links / rechts verringern" style="flex:1;min-height:40px">−</button><button type="button" class="secondary" data-grid-nudge="x" data-direction="1" aria-label="Links / rechts erhöhen" style="flex:1;min-height:40px">+</button></span></label>
+<label style="display:block;margin:10px 0">Oben / unten <output data-grid-value="y">0 %</output><input aria-label="Raster Oben / unten" data-grid-adjust="y" type="range" min="-100" max="100" step="0.1" value="0" style="display:block;width:100%"><span style="display:flex;gap:8px;margin-top:5px"><button type="button" class="secondary" data-grid-nudge="y" data-direction="-1" aria-label="Oben / unten verringern" style="flex:1;min-height:40px">−</button><button type="button" class="secondary" data-grid-nudge="y" data-direction="1" aria-label="Oben / unten erhöhen" style="flex:1;min-height:40px">+</button></span></label>
+<label style="display:block;margin:10px 0">Breite <output data-grid-value="width">100 %</output><input aria-label="Raster Breite" data-grid-adjust="width" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"><span style="display:flex;gap:8px;margin-top:5px"><button type="button" class="secondary" data-grid-nudge="width" data-direction="-1" aria-label="Breite verringern" style="flex:1;min-height:40px">−</button><button type="button" class="secondary" data-grid-nudge="width" data-direction="1" aria-label="Breite erhöhen" style="flex:1;min-height:40px">+</button></span></label>
+<label style="display:block;margin:10px 0">Höhe <output data-grid-value="height">100 %</output><input aria-label="Raster Höhe" data-grid-adjust="height" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"><span style="display:flex;gap:8px;margin-top:5px"><button type="button" class="secondary" data-grid-nudge="height" data-direction="-1" aria-label="Höhe verringern" style="flex:1;min-height:40px">−</button><button type="button" class="secondary" data-grid-nudge="height" data-direction="1" aria-label="Höhe erhöhen" style="flex:1;min-height:40px">+</button></span></label>
 </div><div class="grid2"><button type="button" data-grid-lock class="secondary">Raster fixieren</button><button type="button" data-grid-reset class="secondary">Raster zurücksetzen</button></div>
           <p class="tiny">Eine aktive Detail-Kästchenanalyse wird bei Rasteränderungen aufgehoben. Die Anpassung gilt für alle Module und gespeicherten Ansichten.</p>
         </details>
@@ -1927,6 +1927,16 @@
   let correctionBase=null;
   let gridEnabled=false;
   const gridAdjust={size:100,x:0,y:0,width:100,height:100,locked:false};
+  let gridFine=true;
+  const gridCenters={size:100,x:0,y:0,width:100,height:100};
+  function gridBounds(key){return key==='x'||key==='y'?[-100,100]:[25,300];}
+  function centerGridControls(){
+    for(const key of Object.keys(gridCenters))gridCenters[key]=gridAdjust[key];
+  }
+  function nudgeGridValue(key,direction){
+    const [lo,hi]=gridBounds(key),step=key==='x'||key==='y'?.02:.1;
+    gridAdjust[key]=Math.max(lo,Math.min(hi,Math.round((gridAdjust[key]+direction*step)*100)/100));
+  }
   // One image-relative geometry shared by drawing, export and cell selection.
   function gridGeometry(w,h,density){
     const base=Math.min(w,h)/Math.max(2,Number(density)||8);
@@ -1936,8 +1946,17 @@
     return {cellX,cellY,firstX:cx-Math.ceil(cx/cellX)*cellX,firstY:cy-Math.ceil(cy/cellY)*cellY};
   }
   function syncGridAdjust(){
-    document.querySelectorAll('[data-grid-adjust]').forEach(el=>{el.value=gridAdjust[el.dataset.gridAdjust];el.disabled=gridAdjust.locked;});
-    document.querySelectorAll('[data-grid-value]').forEach(el=>{el.textContent=gridAdjust[el.dataset.gridValue]+' %';});
+    document.querySelectorAll('[data-grid-adjust]').forEach(el=>{
+      const key=el.dataset.gridAdjust,[lo,hi]=gridBounds(key);
+      // Fine travel spans 20 percentage points instead of 200 / 275.
+      el.min=gridFine?Math.max(lo,gridCenters[key]-10):lo;
+      el.max=gridFine?Math.min(hi,gridCenters[key]+10):hi;
+      el.step=key==='x'||key==='y'?.02:.1;
+      el.value=gridAdjust[key];el.disabled=gridAdjust.locked;
+    });
+    document.querySelectorAll('[data-grid-nudge]').forEach(el=>{el.disabled=gridAdjust.locked;});
+    document.querySelectorAll('[data-grid-precision]').forEach(el=>{el.textContent=gridFine?'Fein einstellen · langsam':'Grob einstellen · großer Bereich';el.setAttribute('aria-pressed',String(gridFine));el.disabled=gridAdjust.locked;});
+    document.querySelectorAll('[data-grid-value]').forEach(el=>{el.textContent=Number(gridAdjust[el.dataset.gridValue].toFixed(2)).toLocaleString('de-DE')+' %';});
     document.querySelectorAll('[data-grid-lock]').forEach(el=>{el.textContent=gridAdjust.locked?'Raster lösen':'Raster fixieren';el.classList.toggle('active',gridAdjust.locked);el.setAttribute('aria-pressed',String(gridAdjust.locked));});
     document.querySelectorAll('[data-grid-reset]').forEach(el=>{el.disabled=gridAdjust.locked;});
     gridDensity.disabled=gridAdjust.locked;
@@ -6765,10 +6784,18 @@ const mixes=chooseMixes(target,paletteKey);
     if(gridAdjust.locked)return;
     gridAdjust[el.dataset.gridAdjust]=Number(el.value);gridGeometryChanged();
   }));
+  document.querySelectorAll('[data-grid-adjust]').forEach(el=>el.addEventListener('change',()=>{centerGridControls();syncGridAdjust();}));
+  document.querySelectorAll('[data-grid-precision]').forEach(el=>el.addEventListener('click',()=>{
+    if(gridAdjust.locked)return;gridFine=!gridFine;centerGridControls();syncGridAdjust();
+  }));
+  document.querySelectorAll('[data-grid-nudge]').forEach(el=>el.addEventListener('click',()=>{
+    if(gridAdjust.locked)return;
+    nudgeGridValue(el.dataset.gridNudge,Number(el.dataset.direction));centerGridControls();gridGeometryChanged();
+  }));
   document.querySelectorAll('[data-grid-lock]').forEach(el=>el.addEventListener('click',()=>{gridAdjust.locked=!gridAdjust.locked;syncGridAdjust();}));
   document.querySelectorAll('[data-grid-reset]').forEach(el=>el.addEventListener('click',()=>{
     if(gridAdjust.locked)return;
-    Object.assign(gridAdjust,{size:100,x:0,y:0,width:100,height:100});gridGeometryChanged();
+    Object.assign(gridAdjust,{size:100,x:0,y:0,width:100,height:100});centerGridControls();gridGeometryChanged();
   }));
   syncGridAdjust();
   const exportDialog=document.createElement('dialog');
