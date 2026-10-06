@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.38</title>
+  <title>AtelierAI iPad 2.39</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1027,7 +1027,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.38</div>
+    <div class="title">AtelierAI · iPad 2.39</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1486,7 +1486,7 @@
 
       <div class="section" id="surfaceAdvisorPanel">
         <h3>Flächenberater</h3>
-        <p>Bereich antippen → vier Hauptfarben bestimmen. Wenn vorher „Nur diese Farbe zeigen“ aktiv ist, werden daraus vier Nuancen genau dieser Farbfamilie bestimmt. Jede Farbe kann direkt gemischt werden.</p>
+        <p>Kreis oder Rechteck wählen und im Bild antippen: bis zu fünf unterschiedliche Hauptfarben mit eigenen Mischrezepten. Bei „Nur diese Farbe zeigen“ werden bis zu fünf Nuancen dieser Farbfamilie erkannt. Einfarbige Bereiche ergeben entsprechend weniger Farben.</p>
         <div class="grid2">
           <button id="surfaceCircleBtn">Kreis analysieren</button>
           <button id="surfaceRectBtn" class="secondary">Rechteck analysieren</button>
@@ -1500,6 +1500,7 @@
           <button id="surfaceResetBtn" class="secondary">Flächenanalyse löschen</button>
         </div>
         <button id="surfaceIsolationGrayBtn" class="secondary" aria-pressed="false" style="width:100%;margin-top:8px;">Mittelgrauer Hintergrund: Aus</button>
+        <label for="surfaceMixPalette">Palette für alle fünf Mischungen</label><select id="surfaceMixPalette" style="width:100%;padding:9px;margin:6px 0"><option value="artisan">Winsor &amp; Newton Artisan · Öl</option><option value="watercolor">Horadam + Akademie · Aquarell</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select>
         <div id="surfaceResults" class="pc-card"><span class="tiny">Noch kein Bereich analysiert.</span></div>
       </div>
 
@@ -4398,13 +4399,24 @@ const mixes=chooseMixes(target,paletteKey);
     }
     if(pts.length<4)return[];
 
-    // Bei isolierter Farbe werden die Startpunkte nach Helligkeit verteilt.
-    // So entstehen gezielt vier malerisch brauchbare Nuancen derselben Farbe.
-    const seedPts=isolatedLab
-      ? pts.slice().sort((a,b)=>(.2126*a[0]+.7152*a[1]+.0722*a[2])-(.2126*b[0]+.7152*b[1]+.0722*b[2]))
-      : pts;
-
-    let centers=[.12,.37,.63,.88].map(f=>[...seedPts[Math.min(seedPts.length-1,Math.floor(seedPts.length*f))]]);
+    // Seed by color separation, not pixel positions: repeated stripes must
+    // not produce identical centers and collapse to a single average.
+    const distance=(a,b)=>a.reduce((sum,v,i)=>sum+(v-b[i])**2,0);
+    const labs=pts.map(rgbToLabFast);
+    const mean=labs.reduce((a,c)=>a.map((v,i)=>v+c[i]/labs.length),[0,0,0]);
+    let first=0;
+    labs.forEach((c,i)=>{if(distance(c,mean)<distance(labs[first],mean))first=i;});
+    const seeds=[first];
+    while(seeds.length<5){
+      let best=-1,bestDistance=9;
+      labs.forEach((c,i)=>{
+        const d=Math.min(...seeds.map(j=>distance(c,labs[j])));
+        if(d>bestDistance){bestDistance=d;best=i;}
+      });
+      if(best<0)break;
+      seeds.push(best);
+    }
+    let centers=seeds.map(i=>[...pts[i]]);
     for(let it=0;it<6;it++){
       const sums=centers.map(()=>[0,0,0,0]);
       for(const q of pts){let bi=0,bd=Infinity;centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});sums[bi][0]+=q[0];sums[bi][1]+=q[1];sums[bi][2]+=q[2];sums[bi][3]++;}
@@ -4413,7 +4425,7 @@ const mixes=chooseMixes(target,paletteKey);
     const counts=centers.map(()=>0);
     for(const q of pts){let bi=0,bd=Infinity;centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});counts[bi]++;}
 
-    const result=centers.map((c,i)=>({rgb:c.map(v=>Math.round(v)),pct:100*counts[i]/pts.length}));
+    const result=centers.map((c,i)=>({rgb:c.map(v=>Math.round(v)),pct:100*counts[i]/pts.length})).filter(c=>c.pct>0);
     return isolatedLab
       ? result.sort((a,b)=>(.2126*b.rgb[0]+.7152*b.rgb[1]+.0722*b.rgb[2])-(.2126*a.rgb[0]+.7152*a.rgb[1]+.0722*a.rgb[2]))
       : result.sort((a,b)=>b.pct-a.pct);
@@ -5810,6 +5822,10 @@ const mixes=chooseMixes(target,paletteKey);
       surfaceResults.innerHTML='<span class="tiny">In diesem Bereich sind zu wenige Pixel der angezeigten Farbe. Kreis etwas größer machen oder auf einen stärker sichtbaren Bereich setzen.</span>';
       return;
     }
+    const paletteKey=document.getElementById('surfaceMixPalette').value;
+    const summary=document.createElement('p');summary.className='tiny';
+    summary.textContent=clusters.length+' Farben erkannt · Anteile im ausgewählten Bereich · Mischungen sind Startrezepte, bitte auf Papier oder Palette prüfen.';
+    surfaceResults.appendChild(summary);
     clusters.forEach((c,i)=>{
       const row=document.createElement('div');row.className='pc-card';
       row.innerHTML=`
@@ -5821,17 +5837,36 @@ const mixes=chooseMixes(target,paletteKey);
           <button class="surfaceMarkBtn secondary">Nur diese Farbe zeigen</button>
           <button class="surfaceZoomBtn secondary">Bereich vergrößern</button>
         </div>
-        <button class="surfaceMixBtn" style="width:100%;margin-top:6px;">Diese Farbe als Studio-Mischung</button>`;
+        <div class="surfaceRecipe" style="margin-top:8px">Mischrezept wird berechnet …</div><button class="surfaceMixBtn" style="width:100%;margin-top:6px;">Weitere Mischvorschläge</button>`;
       row.querySelector('.surfaceMarkBtn').onclick=()=>buildSurfaceMark(i);
       row.querySelector('.surfaceZoomBtn').onclick=()=>zoomSurfaceCluster(i);
       row.querySelector('.surfaceMixBtn').onclick=()=>{
+        setMedium(paletteKey==='artisan'?'oil':'water');paintPalette.value=paletteKey;
         setMixTarget(c.rgb,`${nuanceMode ? 'Nuance' : 'Hauptfarbe'} ${i+1}`);
         correctionBase=[...c.rgb]; refreshCorrection();
         showStudioMixPage();
       };
       surfaceResults.appendChild(row);
+      setTimeout(()=>{
+        if(!row.isConnected)return;
+        const box=row.querySelector('.surfaceRecipe');
+        try{
+          const m=chooseMixes(c.rgb,paletteKey)[0];
+          if(!m){box.textContent='Keine passende Palettenfarbe verfügbar.';return;}
+          box.replaceChildren();
+          const recipe=document.createElement('div');
+          recipe.textContent=m.names.map((n,j)=>m.parts[j].toLocaleString('de-DE')+' Teil'+(m.parts[j]!==1?'e':'')+' '+n).join(' + ');
+          box.appendChild(recipe);
+          const note=document.createElement('div');note.className='tiny';
+          note.textContent=m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis).':'Öl · Mengen als Startrezept.';
+          box.appendChild(note);
+        }catch(error){box.textContent='Mischung konnte nicht berechnet werden. Bitte andere Palette wählen.';}
+      },40+i*40);
     });
   }
+  document.getElementById('surfaceMixPalette').addEventListener('change',()=>{
+    if(surfaceClusters.length)renderSurface(surfaceClusters);
+  });
 
 
   function ideaColor(){
@@ -6661,20 +6696,20 @@ const mixes=chooseMixes(target,paletteKey);
     if(surfacePreview){surfacePreview.size=Number(surfaceSize.value)/Math.max(scale,.05);draw();}
   });
   surfaceCircleBtn.addEventListener('click',()=>{
-    surfaceMode='circle'; surfaceSelectedIndex=null;
+    surfaceMode='circle'; areaPickerMode=null; smartPickerArmed=false; surfaceSelectedIndex=null;
     if(!activeIsolatedColor) surfaceMarkCanvas=null;
     if(loaded) surfacePreview={shape:'circle',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
     hint.textContent=activeIsolatedColor
-      ? 'Flächenberater: Kreis auf die sichtbare Farbe setzen – es werden 4 Nuancen dieser Farbe bestimmt'
+      ? 'Flächenberater: Kreis auf die sichtbare Farbe setzen – es werden bis zu 5 Nuancen dieser Farbe bestimmt'
       : 'Flächenberater: Kreis ist sichtbar – gewünschte Stelle antippen';
     draw();
   });
   surfaceRectBtn.addEventListener('click',()=>{
-    surfaceMode='rect'; surfaceSelectedIndex=null;
+    surfaceMode='rect'; areaPickerMode=null; smartPickerArmed=false; surfaceSelectedIndex=null;
     if(!activeIsolatedColor) surfaceMarkCanvas=null;
     if(loaded) surfacePreview={shape:'rect',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
     hint.textContent=activeIsolatedColor
-      ? 'Flächenberater: Bereich auf die sichtbare Farbe setzen – es werden 4 Nuancen dieser Farbe bestimmt'
+      ? 'Flächenberater: Bereich auf die sichtbare Farbe setzen – es werden bis zu 5 Nuancen dieser Farbe bestimmt'
       : 'Flächenberater: Rechteck ist sichtbar – gewünschte Stelle antippen';
     draw();
   });
@@ -6693,13 +6728,13 @@ const mixes=chooseMixes(target,paletteKey);
     surfacePreview={shape:surfaceMode,x:ix,y:iy,size:realSize};
     const clusters=clusterArea(ix,iy,realSize,surfaceMode);
     renderSurface(clusters);
-    surfaceMode=null;
+    // Keep the advisor armed for another circle instead of falling back to the average pipette.
     if(activeIsolatedColor){
       isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
-      hint.textContent='Vier Nuancen der angezeigten Farbe bestimmt';
+      hint.textContent='Nuancen der angezeigten Farbe bestimmt';
     }else{
       draw();
-      hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger';
+      hint.textContent=clusters.length+' Hauptfarben mit eigenen Mischungen erkannt · Für einen neuen Bereich erneut antippen';
     }
     return true;
   }
@@ -7034,6 +7069,8 @@ const mixes=chooseMixes(target,paletteKey);
       sec.classList.add('tool-page-active');
       if(btn) btn.classList.add('active');
       active=sec;
+      if(sec.id!=='surfaceAdvisorPanel'){surfaceMode=null;surfacePreview=null;}
+      else if(loaded){surfaceCircleBtn.click();}
       document.getElementById('build32Dock').hidden=sec.id!=='build32Panel'||!build32Data;
       side.scrollTop=0;
       selectSketchTool(sec.id);

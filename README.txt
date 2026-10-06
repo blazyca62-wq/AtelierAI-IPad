@@ -1,3 +1,10 @@
+AtelierAI iPad 2.39 – Flächenberater mit fünf Farben
+
+Kreis oder Rechteck im Flächenberater wählen und das Bild antippen.
+Bis zu fünf unterschiedliche Hauptfarben erscheinen mit Flächenanteil und jeweils einem eigenen Mischrezept. Palette direkt im Flächenberater wählen. Weitere Vorschläge öffnen die Studio-Mischung.
+Erneutes Antippen analysiert den nächsten Bereich. Beim Wechsel des Werkzeugs endet die Flächenaufnahme.
+Bei einfarbigen Bereichen werden weniger Farben gezeigt. Mischungen sind Näherungen und Startrezepte.
+
 AtelierAI iPad 2.38 – Mit mittleren Farben beginnen
 
 NEU im 8-/16-/32-/64-Farben-Modul:
