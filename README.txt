@@ -1,3 +1,33 @@
+AtelierAI iPad 2.36 – Verstellbares Raster (offlinefähig)
+
+UPDATE EINER BEREITS EINGERICHTETEN OFFLINE-APP
+1. ZIP entpacken und Dateien im bestehenden GitHub-Repository ersetzen.
+   app.html und sw.js unbedingt gemeinsam aktualisieren; alle Hauptdateien
+   aus dem Paket hochladen. Auf erfolgreiche/grüne Veröffentlichung warten.
+2. AtelierAI mit Internet öffnen. Bei „Update bereit“ zuerst die aktuelle
+   Ansicht speichern, dann den Update-Knopf drücken und den Wechsel bestätigen.
+3. Version 2.36 und „Offline bereit“ prüfen. Das vorhandene iPad-Symbol bleibt.
+4. Zum Prüfen im Flugmodus schließen und über das Symbol erneut öffnen.
+
+Prüfung: JavaScript-Syntax, gemeinsame Rastergeometrie, Kästchenauswahl
+bei Verschiebung und Streckung, maßstabsgleiche Exportgeometrie geprüft.
+Kein direkter Browser-/iPad-Test möglich.
+
+RASTER AN ÖLBILD ANPASSEN
+Unter „Raster & Speichern“ oder im 8/16/32/48/64-Farben-Modul
+„Raster an Ölbild anpassen“ aufklappen.
+Größe verändert beide Achsen gemeinsam. Links/rechts und oben/unten
+verschieben das Raster unabhängig vom Foto. Breite und Höhe gleichen
+unterschiedliche Streckungen aus. An zwei markanten Motivstellen ausrichten.
+„Raster fixieren“ sperrt die Regler; „Raster lösen“ gibt sie wieder frei.
+Bildzoom und Verschieben nehmen das Raster weiterhin mit.
+„Raster zurücksetzen“ setzt nur die neue Anpassung auf den Ausgangswert.
+Detail-Kästchenauswahl und Bildexport verwenden das angepasste Raster.
+Eine vorhandene Detailanalyse wird bei Änderung des Rasters aufgehoben.
+Die Rasteranpassung bleibt beim Modulwechsel erhalten, wird aber wie der
+übrige Arbeitsstand nicht über Schließen/Neuladen hinweg gespeichert.
+Perspektivische Verzerrungen lassen sich damit nicht vollständig korrigieren.
+
 AtelierAI iPad 2.35 – Offline-Version
 
 EINRICHTUNG (einmal Internet erforderlich)

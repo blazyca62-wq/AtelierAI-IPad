@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.35</title>
+  <title>AtelierAI iPad 2.36</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1027,7 +1027,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.35</div>
+    <div class="title">AtelierAI · iPad 2.36</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1079,6 +1079,19 @@
         <p>Farbbereiche Schritt für Schritt einblenden. Der zuletzt bewegte Regler bestimmt die Ansicht.</p>
         <div class="grid2" style="margin-bottom:8px"><button id="build32Grid" class="secondary">Raster ein</button><button id="build32Pick" class="secondary">Mischung aufnehmen</button></div>
         <div class="control-line"><label for="build32GridDensity">Rastergröße</label><input id="build32GridDensity" type="range" min="2" max="20" value="8"><span id="build32GridDensityVal">8</span></div>
+        <details class="grid-adjust" style="margin-top:10px">
+          <summary style="cursor:pointer;padding:8px 0;font-weight:bold">Raster an Ölbild anpassen</summary>
+          <p class="tiny">Nur das Raster verändern. Danach fixieren; beim Bildzoom bleibt es am Motiv. Verschiebung in % der Bildbreite / Bildhöhe.</p>
+          <div class="grid-adjust-fields">
+<label style="display:block;margin:10px 0">Größe <output data-grid-value="size">100 %</output><input aria-label="Raster Größe" data-grid-adjust="size" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"></label>
+<label style="display:block;margin:10px 0">Links / rechts <output data-grid-value="x">0 %</output><input aria-label="Raster Links / rechts" data-grid-adjust="x" type="range" min="-100" max="100" step="0.1" value="0" style="display:block;width:100%"></label>
+<label style="display:block;margin:10px 0">Oben / unten <output data-grid-value="y">0 %</output><input aria-label="Raster Oben / unten" data-grid-adjust="y" type="range" min="-100" max="100" step="0.1" value="0" style="display:block;width:100%"></label>
+<label style="display:block;margin:10px 0">Breite <output data-grid-value="width">100 %</output><input aria-label="Raster Breite" data-grid-adjust="width" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"></label>
+<label style="display:block;margin:10px 0">Höhe <output data-grid-value="height">100 %</output><input aria-label="Raster Höhe" data-grid-adjust="height" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"></label>
+</div><div class="grid2"><button type="button" data-grid-lock class="secondary">Raster fixieren</button><button type="button" data-grid-reset class="secondary">Raster zurücksetzen</button></div>
+          <p class="tiny">Eine aktive Detail-Kästchenanalyse wird bei Rasteränderungen aufgehoben. Die Anpassung gilt für alle Module und gespeicherten Ansichten.</p>
+        </details>
+
         <button id="build32DetailCell" class="secondary" type="button" style="width:100%;margin-top:7px" aria-pressed="false">Detail-Kästchen auswählen: Aus</button>
         <p id="build32DetailCellStatus" class="tiny">Raster einschalten → Detail-Kästchen auswählen → ein Kästchen antippen. Die aktuell gewählte 8/16/32/48/64-Farbzahl wird dann nur in diesem Kästchen neu berechnet.</p>
         <p class="tiny">Mischung aufnehmen: eine sichtbare Farbfläche antippen. Das Raster wird nicht mitgemessen.</p>
@@ -1628,6 +1641,19 @@
         </div>
         <button id="saveJpegBtn" class="secondary" style="width:100%;margin-top:7px;">Als JPEG speichern</button>
         <div class="control-line"><label>Raster</label><input id="gridDensity" type="range" min="2" max="20" value="8"><span id="gridDensityVal">8</span></div>
+        <details class="grid-adjust" style="margin-top:10px">
+          <summary style="cursor:pointer;padding:8px 0;font-weight:bold">Raster an Ölbild anpassen</summary>
+          <p class="tiny">Nur das Raster verändern. Danach fixieren; beim Bildzoom bleibt es am Motiv. Verschiebung in % der Bildbreite / Bildhöhe.</p>
+          <div class="grid-adjust-fields">
+<label style="display:block;margin:10px 0">Größe <output data-grid-value="size">100 %</output><input aria-label="Raster Größe" data-grid-adjust="size" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"></label>
+<label style="display:block;margin:10px 0">Links / rechts <output data-grid-value="x">0 %</output><input aria-label="Raster Links / rechts" data-grid-adjust="x" type="range" min="-100" max="100" step="0.1" value="0" style="display:block;width:100%"></label>
+<label style="display:block;margin:10px 0">Oben / unten <output data-grid-value="y">0 %</output><input aria-label="Raster Oben / unten" data-grid-adjust="y" type="range" min="-100" max="100" step="0.1" value="0" style="display:block;width:100%"></label>
+<label style="display:block;margin:10px 0">Breite <output data-grid-value="width">100 %</output><input aria-label="Raster Breite" data-grid-adjust="width" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"></label>
+<label style="display:block;margin:10px 0">Höhe <output data-grid-value="height">100 %</output><input aria-label="Raster Höhe" data-grid-adjust="height" type="range" min="25" max="300" step="1" value="100" style="display:block;width:100%"></label>
+</div><div class="grid2"><button type="button" data-grid-lock class="secondary">Raster fixieren</button><button type="button" data-grid-reset class="secondary">Raster zurücksetzen</button></div>
+          <p class="tiny">Eine aktive Detail-Kästchenanalyse wird bei Rasteränderungen aufgehoben. Die Anpassung gilt für alle Module und gespeicherten Ansichten.</p>
+        </details>
+
       </div>
 
       <div class="section" id="sampleColorPanel">
@@ -1900,6 +1926,28 @@
   let surfaceMode=null;
   let correctionBase=null;
   let gridEnabled=false;
+  const gridAdjust={size:100,x:0,y:0,width:100,height:100,locked:false};
+  // One image-relative geometry shared by drawing, export and cell selection.
+  function gridGeometry(w,h,density){
+    const base=Math.min(w,h)/Math.max(2,Number(density)||8);
+    const cellX=base*gridAdjust.size/100*gridAdjust.width/100;
+    const cellY=base*gridAdjust.size/100*gridAdjust.height/100;
+    const cx=w*(.5+gridAdjust.x/100),cy=h*(.5+gridAdjust.y/100);
+    return {cellX,cellY,firstX:cx-Math.ceil(cx/cellX)*cellX,firstY:cy-Math.ceil(cy/cellY)*cellY};
+  }
+  function syncGridAdjust(){
+    document.querySelectorAll('[data-grid-adjust]').forEach(el=>{el.value=gridAdjust[el.dataset.gridAdjust];el.disabled=gridAdjust.locked;});
+    document.querySelectorAll('[data-grid-value]').forEach(el=>{el.textContent=gridAdjust[el.dataset.gridValue]+' %';});
+    document.querySelectorAll('[data-grid-lock]').forEach(el=>{el.textContent=gridAdjust.locked?'Raster lösen':'Raster fixieren';el.classList.toggle('active',gridAdjust.locked);el.setAttribute('aria-pressed',String(gridAdjust.locked));});
+    document.querySelectorAll('[data-grid-reset]').forEach(el=>{el.disabled=gridAdjust.locked;});
+    gridDensity.disabled=gridAdjust.locked;
+    document.getElementById('build32GridDensity').disabled=gridAdjust.locked;
+  }
+  function gridGeometryChanged(){
+    if(build32DetailCell){clearBuild32DetailCell();build32Manual=false;build32Selection.clear();build32Selected=null;renderBuild32(build32Direction);}
+    if(!gridEnabled)gridToggleBtn.click();
+    syncGridAdjust();syncBuild32Grid();draw();
+  }
   let surfacePreview=null;
   let surfaceHoverImage=null;
   let surfaceClusters=[];
@@ -3438,13 +3486,7 @@ const mixes=chooseMixes(target,paletteKey);
     const n=Math.max(2,Number(density)||8);
     targetCtx.save();
 
-    // Quadratisches, exakt zentriertes Raster:
-    // Die Kästchen haben immer dieselbe Breite und Höhe.
-    // Das Raster ist auf die Bildmitte ausgerichtet, sodass an den
-    // gegenüberliegenden Bildrändern jeweils gleich viel Kästchenanteil
-    // abgeschnitten wird.
-    const cell=Math.min(w,h)/n;
-    const cx=w/2, cy=h/2;
+    const {cellX,cellY,firstX,firstY}=gridGeometry(w,h,density);
 
     targetCtx.globalCompositeOperation=highContrast?'source-over':'difference';
     targetCtx.strokeStyle='rgba(255,255,255,.88)';
@@ -3467,8 +3509,7 @@ const mixes=chooseMixes(target,paletteKey);
       }
     }
 
-    const firstX=cx-Math.ceil(cx/cell)*cell;
-    for(let x=firstX; x<=w+0.001; x+=cell){
+    for(let x=firstX; x<=w+0.001; x+=cellX){
       const px=Math.round(x)+0.5;
       if(px<=0.5 || px>=w+0.5) continue;
       targetCtx.beginPath();
@@ -3477,8 +3518,7 @@ const mixes=chooseMixes(target,paletteKey);
       strokeGridLine();
     }
 
-    const firstY=cy-Math.ceil(cy/cell)*cell;
-    for(let y=firstY; y<=h+0.001; y+=cell){
+    for(let y=firstY; y<=h+0.001; y+=cellY){
       const py=Math.round(y)+0.5;
       if(py<=0.5 || py>=h+0.5) continue;
       targetCtx.beginPath();
@@ -4583,14 +4623,11 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function build32GridCellAt(ix,iy){
     if(!loaded)return null;
-    const n=Math.max(2,Number(gridDensity.value)||8);
-    const cell=Math.min(sourceCanvas.width,sourceCanvas.height)/n;
-    const cx=sourceCanvas.width/2, cy=sourceCanvas.height/2;
-    const firstX=cx-Math.ceil(cx/cell)*cell, firstY=cy-Math.ceil(cy/cell)*cell;
-    const col=Math.floor((ix-firstX)/cell), row=Math.floor((iy-firstY)/cell);
+    const {cellX,cellY,firstX,firstY}=gridGeometry(sourceCanvas.width,sourceCanvas.height,gridDensity.value);
+    const col=Math.floor((ix-firstX)/cellX), row=Math.floor((iy-firstY)/cellY);
     if(col<0||row<0)return null;
-    const x0=Math.max(0,firstX+col*cell), y0=Math.max(0,firstY+row*cell);
-    const x1=Math.min(sourceCanvas.width,firstX+(col+1)*cell), y1=Math.min(sourceCanvas.height,firstY+(row+1)*cell);
+    const x0=Math.max(0,firstX+col*cellX), y0=Math.max(0,firstY+row*cellY);
+    const x1=Math.min(sourceCanvas.width,firstX+(col+1)*cellX), y1=Math.min(sourceCanvas.height,firstY+(row+1)*cellY);
     if(x1<=x0||y1<=y0||ix<x0||ix>x1||iy<y0||iy>y1)return null;
     return {col,row,x:Math.floor(x0),y:Math.floor(y0),w:Math.max(1,Math.floor(x1)-Math.floor(x0)),h:Math.max(1,Math.floor(y1)-Math.floor(y0))};
   }
@@ -6723,7 +6760,17 @@ const mixes=chooseMixes(target,paletteKey);
 
   gridToggleBtn.addEventListener('click',()=>{gridEnabled=!gridEnabled;gridToggleBtn.textContent=gridEnabled?'Raster aus':'Raster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);draw();});
 
-  gridDensity.addEventListener('input',()=>{gridDensityVal.textContent=gridDensity.value;draw();});
+  gridDensity.addEventListener('input',()=>{gridDensityVal.textContent=gridDensity.value;if(build32DetailCell){clearBuild32DetailCell();build32Manual=false;build32Selection.clear();build32Selected=null;renderBuild32(build32Direction);}syncBuild32Grid();draw();});
+  document.querySelectorAll('[data-grid-adjust]').forEach(el=>el.addEventListener('input',()=>{
+    if(gridAdjust.locked)return;
+    gridAdjust[el.dataset.gridAdjust]=Number(el.value);gridGeometryChanged();
+  }));
+  document.querySelectorAll('[data-grid-lock]').forEach(el=>el.addEventListener('click',()=>{gridAdjust.locked=!gridAdjust.locked;syncGridAdjust();}));
+  document.querySelectorAll('[data-grid-reset]').forEach(el=>el.addEventListener('click',()=>{
+    if(gridAdjust.locked)return;
+    Object.assign(gridAdjust,{size:100,x:0,y:0,width:100,height:100});gridGeometryChanged();
+  }));
+  syncGridAdjust();
   const exportDialog=document.createElement('dialog');
   exportDialog.id='exportDialog';
   exportDialog.setAttribute('aria-labelledby','exportTitle');
