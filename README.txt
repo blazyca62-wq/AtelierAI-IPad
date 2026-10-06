@@ -1,3 +1,21 @@
+AtelierAI iPad 2.38 – Mit mittleren Farben beginnen
+
+NEU im 8-/16-/32-/64-Farben-Modul:
+- „Mit mittlerer Farbe starten“ zeigt genau eine Farbe aus der Mitte der nach Helligkeit sortierten Palette.
+- Linke Grenze nach links: schrittweise hellere Farben hinzufügen.
+- Rechte Grenze nach rechts: schrittweise dunklere Farben hinzufügen.
+- Beide Grenzen sind unabhängig: helle UND dunkle Farben gemeinsam sichtbar.
+- Beide Grenzen ganz außen zeigen alle Farben der gewählten Palette/Farbfamilien.
+- Zurück zur Mitte: wieder nur die Ausgangsfarbe.
+- Sichtbare Farben sind unten in der Palette markiert.
+- Funktioniert auch mit Farbfamilien und im ausgewählten Rasterkästchen.
+- Die bisherigen Hell-/Dunkel-Regler bleiben verfügbar.
+
+Aktualisierung wie bisher: Dateien der ZIP entpacken und die bisherigen Dateien ersetzen.
+Nach dem Update Version 2.38 und „Offline bereit“ prüfen.
+
+Bisherige Hinweise / Versionsgeschichte:
+
 AtelierAI iPad 2.37 – Raster fein einstellen
 
 Die fünf neuen Rasterregler starten im Feinmodus: Verschieben reagiert
