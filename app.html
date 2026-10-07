@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.39</title>
+  <title>AtelierAI iPad 2.40</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1027,7 +1027,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.39</div>
+    <div class="title">AtelierAI · iPad 2.40</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1111,7 +1111,7 @@
           <button type="button" class="secondary familyChoice" data-family="violet">Violett</button>
           <button type="button" class="secondary familyChoice" data-family="neutral">Neutral · Weiß / Grau / Schwarz</button>
         </div>
-        <p class="tiny">Mehrere Farbfamilien können gleichzeitig sichtbar sein. Beispiel: <b>Gelb + Ocker + Orange</b>. Erneut antippen = Familie ausblenden. „Alle“ setzt auf alle Familien zurück. Übergangstöne können zu mehreren Familien gehören.</p></div>
+        <p class="tiny">Mehrere Farbfamilien können gleichzeitig sichtbar sein. Beispiel: <b>Gelb + Ocker + Orange</b>. Erneut antippen = Familie ausblenden. „Alle“ setzt auf alle Familien zurück. Jede Farbe gehört genau einer Familie. Weiß gehört zu Neutral. Übergangstöne werden nach Farbton, Helligkeit und Sättigung zugeordnet.</p></div>
         <div style="margin-top:18px;padding:12px;border:1px solid #ccc;border-radius:10px">
           <label for="build32middle"><strong>Von der Mitte aufbauen</strong></label>
           <button id="build32middleStart" type="button" class="secondary" disabled style="width:100%;margin-top:8px">Mit mittlerer Farbe starten</button>
@@ -4797,51 +4797,30 @@ const mixes=chooseMixes(target,paletteKey);
     return 'violet';
   }
   function build32FamilyOf(rgb){
-    const [h,s,v]=rgbToHsv(rgb),lab=rgbToLabFast(rgb),chroma=Math.hypot(lab[1],lab[2]);
-    if(build32IsNeutral(rgb))return lab[0]>=92?'white':'neutral';
+    const [h,s]=rgbToHsv(rgb),[L,a,b]=rgbToLabFast(rgb);
+    const chroma=Math.hypot(a,b),[r,g]=rgb;
+    // One owner per swatch, shared by every family filter and palette size.
+    // White belongs to Neutral; it is no longer repeated in every family.
+    if(build32IsNeutral(rgb))return 'neutral';
     if(chroma<14||s<.12)return build32TintedGrayFamily(rgb);
-    if(h>=15 && h<75){
-      if(lab[0]<58 && (h<48 || s<.65))return 'brown';
-      if(h<48 && s<.72)return 'ochre';
+    if(h>=335||h<8)return 'red';
+    if(h<=68){
+      // Keep yellow-green and olive in Green, including muted shades.
+      const greenDominant=g>r*1.04||a<-.34*Math.max(1,b);
+      if(greenDominant)return 'green';
+      // Red/pink bias takes priority over neighboring orange/earth colors.
+      if(h<=24&&a>Math.max(4,1.05*b))return 'red';
+      const earthy=L<58||(L<72&&s<.85)||(h<48&&L<90&&s<.55);
+      if(earthy)return L<52||h<25?'brown':'ochre';
+      return h<43?'orange':'yellow';
     }
-    if(h<15 || h>=335)return 'red';
-    if(h<43)return 'orange';
-    if(h<70)return 'yellow';
     if(h<165)return 'green';
     if(h<195)return 'turquoise';
     if(h<265)return 'blue';
-    if(h<335)return 'violet';
-    return 'red';
+    return 'violet';
   }
   function build32MatchesFamily(rgb,family){
-    const primary=build32FamilyOf(rgb);
-    if(family==='all'||primary==='white')return true;
-    const [h,s]=rgbToHsv(rgb),lab=rgbToLabFast(rgb),chroma=Math.hypot(lab[1],lab[2]);
-    if(family==='neutral')return build32IsNeutral(rgb);
-    if(build32IsNeutral(rgb))return false;
-    // Muted but visibly tinted grays belong to their hue family, not Neutral.
-    if(chroma<14||s<.12)return family===build32TintedGrayFamily(rgb);
-    // Use hue, perceptual red/green bias, and lightness together.
-    // Green-dominant olives must not enter Yellow, Ochre or Brown.
-    if(['red','orange','yellow','ochre','brown'].includes(family)){
-      if(chroma<4||s<.025)return false;
-      const [r,g,b]=rgb,L=lab[0],a=lab[1],yellowAxis=lab[2];
-      const greenDominant=h>68||g>r*1.04||a<-.34*Math.max(1,yellowAxis);
-      const earthy=h>=8&&h<=65&&!greenDominant&&(L<58||(L<72&&s<.85)||(h<48&&L<90&&s<.55));
-      if(family==='red')return (h>=335||h<=24)&&a>Math.max(4,1.05*yellowAxis)&&(L>=45||chroma>=14);
-      if(family==='orange')return h>=16&&h<=48&&!earthy&&!greenDominant;
-      if(family==='yellow')return h>=40&&h<=68&&!greenDominant&&!earthy;
-      if(family==='ochre')return h>=25&&h<=65&&earthy;
-      if(family==='brown')return h>=0&&h<=60&&!greenDominant&&r>g&&g>=b&&L<78&&(s<.85||L<48)&&a<Math.max(12,2.2*yellowAxis);
-    }
-    // Saturated cool colors keep their existing overlapping ranges.
-    if(primary===family)return true;
-    if(chroma<3||s<.02)return false;
-    if(family==='green')return h>=55&&h<=180;
-    if(family==='turquoise')return h>=145&&h<=210;
-    if(family==='blue')return h>=180&&h<=285;
-    if(family==='violet')return h>=250&&h<=340;
-    return false;
+    return family==='all'||family===build32FamilyOf(rgb);
   }
   function build32SelectedFamilies(){
     return build32Families.has('all') ? ['all'] : [...build32Families];

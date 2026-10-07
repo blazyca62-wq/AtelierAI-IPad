@@ -1,3 +1,20 @@
+AtelierAI iPad 2.40 – Eindeutige Farbfamilien
+
+Im 8-/16-/32-/64-Farben-Modul gehört jedes Farbfeld genau einer Familie.
+Keine Überschneidungen zwischen Gelb, Ocker, Orange und Braun oder zwischen
+Grün, Türkis, Blau und Violett. Weiß gehört ausschließlich zu Neutral.
+Mehrere Familien lassen sich weiterhin gemeinsam einschalten.
+Die Zuordnung gilt auch im ausgewählten Rasterkästchen und bei den
+Hell-/Dunkel- sowie Mitteltönen-Reglern. Grenztöne bleiben Näherungen.
+
+UPDATE: ZIP entpacken und die Dateien im bestehenden GitHub-Repository ersetzen.
+app.html UND sw.js gemeinsam aktualisieren. Veröffentlichung abwarten,
+App online öffnen und gegebenenfalls „Update bereit“ antippen.
+Danach Version 2.40 und „Offline bereit“ prüfen.
+JavaScript-Syntax und Familienzuordnung geprüft; kein direkter iPad-Test.
+
+Bisherige Hinweise / Versionsgeschichte:
+
 AtelierAI iPad 2.39 – Flächenberater mit fünf Farben
 
 Kreis oder Rechteck im Flächenberater wählen und das Bild antippen.
