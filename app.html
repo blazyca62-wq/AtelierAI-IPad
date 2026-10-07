@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.43</title>
+  <title>AtelierAI iPad 2.44</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1027,7 +1027,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.43</div>
+    <div class="title">AtelierAI · iPad 2.44</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1129,8 +1129,9 @@
         <p id="build32Status" role="status">Foto öffnen und Farben erkennen lassen.</p>
         <p class="tiny">0: leer · Regler ganz rechts: alle Farben der gewählten Familie; bei „Normal“ das vollständige Bild. Die Farbauswahl berücksichtigt auch kleine, markante Farbbereiche.</p>
         <button id="build32Extras" class="secondary" disabled style="width:100%;margin-bottom:8px">Nur Ergänzungen zeigen</button>
-        <label for="build32Difference">Abweichung: <span id="build32DifferenceVal">5</span></label>
-        <input id="build32Difference" type="range" min="1" max="20" step="1" value="5" style="width:100%">
+        <label for="build32Difference">Abweichung: <span id="build32DifferenceVal">9</span></label>
+        <input id="build32Difference" type="range" min="1" max="20" step="1" value="9" style="width:100%;min-height:44px">
+        <div class="tiny">Das Bild wird nach dem Loslassen aktualisiert. Der Wert bleibt beim Ansichtswechsel erhalten.</div>
         <p class="tiny">Wenn alle Farben sichtbar sind: nur abweichende Bereiche in den Farben der Arbeitsansicht. Links: auch feine Unterschiede · rechts: nur deutliche.</p>
         <button id="build32Original" class="secondary" style="width:100%">Zurück zur Arbeitsansicht</button>
       </div>
@@ -5443,7 +5444,8 @@ const mixes=chooseMixes(target,paletteKey);
     syncBuild32FamilyRanges();
     document.getElementById('build32light').value=state.light;
     document.getElementById('build32dark').value=state.dark;
-    document.getElementById('build32Difference').value=state.difference;
+    // Abweichung is a persistent preference, not part of a temporary view snapshot.
+    syncBuild32DifferenceLabel();
     build32Direction=state.direction;build32Manual=state.manual;build32Selected=state.selected;
     build32Selection.clear();state.selection.forEach(i=>build32Selection.add(i));
     if(state.manual)renderBuild32Selection();
@@ -5554,7 +5556,7 @@ const mixes=chooseMixes(target,paletteKey);
     }
     build32Extras=true;build32Active=true;
     document.getElementById('build32DetailCell').disabled=true;
-    document.getElementById('build32DifferenceVal').textContent=String(threshold);
+    syncBuild32DifferenceLabel();
     if(build32Manual)renderBuild32Selection();else renderBuild32(build32Direction);
   }
   function leaveBuild32Extras(){
@@ -5566,11 +5568,32 @@ const mixes=chooseMixes(target,paletteKey);
     renderBuild32PaletteStrip(build32Data.palette);restoreBuild32State(base.state);
   }
   document.getElementById('build32Extras').addEventListener('click',()=>{forgetBuild32AllPrevious();if(build32Extras)leaveBuild32Extras();else showBuild32Extras();});
-  document.getElementById('build32Difference').addEventListener('input',e=>{
-    forgetBuild32AllPrevious();
-    document.getElementById('build32DifferenceVal').textContent=e.target.value;
-    if(build32Extras)showBuild32Extras();
-  });
+  let build32DifferenceTimer=null;
+  function syncBuild32DifferenceLabel(){
+    document.getElementById('build32DifferenceVal').textContent=Number(document.getElementById('build32Difference').value).toLocaleString('de-DE',{maximumFractionDigits:1});
+  }
+  function setBuild32Difference(value,immediate=false){
+    const number=Number(value);
+    if(!Number.isFinite(number))return;
+    const threshold=Math.round(Math.max(1,Math.min(20,number)));
+    document.getElementById('build32Difference').value=String(threshold);
+    syncBuild32DifferenceLabel();
+    try{localStorage.setItem('atelierai-build32-difference',String(threshold));}catch(e){}
+    clearTimeout(build32DifferenceTimer);build32DifferenceTimer=null;
+    // Quantizing every touch movement blocked the slider on the iPad.
+    // Only update the number while dragging; calculate after release.
+    if(build32Extras&&immediate){
+      const apply=()=>{build32DifferenceTimer=null;if(build32Extras)showBuild32Extras();};
+      build32DifferenceTimer=setTimeout(apply,0);
+    }
+  }
+  document.getElementById('build32Difference').addEventListener('input',e=>setBuild32Difference(e.target.value));
+  document.getElementById('build32Difference').addEventListener('change',e=>setBuild32Difference(e.target.value,true));
+  try{
+    const saved=localStorage.getItem('atelierai-build32-difference');
+    if(saved!==null&&Number.isFinite(Number(saved)))setBuild32Difference(saved);
+  }catch(e){}
+  syncBuild32DifferenceLabel();
 
   function sampleBuild32Color(ix,iy){
     if(!build32Canvas || !build32VisibleMask)return null;

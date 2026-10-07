@@ -1,3 +1,7 @@
+AtelierAI iPad 2.44 – Abweichungsregler ohne laufende Neuberechnung
+
+Die Abweichung bleibt in ganzen Stufen einstellbar. Beim Ziehen wird nur der Wert aktualisiert; die aufwendige Ergänzungsberechnung startet erst nach dem Loslassen. Der zuletzt gewählte Wert bleibt beim Ansichtswechsel erhalten und wird auf dem Gerät gespeichert, soweit Browserspeicherung verfügbar. Startwert ohne gespeicherte Einstellung: 9.
+
 AtelierAI iPad 2.43 – Ergänzungen filtern
 
 Bei „Nur Ergänzungen zeigen“ wirken Farbfamilien, Hell/Dunkel, mittlere Farben und die Farbauswahl nur auf Ergänzungen. Die Palette zeigt Farben aus diesen Ergänzungsflächen. Die Originalfarbtöne der Ergänzungen bleiben im Bild erhalten. Schwelle 9 kann wie gewohnt eingestellt werden. „Farbaufbau wieder anzeigen“ stellt die vorherige Grundfarbenansicht wieder her.
