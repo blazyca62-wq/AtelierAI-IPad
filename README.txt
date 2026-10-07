@@ -1,3 +1,7 @@
+AtelierAI iPad 2.43 – Ergänzungen filtern
+
+Bei „Nur Ergänzungen zeigen“ wirken Farbfamilien, Hell/Dunkel, mittlere Farben und die Farbauswahl nur auf Ergänzungen. Die Palette zeigt Farben aus diesen Ergänzungsflächen. Die Originalfarbtöne der Ergänzungen bleiben im Bild erhalten. Schwelle 9 kann wie gewohnt eingestellt werden. „Farbaufbau wieder anzeigen“ stellt die vorherige Grundfarbenansicht wieder her.
+
 AtelierAI iPad 2.42 – Hintergrundschalter repariert
 
 Weiß und Grau werden jetzt auch bei den Hell-/Dunkel- und Mitteltöne-Reglern

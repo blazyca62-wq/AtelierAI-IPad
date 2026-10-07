@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.42</title>
+  <title>AtelierAI iPad 2.43</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1027,7 +1027,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.42</div>
+    <div class="title">AtelierAI · iPad 2.43</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -4639,6 +4639,7 @@ const mixes=chooseMixes(target,paletteKey);
     for(let i=0,n=0;i<pixels.length;i+=4,n++)ranks[n]=lut[key(pixels[i],pixels[i+1],pixels[i+2])];
     return {width:data.width,height:data.height,palette,ranks:ranks.buffer};
   }
+  let build32ExtrasBase=null;
   let build32GrayBlend=0,build32Foreground=null;
   let build32Smoothing=0,build32RawFrame=null,build32SmoothPending=false;
   let build32Data=null,build32Canvas=null,build32Active=false,build32Worker=null,build32Generation=0,build32Direction='light',build32Extras=false,build32VisibleMask=null;
@@ -4877,7 +4878,7 @@ const mixes=chooseMixes(target,paletteKey);
     slider.disabled=!indices.length;
     document.getElementById('build32middleDark').disabled=!indices.length;
     document.getElementById('build32middleStart').disabled=!indices.length;
-    const active=build32Direction==='middle'&&!build32Manual&&!build32Extras;
+    const active=build32Direction==='middle'&&!build32Manual;
     const order=palette?build32FamilyOrder(palette,build32SelectedFamilies(),'light'):[];
     const center=Math.floor((order.length-1)/2);
     const left=order.length?Math.round(-Number(slider.value)*center/100):0;
@@ -4957,6 +4958,8 @@ const mixes=chooseMixes(target,paletteKey);
   });
   const build32Status=document.getElementById('build32Status');
   function resetBuild32(){
+    build32ExtrasBase=null;
+    document.getElementById('build32DetailCell').disabled=false;
     document.getElementById('build32middle').value='0';
     document.getElementById('build32middle').disabled=true;
     document.getElementById('build32middleDark').value='0';
@@ -5096,15 +5099,15 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function renderBuild32(direction){
     if(!build32Data)return;
-    build32Direction=direction;build32Manual=false;build32Extras=false;
+    build32Direction=direction;build32Manual=false;
     syncBuild32Middle();
     if(build32DetailCell && build32DetailBaseCanvas){ build32RenderDetailOnly(direction); return; }
     if(!build32Data)return;
     syncBuild32FamilyRanges();
     build32Manual=false;
     build32Selected=null;build32MixRequest++;document.getElementById('build32Recipe').textContent='Eine Farbe antippen – Farbfläche und Mischung erscheinen.';
-    build32Extras=false;document.getElementById('build32Extras').textContent='Nur Ergänzungen zeigen';
-    document.getElementById('build32Extras').disabled=direction==='middle'||!build32SelectedFamilies().includes('all')||Number(document.getElementById('build32light').value)!==build32ColorCount();
+    document.getElementById('build32Extras').textContent=build32Extras?'Farbaufbau wieder anzeigen':'Nur Ergänzungen zeigen';
+    document.getElementById('build32Extras').disabled=!build32Extras&&(direction==='middle'||!build32SelectedFamilies().includes('all')||Number(document.getElementById('build32light').value)!==build32ColorCount());
     build32Direction=direction;build32Active=true;
     const {palette,ranks,width,height}=build32Data;
     const lightCount=Number(document.getElementById('build32light').value);
@@ -5119,10 +5122,10 @@ const mixes=chooseMixes(target,paletteKey);
     const lightOrder=build32FamilyOrder(palette,build32SelectedFamilies(),'light');
     const darkOrder=build32FamilyOrder(palette,build32SelectedFamilies(),'dark');
     const nLight=build32SelectedFamilies().includes('all')
-      ? Math.ceil(lightCount*palette.length/build32ColorCount())
+      ? (build32Extras?lightCount:Math.ceil(lightCount*palette.length/build32ColorCount()))
       : Math.min(lightCount,lightOrder.length);
     const nDark=build32SelectedFamilies().includes('all')
-      ? Math.ceil(darkCount*palette.length/build32ColorCount())
+      ? (build32Extras?darkCount:Math.ceil(darkCount*palette.length/build32ColorCount()))
       : Math.min(darkCount,darkOrder.length);
     // Build one persistent visible set from BOTH sliders. The second slider
     // only adds/removes its own end of the scale; it never replaces the first.
@@ -5138,7 +5141,7 @@ const mixes=chooseMixes(target,paletteKey);
     for(let i=0;i<ranks.length;i++){
       const rank=ranks[i],show=build32Selection.has(rank);
       build32VisibleMask[i]=show?1:0;
-      const rgb=show?palette[rank]:[bg,bg,bg];
+      const rgb=show?build32DisplayColor(rank,i):[bg,bg,bg];
       frame.data[i*4]=rgb[0];frame.data[i*4+1]=rgb[1];frame.data[i*4+2]=rgb[2];frame.data[i*4+3]=255;
     }
     c.putImageData(frame,0,0);rebuildBuild32Foreground(frame);
@@ -5149,7 +5152,7 @@ const mixes=chooseMixes(target,paletteKey);
     const visibleCount=build32Selection.size;
     build32Status.textContent='Hell: '+nLight+' + Dunkel: '+nDark+' · '+visibleCount+' verschiedene Farben sichtbar · '+(bg===255?'Weiß':'Mittelgrau')+' · '+familyLabel+(visibleCount===0?' · Keine Farben ausgewählt':'');
     if(direction==='middle')build32Status.textContent=document.getElementById('build32middleVal').textContent+' · '+familyLabel;
-    syncBuild32ReturnButtons();draw();
+    build32ExtrasNotice();syncBuild32ReturnButtons();draw();
   }
   function acceptBuild32(result,generation){
     if(generation!==build32Generation)return;
@@ -5246,19 +5249,19 @@ const mixes=chooseMixes(target,paletteKey);
       syncBuild32ReturnButtons();draw();
       return;
     }
-    build32Active=true;build32Extras=false;
-    document.getElementById('build32Extras').disabled=true;
-    document.getElementById('build32Extras').textContent='Nur Ergänzungen zeigen';
+    build32Active=true;
+    document.getElementById('build32Extras').disabled=!build32Extras;
+    document.getElementById('build32Extras').textContent=build32Extras?'Farbaufbau wieder anzeigen':'Nur Ergänzungen zeigen';
     const {palette,ranks,width,height}=build32Data,c=build32Canvas.getContext('2d'),frame=c.createImageData(width,height);
     const bg=build32BackgroundValue(build32Selected!==null&&rgbToLabFast(palette[build32Selected])[0]<55?255:128);
     build32VisibleMask=new Uint8Array(ranks.length);
-    for(let i=0;i<ranks.length;i++){const show=build32Selection.has(ranks[i]),rgb=show?palette[ranks[i]]:[bg,bg,bg];build32VisibleMask[i]=show?1:0;frame.data.set([...rgb,255],i*4);}
+    for(let i=0;i<ranks.length;i++){const show=build32Selection.has(ranks[i]),rgb=show?build32DisplayColor(ranks[i],i):[bg,bg,bg];build32VisibleMask[i]=show?1:0;frame.data.set([...rgb,255],i*4);}
     c.putImageData(frame,0,0);rebuildBuild32Foreground(frame);
     [...document.getElementById('build32Palette').children].forEach((el,i)=>{el.style.opacity='1';el.setAttribute('aria-pressed',String(build32Selection.has(i)));});
     build32Status.textContent=build32Selection.size+' von '+palette.length+' Farben sichtbar · auf '+(bg===255?'Weiß':'Mittelgrau');
     if(build32Selected!==null){setMixTarget(palette[build32Selected],'Farbe '+(build32Selected+1));updateBuild32Recipe();}
     else{build32MixRequest++;document.getElementById('build32Recipe').textContent='Keine Farbe ausgewählt. Eine Farbe antippen, um sie einzublenden.';}
-    syncBuild32ReturnButtons();draw();
+    build32ExtrasNotice();syncBuild32ReturnButtons();draw();
   }
   document.getElementById('build32Add').addEventListener('click',()=>{
     if(build32SoloPrevious){
@@ -5431,6 +5434,7 @@ const mixes=chooseMixes(target,paletteKey);
       difference:document.getElementById('build32Difference').value,rememberedLight:build32RememberedLight,rememberedDark:build32RememberedDark};
   }
   function restoreBuild32State(state){
+    build32Extras=!!state.extras&&!!build32ExtrasBase;
     document.getElementById('build32middle').value=state.middle??'0';
     document.getElementById('build32middleDark').value=state.middleDark??'0';
     build32Families=new Set(state.families&&state.families.length?state.families:['all']); build32Family=[...build32Families].join(',');
@@ -5443,7 +5447,7 @@ const mixes=chooseMixes(target,paletteKey);
     build32Direction=state.direction;build32Manual=state.manual;build32Selected=state.selected;
     build32Selection.clear();state.selection.forEach(i=>build32Selection.add(i));
     if(state.manual)renderBuild32Selection();
-    else if(state.extras)showBuild32Extras();
+    else if(state.extras)renderBuild32(state.direction);
     else renderBuild32(state.direction);
     syncBuild32Middle();
     build32Active=state.active;syncBuild32ReturnButtons();draw();syncBuild32ReturnButtons();
@@ -5500,29 +5504,68 @@ const mixes=chooseMixes(target,paletteKey);
     }
     return {pixels:output,changed,visible};
   }
-  function showBuild32Extras(){
-    if(!build32Data || Number(document.getElementById('build32'+build32Direction).value)!==build32ColorCount())return;
-    flushToneImage();
-    const {width,height,palette,ranks}=build32Data;
-    const reference=document.createElement('canvas');reference.width=width;reference.height=height;
-    const rc=reference.getContext('2d');rc.fillStyle='#fff';rc.fillRect(0,0,width,height);
-    rc.drawImage(surfaceMarkCanvas||processedCanvas,0,0,width,height);
-    if(originalBlendPercent>0){
-      rc.globalAlpha=originalBlendPercent/100;
-      const overlay=toneOriginalModeValue==='gray'?(toneView==='off'?toneGrayCanvas:toneGrayBackgroundCanvas):sourceCanvas;
-      rc.drawImage(overlay,0,0,width,height);rc.globalAlpha=1;
-    }
-    const threshold=Number(document.getElementById('build32Difference').value);
-    const result=build32DifferenceMask(rc.getImageData(0,0,width,height).data,palette,ranks,threshold,build32BackgroundValue(build32Direction==='light'?128:255));
-    const bc=build32Canvas.getContext('2d'),frame=bc.createImageData(width,height);frame.data.set(result.pixels);bc.putImageData(frame,0,0);
-    build32VisibleMask=result.visible;rebuildBuild32Foreground(frame);
-    build32Active=true;build32Extras=true;
-    document.getElementById('build32Extras').textContent='Farbaufbau wieder anzeigen';
-    document.getElementById('build32DifferenceVal').textContent=String(threshold);
-    build32Status.textContent='Nur Ergänzungen zur Arbeitsansicht · '+Math.round(result.changed/ranks.length*100)+' % der Bildfläche. Passende Bereiche sind ausgeblendet.';
-    syncBuild32ReturnButtons();draw();
+  function build32DisplayColor(rank,pixel){
+    if(build32Extras && build32Data.reference && !build32ColorOverrides.has(rank))
+      return build32Data.reference.subarray(pixel*4,pixel*4+3);
+    return build32Data.palette[rank];
   }
-  document.getElementById('build32Extras').addEventListener('click',()=>{forgetBuild32AllPrevious();if(build32Extras)renderBuild32(build32Direction);else showBuild32Extras();});
+  function build32ExtrasNotice(){
+    if(!build32Extras)return;
+    build32Status.textContent='Nur Ergänzungen · Schwelle '+document.getElementById('build32Difference').value+' · '+build32Status.textContent;
+  }
+  function showBuild32Extras(){
+    if(!build32Data)return;
+    const entering=!build32ExtrasBase;
+    if(entering){
+      clearBuild32DetailCell();
+      build32ExtrasBase={data:build32Data,state:captureBuild32State(),original:build32OriginalPalette,overrides:build32ColorOverrides};
+    }
+    const base=build32ExtrasBase.data;
+    const threshold=Number(document.getElementById('build32Difference').value);
+    if(entering || build32Data.threshold!==threshold){
+      flushToneImage();
+      const {width,height,palette,ranks}=base;
+      const reference=document.createElement('canvas');reference.width=width;reference.height=height;
+      const rc=reference.getContext('2d');rc.fillStyle='#fff';rc.fillRect(0,0,width,height);
+      rc.drawImage(surfaceMarkCanvas||processedCanvas,0,0,width,height);
+      if(originalBlendPercent>0){
+        rc.globalAlpha=originalBlendPercent/100;
+        const overlay=toneOriginalModeValue==='gray'?(toneView==='off'?toneGrayCanvas:toneGrayBackgroundCanvas):sourceCanvas;
+        rc.drawImage(overlay,0,0,width,height);rc.globalAlpha=1;
+      }
+      const pixels=rc.getImageData(0,0,width,height).data;
+      const difference=build32DifferenceMask(pixels,palette,ranks,threshold,128);
+      // Analyze only supplement pixels; excluded base pixels never enter the palette.
+      const compact=new Uint8ClampedArray(difference.changed*4);
+      for(let i=0,j=0;i<ranks.length;i++)if(difference.visible[i]){compact.set(pixels.subarray(i*4,i*4+4),j);j+=4;}
+      const count=Number(document.getElementById('build32Count').value)||32;
+      const result=difference.changed?quantizeBuild32({pixels:compact,width:difference.changed,height:1,colorCount:count}):{palette:[],ranks:new ArrayBuffer(0)};
+      const localRanks=new Uint8Array(result.ranks),mapped=new Uint16Array(ranks.length).fill(65535);
+      for(let i=0,j=0;i<ranks.length;i++)if(difference.visible[i])mapped[i]=localRanks[j++];
+      build32Data={width,height,palette:result.palette,ranks:mapped,reference:pixels,threshold};
+      build32OriginalPalette=result.palette.map(rgb=>[...rgb]);build32ColorOverrides=new Map();
+      build32Selected=null;build32Manual=false;build32Selection.clear();
+      build32AllPrevious=null;build32SoloPrevious=null;build32SoloAdditive=false;build32SimilarAnchor=null;
+      renderBuild32PaletteStrip(result.palette);
+      if(entering){
+        build32Families=new Set(['all']);build32Family='all';build32Direction='light';
+        build32RememberedLight=result.palette.length;build32RememberedDark=0;
+      }
+    }
+    build32Extras=true;build32Active=true;
+    document.getElementById('build32DetailCell').disabled=true;
+    document.getElementById('build32DifferenceVal').textContent=String(threshold);
+    if(build32Manual)renderBuild32Selection();else renderBuild32(build32Direction);
+  }
+  function leaveBuild32Extras(){
+    const base=build32ExtrasBase;if(!base)return;
+    build32Extras=false;build32ExtrasBase=null;
+    build32Data=base.data;build32OriginalPalette=base.original;build32ColorOverrides=base.overrides;
+    build32AllPrevious=null;build32SoloPrevious=null;build32SoloAdditive=false;
+    document.getElementById('build32DetailCell').disabled=false;
+    renderBuild32PaletteStrip(build32Data.palette);restoreBuild32State(base.state);
+  }
+  document.getElementById('build32Extras').addEventListener('click',()=>{forgetBuild32AllPrevious();if(build32Extras)leaveBuild32Extras();else showBuild32Extras();});
   document.getElementById('build32Difference').addEventListener('input',e=>{
     forgetBuild32AllPrevious();
     document.getElementById('build32DifferenceVal').textContent=e.target.value;
