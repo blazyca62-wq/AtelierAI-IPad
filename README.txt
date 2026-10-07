@@ -1,3 +1,20 @@
+AtelierAI iPad 2.41 – Rotbraun und Rostorange
+
+Dunkle, gedämpfte Rotbrauntöne werden Braun zugeordnet.
+Kräftige Rostorangetöne bleiben bei Orange, auch bei mittlerer Helligkeit.
+Die Zuordnung gilt gemeinsam für 8, 16, 32 und 64 Farben,
+für Rasterauswahl sowie Hell-, Dunkel- und Mitteltöne-Regler.
+Jedes Farbfeld gehört weiterhin genau einer Familie.
+Grenzfarben bleiben eine Annäherung an die Farbwahrnehmung.
+
+UPDATE: ZIP entpacken und Dateien im bestehenden GitHub-Repository ersetzen.
+app.html UND sw.js gemeinsam aktualisieren. Veröffentlichung abwarten,
+App online öffnen und gegebenenfalls „Update bereit“ antippen.
+Danach Version 2.41 und „Offline bereit“ prüfen.
+Kein direkter iPad-Test.
+
+Bisherige Hinweise / Versionsgeschichte:
+
 AtelierAI iPad 2.40 – Eindeutige Farbfamilien
 
 Im 8-/16-/32-/64-Farben-Modul gehört jedes Farbfeld genau einer Familie.
