@@ -1,3 +1,18 @@
+AtelierAI iPad 2.42 – Hintergrundschalter repariert
+
+Weiß und Grau werden jetzt auch bei den Hell-/Dunkel- und Mitteltöne-Reglern
+sowie im ausgewählten Rasterkästchen berücksichtigt.
+Automatisch wählt weiterhin einen passenden Hintergrund.
+Die Farbzuordnung aus 2.41 bleibt erhalten.
+
+UPDATE: ZIP entpacken und Dateien im bestehenden GitHub-Repository ersetzen.
+app.html UND sw.js gemeinsam aktualisieren. Veröffentlichung abwarten,
+App online öffnen und gegebenenfalls „Update bereit“ antippen.
+Danach Version 2.42 und „Offline bereit“ prüfen.
+JavaScript und Hintergrundauswahl geprüft; kein direkter iPad-Test.
+
+Bisherige Hinweise / Versionsgeschichte:
+
 AtelierAI iPad 2.41 – Rotbraun und Rostorange
 
 Dunkle, gedämpfte Rotbrauntöne werden Braun zugeordnet.

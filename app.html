@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.41</title>
+  <title>AtelierAI iPad 2.42</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1027,7 +1027,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.41</div>
+    <div class="title">AtelierAI · iPad 2.42</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -5055,7 +5055,7 @@ const mixes=chooseMixes(target,paletteKey);
     darkOrder.slice(0,darkCount).forEach(i=>combined.add(i));
     if(direction==='middle'){combined.clear();build32MiddleIndices(palette,document.getElementById('build32middle').value).forEach(i=>combined.add(i));}
     build32Selection.clear();combined.forEach(i=>build32Selection.add(i));
-    const bg=(lightCount>0&&darkCount===0)?128:(darkCount>0&&lightCount===0?255:128);
+    const bg=build32BackgroundValue((lightCount>0&&darkCount===0)?128:(darkCount>0&&lightCount===0?255:128));
     const dc=build32DetailCanvas.getContext('2d'),frame=dc.createImageData(width,height);
     for(let i=0;i<ranks.length;i++){
       const rank=ranks[i],show=build32Selection.has(rank),rgb=show?palette[rank]:[bg,bg,bg];
@@ -5132,7 +5132,7 @@ const mixes=chooseMixes(target,paletteKey);
     if(direction==='middle'){combinedSelection.clear();build32MiddleIndices(palette,document.getElementById('build32middle').value).forEach(i=>combinedSelection.add(i));}
     build32Selection.clear();
     combinedSelection.forEach(i=>build32Selection.add(i));
-    const bg=(lightCount>0&&darkCount===0)?128:(darkCount>0&&lightCount===0?255:128);
+    const bg=build32BackgroundValue((lightCount>0&&darkCount===0)?128:(darkCount>0&&lightCount===0?255:128));
     const c=build32Canvas.getContext('2d'),frame=c.createImageData(width,height);
     build32VisibleMask=new Uint8Array(ranks.length);
     for(let i=0;i<ranks.length;i++){
