@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.44</title>
+  <title>AtelierAI iPad 2.45</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -55,6 +55,10 @@
     body.image-focus .title{display:none;}
     #build32Palette button{min-height:44px;padding:4px;border:2px solid transparent;border-radius:8px;font-size:13px;}
     #build32Palette button[aria-pressed="true"]{border-color:#fff;outline:2px solid #222;outline-offset:0;}
+    #build32Dock.collapsed [data-picture-palette]{display:none;}
+    [data-picture-palette] summary{cursor:pointer;min-height:32px;font-weight:600;}
+    [data-picture-palette] label{display:flex;align-items:center;gap:8px;min-height:44px;}
+    [data-picture-palette] input[type=checkbox]{width:20px;height:20px;flex:0 0 auto;}
     #build32Recipe{font-size:14px;line-height:1.45;}
     .viewer{position:relative;overflow:hidden;background:#cbc8c0;border:1px solid var(--line);border-radius:18px;touch-action:none;}
     canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
@@ -1027,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.44</div>
+    <div class="title">AtelierAI · iPad 2.45</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1050,7 +1054,7 @@
       <div id="build32Pages" aria-label="Farbseiten"></div>
       <div id="build32Palette" aria-label="Erkannte Bildfarben"></div>
       <div id="build32Similar" hidden style="margin:6px 0"></div>
-      <div id="build32Recipe" role="status">Eine Farbe antippen – Farbfläche und Mischung erscheinen.</div>
+      <div id="build32Recipe" role="status">Eine Farbe antippen – Farbfläche und Mischung erscheinen.</div><details data-picture-palette="build32MixPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details>
     </div>
     </div>
     <aside class="side">
@@ -1342,7 +1346,7 @@
           <button id="calcMixesBtn">Studio-Mischung berechnen</button>
         </div>
 
-        <div class="tiny" style="margin-top:6px;">Mischvorschläge · einfache Mischung zuerst</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Punkt)</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Punkt- und Maler-Pipette berechnen die Studio-Mischung automatisch.</div><div id="mixResults"></div>
+        <div class="tiny" style="margin-top:6px;">Mischvorschläge · einfache Mischung zuerst</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Punkt)</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Punkt- und Maler-Pipette berechnen die Studio-Mischung automatisch.</div><div id="mixResults"></div><details data-picture-palette="paintPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details>
       </div>
 
 
@@ -1501,7 +1505,7 @@
           <button id="surfaceResetBtn" class="secondary">Flächenanalyse löschen</button>
         </div>
         <button id="surfaceIsolationGrayBtn" class="secondary" aria-pressed="false" style="width:100%;margin-top:8px;">Mittelgrauer Hintergrund: Aus</button>
-        <label for="surfaceMixPalette">Palette für alle fünf Mischungen</label><select id="surfaceMixPalette" style="width:100%;padding:9px;margin:6px 0"><option value="artisan">Winsor &amp; Newton Artisan · Öl</option><option value="watercolor">Horadam + Akademie · Aquarell</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select>
+        <details data-picture-palette="surfaceMixPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details><label for="surfaceMixPalette">Palette für alle fünf Mischungen</label><select id="surfaceMixPalette" style="width:100%;padding:9px;margin:6px 0"><option value="artisan">Winsor &amp; Newton Artisan · Öl</option><option value="watercolor">Horadam + Akademie · Aquarell</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select>
         <div id="surfaceResults" class="pc-card"><span class="tiny">Noch kein Bereich analysiert.</span></div>
       </div>
 
@@ -2874,12 +2878,11 @@
   }
 
   const mixResultCache=new Map();
-  function chooseWaterMixes(target, paletteKey){
-    const pal=effectivePaletteColors(paletteKey);
+  function chooseWaterMixes(target, paletteKey, pal=effectivePaletteColors(paletteKey)){
     if(pal.length<1)return[];
     // Die vollständige Palette im Schlüssel berücksichtigt auch eigene Farben
     // und Änderungen an der Auswahl. Kleine, begrenzte Ergebnissammlung.
-    const cacheKey=JSON.stringify([target,paletteKey,pal]);
+    const cacheKey=JSON.stringify([target,paletteKey,pal,[...pictureUsedIds(paletteKey)]]);
     if(mixResultCache.has(cacheKey)) return mixResultCache.get(cacheKey);
     const targetLab=rgbToLabFast(target);
     const [targetHue,targetSaturation]=rgbToHsv(target);
@@ -3014,6 +3017,7 @@
     filtered.sort((a,b)=>(b.score-(b.items.length-1)*.5)-(a.score-(a.items.length-1)*.5)||a.cost-b.cost);
 
 
+    rankPictureRecipes(filtered,paletteKey);
     const chosen=[];
     for(const x of filtered){
       const total=x.parts.reduce((a,b)=>a+b,0)||1;
@@ -3022,10 +3026,11 @@
       const scaled=x.parts.map(v=>v/divisor);
       chosen.push({
         sig:recipeKey(x.items),
+        tubeIds:x.items.map(i=>pictureTubeId(paletteKey,i)),
         names:x.items.map(i=>(isWater&&i.series)?`${i.name} (${i.series})`:i.name),
         parts:scaled,
         rgb:x.rgb,
-        score:x.score,
+        score:x.score,referenceBest:x.referenceBest,
         color_count:x.items.length,
         coverage:x.coverage||1,
         watercolor:isWater
@@ -3037,13 +3042,12 @@
     return chosen;
   }
 
-  function chooseMixes(target, paletteKey){
-    if(['watercolor','horadam','akademie'].includes(paletteKey))return chooseWaterMixes(target,paletteKey);
-    const pal=effectivePaletteColors(paletteKey);
+  function chooseMixesRaw(target, paletteKey, pal=effectivePaletteColors(paletteKey)){
+    if(['watercolor','horadam','akademie'].includes(paletteKey))return chooseWaterMixes(target,paletteKey,pal);
     if(pal.length<1)return[];
     // Die vollständige Palette im Schlüssel berücksichtigt auch eigene Farben
     // und Änderungen an der Auswahl. Kleine, begrenzte Ergebnissammlung.
-    const cacheKey=JSON.stringify([target,paletteKey,pal]);
+    const cacheKey=JSON.stringify([target,paletteKey,pal,[...pictureUsedIds(paletteKey)]]);
     if(mixResultCache.has(cacheKey)) return mixResultCache.get(cacheKey);
     const targetLab=rgbToLabFast(target);
     const [targetHue,targetSaturation]=rgbToHsv(target);
@@ -3189,6 +3193,7 @@
     filtered.sort((a,b)=>(b.score-(b.items.length-1)*.5)-(a.score-(a.items.length-1)*.5)||a.cost-b.cost);
 
 
+    rankPictureRecipes(filtered,paletteKey);
     const printable=[];
     for(const x of filtered.slice(0,100)){
       const min=Math.min(...x.parts),raw=x.parts.map(v=>v/min);
@@ -3197,15 +3202,142 @@
       printable.push({...x,parts,rgb:finished.rgb,coverage:finished.coverage,score:displayPct(finished.rgb),cost:studioCost(finished.rgb,x.items)});
     }
     printable.sort((a,b)=>(b.score-(b.items.length-1)*.5)-(a.score-(a.items.length-1)*.5)||a.cost-b.cost);
+    rankPictureRecipes(printable,paletteKey);
     const chosen=printable.slice(0,3).map(x=>({
       sig:recipeKey(x.items),
+        tubeIds:x.items.map(i=>pictureTubeId(paletteKey,i)),
       names:x.items.map(i=>(isWater&&i.series)?`${i.name} (${i.series})`:i.name),
-      parts:x.parts,rgb:x.rgb,score:x.score,color_count:x.items.length,
+      parts:x.parts,rgb:x.rgb,score:x.score,referenceBest:x.referenceBest,color_count:x.items.length,
       coverage:x.coverage||1,watercolor:isWater
     }));
     if(mixResultCache.size>=12) mixResultCache.delete(mixResultCache.keys().next().value);
     mixResultCache.set(cacheKey,chosen);
     return chosen;
+  }
+
+  // 2.45: confirmed tube colours, scoped to the loaded picture.
+  const PICTURE_PALETTE_KEY='atelierai_picture_palettes_v1';
+  let picturePalette={ids:[],enabled:true},picturePaletteId=null,picturePaletteEpoch=0;
+  let picturePaletteStorageOK=true;
+  function pictureTubeId(key,item){
+    const name=Array.isArray(item)?item[0]:item.name;
+    const series=Array.isArray(item)?item[2]:item.series;
+    const brand=series==='Horadam'?'horadam':series==='Akademie'?'akademie':key;
+    return brand+'::'+name;
+  }
+  function pictureUsedIds(key){
+    if(!picturePalette.enabled)return new Set();
+    const available=new Set(effectivePaletteColors(key).map(c=>pictureTubeId(key,c)));
+    return new Set(picturePalette.ids.filter(id=>available.has(id)));
+  }
+  function savePicturePalette(){
+    if(!picturePaletteId)return;
+    try{
+      let all=JSON.parse(localStorage.getItem(PICTURE_PALETTE_KEY)||'{}');
+      if(!all||typeof all!=='object'||Array.isArray(all))all={};
+      all[picturePaletteId]={ids:picturePalette.ids,enabled:picturePalette.enabled,time:Date.now()};
+      const recent=Object.entries(all).sort((a,b)=>(b[1]?.time||0)-(a[1]?.time||0)).slice(0,40);
+      localStorage.setItem(PICTURE_PALETTE_KEY,JSON.stringify(Object.fromEntries(recent)));
+      picturePaletteStorageOK=true;
+    }catch(e){picturePaletteStorageOK=false;}
+  }
+  function startPicturePalette(){
+    picturePaletteEpoch++;
+    picturePalette={ids:[],enabled:true};
+    // A small pixel fingerprint restores the same photo, regardless of filename.
+    const c=document.createElement('canvas');c.width=48;c.height=48;
+    const ctx=c.getContext('2d');ctx.drawImage(sourceCanvas,0,0,48,48);
+    const data=ctx.getImageData(0,0,48,48).data;
+    let hash=2166136261,hash2=5381;
+    for(const v of data){hash=Math.imul(hash^v,16777619);hash2=Math.imul(hash2,33)^v;}
+    picturePaletteId=sourceCanvas.width+'x'+sourceCanvas.height+'-'+(hash>>>0).toString(16)+'-'+(hash2>>>0).toString(16);
+    try{
+      const saved=JSON.parse(localStorage.getItem(PICTURE_PALETTE_KEY)||'{}')[picturePaletteId];
+      if(saved&&Array.isArray(saved.ids))picturePalette={ids:[...new Set(saved.ids.filter(x=>typeof x==='string'))],enabled:saved.enabled!==false};
+      picturePaletteStorageOK=true;
+    }catch(e){picturePaletteStorageOK=false;}
+    mixResults.replaceChildren();surfaceResults.replaceChildren();
+    lastSmartColor=null;lastAverageColor=null;
+    renderPicturePalettePanels();
+  }
+  function pictureRecipeIds(recipe,key){
+    if(recipe.tubeIds)return recipe.tubeIds;
+    return recipe.items.map(c=>pictureTubeId(key,c));
+  }
+  function rankPictureRecipes(recipes,key){
+    const used=pictureUsedIds(key);
+    if(!used.size||!recipes.length)return recipes;
+    // Never trade more than 3 displayed similarity points for fewer new tubes.
+    const best=Math.max(...recipes.map(m=>Math.max(m.score,m.referenceBest||0)));
+    recipes.forEach(m=>{m.referenceBest=best;});
+    const count=m=>pictureRecipeIds(m,key).filter(id=>!used.has(id)).length;
+    return recipes.sort((a,b)=>{
+      const nearA=a.score>=best-3,nearB=b.score>=best-3;
+      if(nearA!==nearB)return nearA?-1:1;
+      if(nearA&&count(a)!==count(b))return count(a)-count(b);
+      return b.score-a.score||(a.color_count||a.items?.length||0)-(b.color_count||b.items?.length||0);
+    });
+  }
+  function chooseMixes(target,key){
+    const pal=effectivePaletteColors(key),used=pictureUsedIds(key);
+    const full=chooseMixesRaw(target,key,pal);
+    if(!used.size)return full.slice(0,3);
+    const restricted=pal.filter(c=>used.has(pictureTubeId(key,c)));
+    const onlyUsed=restricted.length&&restricted.length<pal.length?chooseMixesRaw(target,key,restricted):[];
+    const unique=new Map();
+    for(const m of [...full,...onlyUsed]){
+      const id=[...m.tubeIds].sort().join('|'),old=unique.get(id);
+      if(!old||m.score>old.score)unique.set(id,{...m});
+    }
+    return rankPictureRecipes([...unique.values()],key).slice(0,3);
+  }
+  function appendPictureUseButton(box,m,key){
+    const epoch=picturePaletteEpoch;
+    const ids=m.tubeIds||[];
+    if(!ids.length)return;
+    const note=document.createElement('div');note.className='tiny';note.style.marginTop='6px';
+    const used=pictureUsedIds(key),added=ids.filter(id=>!used.has(id));
+    note.textContent=!picturePalette.enabled?'Bildpalette ausgeschaltet.':!used.size?'Mit dieser Mischung die Bildpalette beginnen.':!added.length?'Verwendet nur Farben deiner Bildpalette.':'Zusätzlich nötig: '+added.map(id=>id.split('::').slice(1).join('::')).join(', ')+'.';
+    box.appendChild(note);
+    const button=document.createElement('button');button.type='button';button.className='secondary';button.style.marginTop='6px';
+    button.textContent=ids.every(id=>picturePalette.ids.includes(id))?'Farben bereits gemerkt':'Diese Mischung verwende ich';
+    button.disabled=!picturePaletteId||ids.every(id=>picturePalette.ids.includes(id));
+    button.onclick=()=>{
+      if(epoch!==picturePaletteEpoch||!picturePaletteId)return;
+      picturePalette.ids=[...new Set([...picturePalette.ids,...ids])];
+      savePicturePalette();renderPicturePalettePanels();
+      button.textContent='Farben für dieses Bild gemerkt';button.disabled=true;
+      note.textContent='Diese Tubenfarben werden bei den nächsten Mischvorschlägen bevorzugt.';
+    };
+    box.appendChild(button);
+  }
+  function refreshPictureRecipes(){
+    renderPicturePalettePanels();
+    if(lastSmartColor||lastAverageColor)showMixes();
+    if(build32Data&&build32Selected!==null)updateBuild32Recipe();
+    if(surfaceClusters.length&&surfaceResults.childElementCount)renderSurface(surfaceClusters);
+  }
+  function renderPicturePalettePanels(){
+    document.querySelectorAll('[data-picture-palette]').forEach(panel=>{
+      const key=document.getElementById(panel.dataset.picturePalette).value;
+      const available=new Set(effectivePaletteColors(key).map(c=>pictureTubeId(key,c)));
+      const ids=picturePalette.ids.filter(id=>available.has(id));
+      const wasOpen=panel.open;panel.replaceChildren();panel.open=wasOpen;
+      const title=document.createElement('summary');title.textContent='Palette für dieses Bild · '+ids.length+' Tubenfarben';panel.appendChild(title);
+      const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=picturePalette.enabled;
+      check.onchange=()=>{picturePalette.enabled=check.checked;savePicturePalette();refreshPictureRecipes();};
+      label.append(check,document.createTextNode(' Bereits verwendete Farben bevorzugen'));panel.appendChild(label);
+      const help=document.createElement('p');help.className='tiny';
+      help.textContent=!picturePaletteId?'Zuerst ein Foto öffnen.':!picturePaletteStorageOK?'Die Bildpalette bleibt in dieser Sitzung erhalten; dauerhaftes Speichern ist hier nicht verfügbar.':'Gelungene Rezepte mit „Diese Mischung verwende ich“ bestätigen. Neue Tubenfarben nur bei besserer Farbtreue (Toleranz: 3 Punkte Bildschirmnähe).';panel.appendChild(help);
+      for(const id of ids){
+        const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.style.margin='3px';
+        const brand=id.slice(0,id.indexOf('::')),name=id.slice(id.indexOf('::')+2);
+        remove.textContent=name+(key==='watercolor'?' ('+brand+')':'')+' ×';remove.setAttribute('aria-label',name+' aus der Bildpalette entfernen');
+        remove.onclick=()=>{picturePalette.ids=picturePalette.ids.filter(x=>x!==id);savePicturePalette();refreshPictureRecipes();};panel.appendChild(remove);
+      }
+      const clear=document.createElement('button');clear.type='button';clear.className='secondary';clear.textContent='Bildpalette neu beginnen';clear.disabled=!ids.length;
+      clear.onclick=()=>{picturePalette.ids=picturePalette.ids.filter(id=>!available.has(id));savePicturePalette();refreshPictureRecipes();};panel.appendChild(clear);
+    });
   }
 
   function showMixes(){
@@ -3232,6 +3364,7 @@ const mixes=chooseMixes(target,paletteKey);
         </div>
         <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i].toLocaleString('de-DE')} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)':'Öl · spektrale Näherung; Mengen als Startrezept'}. Auf Papier/Palette prüfen.</span></div>
       `;
+      appendPictureUseButton(card,m,paletteKey);
       mixResults.appendChild(card);
     });
   }
@@ -5195,6 +5328,7 @@ const mixes=chooseMixes(target,paletteKey);
         const title=document.createElement('b');title.textContent='Farbe '+(index+1)+' · '+m.score+'/100 Bildschirmnähe';box.appendChild(title);
         const line=document.createElement('div');line.textContent=m.names.map((n,i)=>m.parts[i].toLocaleString('de-DE')+' Teil'+(m.parts[i]!==1?'e':'')+' '+n).join(' + ');box.appendChild(line);
         const note=document.createElement('div');note.className='tiny';note.textContent=m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (kein Wasserverhältnis).':'Öl · Mengen als Startrezept.';box.appendChild(note);
+        appendPictureUseButton(box,m,key);
       }catch(e){box.textContent='Mischung konnte nicht berechnet werden. Bitte eine andere Palette wählen.';}
     },30);
   }
@@ -5909,6 +6043,7 @@ const mixes=chooseMixes(target,paletteKey);
           const note=document.createElement('div');note.className='tiny';
           note.textContent=m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis).':'Öl · Mengen als Startrezept.';
           box.appendChild(note);
+          appendPictureUseButton(box,m,paletteKey);
         }catch(error){box.textContent='Mischung konnte nicht berechnet werden. Bitte andere Palette wählen.';}
       },40+i*40);
     });
@@ -7191,6 +7326,7 @@ const mixes=chooseMixes(target,paletteKey);
       sourceCanvas.width=img.width; sourceCanvas.height=img.height;
       sourceCtx.clearRect(0,0,img.width,img.height);
       sourceCtx.drawImage(img,0,0);
+      startPicturePalette();
       resetSketchImage();
       rebuildToneGrayOriginal();
       renderedFormLevel=null;
@@ -7344,6 +7480,9 @@ const mixes=chooseMixes(target,paletteKey);
     washRgb,
     mixes:(target,key)=>chooseMixes(target,key||paintPalette.value)
   };
+
+  renderPicturePalettePanels();
+  ['paintPalette','build32MixPalette','surfaceMixPalette'].forEach(id=>document.getElementById(id).addEventListener('change',renderPicturePalettePanels));
 
   // 1.20.8j: kein Service Worker – GitHub Pages lädt immer die aktuelle index.html.
 })();

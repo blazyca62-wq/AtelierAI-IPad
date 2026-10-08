@@ -1,3 +1,21 @@
+NEU IN VERSION 2.45 – PALETTE FÜR DIESES BILD
+Bei Mischvorschlägen (Studio/Pipette, 8/16/32/48/64 und Flächenberater):
+1. Unter Mischen die tatsächlich vorhandenen Tubenfarben auswählen.
+2. Foto öffnen und eine Farbe aufnehmen.
+3. Ein gelungenes Rezept mit „Diese Mischung verwende ich“ bestätigen.
+4. Weitere Rezepte bevorzugen diese Tubenfarben. Bis zu 3 Punkte Unterschied
+   in der simulierten Bildschirmnähe werden für weniger neue Farben akzeptiert.
+   Deutlich bessere Rezepte können zusätzliche Tubenfarben vorschlagen.
+Unter „Palette für dieses Bild“ lassen sich Farben entfernen, die Bevorzugung
+abschalten oder die Bildpalette neu beginnen. Öl und Aquarell bleiben getrennt;
+Horadam/Akademie werden auch in der gemeinsamen Aquarellpalette wiedererkannt.
+Ein neues Foto beginnt leer; beim erneuten Öffnen desselben Fotos wird dessen
+Bildpalette lokal wiederhergestellt (letzte 40 Fotos, sofern Browserspeicher
+verfügbar). Fotos selbst werden dafür nicht gespeichert. Rezepte werden nicht
+automatisch als verwendet markiert. Mengen und Farbtreue bleiben Simulationen.
+Gilt für automatische Studio-Mischrezepte, nicht für reine Tubenfarbdarstellung,
+manuelle Farbmischpult-Zusammenstellung oder Lasurreihenfolgen.
+
 AtelierAI iPad 2.44 – Abweichungsregler ohne laufende Neuberechnung
 
 Die Abweichung bleibt in ganzen Stufen einstellbar. Beim Ziehen wird nur der Wert aktualisiert; die aufwendige Ergänzungsberechnung startet erst nach dem Loslassen. Der zuletzt gewählte Wert bleibt beim Ansichtswechsel erhalten und wird auf dem Gerät gespeichert, soweit Browserspeicherung verfügbar. Startwert ohne gespeicherte Einstellung: 9.
