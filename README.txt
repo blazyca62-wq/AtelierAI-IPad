@@ -1,3 +1,6 @@
+NEU IN VERSION 2.46 – GRÜN UND OLIV
+Gedämpfte Oliv- und dunkle Gelbgrüntöne werden in den 8/16/32/64-Farben der Familie Grün / Oliv zugeordnet. Jede Farbe behält genau eine Familie. Helles Gelb sowie warme Ocker- und Brauntöne bleiben getrennt.
+
 NEU IN VERSION 2.45 – PALETTE FÜR DIESES BILD
 Bei Mischvorschlägen (Studio/Pipette, 8/16/32/48/64 und Flächenberater):
 1. Unter Mischen die tatsächlich vorhandenen Tubenfarben auswählen.

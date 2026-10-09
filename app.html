@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.45</title>
+  <title>AtelierAI iPad 2.46</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.45</div>
+    <div class="title">AtelierAI · iPad 2.46</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1109,13 +1109,13 @@
           <button type="button" class="secondary familyChoice" data-family="orange">Orange</button>
           <button type="button" class="secondary familyChoice" data-family="red">Rot / Rosa</button>
           <button type="button" class="secondary familyChoice" data-family="brown">Braun / Siena / Umbra</button>
-          <button type="button" class="secondary familyChoice" data-family="green">Grün</button>
+          <button type="button" class="secondary familyChoice" data-family="green">Grün / Oliv</button>
           <button type="button" class="secondary familyChoice" data-family="turquoise">Türkis</button>
           <button type="button" class="secondary familyChoice" data-family="blue">Blau</button>
           <button type="button" class="secondary familyChoice" data-family="violet">Violett</button>
           <button type="button" class="secondary familyChoice" data-family="neutral">Neutral · Weiß / Grau / Schwarz</button>
         </div>
-        <p class="tiny">Mehrere Farbfamilien können gleichzeitig sichtbar sein. Beispiel: <b>Gelb + Ocker + Orange</b>. Erneut antippen = Familie ausblenden. „Alle“ setzt auf alle Familien zurück. Jede Farbe gehört genau einer Familie. Weiß gehört zu Neutral. Übergangstöne werden nach Farbton, Helligkeit und Sättigung zugeordnet.</p></div>
+        <p class="tiny">Mehrere Farbfamilien können gleichzeitig sichtbar sein. Beispiel: <b>Gelb + Ocker + Orange</b>. Erneut antippen = Familie ausblenden. „Alle“ setzt auf alle Familien zurück. Jede Farbe gehört genau einer Familie. Weiß gehört zu Neutral. Übergangstöne werden nach Farbton, Helligkeit und Sättigung zugeordnet. Gedämpftes Oliv und dunkles Gelbgrün gehören zu Grün / Oliv.</p></div>
         <div style="margin-top:18px;padding:12px;border:1px solid #ccc;border-radius:10px">
           <label for="build32middle"><strong>Von der Mitte aufbauen</strong></label>
           <button id="build32middleStart" type="button" class="secondary" disabled style="width:100%;margin-top:8px">Mit mittlerer Farbe starten</button>
@@ -4937,14 +4937,17 @@ const mixes=chooseMixes(target,paletteKey);
     // One owner per swatch, shared by every family filter and palette size.
     // White belongs to Neutral; it is no longer repeated in every family.
     if(build32IsNeutral(rgb))return 'neutral';
+    // 2.46: olive can have nearly equal red and green channels. Its dark
+    // yellow hue still has a perceptual green bias; brightness separates it
+    // from luminous yellow. Apply before both gray and earth-tone branches.
+    const olive=h>=50&&h<=68&&L<78&&a<=-2;
+    const greenBias=h>=45&&h<=68&&(g>r*1.04||a<-.34*Math.max(1,b)||olive);
+    if(greenBias)return 'green';
     if(chroma<14||s<.12)return build32TintedGrayFamily(rgb);
     // Dark, muted warm reds read as red-brown; saturated crimson stays Red.
     if(h<25&&L<42&&s<.82&&b>8)return 'brown';
     if(h>=335||h<8)return 'red';
     if(h<=68){
-      // Keep yellow-green and olive in Green, including muted shades.
-      const greenDominant=g>r*1.04||a<-.34*Math.max(1,b);
-      if(greenDominant)return 'green';
       // Red/pink bias takes priority over neighboring orange/earth colors.
       if(h<=24&&a>Math.max(4,1.05*b))return 'red';
       // Strong rust/orange keeps its orange identity at medium lightness.
