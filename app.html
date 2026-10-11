@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.57</title>
+  <title>AtelierAI iPad 2.58</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.57</div>
+    <div class="title">AtelierAI · iPad 2.58</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7539,8 +7539,11 @@ const mixes=chooseMixes(target,paletteKey);
     <button id="ceGradientReverse" class="secondary">Richtung umkehren</button><button id="ceGradientClear" class="secondary">Verlauf entfernen</button>
     <label><input id="ceGradientVisible" type="checkbox" checked> Linie anzeigen</label>
     <p class="tiny">0 bedeutet unverändert. Der Verlauf ergänzt die normalen Farbregler und wirkt auf die gewählte Farbe bzw. Auswahl. Vor A und hinter B bleibt der jeweilige Endwert konstant. „Änderung merken“ speichert den Verlauf.</p></details>
-    <details id="ceSpotPanel"><summary>Licht- und Schattenfleck</summary>
+    <details id="ceSpotPanel"><summary>Lichtfleck &amp; Motiv hervorheben</summary>
+    <button id="ceFocusPreset">Motiv hervorheben · Umgebung beruhigen</button><p class="tiny">Setzt ein geschütztes Oval und nimmt die Farben außen sanft zurück. Ersetzt die Einstellungen des aktuellen Flecks.</p>
     <button id="ceSpotPlace" class="secondary" aria-pressed="false">Fleck im Bild setzen</button><p id="ceSpotStatus" class="tiny" role="status">Mittelpunkt antippen oder mit einem Finger verschieben.</p>
+    <label><input id="ceSpotOutside" type="checkbox"> Umgebung bearbeiten · Mitte schützen</label>
+    <label>Stärke <output id="ceSpotStrengthVal">100 %</output><input id="ceSpotStrength" type="range" min="0" max="100" value="100"></label>
     <label>Breite <output id="ceSpotWidthVal">40 %</output><input id="ceSpotWidth" type="range" min="2" max="200" value="40"></label>
     <label>Höhe <output id="ceSpotHeightVal">40 %</output><input id="ceSpotHeight" type="range" min="2" max="200" value="40"></label>
     <label>Weicher Rand <output id="ceSpotSoftVal">80 %</output><input id="ceSpotSoft" type="range" min="0" max="100" value="80"></label>
@@ -7623,13 +7626,14 @@ const mixes=chooseMixes(target,paletteKey);
     function spotGeometry(s,width,height){
       if(!s)return null;
       const side=Math.min(width,height);
-      return {x:s.center.x*width,y:s.center.y*height,rx:Math.max(.001,s.width*side/2),ry:Math.max(.001,s.height*side/2),soft:s.soft};
+      return {x:s.center.x*width,y:s.center.y*height,rx:Math.max(.001,s.width*side/2),ry:Math.max(.001,s.height*side/2),soft:s.soft,outside:!!s.outside,strength:s.strength??1};
     }
     function spotStep(g,x,y){
       if(!g)return 0;
       const r=Math.hypot((x+.5-g.x)/g.rx,(y+.5-g.y)/g.ry);
-      if(r>=1)return 0;if(g.soft<=0)return 2048;
-      const t=clamp((1-r)/g.soft);return Math.round(t*t*(3-2*t)*2048);
+      let inside=0;
+      if(r<1){if(g.soft<=0)inside=1;else{const t=clamp((1-r)/g.soft);inside=t*t*(3-2*t);}}
+      return Math.round((g.outside?1-inside:inside)*g.strength*2048);
     }
     async function process(data,ops,maskOp,token){
       const out=new ImageData(new Uint8ClampedArray(data.data),data.width,data.height),cache=new Map(),d=data.data;
@@ -7663,7 +7667,7 @@ const mixes=chooseMixes(target,paletteKey);
     }
     function labels(){for(const name of ['Range','Light','Blend','Warm','Saturation','Original'])el(name+'Val').textContent=el(name).value+(name==='Light'||name==='Warm'?'':' %');el('Range').disabled=busy;syncResetToggle();}
     async function render(){if(!preview||busy)return;labels();const token=++revision;el('Status').textContent='Vorschau wird aktualisiert …';const o=current(),ops=[...layers,...(active(o)?[o]:[])];const out=await process(preview,ops,null,token);if(!out)return;const f=+el('Original').value/100;if(f)for(let i=0;i<out.data.length;i+=4)for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*(1-f)+preview.data[i+j]*f;lastCleanPreview=new ImageData(new Uint8ClampedArray(out.data),out.width,out.height);if(el('Mask').checked){const area=spatialMask(o.region,out.width,out.height),brush=brushMask(o.strokes,out.width,out.height);for(let i=0;i<out.data.length;i+=4){const c=Array.from(preview.data.slice(i,i+3)),w=selectedWeight(o,c,lab(...c),spatialAlpha(area,(i/4)%out.width,Math.floor(i/4/out.width)),brush?.[i/2]||0,brush?.[i/2+1]||0);for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*.3+(j===0?255:j===2?190:30)*w*.7;}}ctx.putImageData(out,0,0);el('Status').textContent=resetSnapshot?'Originalansicht · alle Bearbeitungen bleiben zum Wiederanzeigen gespeichert.':layers.length+' gemerkte Änderungen · Vorschau';}
-    function resetSliders(){spot=null;spotDraft=null;spotArmed=false;for(const n of ['SpotLight','SpotWarm','SpotSat'])el(n).value=0;gradient=null;gradientDraft=null;gradientArmed=false;for(const n of gradientControls)el(n).value=0;for(const n of ['Light','Blend','Warm','Saturation','Original'])el(n).value=0;el('Mask').checked=false;}
+    function resetSliders(){el('SpotOutside').checked=false;el('SpotStrength').value=100;spot=null;spotDraft=null;spotArmed=false;for(const n of ['SpotLight','SpotWarm','SpotSat'])el(n).value=0;gradient=null;gradientDraft=null;gradientArmed=false;for(const n of gradientControls)el(n).value=0;for(const n of ['Light','Blend','Warm','Saturation','Original'])el(n).value=0;el('Mask').checked=false;}
     // Capture the same artwork composition as the main view, at full resolution.
     // Grid lines are orientation aids and remain a separate overlay.
     function captureEditorSource(){
@@ -7707,7 +7711,7 @@ const mixes=chooseMixes(target,paletteKey);
     let brushStrokes=[],brushMode=null,brushDraft=null;
     let gradient=null,gradientDraft=null,gradientArmed=false;
     let spot=null,spotDraft=null,spotArmed=false;
-    const spotControls=['SpotWidth','SpotHeight','SpotSoft','SpotLight','SpotWarm','SpotSat'];
+    const spotControls=['SpotStrength','SpotWidth','SpotHeight','SpotSoft','SpotLight','SpotWarm','SpotSat'];
     const gradientControls=['GradLightA','GradWarmA','GradSatA','GradLightB','GradWarmB','GradSatB'];
     const outline=el('LassoOutline');
     function drawRegion(){
@@ -7721,13 +7725,13 @@ const mixes=chooseMixes(target,paletteKey);
     }
     function currentSpot(){
       if(!spot)return null;
-      return {center:{...spot},width:+el('SpotWidth').value/100,height:+el('SpotHeight').value/100,soft:+el('SpotSoft').value/100,light:+el('SpotLight').value/100,warm:+el('SpotWarm').value/500,saturation:+el('SpotSat').value/100};
+      return {center:{...spot},outside:el('SpotOutside').checked,strength:+el('SpotStrength').value/100,width:+el('SpotWidth').value/100,height:+el('SpotHeight').value/100,soft:+el('SpotSoft').value/100,light:+el('SpotLight').value/100,warm:+el('SpotWarm').value/500,saturation:+el('SpotSat').value/100};
     }
     function syncSpot(){
       for(const n of spotControls){el(n+'Val').textContent=el(n).value+(['SpotLight','SpotWarm'].includes(n)?'':' %');el(n).disabled=busy||!spot||(n==='SpotLight'&&el('ProtectTone').checked);}
       el('SpotPlace').setAttribute('aria-pressed',String(spotArmed));el('SpotPlace').textContent=spotArmed?'Fleck setzen / verschieben: aktiv · beenden':spot?'Fleck verschieben':'Fleck im Bild setzen';
       el('SpotClear').disabled=busy||!spot;
-      el('SpotStatus').textContent=spotArmed?'Mit einem Finger Mittelpunkt setzen oder verschieben. Zwei Finger zoomen.':spot?'Fleck aktiv · Größe, weichen Rand und Wirkung einstellen.':'Noch kein Fleck · zuerst „Fleck im Bild setzen“ antippen.';
+      el('SpotStatus').textContent=el('SpotOutside').checked&&spot?'Umgebung aktiv: Das innere Oval schützt dein Motiv; bis zum äußeren Oval steigt die Wirkung sanft an. Zum Verschieben den Knopf aktivieren.':spotArmed?'Mit einem Finger Mittelpunkt setzen oder verschieben. Zwei Finger zoomen.':spot?'Fleck aktiv · Größe, weichen Rand und Wirkung einstellen.':'Noch kein Fleck · zuerst „Fleck im Bild setzen“ antippen.';
       drawRegion();
     }
     function drawSpot(){
@@ -7737,8 +7741,24 @@ const mixes=chooseMixes(target,paletteKey);
         const ellipse=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
         for(const [k,v]of Object.entries({cx:x,cy:y,rx:+el('SpotWidth').value/200*side,ry:+el('SpotHeight').value/200*side,fill:'none',stroke,'stroke-width':w,'stroke-dasharray':'6 5'}))ellipse.setAttribute(k,String(v));outline.appendChild(ellipse);
       }
+      if(el('SpotOutside').checked){
+        const inner=1-+el('SpotSoft').value/100;
+        if(inner>0){const e=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+          for(const [k,v]of Object.entries({cx:x,cy:y,rx:+el('SpotWidth').value/200*side*inner,ry:+el('SpotHeight').value/200*side*inner,fill:'none',stroke:'#86efac','stroke-width':2,'stroke-dasharray':'3 3'}))e.setAttribute(k,String(v));outline.appendChild(e);}
+      }
       const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');for(const [k,v]of Object.entries({cx:x,cy:y,r:5,fill:'#ffe6a3',stroke:'#111','stroke-width':1}))dot.setAttribute(k,String(v));outline.appendChild(dot);
     }
+    el('FocusPreset').onclick=()=>{
+      clearGesture();if(!spot)spot={x:.5,y:.5};
+      el('SpotOutside').checked=true;el('SpotStrength').value=70;
+      el('SpotWidth').value=70;el('SpotHeight').value=90;el('SpotSoft').value=35;
+      el('SpotLight').value=-5;el('SpotWarm').value=0;el('SpotSat').value=-40;
+      el('SpotVisible').checked=true;el('Mask').checked=false;
+      spotArmed=true;gradientArmed=false;brushMode=null;lassoArmed=false;picking=false;pickPoint=null;
+      el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
+      positionCircle();syncRegion();syncBrush();syncGradient();syncSpot();render();
+    };
+    el('SpotOutside').addEventListener('input',render);
     el('SpotPlace').onclick=()=>{
       clearGesture();spotArmed=!spotArmed;gradientArmed=false;brushMode=null;lassoArmed=false;picking=false;pickPoint=null;
       if(spotArmed&&!spot&&!['SpotLight','SpotWarm','SpotSat'].some(n=>+el(n).value)){el('SpotLight').value=15;el('SpotWarm').value=4;}
@@ -7931,7 +7951,7 @@ const mixes=chooseMixes(target,paletteKey);
     el('Undo').onclick=()=>{if(active(current()))resetSliders();else layers.pop();render();};
     // Reversible full reset for comparing the untouched photo with every saved edit.
     let resetSnapshot=null;
-    const resetControlNames=['Family','Range','Light','Blend','Warm','Saturation','Target','Original','Mask','Diameter','ProtectTone','ProtectHighlights','BrushSize','GradientVisible',...gradientControls,'SpotVisible',...spotControls];
+    const resetControlNames=['Family','Range','Light','Blend','Warm','Saturation','Target','Original','Mask','Diameter','ProtectTone','ProtectHighlights','BrushSize','GradientVisible',...gradientControls,'SpotVisible','SpotOutside',...spotControls];
     function syncResetToggle(){
       el('Reset').textContent=resetSnapshot?'Bearbeitung wieder anzeigen':'Alles zurücksetzen';
       el('Reset').setAttribute('aria-pressed',String(!!resetSnapshot));

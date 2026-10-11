@@ -1,3 +1,9 @@
+Version 2.58 – Motiv hervorheben
+
+In Farben bearbeiten „Lichtfleck & Motiv hervorheben“ öffnen. „Motiv hervorheben · Umgebung beruhigen“ setzt ein Oval in die Bildmitte, reduziert die Sättigung außen und dunkelt die Umgebung leicht ab. Der Knopf ersetzt die Einstellungen des aktuellen, noch nicht gemerkten Flecks.
+Mit einem Finger den Mittelpunkt zum Motiv verschieben. Größe über Breite/Höhe einstellen. Das innere grüne Oval bleibt von diesem Effekt unberührt; zwischen innerem und äußerem Oval steigt die Wirkung weich an. Stärke 0 = kein Effekt, 100 = volle eingestellte Wirkung. Ein erneuter Klick auf „Fleck setzen / verschieben“ beendet den Platzierungsmodus. „Umriss anzeigen“ ausblenden, um das Bild zu beurteilen.
+„Umgebung bearbeiten · Mitte schützen“ lässt sich auch für eigene Effekte nutzen, z. B. die Umgebung heller oder kühler machen. Ausgeschaltet wirkt der Fleck wie bisher in der Mitte. Farbauswahl, Lasso und Schutzfunktionen gelten weiter. Bereits bestehende andere Änderungen werden durch den geschützten Bereich nicht rückgängig gemacht. „Änderung merken“ speichert die aktuelle Wirkung.
+
 Version 2.57 – Licht- und Schattenfleck
 
 In Farben bearbeiten „Licht- und Schattenfleck“ aufklappen, „Fleck im Bild setzen“ wählen und Mittelpunkt antippen. Mit einem Finger kann er verschoben werden; zum Beenden nochmals den aktiven Knopf antippen. Zwei Finger zoomen ohne den Fleck zu versetzen.
