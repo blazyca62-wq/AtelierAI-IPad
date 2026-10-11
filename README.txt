@@ -1,3 +1,8 @@
+Version 2.60 – Bildwirkung prüfen
+
+Unter Farben bearbeiten „Bildwirkung prüfen“ aufklappen. Augen zusammenkneifen reduziert Details durch eine regelbare weiche Darstellung; Schwarz-Weiß zeigt die Hell-Dunkel-Verteilung; horizontal spiegeln hilft beim Prüfen von Proportionen und Bildaufteilung. Alle drei Ansichten sind kombinierbar. „Zur normalen Ansicht“ beendet die gesamte Prüfung mit einem Klick.
+Die Prüfansicht zeigt das bearbeitete Bild ohne Auswahlmarkierungen. Zoomen und Verschieben bleiben möglich. Zum Zeichnen oder Aufnehmen von Farben zur normalen Ansicht zurückkehren. Die Prüfung verändert keine Bilddaten; Speichern und Übernehmen verwenden das normale bearbeitete Bild. Zusammenkneifen ist eine visuelle Annäherung, keine Simulation des menschlichen Sehens.
+
 Version 2.59 – Farbharmonie und übersichtliche Bedienung
 
 Helligkeit, Wärme und Sättigung bleiben direkt sichtbar. Farbharmonie, Linienverlauf, Lichtfleck/Motiv, Schutzfunktionen und Pinsel sind in fünf aufklappbaren Bereichen angeordnet. Aktive Werte erscheinen in deren Überschriften. Einklappen beendet den zugehörigen Zeichenmodus, erhält aber seine Bildwirkung.

@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.59</title>
+  <title>AtelierAI iPad 2.60</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.59</div>
+    <div class="title">AtelierAI · iPad 2.60</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7517,13 +7517,21 @@ const mixes=chooseMixes(target,paletteKey);
     document.getElementById('saveCurrentViewBtn').after(button);
     const panel=document.createElement('div');panel.id='colorEditor';panel.hidden=true;
     panel.innerHTML=`<div class="ce-head"><strong>Farben gezielt bearbeiten</strong><button id="ceClose" class="secondary">Schließen</button></div>
-    <div class="ce-body"><div class="ce-stage"><canvas id="ceCanvas"></canvas><svg id="ceLassoOutline" aria-hidden="true"></svg><div id="ceCircle" hidden aria-hidden="true"></div></div><div class="ce-controls">
+    <div class="ce-body"><div class="ce-stage"><canvas id="ceCanvas"></canvas><canvas id="ceReviewCanvas" hidden aria-hidden="true"></canvas><span id="ceReviewBadge" hidden>Prüfansicht</span><svg id="ceLassoOutline" aria-hidden="true"></svg><div id="ceCircle" hidden aria-hidden="true"></div></div><div class="ce-controls">
     <button id="ceFit" class="secondary">Bild einpassen · <span id="ceZoomVal">100 %</span></button><p class="tiny">Zwei Finger: vergrößern und verschieben. Bei aktiver Pipette: Kreis mit einem Finger setzen oder verschieben.</p><button id="ceLasso" class="secondary" aria-pressed="false">Bereich mit Lasso auswählen</button><button id="ceLassoClear" class="secondary" disabled>Bereichsauswahl aufheben</button><p id="ceRegionStatus" class="tiny" role="status">Kein Lasso: Änderungen gelten im ganzen Bild.</p><label>Auswahl<select id="ceFamily"><option value="all">Alle Farben</option><option value="green" selected>Grün / Oliv</option><option value="yellow">Gelb</option><option value="ochre">Ocker</option><option value="orange">Orange</option><option value="red">Rot / Rosa</option><option value="brown">Braun / Siena / Umbra</option><option value="turquoise">Türkis</option><option value="blue">Blau</option><option value="violet">Violett</option><option value="neutral">Weiß / Grau / Schwarz</option><option value="pick">Einzelne Farbe · Pipette</option></select></label>
     <button id="cePick" class="secondary">Farbe im Bild antippen</button><label>Kreisgröße <output id="ceDiameterVal">32 px</output><input id="ceDiameter" type="range" min="8" max="80" step="2" value="32"></label><div id="ceSample">Auswahl: Grün / Oliv</div>
     <label>Farbbereich <output id="ceRangeVal"></output><input id="ceRange" type="range" min="5" max="100" value="30"></label>
     <label>Heller / dunkler <output id="ceLightVal"></output><input id="ceLight" type="range" min="-40" max="40" step="0.5" value="0"></label>
     <label>Kühler / wärmer <output id="ceWarmVal"></output><input id="ceWarm" type="range" min="-30" max="30" step="0.5" value="0"></label>
     <label>Sättigung <output id="ceSaturationVal">0 %</output><input id="ceSaturation" type="range" min="-100" max="100" step="1" value="0"></label>
+    <details id="ceReviewPanel"><summary>Bildwirkung prüfen · aus</summary>
+    <label><input id="ceReviewSquint" type="checkbox"> Augen zusammenkneifen</label>
+    <label>Details ausblenden <output id="ceReviewBlurVal">5</output><input id="ceReviewBlur" type="range" min="1" max="12" step="1" value="5"></label>
+    <label><input id="ceReviewGray" type="checkbox"> Schwarz-Weiß</label>
+    <label><input id="ceReviewMirror" type="checkbox"> Horizontal spiegeln</label>
+    <button id="ceReviewNormal" class="secondary">Zur normalen Ansicht</button>
+    <p class="tiny">Die Ansichten lassen sich kombinieren. Zoomen und Verschieben bleiben möglich. Zum Auswählen oder Zeichnen erst zur normalen Ansicht zurückkehren. Speichern und „Als Malvorlage übernehmen“ verwenden immer das normale bearbeitete Bild.</p>
+    </details>
     <details id="ceHarmonyPanel"><summary>Farbharmonie · aus</summary>
     <p class="tiny">Einen Farbton aus dem Bild aufnehmen und sanft in die gewählten Bildstellen einfließen lassen. Die Farbharmonie selbst erhält deren Helligkeit.</p>
     <button id="ceTargetPick" class="secondary" aria-pressed="false">Leitfarbe aus dem Bild aufnehmen</button>
@@ -7574,8 +7582,9 @@ const mixes=chooseMixes(target,paletteKey);
     <button id="ceSave">Bearbeitetes Foto speichern</button><button id="ceApply">Als Malvorlage übernehmen</button><p id="ceStatus" role="status"></p>
     </div></div>`;
     document.body.append(panel);
-    const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceLassoOutline{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls details{margin:12px 0;padding:10px;border:1px solid #c4ccc7;border-radius:8px}.ce-controls summary{cursor:pointer;font-weight:bold}.ce-controls>label,.ce-controls details>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
+    const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceReviewCanvas[hidden],#ceReviewBadge[hidden]{display:none}#ceReviewBadge{position:absolute;top:8px;left:8px;z-index:2;padding:5px 9px;border-radius:6px;background:#172822d9;color:white;font-size:12px;pointer-events:none}#ceCanvas,#ceReviewCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceLassoOutline{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls details{margin:12px 0;padding:10px;border:1px solid #c4ccc7;border-radius:8px}.ce-controls summary{cursor:pointer;font-weight:bold}.ce-controls>label,.ce-controls details>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
     const el=id=>document.getElementById('ce'+id),cv=el('Canvas'),ctx=cv.getContext('2d');
+    const reviewCanvas=el('ReviewCanvas'),reviewCtx=reviewCanvas.getContext('2d');
     let base=null,preview=null,layers=[],sample=null,picking=false,revision=0,busy=false,lastSource=null,lastCleanPreview=null;
     const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
     // OKLab separates perceptual lightness from colour. Gamut mapping reduces chroma.
@@ -7676,8 +7685,39 @@ const mixes=chooseMixes(target,paletteKey);
       return out;
     }
     function labels(){for(const name of ['Range','Light','Blend','Warm','Saturation','Original'])el(name+'Val').textContent=el(name).value+(name==='Light'||name==='Warm'?'':' %');el('Range').disabled=busy;syncResetToggle();}
-    async function render(){if(!preview||busy)return;labels();const token=++revision;el('Status').textContent='Vorschau wird aktualisiert …';const o=current(),ops=[...layers,...(active(o)?[o]:[])];const out=await process(preview,ops,null,token);if(!out)return;const f=+el('Original').value/100;if(f)for(let i=0;i<out.data.length;i+=4)for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*(1-f)+preview.data[i+j]*f;lastCleanPreview=new ImageData(new Uint8ClampedArray(out.data),out.width,out.height);if(el('Mask').checked){const area=spatialMask(o.region,out.width,out.height),brush=brushMask(o.strokes,out.width,out.height);for(let i=0;i<out.data.length;i+=4){const c=Array.from(preview.data.slice(i,i+3)),w=selectedWeight(o,c,lab(...c),spatialAlpha(area,(i/4)%out.width,Math.floor(i/4/out.width)),brush?.[i/2]||0,brush?.[i/2+1]||0);for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*.3+(j===0?255:j===2?190:30)*w*.7;}}ctx.putImageData(out,0,0);el('Status').textContent=resetSnapshot?'Originalansicht · alle Bearbeitungen bleiben zum Wiederanzeigen gespeichert.':layers.length+' gemerkte Änderungen · Vorschau';}
+    async function render(){if(!preview||busy)return;labels();const token=++revision;el('Status').textContent='Vorschau wird aktualisiert …';const o=current(),ops=[...layers,...(active(o)?[o]:[])];const out=await process(preview,ops,null,token);if(!out)return;const f=+el('Original').value/100;if(f)for(let i=0;i<out.data.length;i+=4)for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*(1-f)+preview.data[i+j]*f;lastCleanPreview=new ImageData(new Uint8ClampedArray(out.data),out.width,out.height);if(el('Mask').checked){const area=spatialMask(o.region,out.width,out.height),brush=brushMask(o.strokes,out.width,out.height);for(let i=0;i<out.data.length;i+=4){const c=Array.from(preview.data.slice(i,i+3)),w=selectedWeight(o,c,lab(...c),spatialAlpha(area,(i/4)%out.width,Math.floor(i/4/out.width)),brush?.[i/2]||0,brush?.[i/2+1]||0);for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*.3+(j===0?255:j===2?190:30)*w*.7;}}ctx.putImageData(out,0,0);drawReview();el('Status').textContent=resetSnapshot?'Originalansicht · alle Bearbeitungen bleiben zum Wiederanzeigen gespeichert.':layers.length+' gemerkte Änderungen · Vorschau';}
     function resetSliders(){el('SpotOutside').checked=false;el('SpotStrength').value=100;spot=null;spotDraft=null;spotArmed=false;for(const n of ['SpotLight','SpotWarm','SpotSat'])el(n).value=0;gradient=null;gradientDraft=null;gradientArmed=false;for(const n of gradientControls)el(n).value=0;for(const n of ['Light','Blend','Warm','Saturation','Original'])el(n).value=0;el('Mask').checked=false;}
+    function reviewActive(){return ['ReviewSquint','ReviewGray','ReviewMirror'].some(n=>el(n).checked);}
+    function syncReviewControls(){
+      const names=[el('ReviewSquint').checked?'Zusammenkneifen':'',el('ReviewGray').checked?'S/W':'',el('ReviewMirror').checked?'Gespiegelt':''].filter(Boolean);
+      el('ReviewPanel').querySelector('summary').textContent='Bildwirkung prüfen · '+(names.join(' + ')||'aus');
+      el('ReviewBadge').textContent='Prüfansicht · '+names.join(' + ');el('ReviewBadge').hidden=!names.length;
+      el('ReviewBlurVal').textContent=el('ReviewBlur').value;
+      el('ReviewBlur').disabled=busy||!el('ReviewSquint').checked;
+      el('ReviewNormal').disabled=busy||!names.length;
+      for(const n of ['Lasso','Pick','TargetPick','BrushAdd','BrushRemove','GradientDraw','SpotPlace','FocusPreset'])el(n).disabled=busy||!!names.length;
+    }
+    function drawReview(){
+      const on=reviewActive();reviewCanvas.hidden=!on;cv.style.visibility=on?'hidden':'';
+      outline.style.visibility=on?'hidden':'';positionCircle();syncReviewControls();
+      if(!on||!lastCleanPreview)return;
+      if(reviewCanvas.width!==cv.width)reviewCanvas.width=cv.width;if(reviewCanvas.height!==cv.height)reviewCanvas.height=cv.height;
+      const clean=document.createElement('canvas');clean.width=cv.width;clean.height=cv.height;clean.getContext('2d').putImageData(lastCleanPreview,0,0);
+      reviewCtx.setTransform(1,0,0,1,0,0);reviewCtx.clearRect(0,0,cv.width,cv.height);reviewCtx.save();
+      if(el('ReviewMirror').checked){reviewCtx.translate(cv.width,0);reviewCtx.scale(-1,1);}
+      reviewCtx.drawImage(clean,0,0);reviewCtx.restore();
+      reviewCanvas.style.filter=(el('ReviewGray').checked?'grayscale(1) ':'')+(el('ReviewSquint').checked?'blur('+(+el('ReviewBlur').value*Math.min(cv.width,cv.height)/300)+'px)':'');
+      reviewCanvas.style.width=cv.style.width;reviewCanvas.style.height=cv.style.height;reviewCanvas.style.transform=cv.style.transform;
+    }
+    function resetReview(){for(const n of ['ReviewSquint','ReviewGray','ReviewMirror'])el(n).checked=false;drawReview();}
+    function changeReview(){
+      clearGesture();if(reviewActive()){picking=false;pickPoint=null;lassoArmed=false;brushMode=null;gradientArmed=false;spotArmed=false;
+        el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');syncRegion();syncBrush();syncGradient();syncSpot();}
+      drawReview();
+    }
+    for(const n of ['ReviewSquint','ReviewGray','ReviewMirror'])el(n).addEventListener('input',changeReview);
+    el('ReviewBlur').addEventListener('input',drawReview);
+    el('ReviewNormal').onclick=resetReview;
     // Capture the same artwork composition as the main view, at full resolution.
     // Grid lines are orientation aids and remain a separate overlay.
     function captureEditorSource(){
@@ -7702,7 +7742,7 @@ const mixes=chooseMixes(target,paletteKey);
       if(isolationBusy){alert('Bitte warten, bis die Bildansicht fertig ist.');return;}
       const next=captureEditorSource();
       if(!sameEditorSource(next)){
-        revision++;brushStrokes=[];brushMode=null;brushDraft=null;el('ProtectTone').checked=false;el('ProtectHighlights').checked=false;base=next;lastSource=img;resetSnapshot=null;layers=[];sample=null;lastCleanPreview=null;region=null;lassoDraft=null;lassoArmed=false;picking=false;pickPoint=null;
+        resetReview();revision++;brushStrokes=[];brushMode=null;brushDraft=null;el('ProtectTone').checked=false;el('ProtectHighlights').checked=false;base=next;lastSource=img;resetSnapshot=null;layers=[];sample=null;lastCleanPreview=null;region=null;lassoDraft=null;lassoArmed=false;picking=false;pickPoint=null;
         resetSliders();el('Family').value='all';el('Sample').textContent='Ausgangspunkt: aktuelle Bildansicht';
         el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
         const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));
@@ -7861,7 +7901,7 @@ const mixes=chooseMixes(target,paletteKey);
     el('Lasso').onclick=()=>{spotArmed=false;syncSpot();gradientArmed=false;syncGradient();brushMode=null;syncBrush();clearGesture();lassoArmed=!lassoArmed;lassoDraft=null;picking=false;pickPoint=null;positionCircle();el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');syncRegion();};
     el('LassoClear').onclick=()=>{clearGesture();region=null;lassoDraft=null;lassoArmed=false;syncRegion();render();};
     function positionCircle(){
-      circle.hidden=!picking||!pickPoint;
+      circle.hidden=reviewActive()||!picking||!pickPoint;
       if(circle.hidden)return;
       circle.style.left=(view.x+pickPoint.x*view.k)+'px';
       circle.style.top=(view.y+pickPoint.y*view.k)+'px';
@@ -7877,6 +7917,7 @@ const mixes=chooseMixes(target,paletteKey);
       view.y=ih<=h?(h-ih)/2:clamp(view.y,h-ih,0);
       cv.style.width=cv.width+'px';cv.style.height=cv.height+'px';
       cv.style.transform=`translate(${view.x}px,${view.y}px) scale(${view.k})`;
+      reviewCanvas.style.width=cv.style.width;reviewCanvas.style.height=cv.style.height;reviewCanvas.style.transform=cv.style.transform;
       el('ZoomVal').textContent=Math.round(view.zoom*100)+' %';positionCircle();drawRegion();
     }
     function fitEditor(){clearGesture();view={zoom:1,x:0,y:0,k:1};placeView();}
@@ -7918,7 +7959,7 @@ const mixes=chooseMixes(target,paletteKey);
       if(!preview||busy||(e.pointerType==='mouse'&&e.button!==0))return;
       const p=localPoint(e);points.set(e.pointerId,p);stage.setPointerCapture?.(e.pointerId);
       if(points.size>=2)beginPinch();
-      else{const q=imagePoint(p);if(spotArmed&&q){spotDraft=regionPoint(p);gesture={type:'spot'};drawRegion();}else if(gradientArmed&&q){const a=regionPoint(p);gradientDraft={a,b:{...a}};gesture={type:'gradient'};drawRegion();}else if(brushMode&&q){brushDraft={mode:brushMode,size:+el('BrushSize').value/view.k/Math.min(cv.width,cv.height),points:[]};addBrushPoint(p);gesture={type:'brush'};}else if(lassoArmed&&q){lassoDraft=[];addRegionPoint(p);gesture={type:'lasso'};}else if(picking&&q){pickPoint=q;positionCircle();gesture={type:'pick'};}else gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
+      else{const q=imagePoint(p);if(reviewActive()){gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}else if(spotArmed&&q){spotDraft=regionPoint(p);gesture={type:'spot'};drawRegion();}else if(gradientArmed&&q){const a=regionPoint(p);gradientDraft={a,b:{...a}};gesture={type:'gradient'};drawRegion();}else if(brushMode&&q){brushDraft={mode:brushMode,size:+el('BrushSize').value/view.k/Math.min(cv.width,cv.height),points:[]};addBrushPoint(p);gesture={type:'brush'};}else if(lassoArmed&&q){lassoDraft=[];addRegionPoint(p);gesture={type:'lasso'};}else if(picking&&q){pickPoint=q;positionCircle();gesture={type:'pick'};}else gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
       e.preventDefault();
     });
     stage.addEventListener('pointermove',e=>{
@@ -7990,7 +8031,7 @@ const mixes=chooseMixes(target,paletteKey);
         node.disabled=busy;
       });
       if(!busy)el('LassoClear').disabled=!region&&!lassoDraft;
-      el('Light').disabled=busy||el('ProtectTone').checked;syncBrush();syncGradient();syncSpot();syncSections();
+      el('Light').disabled=busy||el('ProtectTone').checked;syncBrush();syncGradient();syncSpot();syncSections();syncReviewControls();
     }
     function toggleReset(){
       if(busy)return;
@@ -8012,14 +8053,14 @@ const mixes=chooseMixes(target,paletteKey);
     // A new edit in the original view starts a fresh edit without locking controls.
     function resumeEditing(e){
       if(!resetSnapshot||busy)return;
-      if(['ceReset','ceClose','ceFit','ceSave','ceApply'].includes(e.target.id))return;
+      if(e.target.closest?.('#ceReviewPanel')||['ceReset','ceClose','ceFit','ceSave','ceApply'].includes(e.target.id))return;
       resetSnapshot=null;syncResetToggle();
     }
     panel.addEventListener('input',resumeEditing,true);
     panel.addEventListener('change',resumeEditing,true);
     panel.addEventListener('click',resumeEditing,true);
     document.addEventListener('atelier-reset-photo',()=>{
-      revision++;lastSource=null;resetSnapshot=null;layers=[];brushStrokes=[];brushMode=null;resetSliders();
+      resetReview();revision++;lastSource=null;resetSnapshot=null;layers=[];brushStrokes=[];brushMode=null;resetSliders();
       panel.hidden=true;clearGesture();syncResetToggle();
     });
     el('Reset').onclick=toggleReset;
