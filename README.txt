@@ -1,3 +1,9 @@
+NEU IN 2.48 – BEDIENUNG DES FARBMODULS
+
+Eine allgemeine Canvas-Layoutregel ließ die Vorschau unsichtbar über
+den Bedienelementen liegen. Die Vorschau bleibt jetzt in ihrem eigenen
+Bildbereich; Schaltflächen, Pipette und Regler sind wieder erreichbar.
+
 NEU IN 2.47 – FARBEN GEZIELT BEARBEITEN
 
 Oben „Farben bearbeiten“ öffnen, nachdem ein Foto geladen wurde.
