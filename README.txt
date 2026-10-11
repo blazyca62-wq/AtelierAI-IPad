@@ -1,3 +1,24 @@
+NEU IN 2.49 – ZOOM UND PIPETTENKREIS IM FARBMODUL
+
+• Zwei Finger: Bild bis 1200 % vergrößern und verschieben.
+• „Bild einpassen“ stellt die gesamte Vorlage wieder dar.
+• „Farbe im Bild antippen“: Ausgangsfarbe mit dem Kreis aufnehmen.
+• „Wunschfarbe aus Bild aufnehmen“: gewünschte Zielfarbe mit dem Kreis aufnehmen.
+• Bei aktiver Pipette den Kreis mit einem Finger setzen oder verschieben.
+  Die Farbe wird beim Loslassen aufgenommen; danach kann der Kreis erneut
+  verschoben werden. Zwei Finger verändern nur die Ansicht, nie die Farbauswahl.
+• „Kreisgröße“: Durchmesser 8 bis 80 Bildschirmpixel. Der Kreis mittelt die
+  eingeschlossenen Farben. Beim Vergrößern erfasst derselbe Kreis einen
+  kleineren, genaueren Ausschnitt des Fotos.
+• Die Ausgangsfarbe wird aus dem Originalfoto aufgenommen, die Wunschfarbe
+  aus der aktuellen Farbvorschau ohne Auswahlmarkierung.
+• Zoom, Kreis und Auswahlmarkierung werden nicht in das gespeicherte Foto übernommen.
+
+Geprüft im Chromium-Browser mit simulierten Touch-Eingaben: Zwei-Finger-Zoom,
+Verschieben, getrenntes Loslassen ohne Farbaufnahme, Kreisposition und
+Farbaufnahme nach Zoom, Wunschfarbenpipette, Einpassen, erreichbare Regler,
+schmales Layout sowie PNG-Übernahme und Zurücksetzen. Kein echter iPad-Test.
+
 NEU IN 2.48 – BEDIENUNG DES FARBMODULS
 
 Eine allgemeine Canvas-Layoutregel ließ die Vorschau unsichtbar über

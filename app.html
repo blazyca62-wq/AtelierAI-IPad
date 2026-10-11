@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.48</title>
+  <title>AtelierAI iPad 2.49</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.48</div>
+    <div class="title">AtelierAI · iPad 2.49</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7493,13 +7493,13 @@ const mixes=chooseMixes(target,paletteKey);
     document.getElementById('saveCurrentViewBtn').after(button);
     const panel=document.createElement('div');panel.id='colorEditor';panel.hidden=true;
     panel.innerHTML=`<div class="ce-head"><strong>Farben gezielt bearbeiten</strong><button id="ceClose" class="secondary">Schließen</button></div>
-    <div class="ce-body"><div class="ce-stage"><canvas id="ceCanvas"></canvas></div><div class="ce-controls">
-    <label>Auswahl<select id="ceFamily"><option value="green">Grün / Oliv</option><option value="yellow">Gelb</option><option value="ochre">Ocker</option><option value="orange">Orange</option><option value="red">Rot / Rosa</option><option value="brown">Braun / Siena / Umbra</option><option value="turquoise">Türkis</option><option value="blue">Blau</option><option value="violet">Violett</option><option value="neutral">Weiß / Grau / Schwarz</option><option value="pick">Einzelne Farbe · Pipette</option></select></label>
-    <button id="cePick" class="secondary">Farbe im Bild antippen</button><div id="ceSample">Auswahl: Grün / Oliv</div>
+    <div class="ce-body"><div class="ce-stage"><canvas id="ceCanvas"></canvas><div id="ceCircle" hidden aria-hidden="true"></div></div><div class="ce-controls">
+    <button id="ceFit" class="secondary">Bild einpassen · <span id="ceZoomVal">100 %</span></button><p class="tiny">Zwei Finger: vergrößern und verschieben. Bei aktiver Pipette: Kreis mit einem Finger setzen oder verschieben.</p><label>Auswahl<select id="ceFamily"><option value="green">Grün / Oliv</option><option value="yellow">Gelb</option><option value="ochre">Ocker</option><option value="orange">Orange</option><option value="red">Rot / Rosa</option><option value="brown">Braun / Siena / Umbra</option><option value="turquoise">Türkis</option><option value="blue">Blau</option><option value="violet">Violett</option><option value="neutral">Weiß / Grau / Schwarz</option><option value="pick">Einzelne Farbe · Pipette</option></select></label>
+    <button id="cePick" class="secondary">Farbe im Bild antippen</button><label>Kreisgröße <output id="ceDiameterVal">32 px</output><input id="ceDiameter" type="range" min="8" max="80" step="2" value="32"></label><div id="ceSample">Auswahl: Grün / Oliv</div>
     <label>Farbbereich <output id="ceRangeVal"></output><input id="ceRange" type="range" min="5" max="100" value="30"></label>
     <label>Heller / dunkler <output id="ceLightVal"></output><input id="ceLight" type="range" min="-40" max="40" step="0.5" value="0"></label>
     <label>Wunschfarbe <input id="ceTarget" type="color" value="#b49a45"></label>
-    <label>Zur Wunschfarbe überblenden <output id="ceBlendVal"></output><input id="ceBlend" type="range" min="0" max="100" value="0"></label>
+    <button id="ceTargetPick" class="secondary" aria-pressed="false">Wunschfarbe aus Bild aufnehmen</button><label>Zur Wunschfarbe überblenden <output id="ceBlendVal"></output><input id="ceBlend" type="range" min="0" max="100" value="0"></label>
     <label>Kühler / wärmer <output id="ceWarmVal"></output><input id="ceWarm" type="range" min="-30" max="30" step="0.5" value="0"></label>
     <label><input id="ceMask" type="checkbox"> Auswahl hervorheben</label>
     <label>Original einblenden <output id="ceOriginalVal"></output><input id="ceOriginal" type="range" min="0" max="100" value="0"></label>
@@ -7508,9 +7508,9 @@ const mixes=chooseMixes(target,paletteKey);
     <button id="ceSave">Bearbeitetes Foto speichern</button><button id="ceApply">Als Malvorlage übernehmen</button><p id="ceStatus" role="status"></p>
     </div></div>`;
     document.body.append(panel);
-    const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceCanvas{position:static;inset:auto;width:auto;height:auto;flex:none;max-width:100%;max-height:100%;object-fit:contain;touch-action:manipulation}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
+    const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
     const el=id=>document.getElementById('ce'+id),cv=el('Canvas'),ctx=cv.getContext('2d');
-    let base=null,preview=null,layers=[],sample=null,picking=false,revision=0,busy=false,lastSource=null;
+    let base=null,preview=null,layers=[],sample=null,picking=false,revision=0,busy=false,lastSource=null,lastCleanPreview=null;
     const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
     // OKLab separates perceptual lightness from colour. Gamut mapping reduces chroma.
     const linear=Array.from({length:256},(_,v)=>v/255<=.04045?v/3294.6:((v/255+.055)/1.055)**2.4);
@@ -7528,14 +7528,99 @@ const mixes=chooseMixes(target,paletteKey);
       return out;
     }
     function labels(){for(const name of ['Range','Light','Blend','Warm','Original'])el(name+'Val').textContent=el(name).value+(name==='Light'||name==='Warm'?'':' %');el('Range').disabled=busy;}
-    async function render(){if(!preview||busy)return;labels();const token=++revision;el('Status').textContent='Vorschau wird aktualisiert …';const o=current(),ops=[...layers,...(active(o)?[o]:[])];const out=await process(preview,ops,el('Mask').checked?o:null,token);if(!out)return;const f=+el('Original').value/100;if(f)for(let i=0;i<out.data.length;i+=4)for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*(1-f)+preview.data[i+j]*f;ctx.putImageData(out,0,0);el('Status').textContent=layers.length+' gemerkte Änderungen · Vorschau';}
+    async function render(){if(!preview||busy)return;labels();const token=++revision;el('Status').textContent='Vorschau wird aktualisiert …';const o=current(),ops=[...layers,...(active(o)?[o]:[])];const out=await process(preview,ops,null,token);if(!out)return;const f=+el('Original').value/100;if(f)for(let i=0;i<out.data.length;i+=4)for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*(1-f)+preview.data[i+j]*f;lastCleanPreview=new ImageData(new Uint8ClampedArray(out.data),out.width,out.height);if(el('Mask').checked){for(let i=0;i<out.data.length;i+=4){const c=Array.from(preview.data.slice(i,i+3)),w=weight(o,c,lab(...c));for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*.3+(j===0?255:j===2?190:30)*w*.7;}}ctx.putImageData(out,0,0);el('Status').textContent=layers.length+' gemerkte Änderungen · Vorschau';}
     function resetSliders(){for(const n of ['Light','Blend','Warm','Original'])el(n).value=0;el('Mask').checked=false;}
-    button.onclick=()=>{if(!loaded){alert('Bitte zuerst ein Foto öffnen.');return;}if(lastSource!==img){base=document.createElement('canvas');base.width=sourceCanvas.width;base.height=sourceCanvas.height;base.getContext('2d').drawImage(sourceCanvas,0,0);lastSource=img;layers=[];sample=null;resetSliders();const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));ctx.drawImage(base,0,0,cv.width,cv.height);preview=ctx.getImageData(0,0,cv.width,cv.height);}panel.hidden=false;render();};
-    el('Close').onclick=()=>{panel.hidden=true;revision++;button.focus();};
+    button.onclick=()=>{if(!loaded){alert('Bitte zuerst ein Foto öffnen.');return;}if(lastSource!==img){base=document.createElement('canvas');base.width=sourceCanvas.width;base.height=sourceCanvas.height;base.getContext('2d').drawImage(sourceCanvas,0,0);lastSource=img;layers=[];sample=null;lastCleanPreview=null;picking=false;pickPoint=null;resetSliders();const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));ctx.drawImage(base,0,0,cv.width,cv.height);preview=ctx.getImageData(0,0,cv.width,cv.height);}panel.hidden=false;fitEditor();render();};
+    el('Close').onclick=()=>{panel.hidden=true;revision++;clearGesture();button.focus();};
     for(const n of ['Range','Light','Blend','Warm','Target','Original','Mask'])el(n).addEventListener('input',render);
-    el('Family').onchange=()=>{picking=el('Family').value==='pick'&&!sample;el('Sample').textContent=picking?'Bitte eine Farbe im Bild antippen.':'Auswahl: '+el('Family').selectedOptions[0].textContent;render();};
-    el('Pick').onclick=()=>{picking=true;el('Family').value='pick';el('Sample').textContent='Bitte eine Farbe im Bild antippen.';};
-    cv.onclick=e=>{if(!picking||busy)return;const rect=cv.getBoundingClientRect(),x=Math.min(cv.width-1,Math.floor((e.clientX-rect.left)/rect.width*cv.width)),y=Math.min(cv.height-1,Math.floor((e.clientY-rect.top)/rect.height*cv.height)),i=(y*cv.width+x)*4;sample=Array.from(preview.data.slice(i,i+3));picking=false;el('Sample').textContent='Gewählt: RGB '+sample.join(', ');el('Sample').style.borderColor='rgb('+sample.join(',')+')';render();};
+    el('Family').onchange=()=>{picking=false;pickPoint=null;positionCircle();el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');if(el('Family').value==='pick')armPicker(false);else el('Sample').textContent='Auswahl: '+el('Family').selectedOptions[0].textContent;render();};
+    // 2.49: local viewport; only this stage captures image gestures.
+    const stage=panel.querySelector('.ce-stage'),circle=el('Circle');
+    let view={zoom:1,x:0,y:0,k:1},points=new Map(),gesture=null,pickTarget=false,pickPoint=null;
+    function positionCircle(){
+      circle.hidden=!picking||!pickPoint;
+      if(circle.hidden)return;
+      circle.style.left=(view.x+pickPoint.x*view.k)+'px';
+      circle.style.top=(view.y+pickPoint.y*view.k)+'px';
+      const diameter=+el('Diameter').value;circle.style.width=diameter+'px';circle.style.height=diameter+'px';
+      el('DiameterVal').textContent=diameter+' px';
+    }
+    function placeView(){
+      if(!preview||panel.hidden)return;
+      const w=stage.clientWidth,h=stage.clientHeight;
+      view.k=Math.min(w/cv.width,h/cv.height)*view.zoom;
+      const iw=cv.width*view.k,ih=cv.height*view.k;
+      view.x=iw<=w?(w-iw)/2:clamp(view.x,w-iw,0);
+      view.y=ih<=h?(h-ih)/2:clamp(view.y,h-ih,0);
+      cv.style.width=cv.width+'px';cv.style.height=cv.height+'px';
+      cv.style.transform=`translate(${view.x}px,${view.y}px) scale(${view.k})`;
+      el('ZoomVal').textContent=Math.round(view.zoom*100)+' %';positionCircle();
+    }
+    function fitEditor(){points.clear();gesture=null;view={zoom:1,x:0,y:0,k:1};placeView();}
+    function localPoint(e){const r=stage.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+    function imagePoint(p){const x=(p.x-view.x)/view.k,y=(p.y-view.y)/view.k;return x>=0&&y>=0&&x<cv.width&&y<cv.height?{x,y}:null;}
+    function armPicker(target){picking=true;pickTarget=target;pickPoint=null;circle.hidden=true;
+      if(!target)el('Family').value='pick';
+      el('Pick').setAttribute('aria-pressed',String(!target));el('TargetPick').setAttribute('aria-pressed',String(target));
+      el('Sample').textContent=(target?'Wunschfarbe':'Ausgangsfarbe')+': Kreis mit einem Finger setzen · zwei Finger zum Zoomen / Verschieben.';
+    }
+    function clearGesture(){points.clear();gesture=null;}
+    function beginPinch(){const [a,b]=[...points.values()],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};gesture={type:'pinch',distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom:view.zoom,ix:(mid.x-view.x)/view.k,iy:(mid.y-view.y)/view.k};}
+    function meanCircle(context,width,height,ix,iy,radius){
+      const x0=Math.max(0,Math.floor(ix-radius)),y0=Math.max(0,Math.floor(iy-radius)),x1=Math.min(width,Math.ceil(ix+radius+1)),y1=Math.min(height,Math.ceil(iy+radius+1));
+      const data=context.getImageData(x0,y0,x1-x0,y1-y0).data,step=Math.max(1,Math.floor(radius/70));let sum=[0,0,0],count=0;
+      for(let y=y0;y<y1;y+=step)for(let x=x0;x<x1;x+=step){if((x+.5-ix)**2+(y+.5-iy)**2>Math.max(.75,radius)**2)continue;const i=((y-y0)*(x1-x0)+x-x0)*4,a=data[i+3]/255;count+=a;for(let j=0;j<3;j++)sum[j]+=data[i+j]*a;}
+      if(!count)return Array.from(context.getImageData(clamp(Math.floor(ix),0,width-1),clamp(Math.floor(iy),0,height-1),1,1).data.slice(0,3));
+      return sum.map(v=>Math.round(v/count));
+    }
+    function chooseCircle(){
+      if(!pickPoint||!picking||busy)return;
+      const radius=+el('Diameter').value/2/view.k;
+      if(pickTarget){
+        // Read the displayed colour preview (without the selection overlay).
+        const clean=document.createElement('canvas');clean.width=cv.width;clean.height=cv.height;
+        const cc=clean.getContext('2d');cc.putImageData(lastCleanPreview||preview,0,0);
+        const colour=meanCircle(cc,cv.width,cv.height,pickPoint.x,pickPoint.y,radius);
+        el('Target').value='#'+colour.map(v=>v.toString(16).padStart(2,'0')).join('');
+        el('Sample').textContent='Wunschfarbe: '+el('Target').value+' · Kreis kann weiter verschoben werden.';
+      }else{
+        const factor=base.width/cv.width;
+        sample=meanCircle(base.getContext('2d'),base.width,base.height,pickPoint.x*factor,pickPoint.y*(base.height/cv.height),radius*factor);
+        el('Sample').textContent='Gewählt: RGB '+sample.join(', ')+' · Kreis kann weiter verschoben werden.';
+        el('Sample').style.borderColor='rgb('+sample.join(',')+')';
+      }
+      render();
+    }
+    stage.addEventListener('pointerdown',e=>{
+      if(!preview||busy||(e.pointerType==='mouse'&&e.button!==0))return;
+      const p=localPoint(e);points.set(e.pointerId,p);stage.setPointerCapture?.(e.pointerId);
+      if(points.size>=2)beginPinch();
+      else{const q=imagePoint(p);if(picking&&q){pickPoint=q;positionCircle();gesture={type:'pick'};}else gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
+      e.preventDefault();
+    });
+    stage.addEventListener('pointermove',e=>{
+      if(!points.has(e.pointerId)||!gesture)return;const p=localPoint(e);points.set(e.pointerId,p);
+      if(points.size>=2){if(gesture.type!=='pinch')beginPinch();const [a,b]=[...points.values()],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};view.zoom=clamp(gesture.zoom*Math.hypot(a.x-b.x,a.y-b.y)/gesture.distance,1,12);view.k=Math.min(stage.clientWidth/cv.width,stage.clientHeight/cv.height)*view.zoom;view.x=mid.x-gesture.ix*view.k;view.y=mid.y-gesture.iy*view.k;placeView();}
+      else if(gesture.type==='pick'){const q=imagePoint(p);if(q){pickPoint=q;positionCircle();}}
+      else if(gesture.type==='pan'){view.x=gesture.vx+p.x-gesture.x;view.y=gesture.vy+p.y-gesture.y;placeView();}
+      e.preventDefault();
+    });
+    function endEditorPointer(e){
+      if(!points.has(e.pointerId))return;
+      const select=e.type==='pointerup'&&points.size===1&&gesture?.type==='pick';
+      points.delete(e.pointerId);
+      // The remaining finger after a pinch must never select a colour.
+      if(points.size>=2)beginPinch();
+      else if(points.size===1){const p=[...points.values()][0];gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
+      else gesture=null;
+      if(select)chooseCircle();
+    }
+    for(const event of ['pointerup','pointercancel','lostpointercapture'])stage.addEventListener(event,endEditorPointer);
+    el('Fit').onclick=fitEditor;
+    el('Diameter').oninput=()=>{positionCircle();};el('Diameter').onchange=chooseCircle;
+    el('TargetPick').onclick=()=>armPicker(true);
+    el('Pick').onclick=()=>armPicker(false);
+    if('ResizeObserver' in window)new ResizeObserver(()=>{if(!panel.hidden)fitEditor();}).observe(stage);
     el('Keep').onclick=()=>{const o=current();if(o.family==='pick'&&!sample){el('Status').textContent='Bitte zuerst eine Farbe antippen.';return;}if(active(o))layers.push(o);resetSliders();render();};
     el('Undo').onclick=()=>{if(active(current()))resetSliders();else layers.pop();render();};
     el('Reset').onclick=()=>{layers=[];resetSliders();render();};
