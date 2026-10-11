@@ -1,3 +1,10 @@
+Version 2.55 – Malerwerkzeuge im Farbmodul
+
+Tonwerte schützen: erhält die wahrgenommene Helligkeit (OKLab); Heller/Dunkler pausiert, andere Farbregler bleiben nutzbar.
+Lichter und Papierweiß schützen: blendet Änderungen in hellen Bereichen sanft aus; sehr helle Stellen bleiben unverändert. Schutz gilt für die aktuelle Änderung; gemerkte Änderungen behalten ihre Einstellungen.
+Korrekturpinsel: Mit + übersehene Stellen zur Auswahl hinzufügen, mit − unerwünschte Stellen ausschließen. + kann auch außerhalb des Lassos ergänzen. Lichtschutz bleibt vorrangig. Pinselgröße einstellen, mit einem Finger malen. Zwei Finger zoomen/verschieben. Ein weiterer Klick auf den aktiven Pinsel schaltet ihn aus. „Auswahl hervorheben“ zeigt die Auswahl; zum Beurteilen der Farben ausschalten. Pinselstriche wirken erst mit einer Farbänderung.
+Letzten Pinselstrich zurück / Pinselkorrekturen löschen betreffen die aktuelle Auswahl. „Änderung merken“ speichert deren Pinselmaske mit und beginnt eine neue Pinselmaske. Striche bleiben beim Export in voller Auflösung an denselben Bildstellen.
+
 Version 2.54 – Aktuelle Bildansicht weiterbearbeiten
 
 „Farben bearbeiten“ übernimmt die aktuelle Ansicht aus den Bildmodulen in voller Bildauflösung. Rasterlinien bleiben separat. Ändert sich die Ansicht im Hauptfenster, wird sie beim nächsten Öffnen neu übernommen. Bei unveränderter Ansicht bleiben die bisherigen Farbänderungen im Editor erhalten. Beim Übernehmen als Malvorlage werden die bereits eingerechneten Bildfilter neutralisiert, damit sie nicht doppelt wirken. Das ursprünglich geladene Foto bleibt über Zurücksetzen erreichbar.
