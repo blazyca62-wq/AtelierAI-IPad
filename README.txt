@@ -1,3 +1,7 @@
+Version 2.54 – Aktuelle Bildansicht weiterbearbeiten
+
+„Farben bearbeiten“ übernimmt die aktuelle Ansicht aus den Bildmodulen in voller Bildauflösung. Rasterlinien bleiben separat. Ändert sich die Ansicht im Hauptfenster, wird sie beim nächsten Öffnen neu übernommen. Bei unveränderter Ansicht bleiben die bisherigen Farbänderungen im Editor erhalten. Beim Übernehmen als Malvorlage werden die bereits eingerechneten Bildfilter neutralisiert, damit sie nicht doppelt wirken. Das ursprünglich geladene Foto bleibt über Zurücksetzen erreichbar.
+
 Version 2.53 – Zurücksetzen repariert
 
 Der Knopf im Hauptfenster setzt Bildfilter und Ansicht zurück und holt das ursprünglich geladene Foto zurück, auch nach Übernahme einer Farbbearbeitung als Malvorlage. Raster und eigene Palette bleiben erhalten. Ein neu geöffnetes Foto ist der neue Ausgangspunkt.

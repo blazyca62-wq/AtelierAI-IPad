@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.53</title>
+  <title>AtelierAI iPad 2.54</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.53</div>
+    <div class="title">AtelierAI · iPad 2.54</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -6589,7 +6589,7 @@ const mixes=chooseMixes(target,paletteKey);
     });
   }
   // Shared composition keeps display and export in sync in every photo module.
-  function renderCurrentArtwork(ctx){
+  function renderCurrentArtwork(ctx,includeGrid=true){
     // 1.13: Original stufenlos über die aktuelle Arbeitsansicht blenden.
     if(build32Active && build32Canvas){
       ctx.drawImage(build32Canvas,0,0,sourceCanvas.width,sourceCanvas.height);
@@ -6637,7 +6637,7 @@ const mixes=chooseMixes(target,paletteKey);
       }
       ctx.restore();
     }
-    if(gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value,(build32Active || (!!surfaceMarkCanvas && isolationGray && !sketchActive)));
+    if(includeGrid && gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value,(build32Active || (!!surfaceMarkCanvas && isolationGray && !sketchActive)));
   }
 
   function paintViewer(){
@@ -7331,6 +7331,7 @@ const mixes=chooseMixes(target,paletteKey);
     photo.onload=()=>{
       URL.revokeObjectURL(url);if(token!==photoLoadRevision)return;
       if(!keepOriginal)originalPhoto=photo;
+      else resetPhotoFilters();
       installPhoto(photo);
     };
     photo.onerror=()=>{URL.revokeObjectURL(url);if(token===photoLoadRevision)hint.textContent='Das Foto konnte nicht geladen werden.';};
@@ -7341,9 +7342,7 @@ const mixes=chooseMixes(target,paletteKey);
   });
 
   fitBtn.addEventListener('click',fitImage);
-  resetBtn.addEventListener('click',()=>{
-    if(!loaded)return;
-    photoLoadRevision++;
+  function resetPhotoFilters(){
     sketchActive=false;resetSketchImage();
     surfaceMode=null;surfacePreview=null;surfaceClusters=[];surfaceSelectedIndex=null;
     surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';
@@ -7359,6 +7358,11 @@ const mixes=chooseMixes(target,paletteKey);
     [toneOriginalBlendVal,isolationOriginalBlendVal].forEach(el=>{if(el)el.textContent='0 %';});
     toneView='all';
     [toneAll,toneOnly,toneOff].forEach(b=>{b.classList.toggle('active',b===toneAll);b.classList.toggle('secondary',b!==toneAll);});
+  }
+  resetBtn.addEventListener('click',()=>{
+    if(!loaded)return;
+    photoLoadRevision++;
+    resetPhotoFilters();
     installPhoto(originalPhoto||img);
     document.dispatchEvent(new Event('atelier-reset-photo'));
     setMode('move');hint.textContent='Foto und Bildfilter zurückgesetzt.';
@@ -7562,7 +7566,38 @@ const mixes=chooseMixes(target,paletteKey);
     function labels(){for(const name of ['Range','Light','Blend','Warm','Saturation','Original'])el(name+'Val').textContent=el(name).value+(name==='Light'||name==='Warm'?'':' %');el('Range').disabled=busy;syncResetToggle();}
     async function render(){if(!preview||busy)return;labels();const token=++revision;el('Status').textContent='Vorschau wird aktualisiert …';const o=current(),ops=[...layers,...(active(o)?[o]:[])];const out=await process(preview,ops,null,token);if(!out)return;const f=+el('Original').value/100;if(f)for(let i=0;i<out.data.length;i+=4)for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*(1-f)+preview.data[i+j]*f;lastCleanPreview=new ImageData(new Uint8ClampedArray(out.data),out.width,out.height);if(el('Mask').checked){const area=spatialMask(o.region,out.width,out.height);for(let i=0;i<out.data.length;i+=4){const c=Array.from(preview.data.slice(i,i+3)),w=weight(o,c,lab(...c))*spatialAlpha(area,(i/4)%out.width,Math.floor(i/4/out.width))/255;for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*.3+(j===0?255:j===2?190:30)*w*.7;}}ctx.putImageData(out,0,0);el('Status').textContent=resetSnapshot?'Originalansicht · alle Bearbeitungen bleiben zum Wiederanzeigen gespeichert.':layers.length+' gemerkte Änderungen · Vorschau';}
     function resetSliders(){for(const n of ['Light','Blend','Warm','Saturation','Original'])el(n).value=0;el('Mask').checked=false;}
-    button.onclick=()=>{if(!loaded){alert('Bitte zuerst ein Foto öffnen.');return;}if(lastSource!==img){base=document.createElement('canvas');base.width=sourceCanvas.width;base.height=sourceCanvas.height;base.getContext('2d').drawImage(sourceCanvas,0,0);lastSource=img;resetSnapshot=null;layers=[];sample=null;lastCleanPreview=null;region=null;lassoDraft=null;lassoArmed=false;picking=false;pickPoint=null;resetSliders();const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));ctx.drawImage(base,0,0,cv.width,cv.height);preview=ctx.getImageData(0,0,cv.width,cv.height);}panel.hidden=false;fitEditor();syncRegion();render();};
+    // Capture the same artwork composition as the main view, at full resolution.
+    // Grid lines are orientation aids and remain a separate overlay.
+    function captureEditorSource(){
+      flushToneImage();
+      const next=document.createElement('canvas');next.width=sourceCanvas.width;next.height=sourceCanvas.height;
+      const c=next.getContext('2d');c.fillStyle=getComputedStyle(viewer).backgroundColor;c.fillRect(0,0,next.width,next.height);
+      renderCurrentArtwork(c,false);return next;
+    }
+    function sameEditorSource(next){
+      if(lastSource!==img||!base||base.width!==next.width||base.height!==next.height)return false;
+      const a=base.getContext('2d'),b=next.getContext('2d');
+      // Compare in strips to limit temporary memory on iPad.
+      for(let y=0;y<next.height;y+=32){
+        const h=Math.min(32,next.height-y),left=a.getImageData(0,y,next.width,h).data,right=b.getImageData(0,y,next.width,h).data;
+        for(let i=0;i<left.length;i++)if(left[i]!==right[i])return false;
+      }
+      return true;
+    }
+    button.onclick=()=>{
+      if(!loaded){alert('Bitte zuerst ein Foto öffnen.');return;}
+      if(sketchActive&&!sketchOriginalPreview&&(sketchBusy||!sketchCanvas||sketchReadyKey!==sketchKey(sketchSettings()))){alert('Bitte warten, bis die Vorzeichnung fertig ist.');return;}
+      if(isolationBusy){alert('Bitte warten, bis die Bildansicht fertig ist.');return;}
+      const next=captureEditorSource();
+      if(!sameEditorSource(next)){
+        revision++;base=next;lastSource=img;resetSnapshot=null;layers=[];sample=null;lastCleanPreview=null;region=null;lassoDraft=null;lassoArmed=false;picking=false;pickPoint=null;
+        resetSliders();el('Family').value='all';el('Sample').textContent='Ausgangspunkt: aktuelle Bildansicht';
+        el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
+        const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));
+        ctx.drawImage(base,0,0,cv.width,cv.height);preview=ctx.getImageData(0,0,cv.width,cv.height);
+      }
+      panel.hidden=false;fitEditor();syncRegion();render();
+    };
     el('Close').onclick=()=>{panel.hidden=true;revision++;clearGesture();button.focus();};
     for(const n of ['Range','Light','Blend','Warm','Saturation','Target','Original','Mask'])el(n).addEventListener('input',render);
     el('Family').onchange=()=>{picking=false;pickPoint=null;positionCircle();el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');if(el('Family').value==='pick')armPicker(false);else el('Sample').textContent='Auswahl: '+el('Family').selectedOptions[0].textContent;render();};
