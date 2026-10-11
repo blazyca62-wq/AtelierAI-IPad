@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.58</title>
+  <title>AtelierAI iPad 2.59</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.58</div>
+    <div class="title">AtelierAI · iPad 2.59</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7522,10 +7522,16 @@ const mixes=chooseMixes(target,paletteKey);
     <button id="cePick" class="secondary">Farbe im Bild antippen</button><label>Kreisgröße <output id="ceDiameterVal">32 px</output><input id="ceDiameter" type="range" min="8" max="80" step="2" value="32"></label><div id="ceSample">Auswahl: Grün / Oliv</div>
     <label>Farbbereich <output id="ceRangeVal"></output><input id="ceRange" type="range" min="5" max="100" value="30"></label>
     <label>Heller / dunkler <output id="ceLightVal"></output><input id="ceLight" type="range" min="-40" max="40" step="0.5" value="0"></label>
-    <label>Wunschfarbe <input id="ceTarget" type="color" value="#b49a45"></label>
-    <button id="ceTargetPick" class="secondary" aria-pressed="false">Wunschfarbe aus Bild aufnehmen</button><label>Zur Wunschfarbe überblenden <output id="ceBlendVal"></output><input id="ceBlend" type="range" min="0" max="100" value="0"></label>
     <label>Kühler / wärmer <output id="ceWarmVal"></output><input id="ceWarm" type="range" min="-30" max="30" step="0.5" value="0"></label>
     <label>Sättigung <output id="ceSaturationVal">0 %</output><input id="ceSaturation" type="range" min="-100" max="100" step="1" value="0"></label>
+    <details id="ceHarmonyPanel"><summary>Farbharmonie · aus</summary>
+    <p class="tiny">Einen Farbton aus dem Bild aufnehmen und sanft in die gewählten Bildstellen einfließen lassen. Die Farbharmonie selbst erhält deren Helligkeit.</p>
+    <button id="ceTargetPick" class="secondary" aria-pressed="false">Leitfarbe aus dem Bild aufnehmen</button>
+    <label>Leitfarbe <input id="ceTarget" type="color" value="#b49a45"></label>
+    <label>Verbindung zur Leitfarbe <output id="ceBlendVal">0 %</output><input id="ceBlend" type="range" min="0" max="100" step="1" value="0"></label>
+    <div style="display:flex;gap:6px"><button id="ceHarmonySoft" class="secondary">Sanft · 15 %</button><button id="ceHarmonyClear" class="secondary">Aus</button></div>
+    <p class="tiny">Zum Einstieg 5–20 %. Höhere Werte färben stärker um. Farbauswahl, Lasso und Lichtschutz gelten weiter. Für das ganze Bild „Alle Farben“ wählen und die Bereichsauswahl aufheben.</p>
+    </details>
     <details id="ceGradientPanel"><summary>Verlauf entlang einer Linie</summary>
     <button id="ceGradientDraw" class="secondary" aria-pressed="false">Verlaufslinie zeichnen</button><p id="ceGradientStatus" class="tiny" role="status">Mit einem Finger von A nach B ziehen.</p>
     <strong>Anfang A</strong>
@@ -7552,11 +7558,15 @@ const mixes=chooseMixes(target,paletteKey);
     <label>Sättigung <output id="ceSpotSatVal">0 %</output><input id="ceSpotSat" type="range" min="-100" max="100" value="0"></label>
     <label><input id="ceSpotVisible" type="checkbox" checked> Umriss anzeigen</label><button id="ceSpotClear" class="secondary">Fleck entfernen</button>
     <p class="tiny">Gleiche Breite und Höhe ergeben einen Kreis. Größe in Prozent der kürzeren Bildseite. Negative Helligkeit erzeugt einen Schatten. Der Fleck ergänzt die normalen Farbregler innerhalb deiner Auswahl. „Änderung merken“ speichert ihn – danach kannst du einen weiteren setzen.</p></details>
+    <details id="ceProtectPanel"><summary>Licht und Tonwerte schützen · aus</summary>
     <label><input id="ceProtectTone" type="checkbox"> Tonwerte schützen</label><p class="tiny">Helligkeit bleibt erhalten; der Heller-/Dunkler-Regler pausiert.</p>
     <label><input id="ceProtectHighlights" type="checkbox"> Lichter und Papierweiß schützen</label><p class="tiny">Helle Stellen werden sanft ausgespart, sehr helle bleiben unverändert.</p>
+    </details>
+    <details id="ceBrushPanel"><summary>Auswahl korrigieren · Pinsel</summary>
     <button id="ceBrushAdd" class="secondary" aria-pressed="false">Pinsel + · Stellen hinzufügen</button><button id="ceBrushRemove" class="secondary" aria-pressed="false">Pinsel − · Stellen ausschließen</button>
     <label>Pinselgröße <output id="ceBrushSizeVal">32 px</output><input id="ceBrushSize" type="range" min="6" max="120" step="2" value="32"></label>
     <button id="ceBrushUndo" class="secondary">Letzten Pinselstrich zurück</button><button id="ceBrushClear" class="secondary">Pinselkorrekturen löschen</button><p id="ceBrushStatus" class="tiny">Pinsel aus · zwei Finger zum Zoomen. Erneut auf den aktiven Pinsel tippen beendet ihn.</p>
+    </details>
     <label><input id="ceMask" type="checkbox"> Auswahl hervorheben</label>
     <label>Original einblenden <output id="ceOriginalVal"></output><input id="ceOriginal" type="range" min="0" max="100" value="0"></label>
     <button id="ceKeep">Änderung merken · nächste Farbe</button><button id="ceUndo" class="secondary">Letzte Änderung zurück</button><button id="ceReset" class="secondary">Alles zurücksetzen</button>
@@ -7875,7 +7885,7 @@ const mixes=chooseMixes(target,paletteKey);
     function armPicker(target){spotArmed=false;syncSpot();gradientArmed=false;syncGradient();brushMode=null;syncBrush();lassoArmed=false;lassoDraft=null;syncRegion();picking=true;pickTarget=target;pickPoint=null;circle.hidden=true;
       if(!target)el('Family').value='pick';
       el('Pick').setAttribute('aria-pressed',String(!target));el('TargetPick').setAttribute('aria-pressed',String(target));
-      el('Sample').textContent=(target?'Wunschfarbe':'Ausgangsfarbe')+': Kreis mit einem Finger setzen · zwei Finger zum Zoomen / Verschieben.';
+      el('Sample').textContent=(target?'Leitfarbe':'Ausgangsfarbe')+': Kreis mit einem Finger setzen · zwei Finger zum Zoomen / Verschieben.';
     }
     function clearGesture(){points.clear();gesture=null;lassoDraft=null;brushDraft=null;gradientDraft=null;spotDraft=null;drawRegion();}
     function beginPinch(){spotDraft=null;gradientDraft=null;brushDraft=null;drawRegion();if(lassoDraft){lassoDraft=null;drawRegion();}const [a,b]=[...points.values()],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};gesture={type:'pinch',distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom:view.zoom,ix:(mid.x-view.x)/view.k,iy:(mid.y-view.y)/view.k};}
@@ -7895,7 +7905,7 @@ const mixes=chooseMixes(target,paletteKey);
         const cc=clean.getContext('2d');cc.putImageData(lastCleanPreview||preview,0,0);
         const colour=meanCircle(cc,cv.width,cv.height,pickPoint.x,pickPoint.y,radius);
         el('Target').value='#'+colour.map(v=>v.toString(16).padStart(2,'0')).join('');
-        el('Sample').textContent='Wunschfarbe: '+el('Target').value+' · Kreis kann weiter verschoben werden.';
+        el('Sample').textContent='Leitfarbe: '+el('Target').value+' · Kreis kann weiter verschoben werden.';
       }else{
         const factor=base.width/cv.width;
         sample=meanCircle(base.getContext('2d'),base.width,base.height,pickPoint.x*factor,pickPoint.y*(base.height/cv.height),radius*factor);
@@ -7947,6 +7957,26 @@ const mixes=chooseMixes(target,paletteKey);
     el('TargetPick').onclick=()=>armPicker(true);
     el('Pick').onclick=()=>armPicker(false);
     if('ResizeObserver' in window)new ResizeObserver(()=>{if(!panel.hidden)fitEditor();}).observe(stage);
+    function syncSections(){
+      const summary=(id,text)=>el(id).querySelector('summary').textContent=text;
+      summary('HarmonyPanel','Farbharmonie · '+(+el('Blend').value?el('Blend').value+' %':'aus'));
+      const protect=[el('ProtectTone').checked?'Tonwerte':'',el('ProtectHighlights').checked?'Lichter':''].filter(Boolean);
+      summary('ProtectPanel','Licht und Tonwerte schützen · '+(protect.join(' + ')||'aus'));
+      summary('BrushPanel','Auswahl korrigieren · '+(brushStrokes.length?brushStrokes.length+' Pinselstriche':'Pinsel'));
+      summary('GradientPanel','Linienverlauf · '+(gradient?'aktiv':'aus'));
+      summary('SpotPanel','Lichtfleck & Motiv hervorheben · '+(spot?(el('SpotOutside').checked?'Umgebung aktiv':'Fleck aktiv'):'aus'));
+    }
+    el('HarmonySoft').onclick=()=>{el('Blend').value=15;render();};
+    el('HarmonyClear').onclick=()=>{el('Blend').value=0;render();};
+    // Folding a tool stops its drawing mode; saved/current visual effects stay active.
+    for(const id of ['HarmonyPanel','BrushPanel','GradientPanel','SpotPanel'])el(id).addEventListener('toggle',()=>{
+      if(el(id).open)return;
+      clearGesture();
+      if(id==='BrushPanel'){brushMode=null;syncBrush();}
+      if(id==='GradientPanel'){gradientArmed=false;syncGradient();}
+      if(id==='SpotPanel'){spotArmed=false;syncSpot();}
+      if(id==='HarmonyPanel'&&picking&&pickTarget){picking=false;pickPoint=null;positionCircle();el('TargetPick').setAttribute('aria-pressed','false');}
+    });
     el('Keep').onclick=()=>{const o=current();if(o.family==='pick'&&!sample){el('Status').textContent='Bitte zuerst eine Farbe antippen.';return;}if(active(o)){layers.push(o);brushStrokes=[];}resetSliders();syncBrush();render();};
     el('Undo').onclick=()=>{if(active(current()))resetSliders();else layers.pop();render();};
     // Reversible full reset for comparing the untouched photo with every saved edit.
@@ -7960,7 +7990,7 @@ const mixes=chooseMixes(target,paletteKey);
         node.disabled=busy;
       });
       if(!busy)el('LassoClear').disabled=!region&&!lassoDraft;
-      el('Light').disabled=busy||el('ProtectTone').checked;syncBrush();syncGradient();syncSpot();
+      el('Light').disabled=busy||el('ProtectTone').checked;syncBrush();syncGradient();syncSpot();syncSections();
     }
     function toggleReset(){
       if(busy)return;

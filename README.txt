@@ -1,3 +1,8 @@
+Version 2.59 – Farbharmonie und übersichtliche Bedienung
+
+Helligkeit, Wärme und Sättigung bleiben direkt sichtbar. Farbharmonie, Linienverlauf, Lichtfleck/Motiv, Schutzfunktionen und Pinsel sind in fünf aufklappbaren Bereichen angeordnet. Aktive Werte erscheinen in deren Überschriften. Einklappen beendet den zugehörigen Zeichenmodus, erhält aber seine Bildwirkung.
+Farbharmonie: Leitfarbe aus dem Bild aufnehmen, danach „Sanft · 15 %“ wählen oder Verbindung zur Leitfarbe selbst einstellen (5–20 % als sanfter Einstieg). Die bisherige Wunschfarbe/Überblendung steckt im selben Bereich; es gibt keinen zweiten parallelen Farbregler. Der Effekt nähert die ausgewählten Farben der Leitfarbe an und erhält dabei ihre wahrgenommene Helligkeit. Andere aktive Helligkeitsänderungen bleiben wirksam. Lasso, Farbauswahl und Lichtschutz werden berücksichtigt. „Aus“ setzt nur die aktuelle Verbindung zur Leitfarbe auf 0.
+
 Version 2.58 – Motiv hervorheben
 
 In Farben bearbeiten „Lichtfleck & Motiv hervorheben“ öffnen. „Motiv hervorheben · Umgebung beruhigen“ setzt ein Oval in die Bildmitte, reduziert die Sättigung außen und dunkelt die Umgebung leicht ab. Der Knopf ersetzt die Einstellungen des aktuellen, noch nicht gemerkten Flecks.
