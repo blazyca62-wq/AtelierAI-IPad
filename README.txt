@@ -1,3 +1,9 @@
+Version 2.57 – Licht- und Schattenfleck
+
+In Farben bearbeiten „Licht- und Schattenfleck“ aufklappen, „Fleck im Bild setzen“ wählen und Mittelpunkt antippen. Mit einem Finger kann er verschoben werden; zum Beenden nochmals den aktiven Knopf antippen. Zwei Finger zoomen ohne den Fleck zu versetzen.
+Breite und Höhe beziehen sich auf die kürzere Bildseite. Gleiche Werte ergeben einen Kreis, unterschiedliche ein Oval. „Weicher Rand“ bestimmt den Übergang; 100 % ergibt einen durchgehend weichen Verlauf vom Mittelpunkt zum Rand. Helligkeit positiv = Licht, negativ = Schatten; Wärme und Sättigung lassen sich separat einstellen. Beim ersten Setzen startet ein dezenter warmer Lichtfleck.
+Farbauswahl, Lasso, Pinselkorrekturen und Schutzfunktionen gelten auch für den Fleck. „Tonwerte schützen“ pausiert seine Helligkeitsänderung. Über „Änderung merken“ mehrere Flecken nacheinander anlegen. „Umriss anzeigen“ betrifft nur die Orientierungshilfe, die nicht exportiert wird. „Fleck entfernen“ entfernt den aktuellen, noch nicht gemerkten Fleck.
+
 Version 2.56 – Verlauf entlang einer Linie
 
 In Farben bearbeiten „Verlauf entlang einer Linie“ aufklappen. „Verlaufslinie zeichnen“ antippen und mit einem Finger von A nach B ziehen. Dann für Anfang A und Ende B Helligkeit, Wärme und Sättigung einstellen. 0 bedeutet unverändert. Die Werte ergänzen die normalen Farbregler. Vor A und hinter B bleibt der jeweilige Endwert konstant.

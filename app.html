@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.56</title>
+  <title>AtelierAI iPad 2.57</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.56</div>
+    <div class="title">AtelierAI · iPad 2.57</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7539,6 +7539,16 @@ const mixes=chooseMixes(target,paletteKey);
     <button id="ceGradientReverse" class="secondary">Richtung umkehren</button><button id="ceGradientClear" class="secondary">Verlauf entfernen</button>
     <label><input id="ceGradientVisible" type="checkbox" checked> Linie anzeigen</label>
     <p class="tiny">0 bedeutet unverändert. Der Verlauf ergänzt die normalen Farbregler und wirkt auf die gewählte Farbe bzw. Auswahl. Vor A und hinter B bleibt der jeweilige Endwert konstant. „Änderung merken“ speichert den Verlauf.</p></details>
+    <details id="ceSpotPanel"><summary>Licht- und Schattenfleck</summary>
+    <button id="ceSpotPlace" class="secondary" aria-pressed="false">Fleck im Bild setzen</button><p id="ceSpotStatus" class="tiny" role="status">Mittelpunkt antippen oder mit einem Finger verschieben.</p>
+    <label>Breite <output id="ceSpotWidthVal">40 %</output><input id="ceSpotWidth" type="range" min="2" max="200" value="40"></label>
+    <label>Höhe <output id="ceSpotHeightVal">40 %</output><input id="ceSpotHeight" type="range" min="2" max="200" value="40"></label>
+    <label>Weicher Rand <output id="ceSpotSoftVal">80 %</output><input id="ceSpotSoft" type="range" min="0" max="100" value="80"></label>
+    <label>Heller / dunkler <output id="ceSpotLightVal">0</output><input id="ceSpotLight" type="range" min="-40" max="40" step="0.5" value="0"></label>
+    <label>Kühler / wärmer <output id="ceSpotWarmVal">0</output><input id="ceSpotWarm" type="range" min="-30" max="30" step="0.5" value="0"></label>
+    <label>Sättigung <output id="ceSpotSatVal">0 %</output><input id="ceSpotSat" type="range" min="-100" max="100" value="0"></label>
+    <label><input id="ceSpotVisible" type="checkbox" checked> Umriss anzeigen</label><button id="ceSpotClear" class="secondary">Fleck entfernen</button>
+    <p class="tiny">Gleiche Breite und Höhe ergeben einen Kreis. Größe in Prozent der kürzeren Bildseite. Negative Helligkeit erzeugt einen Schatten. Der Fleck ergänzt die normalen Farbregler innerhalb deiner Auswahl. „Änderung merken“ speichert ihn – danach kannst du einen weiteren setzen.</p></details>
     <label><input id="ceProtectTone" type="checkbox"> Tonwerte schützen</label><p class="tiny">Helligkeit bleibt erhalten; der Heller-/Dunkler-Regler pausiert.</p>
     <label><input id="ceProtectHighlights" type="checkbox"> Lichter und Papierweiß schützen</label><p class="tiny">Helle Stellen werden sanft ausgespart, sehr helle bleiben unverändert.</p>
     <button id="ceBrushAdd" class="secondary" aria-pressed="false">Pinsel + · Stellen hinzufügen</button><button id="ceBrushRemove" class="secondary" aria-pressed="false">Pinsel − · Stellen ausschließen</button>
@@ -7559,8 +7569,8 @@ const mixes=chooseMixes(target,paletteKey);
     const linear=Array.from({length:256},(_,v)=>v/255<=.04045?v/3294.6:((v/255+.055)/1.055)**2.4);
     function lab(r,g,b){r=linear[r];g=linear[g];b=linear[b];const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);return [.2104542553*l+.793617785*m-.0040720468*s,1.9779984951*l-2.428592205*m+.4505937099*s,.0259040371*l+.7827717662*m-.808675766*s];}
     function rgb(L,a,b){const raw=(a,b)=>{const l=(L+.3963377774*a+.2158037573*b)**3,m=(L-.1055613458*a-.0638541728*b)**3,s=(L-.0894841775*a-1.291485548*b)**3;return [4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.707614701*s]};let v=raw(a,b);if(v.some(x=>x<0||x>1)){let lo=0,hi=1;for(let k=0;k<8;k++){const mid=(lo+hi)/2,t=raw(a*mid,b*mid);if(t.every(x=>x>=0&&x<=1))lo=mid;else hi=mid;}v=raw(a*lo,b*lo);}return v.map(x=>255*(x<=.0031308?12.92*clamp(x):1.055*clamp(x)**(1/2.4)-.055));}
-    function current(){const hex=el('Target').value;return {gradient:currentGradient(),region:region?region.map(p=>({...p})):null,strokes:brushStrokes.map(s=>({...s,points:s.points.map(p=>({...p}))})),protectTone:el('ProtectTone').checked,protectHighlights:el('ProtectHighlights').checked,family:el('Family').value,sample:sample&&sample.slice(),range:+el('Range').value,light:el('ProtectTone').checked?0:+el('Light').value/100,blend:+el('Blend').value/100,warm:+el('Warm').value/500,saturation:+el('Saturation').value/100,target:lab(...[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)))};}
-    const active=o=>o.light||o.blend||o.warm||o.saturation||(o.gradient&&[o.gradient.from,o.gradient.to].some(p=>(!o.protectTone&&p.light)||p.warm||p.saturation));
+    function current(){const hex=el('Target').value;return {spot:currentSpot(),gradient:currentGradient(),region:region?region.map(p=>({...p})):null,strokes:brushStrokes.map(s=>({...s,points:s.points.map(p=>({...p}))})),protectTone:el('ProtectTone').checked,protectHighlights:el('ProtectHighlights').checked,family:el('Family').value,sample:sample&&sample.slice(),range:+el('Range').value,light:el('ProtectTone').checked?0:+el('Light').value/100,blend:+el('Blend').value/100,warm:+el('Warm').value/500,saturation:+el('Saturation').value/100,target:lab(...[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)))};}
+    const active=o=>o.light||o.blend||o.warm||o.saturation||(o.spot&&((!o.protectTone&&o.spot.light)||o.spot.warm||o.spot.saturation))||(o.gradient&&[o.gradient.from,o.gradient.to].some(p=>(!o.protectTone&&p.light)||p.warm||p.saturation));
     function weight(o,rgb0,p){if(o.family==='all')return 1;if(o.family==='pick'){if(!o.sample)return 0;const ref=lab(...o.sample),d=Math.hypot((p[0]-ref[0])*.65,p[1]-ref[1],p[2]-ref[2]),radius=.018+o.range*.0025;const t=clamp((radius-d)/(radius*.55));return t*t*(3-2*t);}
       // Feather the existing AtelierAI family boundaries in colour space.
       const delta=2+o.range*.25;let n=build32FamilyOf(rgb0)===o.family?2:0;
@@ -7610,22 +7620,36 @@ const mixes=chooseMixes(target,paletteKey);
       if(!g)return {light:0,warm:0,saturation:0};
       return {light:g.from.light+(g.to.light-g.from.light)*t,warm:g.from.warm+(g.to.warm-g.from.warm)*t,saturation:g.from.saturation+(g.to.saturation-g.from.saturation)*t};
     }
+    function spotGeometry(s,width,height){
+      if(!s)return null;
+      const side=Math.min(width,height);
+      return {x:s.center.x*width,y:s.center.y*height,rx:Math.max(.001,s.width*side/2),ry:Math.max(.001,s.height*side/2),soft:s.soft};
+    }
+    function spotStep(g,x,y){
+      if(!g)return 0;
+      const r=Math.hypot((x+.5-g.x)/g.rx,(y+.5-g.y)/g.ry);
+      if(r>=1)return 0;if(g.soft<=0)return 2048;
+      const t=clamp((1-r)/g.soft);return Math.round(t*t*(3-2*t)*2048);
+    }
     async function process(data,ops,maskOp,token){
       const out=new ImageData(new Uint8ClampedArray(data.data),data.width,data.height),cache=new Map(),d=data.data;
       const masks=ops.map(o=>spatialMask(o.region,data.width,data.height)),brushes=ops.map(o=>brushMask(o.strokes,data.width,data.height));
       const spatial=masks.some(Boolean)||brushes.some(Boolean);
       const projections=ops.map(o=>gradientProjection(o.gradient,data.width,data.height)),hasGradient=projections.some(Boolean);
+      const spots=ops.map(o=>spotGeometry(o.spot,data.width,data.height)),hasSpot=spots.some(Boolean);
       for(let i=0;i<d.length;i+=4){
         const pixel=i/4,px=pixel%data.width,py=Math.floor(pixel/data.width);
         const amounts=spatial?ops.map((o,j)=>[spatialAlpha(masks[j],px,py),brushes[j]?.[pixel*2]||0,brushes[j]?.[pixel*2+1]||0]):null;
         const steps=hasGradient?projections.map(p=>gradientStep(p,px,py)):null;
-        let key=(d[i]<<16)|(d[i+1]<<8)|d[i+2];if(spatial)key+=':'+amounts.flat().join(',');if(steps)key+='g'+steps.join(',');
+        const spotSteps=hasSpot?spots.map(s=>spotStep(s,px,py)):null;
+        let key=(d[i]<<16)|(d[i+1]<<8)|d[i+2];if(spatial)key+=':'+amounts.flat().join(',');if(steps)key+='g'+steps.join(',');if(spotSteps)key+='s'+spotSteps.join(',');
         let c=cache.get(key);
         if(!c){
           const orig=[d[i],d[i+1],d[i+2]],p=lab(...orig);let [L,a,b]=p,changed=false;
           for(let j=0;j<ops.length;j++){
             const o=ops[j],v=amounts?amounts[j]:[255,0,0],w=selectedWeight(o,orig,p,...v);if(!w)continue;
             const g=gradientValues(o.gradient,steps?steps[j]/2048:0);
+            if(o.spot){const v=spotSteps[j]/2048;g.light+=o.spot.light*v;g.warm+=o.spot.warm*v;g.saturation+=o.spot.saturation*v;}
             changed=true;if(!o.protectTone)L=clamp(L+(o.light+g.light)*w);
             a+=(o.target[1]-a)*o.blend*w;b+=(o.target[2]-b)*o.blend*w;b+=(o.warm+g.warm)*w;
             const sat=Math.max(0,1+((o.saturation||0)+g.saturation)*w);a*=sat;b*=sat;
@@ -7639,7 +7663,7 @@ const mixes=chooseMixes(target,paletteKey);
     }
     function labels(){for(const name of ['Range','Light','Blend','Warm','Saturation','Original'])el(name+'Val').textContent=el(name).value+(name==='Light'||name==='Warm'?'':' %');el('Range').disabled=busy;syncResetToggle();}
     async function render(){if(!preview||busy)return;labels();const token=++revision;el('Status').textContent='Vorschau wird aktualisiert …';const o=current(),ops=[...layers,...(active(o)?[o]:[])];const out=await process(preview,ops,null,token);if(!out)return;const f=+el('Original').value/100;if(f)for(let i=0;i<out.data.length;i+=4)for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*(1-f)+preview.data[i+j]*f;lastCleanPreview=new ImageData(new Uint8ClampedArray(out.data),out.width,out.height);if(el('Mask').checked){const area=spatialMask(o.region,out.width,out.height),brush=brushMask(o.strokes,out.width,out.height);for(let i=0;i<out.data.length;i+=4){const c=Array.from(preview.data.slice(i,i+3)),w=selectedWeight(o,c,lab(...c),spatialAlpha(area,(i/4)%out.width,Math.floor(i/4/out.width)),brush?.[i/2]||0,brush?.[i/2+1]||0);for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*.3+(j===0?255:j===2?190:30)*w*.7;}}ctx.putImageData(out,0,0);el('Status').textContent=resetSnapshot?'Originalansicht · alle Bearbeitungen bleiben zum Wiederanzeigen gespeichert.':layers.length+' gemerkte Änderungen · Vorschau';}
-    function resetSliders(){gradient=null;gradientDraft=null;gradientArmed=false;for(const n of gradientControls)el(n).value=0;for(const n of ['Light','Blend','Warm','Saturation','Original'])el(n).value=0;el('Mask').checked=false;}
+    function resetSliders(){spot=null;spotDraft=null;spotArmed=false;for(const n of ['SpotLight','SpotWarm','SpotSat'])el(n).value=0;gradient=null;gradientDraft=null;gradientArmed=false;for(const n of gradientControls)el(n).value=0;for(const n of ['Light','Blend','Warm','Saturation','Original'])el(n).value=0;el('Mask').checked=false;}
     // Capture the same artwork composition as the main view, at full resolution.
     // Grid lines are orientation aids and remain a separate overlay.
     function captureEditorSource(){
@@ -7682,10 +7706,12 @@ const mixes=chooseMixes(target,paletteKey);
     let region=null,lassoArmed=false,lassoDraft=null;
     let brushStrokes=[],brushMode=null,brushDraft=null;
     let gradient=null,gradientDraft=null,gradientArmed=false;
+    let spot=null,spotDraft=null,spotArmed=false;
+    const spotControls=['SpotWidth','SpotHeight','SpotSoft','SpotLight','SpotWarm','SpotSat'];
     const gradientControls=['GradLightA','GradWarmA','GradSatA','GradLightB','GradWarmB','GradSatB'];
     const outline=el('LassoOutline');
     function drawRegion(){
-      const polygon=lassoDraft||region;outline.replaceChildren();drawGradient();drawBrushDraft();
+      const polygon=lassoDraft||region;outline.replaceChildren();drawSpot();drawGradient();drawBrushDraft();
       if(!polygon?.length)return;
       const coords=polygon.map(p=>(view.x+p.x*cv.width*view.k)+','+(view.y+p.y*cv.height*view.k)).join(' ');
       for(const [stroke,width,dash] of [['#111',4,''],['#fff',2,'7 5']]){
@@ -7693,6 +7719,35 @@ const mixes=chooseMixes(target,paletteKey);
         path.setAttribute('points',coords);path.setAttribute('fill','none');path.setAttribute('stroke',stroke);path.setAttribute('stroke-width',width);if(dash)path.setAttribute('stroke-dasharray',dash);outline.appendChild(path);
       }
     }
+    function currentSpot(){
+      if(!spot)return null;
+      return {center:{...spot},width:+el('SpotWidth').value/100,height:+el('SpotHeight').value/100,soft:+el('SpotSoft').value/100,light:+el('SpotLight').value/100,warm:+el('SpotWarm').value/500,saturation:+el('SpotSat').value/100};
+    }
+    function syncSpot(){
+      for(const n of spotControls){el(n+'Val').textContent=el(n).value+(['SpotLight','SpotWarm'].includes(n)?'':' %');el(n).disabled=busy||!spot||(n==='SpotLight'&&el('ProtectTone').checked);}
+      el('SpotPlace').setAttribute('aria-pressed',String(spotArmed));el('SpotPlace').textContent=spotArmed?'Fleck setzen / verschieben: aktiv · beenden':spot?'Fleck verschieben':'Fleck im Bild setzen';
+      el('SpotClear').disabled=busy||!spot;
+      el('SpotStatus').textContent=spotArmed?'Mit einem Finger Mittelpunkt setzen oder verschieben. Zwei Finger zoomen.':spot?'Fleck aktiv · Größe, weichen Rand und Wirkung einstellen.':'Noch kein Fleck · zuerst „Fleck im Bild setzen“ antippen.';
+      drawRegion();
+    }
+    function drawSpot(){
+      const center=spotDraft||spot;if(!center||(!spotDraft&&!el('SpotVisible').checked))return;
+      const side=Math.min(cv.width,cv.height)*view.k,x=view.x+center.x*cv.width*view.k,y=view.y+center.y*cv.height*view.k;
+      for(const [stroke,w]of [['#111',4],['#ffe6a3',2]]){
+        const ellipse=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+        for(const [k,v]of Object.entries({cx:x,cy:y,rx:+el('SpotWidth').value/200*side,ry:+el('SpotHeight').value/200*side,fill:'none',stroke,'stroke-width':w,'stroke-dasharray':'6 5'}))ellipse.setAttribute(k,String(v));outline.appendChild(ellipse);
+      }
+      const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');for(const [k,v]of Object.entries({cx:x,cy:y,r:5,fill:'#ffe6a3',stroke:'#111','stroke-width':1}))dot.setAttribute(k,String(v));outline.appendChild(dot);
+    }
+    el('SpotPlace').onclick=()=>{
+      clearGesture();spotArmed=!spotArmed;gradientArmed=false;brushMode=null;lassoArmed=false;picking=false;pickPoint=null;
+      if(spotArmed&&!spot&&!['SpotLight','SpotWarm','SpotSat'].some(n=>+el(n).value)){el('SpotLight').value=15;el('SpotWarm').value=4;}
+      el('SpotVisible').checked=true;el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
+      positionCircle();syncRegion();syncBrush();syncGradient();syncSpot();
+    };
+    el('SpotClear').onclick=()=>{clearGesture();spot=null;spotArmed=false;syncSpot();render();};
+    el('SpotVisible').onchange=drawRegion;
+    for(const n of spotControls)el(n).addEventListener('input',render);
     function currentGradient(){
       if(!gradient)return null;
       const values=end=>({light:+el('GradLight'+end).value/100,warm:+el('GradWarm'+end).value/500,saturation:+el('GradSat'+end).value/100});
@@ -7724,7 +7779,7 @@ const mixes=chooseMixes(target,paletteKey);
       else{syncGradient();el('GradientStatus').textContent='Linie zu kurz – bitte etwas weiter ziehen.';}
     }
     el('GradientDraw').onclick=()=>{
-      clearGesture();gradientArmed=!gradientArmed;brushMode=null;lassoArmed=false;picking=false;pickPoint=null;
+      clearGesture();spotArmed=false;syncSpot();gradientArmed=!gradientArmed;brushMode=null;lassoArmed=false;picking=false;pickPoint=null;
       el('GradientVisible').checked=true;el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
       positionCircle();syncBrush();syncRegion();syncGradient();
     };
@@ -7747,7 +7802,7 @@ const mixes=chooseMixes(target,paletteKey);
       el('BrushStatus').textContent=(brushMode==='add'?'Pinsel + aktiv: übersehene Stellen hinzufügen.':brushMode==='remove'?'Pinsel − aktiv: unerwünschte Stellen ausschließen.':'Pinsel aus.')+' '+brushStrokes.length+' Striche · zwei Finger zum Zoomen.';
     }
     function setBrush(mode){
-      clearGesture();gradientArmed=false;syncGradient();brushMode=brushMode===mode?null:mode;lassoArmed=false;picking=false;pickPoint=null;
+      clearGesture();spotArmed=false;syncSpot();gradientArmed=false;syncGradient();brushMode=brushMode===mode?null:mode;lassoArmed=false;picking=false;pickPoint=null;
       el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
       if(brushMode)el('Mask').checked=true;
       positionCircle();syncRegion();syncBrush();render();
@@ -7773,7 +7828,7 @@ const mixes=chooseMixes(target,paletteKey);
       }
       syncRegion();el('RegionStatus').textContent='Auswahl zu klein – bitte einen Bereich umzeichnen.';
     }
-    el('Lasso').onclick=()=>{gradientArmed=false;syncGradient();brushMode=null;syncBrush();clearGesture();lassoArmed=!lassoArmed;lassoDraft=null;picking=false;pickPoint=null;positionCircle();el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');syncRegion();};
+    el('Lasso').onclick=()=>{spotArmed=false;syncSpot();gradientArmed=false;syncGradient();brushMode=null;syncBrush();clearGesture();lassoArmed=!lassoArmed;lassoDraft=null;picking=false;pickPoint=null;positionCircle();el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');syncRegion();};
     el('LassoClear').onclick=()=>{clearGesture();region=null;lassoDraft=null;lassoArmed=false;syncRegion();render();};
     function positionCircle(){
       circle.hidden=!picking||!pickPoint;
@@ -7797,13 +7852,13 @@ const mixes=chooseMixes(target,paletteKey);
     function fitEditor(){clearGesture();view={zoom:1,x:0,y:0,k:1};placeView();}
     function localPoint(e){const r=stage.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
     function imagePoint(p){const x=(p.x-view.x)/view.k,y=(p.y-view.y)/view.k;return x>=0&&y>=0&&x<cv.width&&y<cv.height?{x,y}:null;}
-    function armPicker(target){gradientArmed=false;syncGradient();brushMode=null;syncBrush();lassoArmed=false;lassoDraft=null;syncRegion();picking=true;pickTarget=target;pickPoint=null;circle.hidden=true;
+    function armPicker(target){spotArmed=false;syncSpot();gradientArmed=false;syncGradient();brushMode=null;syncBrush();lassoArmed=false;lassoDraft=null;syncRegion();picking=true;pickTarget=target;pickPoint=null;circle.hidden=true;
       if(!target)el('Family').value='pick';
       el('Pick').setAttribute('aria-pressed',String(!target));el('TargetPick').setAttribute('aria-pressed',String(target));
       el('Sample').textContent=(target?'Wunschfarbe':'Ausgangsfarbe')+': Kreis mit einem Finger setzen · zwei Finger zum Zoomen / Verschieben.';
     }
-    function clearGesture(){points.clear();gesture=null;lassoDraft=null;brushDraft=null;gradientDraft=null;drawRegion();}
-    function beginPinch(){gradientDraft=null;brushDraft=null;drawRegion();if(lassoDraft){lassoDraft=null;drawRegion();}const [a,b]=[...points.values()],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};gesture={type:'pinch',distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom:view.zoom,ix:(mid.x-view.x)/view.k,iy:(mid.y-view.y)/view.k};}
+    function clearGesture(){points.clear();gesture=null;lassoDraft=null;brushDraft=null;gradientDraft=null;spotDraft=null;drawRegion();}
+    function beginPinch(){spotDraft=null;gradientDraft=null;brushDraft=null;drawRegion();if(lassoDraft){lassoDraft=null;drawRegion();}const [a,b]=[...points.values()],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};gesture={type:'pinch',distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom:view.zoom,ix:(mid.x-view.x)/view.k,iy:(mid.y-view.y)/view.k};}
     function meanCircle(context,width,height,ix,iy,radius){
       const x0=Math.max(0,Math.floor(ix-radius)),y0=Math.max(0,Math.floor(iy-radius)),x1=Math.min(width,Math.ceil(ix+radius+1)),y1=Math.min(height,Math.ceil(iy+radius+1));
       const data=context.getImageData(x0,y0,x1-x0,y1-y0).data,step=Math.max(1,Math.floor(radius/70));let sum=[0,0,0],count=0;
@@ -7833,12 +7888,13 @@ const mixes=chooseMixes(target,paletteKey);
       if(!preview||busy||(e.pointerType==='mouse'&&e.button!==0))return;
       const p=localPoint(e);points.set(e.pointerId,p);stage.setPointerCapture?.(e.pointerId);
       if(points.size>=2)beginPinch();
-      else{const q=imagePoint(p);if(gradientArmed&&q){const a=regionPoint(p);gradientDraft={a,b:{...a}};gesture={type:'gradient'};drawRegion();}else if(brushMode&&q){brushDraft={mode:brushMode,size:+el('BrushSize').value/view.k/Math.min(cv.width,cv.height),points:[]};addBrushPoint(p);gesture={type:'brush'};}else if(lassoArmed&&q){lassoDraft=[];addRegionPoint(p);gesture={type:'lasso'};}else if(picking&&q){pickPoint=q;positionCircle();gesture={type:'pick'};}else gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
+      else{const q=imagePoint(p);if(spotArmed&&q){spotDraft=regionPoint(p);gesture={type:'spot'};drawRegion();}else if(gradientArmed&&q){const a=regionPoint(p);gradientDraft={a,b:{...a}};gesture={type:'gradient'};drawRegion();}else if(brushMode&&q){brushDraft={mode:brushMode,size:+el('BrushSize').value/view.k/Math.min(cv.width,cv.height),points:[]};addBrushPoint(p);gesture={type:'brush'};}else if(lassoArmed&&q){lassoDraft=[];addRegionPoint(p);gesture={type:'lasso'};}else if(picking&&q){pickPoint=q;positionCircle();gesture={type:'pick'};}else gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
       e.preventDefault();
     });
     stage.addEventListener('pointermove',e=>{
       if(!points.has(e.pointerId)||!gesture)return;const p=localPoint(e);points.set(e.pointerId,p);
       if(points.size>=2){if(gesture.type!=='pinch')beginPinch();const [a,b]=[...points.values()],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};view.zoom=clamp(gesture.zoom*Math.hypot(a.x-b.x,a.y-b.y)/gesture.distance,1,12);view.k=Math.min(stage.clientWidth/cv.width,stage.clientHeight/cv.height)*view.zoom;view.x=mid.x-gesture.ix*view.k;view.y=mid.y-gesture.iy*view.k;placeView();}
+      else if(gesture.type==='spot'){spotDraft=regionPoint(p);drawRegion();}
       else if(gesture.type==='gradient'){gradientDraft.b=regionPoint(p);drawRegion();}
       else if(gesture.type==='brush'){addBrushPoint(p);}
       else if(gesture.type==='lasso'){addRegionPoint(p);}
@@ -7848,12 +7904,14 @@ const mixes=chooseMixes(target,paletteKey);
     });
     function endEditorPointer(e){
       if(!points.has(e.pointerId))return;
+      const finishSpot=e.type==='pointerup'&&points.size===1&&gesture?.type==='spot';
+      if(finishSpot){spot=regionPoint(localPoint(e));spotDraft=null;syncSpot();render();}
       const finishLine=e.type==='pointerup'&&points.size===1&&gesture?.type==='gradient';
       if(finishLine){gradientDraft.b=regionPoint(localPoint(e));finishGradient();}
       const finishBrush=e.type==='pointerup'&&points.size===1&&gesture?.type==='brush';
       if(finishBrush){addBrushPoint(localPoint(e));if(brushDraft?.points.length)brushStrokes.push(brushDraft);brushDraft=null;drawRegion();syncBrush();render();}
       const finishLasso=e.type==='pointerup'&&points.size===1&&gesture?.type==='lasso';if(finishLasso)addRegionPoint(localPoint(e));
-      if(e.type==='pointercancel'||e.type==='lostpointercapture'){lassoDraft=null;brushDraft=null;gradientDraft=null;drawRegion();}
+      if(e.type==='pointercancel'||e.type==='lostpointercapture'){lassoDraft=null;brushDraft=null;gradientDraft=null;spotDraft=null;drawRegion();}
       const select=e.type==='pointerup'&&points.size===1&&gesture?.type==='pick';
       points.delete(e.pointerId);
       // The remaining finger after a pinch must never select a colour.
@@ -7873,7 +7931,7 @@ const mixes=chooseMixes(target,paletteKey);
     el('Undo').onclick=()=>{if(active(current()))resetSliders();else layers.pop();render();};
     // Reversible full reset for comparing the untouched photo with every saved edit.
     let resetSnapshot=null;
-    const resetControlNames=['Family','Range','Light','Blend','Warm','Saturation','Target','Original','Mask','Diameter','ProtectTone','ProtectHighlights','BrushSize','GradientVisible',...gradientControls];
+    const resetControlNames=['Family','Range','Light','Blend','Warm','Saturation','Target','Original','Mask','Diameter','ProtectTone','ProtectHighlights','BrushSize','GradientVisible',...gradientControls,'SpotVisible',...spotControls];
     function syncResetToggle(){
       el('Reset').textContent=resetSnapshot?'Bearbeitung wieder anzeigen':'Alles zurücksetzen';
       el('Reset').setAttribute('aria-pressed',String(!!resetSnapshot));
@@ -7882,18 +7940,18 @@ const mixes=chooseMixes(target,paletteKey);
         node.disabled=busy;
       });
       if(!busy)el('LassoClear').disabled=!region&&!lassoDraft;
-      el('Light').disabled=busy||el('ProtectTone').checked;syncBrush();syncGradient();
+      el('Light').disabled=busy||el('ProtectTone').checked;syncBrush();syncGradient();syncSpot();
     }
     function toggleReset(){
       if(busy)return;
       clearGesture();
       if(resetSnapshot){
         const saved=resetSnapshot;resetSnapshot=null;
-        gradient=saved.gradient||null;gradientArmed=false;brushStrokes=saved.brushStrokes||[];brushMode=saved.brushMode||null;layers=saved.layers;region=saved.region;sample=saved.sample;picking=saved.picking;pickTarget=saved.pickTarget;pickPoint=saved.pickPoint;lassoArmed=saved.lassoArmed;
+        spot=saved.spot||null;spotArmed=false;gradient=saved.gradient||null;gradientArmed=false;brushStrokes=saved.brushStrokes||[];brushMode=saved.brushMode||null;layers=saved.layers;region=saved.region;sample=saved.sample;picking=saved.picking;pickTarget=saved.pickTarget;pickPoint=saved.pickPoint;lassoArmed=saved.lassoArmed;
         for(const [name,value] of Object.entries(saved.controls)){if(el(name).type==='checkbox')el(name).checked=value;else el(name).value=value;}
         el('Sample').textContent=saved.sampleText;el('Sample').style.borderColor=saved.sampleBorder;
       }else{
-        resetSnapshot={gradient:gradient?JSON.parse(JSON.stringify(gradient)):null,brushStrokes:JSON.parse(JSON.stringify(brushStrokes)),brushMode,layers:JSON.parse(JSON.stringify(layers)),region:region?region.map(p=>({...p})):null,sample:sample?.slice()||null,picking,pickTarget,pickPoint:pickPoint?{...pickPoint}:null,lassoArmed,
+        resetSnapshot={spot:spot?{...spot}:null,gradient:gradient?JSON.parse(JSON.stringify(gradient)):null,brushStrokes:JSON.parse(JSON.stringify(brushStrokes)),brushMode,layers:JSON.parse(JSON.stringify(layers)),region:region?region.map(p=>({...p})):null,sample:sample?.slice()||null,picking,pickTarget,pickPoint:pickPoint?{...pickPoint}:null,lassoArmed,
           controls:Object.fromEntries(resetControlNames.map(name=>[name,el(name).type==='checkbox'?el(name).checked:el(name).value])),sampleText:el('Sample').textContent,sampleBorder:el('Sample').style.borderColor};
         layers=[];brushStrokes=[];brushMode=null;region=null;lassoDraft=null;lassoArmed=false;picking=false;pickPoint=null;resetSliders();
         el('Sample').textContent='Originalansicht · „Bearbeitung wieder anzeigen“ holt alle Änderungen zurück.';
