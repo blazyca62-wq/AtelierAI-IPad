@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.52</title>
+  <title>AtelierAI iPad 2.53</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.52</div>
+    <div class="title">AtelierAI · iPad 2.53</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7316,33 +7316,53 @@ const mixes=chooseMixes(target,paletteKey);
 
   // Punkt-Pipette wird nach einem echten Tippen beim Loslassen verarbeitet.
 
-  fileInput.addEventListener('change',e=>{
-    const file=e.target.files&&e.target.files[0];
-    if(!file) return;
-    const url=URL.createObjectURL(file);
-    img=new Image();
-    img.onload=()=>{
-      resetBuild32();
-      cancelIsolation();isolationRevision++;isolationSentKey=null;
-      loaded=true;
-      placeholder.style.display='none';
-      sourceCanvas.width=img.width; sourceCanvas.height=img.height;
-      sourceCtx.clearRect(0,0,img.width,img.height);
-      sourceCtx.drawImage(img,0,0);
-      startPicturePalette();
-      resetSketchImage();
-      rebuildToneGrayOriginal();
-      renderedFormLevel=null;
-      rebuildForms();
-      rebuildToneImage();
-      fitImage();
-      URL.revokeObjectURL(url);
+  // Keep the uploaded original across internal colour-template applications.
+  let originalPhoto=null,photoLoadRevision=0;
+  function installPhoto(photo){
+    img=photo;loaded=true;placeholder.style.display='none';
+    resetBuild32();cancelIsolation();isolationRevision++;isolationSentKey=null;
+    sourceCanvas.width=img.width;sourceCanvas.height=img.height;
+    sourceCtx.clearRect(0,0,img.width,img.height);sourceCtx.drawImage(img,0,0);
+    startPicturePalette();resetSketchImage();rebuildToneGrayOriginal();
+    renderedFormLevel=null;rebuildForms();rebuildToneImage();fitImage();
+  }
+  function loadPhoto(file,keepOriginal=false){
+    const token=++photoLoadRevision,url=URL.createObjectURL(file),photo=new Image();
+    photo.onload=()=>{
+      URL.revokeObjectURL(url);if(token!==photoLoadRevision)return;
+      if(!keepOriginal)originalPhoto=photo;
+      installPhoto(photo);
     };
-    img.src=url;
+    photo.onerror=()=>{URL.revokeObjectURL(url);if(token===photoLoadRevision)hint.textContent='Das Foto konnte nicht geladen werden.';};
+    photo.src=url;
+  }
+  fileInput.addEventListener('change',e=>{
+    const file=e.target.files&&e.target.files[0];if(file)loadPhoto(file);
   });
 
   fitBtn.addEventListener('click',fitImage);
-  resetBtn.addEventListener('click',fitImage);
+  resetBtn.addEventListener('click',()=>{
+    if(!loaded)return;
+    photoLoadRevision++;
+    sketchActive=false;resetSketchImage();
+    surfaceMode=null;surfacePreview=null;surfaceClusters=[];surfaceSelectedIndex=null;
+    surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';
+    areaPickerMode=null;smartPickerArmed=false;
+    smartPickerBtn.classList.remove('active');smartPickerBtn.classList.add('secondary');
+    formLevel=0;formsSlider.value=0;formsValue.textContent='Aus';
+    formBtns.forEach(b=>{const active=+b.dataset.level===0;b.classList.toggle('active',active);b.classList.toggle('secondary',!active);});
+    [lightSlider,midSlider,darkSlider].forEach(sl=>sl.value=100);
+    [lightValue,midValue,darkValue].forEach(el=>el.textContent='100');
+    familySliders.forEach(sl=>{sl.value=100;familyValues[sl.dataset.family]=100;const v=sl.parentElement.querySelector('.family-value');if(v)v.textContent='100%';});
+    originalBlendPercent=0;
+    [toneOriginalBlend,isolationOriginalBlend].forEach(el=>{if(el)el.value=0;});
+    [toneOriginalBlendVal,isolationOriginalBlendVal].forEach(el=>{if(el)el.textContent='0 %';});
+    toneView='all';
+    [toneAll,toneOnly,toneOff].forEach(b=>{b.classList.toggle('active',b===toneAll);b.classList.toggle('secondary',b!==toneAll);});
+    installPhoto(originalPhoto||img);
+    document.dispatchEvent(new Event('atelier-reset-photo'));
+    setMode('move');hint.textContent='Foto und Bildfilter zurückgesetzt.';
+  });
   moveMode.addEventListener('click',()=>setMode('move'));
   pickerMode.addEventListener('click',()=>setMode('picker'));
   waterMode.addEventListener('click',()=>setPaintMode('water'));
@@ -7672,9 +7692,9 @@ const mixes=chooseMixes(target,paletteKey);
       el('Reset').setAttribute('aria-pressed',String(!!resetSnapshot));
       panel.querySelectorAll('button,input,select').forEach(node=>{
         const allowed=['ceReset','ceClose','ceFit','ceSave','ceApply'].includes(node.id);
-        node.disabled=busy||!!resetSnapshot&&!allowed;
+        node.disabled=busy;
       });
-      if(!busy&&!resetSnapshot)el('LassoClear').disabled=!region&&!lassoDraft;
+      if(!busy)el('LassoClear').disabled=!region&&!lassoDraft;
     }
     function toggleReset(){
       if(busy)return;
@@ -7693,8 +7713,21 @@ const mixes=chooseMixes(target,paletteKey);
       el('Pick').setAttribute('aria-pressed',String(picking&&!pickTarget));el('TargetPick').setAttribute('aria-pressed',String(picking&&pickTarget));
       positionCircle();syncRegion();syncResetToggle();render();
     }
+    // A new edit in the original view starts a fresh edit without locking controls.
+    function resumeEditing(e){
+      if(!resetSnapshot||busy)return;
+      if(['ceReset','ceClose','ceFit','ceSave','ceApply'].includes(e.target.id))return;
+      resetSnapshot=null;syncResetToggle();
+    }
+    panel.addEventListener('input',resumeEditing,true);
+    panel.addEventListener('change',resumeEditing,true);
+    panel.addEventListener('click',resumeEditing,true);
+    document.addEventListener('atelier-reset-photo',()=>{
+      revision++;lastSource=null;resetSnapshot=null;layers=[];resetSliders();
+      panel.hidden=true;clearGesture();syncResetToggle();
+    });
     el('Reset').onclick=toggleReset;
-    async function output(apply){if(busy)return;busy=true;const token=++revision;panel.querySelectorAll('button,input,select').forEach(e=>e.disabled=true);el('Status').textContent='Foto in voller Auflösung wird erstellt …';try{const data=base.getContext('2d').getImageData(0,0,base.width,base.height),o=current(),result=await process(data,[...layers,...(active(o)?[o]:[])],null,token);if(!result)throw Error('Abgebrochen');const out=document.createElement('canvas');out.width=base.width;out.height=base.height;out.getContext('2d').putImageData(result,0,0);const blob=await new Promise(resolve=>out.toBlob(resolve,'image/png'));if(!blob)throw Error('Bild konnte nicht erstellt werden');if(apply){const dt=new DataTransfer();dt.items.add(new File([blob],'AtelierAI_Farbvorlage.png',{type:'image/png'}));fileInput.files=dt.files;fileInput.dispatchEvent(new Event('change'));panel.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_Farbvorlage.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}el('Status').textContent=apply?'Als Malvorlage übernommen.':'Foto als PNG gespeichert.';}catch(e){el('Status').textContent='Fehler: '+e.message;}finally{busy=false;syncResetToggle();}}
+    async function output(apply){if(busy)return;busy=true;const token=++revision;panel.querySelectorAll('button,input,select').forEach(e=>e.disabled=true);el('Status').textContent='Foto in voller Auflösung wird erstellt …';try{const data=base.getContext('2d').getImageData(0,0,base.width,base.height),o=current(),result=await process(data,[...layers,...(active(o)?[o]:[])],null,token);if(!result)throw Error('Abgebrochen');const out=document.createElement('canvas');out.width=base.width;out.height=base.height;out.getContext('2d').putImageData(result,0,0);const blob=await new Promise(resolve=>out.toBlob(resolve,'image/png'));if(!blob)throw Error('Bild konnte nicht erstellt werden');if(apply){loadPhoto(blob,true);panel.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_Farbvorlage.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}el('Status').textContent=apply?'Als Malvorlage übernommen.':'Foto als PNG gespeichert.';}catch(e){el('Status').textContent='Fehler: '+e.message;}finally{busy=false;syncResetToggle();}}
     el('Save').onclick=()=>output(false);el('Apply').onclick=()=>output(true);
   })();
 

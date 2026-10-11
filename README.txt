@@ -1,3 +1,8 @@
+Version 2.53 – Zurücksetzen repariert
+
+Der Knopf im Hauptfenster setzt Bildfilter und Ansicht zurück und holt das ursprünglich geladene Foto zurück, auch nach Übernahme einer Farbbearbeitung als Malvorlage. Raster und eigene Palette bleiben erhalten. Ein neu geöffnetes Foto ist der neue Ausgangspunkt.
+Im Farbmodul bleiben die Werkzeuge nach „Alles zurücksetzen“ bedienbar. Ein weiterer Klick holt die Bearbeitung zurück; eine neue Bearbeitung der Originalansicht beginnt dagegen einen neuen Stand.
+
 NEU IN 2.52 – ALLES ZURÜCKSETZEN UND WIEDER ANZEIGEN
 
 „Alles zurücksetzen“ kann jetzt zum Vergleichen umgeschaltet werden:
