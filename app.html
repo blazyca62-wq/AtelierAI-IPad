@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.55</title>
+  <title>AtelierAI iPad 2.56</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.55</div>
+    <div class="title">AtelierAI · iPad 2.56</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7526,6 +7526,19 @@ const mixes=chooseMixes(target,paletteKey);
     <button id="ceTargetPick" class="secondary" aria-pressed="false">Wunschfarbe aus Bild aufnehmen</button><label>Zur Wunschfarbe überblenden <output id="ceBlendVal"></output><input id="ceBlend" type="range" min="0" max="100" value="0"></label>
     <label>Kühler / wärmer <output id="ceWarmVal"></output><input id="ceWarm" type="range" min="-30" max="30" step="0.5" value="0"></label>
     <label>Sättigung <output id="ceSaturationVal">0 %</output><input id="ceSaturation" type="range" min="-100" max="100" step="1" value="0"></label>
+    <details id="ceGradientPanel"><summary>Verlauf entlang einer Linie</summary>
+    <button id="ceGradientDraw" class="secondary" aria-pressed="false">Verlaufslinie zeichnen</button><p id="ceGradientStatus" class="tiny" role="status">Mit einem Finger von A nach B ziehen.</p>
+    <strong>Anfang A</strong>
+    <label>Heller / dunkler <output id="ceGradLightAVal">0</output><input id="ceGradLightA" type="range" min="-40" max="40" step="0.5" value="0"></label>
+    <label>Kühler / wärmer <output id="ceGradWarmAVal">0</output><input id="ceGradWarmA" type="range" min="-30" max="30" step="0.5" value="0"></label>
+    <label>Sättigung <output id="ceGradSatAVal">0 %</output><input id="ceGradSatA" type="range" min="-100" max="100" step="1" value="0"></label>
+    <strong>Ende B</strong>
+    <label>Heller / dunkler <output id="ceGradLightBVal">0</output><input id="ceGradLightB" type="range" min="-40" max="40" step="0.5" value="0"></label>
+    <label>Kühler / wärmer <output id="ceGradWarmBVal">0</output><input id="ceGradWarmB" type="range" min="-30" max="30" step="0.5" value="0"></label>
+    <label>Sättigung <output id="ceGradSatBVal">0 %</output><input id="ceGradSatB" type="range" min="-100" max="100" step="1" value="0"></label>
+    <button id="ceGradientReverse" class="secondary">Richtung umkehren</button><button id="ceGradientClear" class="secondary">Verlauf entfernen</button>
+    <label><input id="ceGradientVisible" type="checkbox" checked> Linie anzeigen</label>
+    <p class="tiny">0 bedeutet unverändert. Der Verlauf ergänzt die normalen Farbregler und wirkt auf die gewählte Farbe bzw. Auswahl. Vor A und hinter B bleibt der jeweilige Endwert konstant. „Änderung merken“ speichert den Verlauf.</p></details>
     <label><input id="ceProtectTone" type="checkbox"> Tonwerte schützen</label><p class="tiny">Helligkeit bleibt erhalten; der Heller-/Dunkler-Regler pausiert.</p>
     <label><input id="ceProtectHighlights" type="checkbox"> Lichter und Papierweiß schützen</label><p class="tiny">Helle Stellen werden sanft ausgespart, sehr helle bleiben unverändert.</p>
     <button id="ceBrushAdd" class="secondary" aria-pressed="false">Pinsel + · Stellen hinzufügen</button><button id="ceBrushRemove" class="secondary" aria-pressed="false">Pinsel − · Stellen ausschließen</button>
@@ -7538,7 +7551,7 @@ const mixes=chooseMixes(target,paletteKey);
     <button id="ceSave">Bearbeitetes Foto speichern</button><button id="ceApply">Als Malvorlage übernehmen</button><p id="ceStatus" role="status"></p>
     </div></div>`;
     document.body.append(panel);
-    const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceLassoOutline{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
+    const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceLassoOutline{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls details{margin:12px 0;padding:10px;border:1px solid #c4ccc7;border-radius:8px}.ce-controls summary{cursor:pointer;font-weight:bold}.ce-controls>label,.ce-controls details>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
     const el=id=>document.getElementById('ce'+id),cv=el('Canvas'),ctx=cv.getContext('2d');
     let base=null,preview=null,layers=[],sample=null,picking=false,revision=0,busy=false,lastSource=null,lastCleanPreview=null;
     const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
@@ -7546,8 +7559,8 @@ const mixes=chooseMixes(target,paletteKey);
     const linear=Array.from({length:256},(_,v)=>v/255<=.04045?v/3294.6:((v/255+.055)/1.055)**2.4);
     function lab(r,g,b){r=linear[r];g=linear[g];b=linear[b];const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);return [.2104542553*l+.793617785*m-.0040720468*s,1.9779984951*l-2.428592205*m+.4505937099*s,.0259040371*l+.7827717662*m-.808675766*s];}
     function rgb(L,a,b){const raw=(a,b)=>{const l=(L+.3963377774*a+.2158037573*b)**3,m=(L-.1055613458*a-.0638541728*b)**3,s=(L-.0894841775*a-1.291485548*b)**3;return [4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.707614701*s]};let v=raw(a,b);if(v.some(x=>x<0||x>1)){let lo=0,hi=1;for(let k=0;k<8;k++){const mid=(lo+hi)/2,t=raw(a*mid,b*mid);if(t.every(x=>x>=0&&x<=1))lo=mid;else hi=mid;}v=raw(a*lo,b*lo);}return v.map(x=>255*(x<=.0031308?12.92*clamp(x):1.055*clamp(x)**(1/2.4)-.055));}
-    function current(){const hex=el('Target').value;return {region:region?region.map(p=>({...p})):null,strokes:brushStrokes.map(s=>({...s,points:s.points.map(p=>({...p}))})),protectTone:el('ProtectTone').checked,protectHighlights:el('ProtectHighlights').checked,family:el('Family').value,sample:sample&&sample.slice(),range:+el('Range').value,light:el('ProtectTone').checked?0:+el('Light').value/100,blend:+el('Blend').value/100,warm:+el('Warm').value/500,saturation:+el('Saturation').value/100,target:lab(...[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)))};}
-    const active=o=>o.light||o.blend||o.warm||o.saturation;
+    function current(){const hex=el('Target').value;return {gradient:currentGradient(),region:region?region.map(p=>({...p})):null,strokes:brushStrokes.map(s=>({...s,points:s.points.map(p=>({...p}))})),protectTone:el('ProtectTone').checked,protectHighlights:el('ProtectHighlights').checked,family:el('Family').value,sample:sample&&sample.slice(),range:+el('Range').value,light:el('ProtectTone').checked?0:+el('Light').value/100,blend:+el('Blend').value/100,warm:+el('Warm').value/500,saturation:+el('Saturation').value/100,target:lab(...[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)))};}
+    const active=o=>o.light||o.blend||o.warm||o.saturation||(o.gradient&&[o.gradient.from,o.gradient.to].some(p=>(!o.protectTone&&p.light)||p.warm||p.saturation));
     function weight(o,rgb0,p){if(o.family==='all')return 1;if(o.family==='pick'){if(!o.sample)return 0;const ref=lab(...o.sample),d=Math.hypot((p[0]-ref[0])*.65,p[1]-ref[1],p[2]-ref[2]),radius=.018+o.range*.0025;const t=clamp((radius-d)/(radius*.55));return t*t*(3-2*t);}
       // Feather the existing AtelierAI family boundaries in colour space.
       const delta=2+o.range*.25;let n=build32FamilyOf(rgb0)===o.family?2:0;
@@ -7586,22 +7599,36 @@ const mixes=chooseMixes(target,paletteKey);
       if(o.protectHighlights){const t=clamp((p[0]-.75)/.22);w*=1-t*t*(3-2*t);}
       return clamp(w);
     }
+    function gradientProjection(g,width,height){
+      if(!g)return null;
+      const ax=g.a.x*width,ay=g.a.y*height,dx=(g.b.x-g.a.x)*width,dy=(g.b.y-g.a.y)*height,den=dx*dx+dy*dy;
+      if(den<1e-12)return null;
+      return {x:dx/den,y:dy/den,offset:-(ax*dx+ay*dy)/den};
+    }
+    function gradientStep(p,x,y){return p?Math.round(clamp((x+.5)*p.x+(y+.5)*p.y+p.offset)*2048):0;}
+    function gradientValues(g,t){
+      if(!g)return {light:0,warm:0,saturation:0};
+      return {light:g.from.light+(g.to.light-g.from.light)*t,warm:g.from.warm+(g.to.warm-g.from.warm)*t,saturation:g.from.saturation+(g.to.saturation-g.from.saturation)*t};
+    }
     async function process(data,ops,maskOp,token){
       const out=new ImageData(new Uint8ClampedArray(data.data),data.width,data.height),cache=new Map(),d=data.data;
       const masks=ops.map(o=>spatialMask(o.region,data.width,data.height)),brushes=ops.map(o=>brushMask(o.strokes,data.width,data.height));
       const spatial=masks.some(Boolean)||brushes.some(Boolean);
+      const projections=ops.map(o=>gradientProjection(o.gradient,data.width,data.height)),hasGradient=projections.some(Boolean);
       for(let i=0;i<d.length;i+=4){
         const pixel=i/4,px=pixel%data.width,py=Math.floor(pixel/data.width);
         const amounts=spatial?ops.map((o,j)=>[spatialAlpha(masks[j],px,py),brushes[j]?.[pixel*2]||0,brushes[j]?.[pixel*2+1]||0]):null;
-        let key=(d[i]<<16)|(d[i+1]<<8)|d[i+2];if(spatial)key+=':'+amounts.flat().join(',');
+        const steps=hasGradient?projections.map(p=>gradientStep(p,px,py)):null;
+        let key=(d[i]<<16)|(d[i+1]<<8)|d[i+2];if(spatial)key+=':'+amounts.flat().join(',');if(steps)key+='g'+steps.join(',');
         let c=cache.get(key);
         if(!c){
           const orig=[d[i],d[i+1],d[i+2]],p=lab(...orig);let [L,a,b]=p,changed=false;
           for(let j=0;j<ops.length;j++){
             const o=ops[j],v=amounts?amounts[j]:[255,0,0],w=selectedWeight(o,orig,p,...v);if(!w)continue;
-            changed=true;if(!o.protectTone)L=clamp(L+o.light*w);
-            a+=(o.target[1]-a)*o.blend*w;b+=(o.target[2]-b)*o.blend*w;b+=o.warm*w;
-            const sat=1+(o.saturation||0)*w;a*=sat;b*=sat;
+            const g=gradientValues(o.gradient,steps?steps[j]/2048:0);
+            changed=true;if(!o.protectTone)L=clamp(L+(o.light+g.light)*w);
+            a+=(o.target[1]-a)*o.blend*w;b+=(o.target[2]-b)*o.blend*w;b+=(o.warm+g.warm)*w;
+            const sat=Math.max(0,1+((o.saturation||0)+g.saturation)*w);a*=sat;b*=sat;
           }
           c=changed?rgb(L,a,b):orig;if(cache.size<200000)cache.set(key,c);
         }
@@ -7612,7 +7639,7 @@ const mixes=chooseMixes(target,paletteKey);
     }
     function labels(){for(const name of ['Range','Light','Blend','Warm','Saturation','Original'])el(name+'Val').textContent=el(name).value+(name==='Light'||name==='Warm'?'':' %');el('Range').disabled=busy;syncResetToggle();}
     async function render(){if(!preview||busy)return;labels();const token=++revision;el('Status').textContent='Vorschau wird aktualisiert …';const o=current(),ops=[...layers,...(active(o)?[o]:[])];const out=await process(preview,ops,null,token);if(!out)return;const f=+el('Original').value/100;if(f)for(let i=0;i<out.data.length;i+=4)for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*(1-f)+preview.data[i+j]*f;lastCleanPreview=new ImageData(new Uint8ClampedArray(out.data),out.width,out.height);if(el('Mask').checked){const area=spatialMask(o.region,out.width,out.height),brush=brushMask(o.strokes,out.width,out.height);for(let i=0;i<out.data.length;i+=4){const c=Array.from(preview.data.slice(i,i+3)),w=selectedWeight(o,c,lab(...c),spatialAlpha(area,(i/4)%out.width,Math.floor(i/4/out.width)),brush?.[i/2]||0,brush?.[i/2+1]||0);for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*.3+(j===0?255:j===2?190:30)*w*.7;}}ctx.putImageData(out,0,0);el('Status').textContent=resetSnapshot?'Originalansicht · alle Bearbeitungen bleiben zum Wiederanzeigen gespeichert.':layers.length+' gemerkte Änderungen · Vorschau';}
-    function resetSliders(){for(const n of ['Light','Blend','Warm','Saturation','Original'])el(n).value=0;el('Mask').checked=false;}
+    function resetSliders(){gradient=null;gradientDraft=null;gradientArmed=false;for(const n of gradientControls)el(n).value=0;for(const n of ['Light','Blend','Warm','Saturation','Original'])el(n).value=0;el('Mask').checked=false;}
     // Capture the same artwork composition as the main view, at full resolution.
     // Grid lines are orientation aids and remain a separate overlay.
     function captureEditorSource(){
@@ -7654,9 +7681,11 @@ const mixes=chooseMixes(target,paletteKey);
     // Spatial selections use normalized photo coordinates, independent of zoom/resolution.
     let region=null,lassoArmed=false,lassoDraft=null;
     let brushStrokes=[],brushMode=null,brushDraft=null;
+    let gradient=null,gradientDraft=null,gradientArmed=false;
+    const gradientControls=['GradLightA','GradWarmA','GradSatA','GradLightB','GradWarmB','GradSatB'];
     const outline=el('LassoOutline');
     function drawRegion(){
-      const polygon=lassoDraft||region;outline.replaceChildren();drawBrushDraft();
+      const polygon=lassoDraft||region;outline.replaceChildren();drawGradient();drawBrushDraft();
       if(!polygon?.length)return;
       const coords=polygon.map(p=>(view.x+p.x*cv.width*view.k)+','+(view.y+p.y*cv.height*view.k)).join(' ');
       for(const [stroke,width,dash] of [['#111',4,''],['#fff',2,'7 5']]){
@@ -7664,6 +7693,45 @@ const mixes=chooseMixes(target,paletteKey);
         path.setAttribute('points',coords);path.setAttribute('fill','none');path.setAttribute('stroke',stroke);path.setAttribute('stroke-width',width);if(dash)path.setAttribute('stroke-dasharray',dash);outline.appendChild(path);
       }
     }
+    function currentGradient(){
+      if(!gradient)return null;
+      const values=end=>({light:+el('GradLight'+end).value/100,warm:+el('GradWarm'+end).value/500,saturation:+el('GradSat'+end).value/100});
+      return {a:{...gradient.a},b:{...gradient.b},from:values('A'),to:values('B')};
+    }
+    function syncGradient(){
+      for(const n of gradientControls)el(n+'Val').textContent=el(n).value+(n.includes('Sat')?' %':'');
+      for(const n of gradientControls)el(n).disabled=busy||(!gradient)||n.includes('Light')&&el('ProtectTone').checked;
+      el('GradientDraw').setAttribute('aria-pressed',String(gradientArmed));
+      el('GradientDraw').textContent=gradientArmed?'Linie zeichnen: aktiv · beenden':gradient?'Verlaufslinie neu zeichnen':'Verlaufslinie zeichnen';
+      el('GradientReverse').disabled=busy||!gradient;el('GradientClear').disabled=busy||!gradient;
+      el('GradientStatus').textContent=gradientArmed?'Mit einem Finger von Anfang A zu Ende B ziehen. Zwei Finger zoomen.':gradient?'Verlauf aktiv · Werte für A und B einstellen.':'Noch keine Linie · zuerst „Verlaufslinie zeichnen“ antippen.';
+      drawRegion();
+    }
+    function drawGradient(){
+      const g=gradientDraft||gradient;if(!g||(!gradientDraft&&!el('GradientVisible').checked))return;
+      const a={x:view.x+g.a.x*cv.width*view.k,y:view.y+g.a.y*cv.height*view.k},b={x:view.x+g.b.x*cv.width*view.k,y:view.y+g.b.y*cv.height*view.k};
+      const svg=(tag,attrs)=>{const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,String(v));outline.appendChild(n);return n;};
+      svg('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#111','stroke-width':5});
+      svg('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#fff','stroke-width':2});
+      for(const [label,p]of [['A',a],['B',b]]){
+        svg('circle',{cx:p.x,cy:p.y,r:12,fill:label==='A'?'#206652':'#384c94',stroke:'#fff','stroke-width':2});
+        const t=svg('text',{x:p.x,y:p.y+4,fill:'#fff','text-anchor':'middle','font-size':13,'font-weight':'bold'});t.textContent=label;
+      }
+    }
+    function finishGradient(){
+      const g=gradientDraft;gradientDraft=null;
+      if(g&&Math.hypot((g.b.x-g.a.x)*cv.width*view.k,(g.b.y-g.a.y)*cv.height*view.k)>=8){gradient=g;gradientArmed=false;syncGradient();render();}
+      else{syncGradient();el('GradientStatus').textContent='Linie zu kurz – bitte etwas weiter ziehen.';}
+    }
+    el('GradientDraw').onclick=()=>{
+      clearGesture();gradientArmed=!gradientArmed;brushMode=null;lassoArmed=false;picking=false;pickPoint=null;
+      el('GradientVisible').checked=true;el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
+      positionCircle();syncBrush();syncRegion();syncGradient();
+    };
+    el('GradientReverse').onclick=()=>{if(gradient){gradient={a:{...gradient.b},b:{...gradient.a}};syncGradient();render();}};
+    el('GradientClear').onclick=()=>{clearGesture();gradient=null;gradientArmed=false;syncGradient();render();};
+    el('GradientVisible').onchange=drawRegion;
+    for(const n of gradientControls)el(n).addEventListener('input',render);
     function drawBrushDraft(){
       if(!brushDraft?.points.length)return;
       const path=document.createElementNS('http://www.w3.org/2000/svg','polyline');
@@ -7679,7 +7747,7 @@ const mixes=chooseMixes(target,paletteKey);
       el('BrushStatus').textContent=(brushMode==='add'?'Pinsel + aktiv: übersehene Stellen hinzufügen.':brushMode==='remove'?'Pinsel − aktiv: unerwünschte Stellen ausschließen.':'Pinsel aus.')+' '+brushStrokes.length+' Striche · zwei Finger zum Zoomen.';
     }
     function setBrush(mode){
-      clearGesture();brushMode=brushMode===mode?null:mode;lassoArmed=false;picking=false;pickPoint=null;
+      clearGesture();gradientArmed=false;syncGradient();brushMode=brushMode===mode?null:mode;lassoArmed=false;picking=false;pickPoint=null;
       el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
       if(brushMode)el('Mask').checked=true;
       positionCircle();syncRegion();syncBrush();render();
@@ -7705,7 +7773,7 @@ const mixes=chooseMixes(target,paletteKey);
       }
       syncRegion();el('RegionStatus').textContent='Auswahl zu klein – bitte einen Bereich umzeichnen.';
     }
-    el('Lasso').onclick=()=>{brushMode=null;syncBrush();clearGesture();lassoArmed=!lassoArmed;lassoDraft=null;picking=false;pickPoint=null;positionCircle();el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');syncRegion();};
+    el('Lasso').onclick=()=>{gradientArmed=false;syncGradient();brushMode=null;syncBrush();clearGesture();lassoArmed=!lassoArmed;lassoDraft=null;picking=false;pickPoint=null;positionCircle();el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');syncRegion();};
     el('LassoClear').onclick=()=>{clearGesture();region=null;lassoDraft=null;lassoArmed=false;syncRegion();render();};
     function positionCircle(){
       circle.hidden=!picking||!pickPoint;
@@ -7729,13 +7797,13 @@ const mixes=chooseMixes(target,paletteKey);
     function fitEditor(){clearGesture();view={zoom:1,x:0,y:0,k:1};placeView();}
     function localPoint(e){const r=stage.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
     function imagePoint(p){const x=(p.x-view.x)/view.k,y=(p.y-view.y)/view.k;return x>=0&&y>=0&&x<cv.width&&y<cv.height?{x,y}:null;}
-    function armPicker(target){brushMode=null;syncBrush();lassoArmed=false;lassoDraft=null;syncRegion();picking=true;pickTarget=target;pickPoint=null;circle.hidden=true;
+    function armPicker(target){gradientArmed=false;syncGradient();brushMode=null;syncBrush();lassoArmed=false;lassoDraft=null;syncRegion();picking=true;pickTarget=target;pickPoint=null;circle.hidden=true;
       if(!target)el('Family').value='pick';
       el('Pick').setAttribute('aria-pressed',String(!target));el('TargetPick').setAttribute('aria-pressed',String(target));
       el('Sample').textContent=(target?'Wunschfarbe':'Ausgangsfarbe')+': Kreis mit einem Finger setzen · zwei Finger zum Zoomen / Verschieben.';
     }
-    function clearGesture(){points.clear();gesture=null;lassoDraft=null;brushDraft=null;drawRegion();}
-    function beginPinch(){brushDraft=null;drawRegion();if(lassoDraft){lassoDraft=null;drawRegion();}const [a,b]=[...points.values()],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};gesture={type:'pinch',distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom:view.zoom,ix:(mid.x-view.x)/view.k,iy:(mid.y-view.y)/view.k};}
+    function clearGesture(){points.clear();gesture=null;lassoDraft=null;brushDraft=null;gradientDraft=null;drawRegion();}
+    function beginPinch(){gradientDraft=null;brushDraft=null;drawRegion();if(lassoDraft){lassoDraft=null;drawRegion();}const [a,b]=[...points.values()],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};gesture={type:'pinch',distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom:view.zoom,ix:(mid.x-view.x)/view.k,iy:(mid.y-view.y)/view.k};}
     function meanCircle(context,width,height,ix,iy,radius){
       const x0=Math.max(0,Math.floor(ix-radius)),y0=Math.max(0,Math.floor(iy-radius)),x1=Math.min(width,Math.ceil(ix+radius+1)),y1=Math.min(height,Math.ceil(iy+radius+1));
       const data=context.getImageData(x0,y0,x1-x0,y1-y0).data,step=Math.max(1,Math.floor(radius/70));let sum=[0,0,0],count=0;
@@ -7765,12 +7833,13 @@ const mixes=chooseMixes(target,paletteKey);
       if(!preview||busy||(e.pointerType==='mouse'&&e.button!==0))return;
       const p=localPoint(e);points.set(e.pointerId,p);stage.setPointerCapture?.(e.pointerId);
       if(points.size>=2)beginPinch();
-      else{const q=imagePoint(p);if(brushMode&&q){brushDraft={mode:brushMode,size:+el('BrushSize').value/view.k/Math.min(cv.width,cv.height),points:[]};addBrushPoint(p);gesture={type:'brush'};}else if(lassoArmed&&q){lassoDraft=[];addRegionPoint(p);gesture={type:'lasso'};}else if(picking&&q){pickPoint=q;positionCircle();gesture={type:'pick'};}else gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
+      else{const q=imagePoint(p);if(gradientArmed&&q){const a=regionPoint(p);gradientDraft={a,b:{...a}};gesture={type:'gradient'};drawRegion();}else if(brushMode&&q){brushDraft={mode:brushMode,size:+el('BrushSize').value/view.k/Math.min(cv.width,cv.height),points:[]};addBrushPoint(p);gesture={type:'brush'};}else if(lassoArmed&&q){lassoDraft=[];addRegionPoint(p);gesture={type:'lasso'};}else if(picking&&q){pickPoint=q;positionCircle();gesture={type:'pick'};}else gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
       e.preventDefault();
     });
     stage.addEventListener('pointermove',e=>{
       if(!points.has(e.pointerId)||!gesture)return;const p=localPoint(e);points.set(e.pointerId,p);
       if(points.size>=2){if(gesture.type!=='pinch')beginPinch();const [a,b]=[...points.values()],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};view.zoom=clamp(gesture.zoom*Math.hypot(a.x-b.x,a.y-b.y)/gesture.distance,1,12);view.k=Math.min(stage.clientWidth/cv.width,stage.clientHeight/cv.height)*view.zoom;view.x=mid.x-gesture.ix*view.k;view.y=mid.y-gesture.iy*view.k;placeView();}
+      else if(gesture.type==='gradient'){gradientDraft.b=regionPoint(p);drawRegion();}
       else if(gesture.type==='brush'){addBrushPoint(p);}
       else if(gesture.type==='lasso'){addRegionPoint(p);}
       else if(gesture.type==='pick'){const q=imagePoint(p);if(q){pickPoint=q;positionCircle();}}
@@ -7779,10 +7848,12 @@ const mixes=chooseMixes(target,paletteKey);
     });
     function endEditorPointer(e){
       if(!points.has(e.pointerId))return;
+      const finishLine=e.type==='pointerup'&&points.size===1&&gesture?.type==='gradient';
+      if(finishLine){gradientDraft.b=regionPoint(localPoint(e));finishGradient();}
       const finishBrush=e.type==='pointerup'&&points.size===1&&gesture?.type==='brush';
       if(finishBrush){addBrushPoint(localPoint(e));if(brushDraft?.points.length)brushStrokes.push(brushDraft);brushDraft=null;drawRegion();syncBrush();render();}
       const finishLasso=e.type==='pointerup'&&points.size===1&&gesture?.type==='lasso';if(finishLasso)addRegionPoint(localPoint(e));
-      if(e.type==='pointercancel'||e.type==='lostpointercapture'){lassoDraft=null;brushDraft=null;drawRegion();}
+      if(e.type==='pointercancel'||e.type==='lostpointercapture'){lassoDraft=null;brushDraft=null;gradientDraft=null;drawRegion();}
       const select=e.type==='pointerup'&&points.size===1&&gesture?.type==='pick';
       points.delete(e.pointerId);
       // The remaining finger after a pinch must never select a colour.
@@ -7802,7 +7873,7 @@ const mixes=chooseMixes(target,paletteKey);
     el('Undo').onclick=()=>{if(active(current()))resetSliders();else layers.pop();render();};
     // Reversible full reset for comparing the untouched photo with every saved edit.
     let resetSnapshot=null;
-    const resetControlNames=['Family','Range','Light','Blend','Warm','Saturation','Target','Original','Mask','Diameter','ProtectTone','ProtectHighlights','BrushSize'];
+    const resetControlNames=['Family','Range','Light','Blend','Warm','Saturation','Target','Original','Mask','Diameter','ProtectTone','ProtectHighlights','BrushSize','GradientVisible',...gradientControls];
     function syncResetToggle(){
       el('Reset').textContent=resetSnapshot?'Bearbeitung wieder anzeigen':'Alles zurücksetzen';
       el('Reset').setAttribute('aria-pressed',String(!!resetSnapshot));
@@ -7811,18 +7882,18 @@ const mixes=chooseMixes(target,paletteKey);
         node.disabled=busy;
       });
       if(!busy)el('LassoClear').disabled=!region&&!lassoDraft;
-      el('Light').disabled=busy||el('ProtectTone').checked;syncBrush();
+      el('Light').disabled=busy||el('ProtectTone').checked;syncBrush();syncGradient();
     }
     function toggleReset(){
       if(busy)return;
       clearGesture();
       if(resetSnapshot){
         const saved=resetSnapshot;resetSnapshot=null;
-        brushStrokes=saved.brushStrokes||[];brushMode=saved.brushMode||null;layers=saved.layers;region=saved.region;sample=saved.sample;picking=saved.picking;pickTarget=saved.pickTarget;pickPoint=saved.pickPoint;lassoArmed=saved.lassoArmed;
+        gradient=saved.gradient||null;gradientArmed=false;brushStrokes=saved.brushStrokes||[];brushMode=saved.brushMode||null;layers=saved.layers;region=saved.region;sample=saved.sample;picking=saved.picking;pickTarget=saved.pickTarget;pickPoint=saved.pickPoint;lassoArmed=saved.lassoArmed;
         for(const [name,value] of Object.entries(saved.controls)){if(el(name).type==='checkbox')el(name).checked=value;else el(name).value=value;}
         el('Sample').textContent=saved.sampleText;el('Sample').style.borderColor=saved.sampleBorder;
       }else{
-        resetSnapshot={brushStrokes:JSON.parse(JSON.stringify(brushStrokes)),brushMode,layers:JSON.parse(JSON.stringify(layers)),region:region?region.map(p=>({...p})):null,sample:sample?.slice()||null,picking,pickTarget,pickPoint:pickPoint?{...pickPoint}:null,lassoArmed,
+        resetSnapshot={gradient:gradient?JSON.parse(JSON.stringify(gradient)):null,brushStrokes:JSON.parse(JSON.stringify(brushStrokes)),brushMode,layers:JSON.parse(JSON.stringify(layers)),region:region?region.map(p=>({...p})):null,sample:sample?.slice()||null,picking,pickTarget,pickPoint:pickPoint?{...pickPoint}:null,lassoArmed,
           controls:Object.fromEntries(resetControlNames.map(name=>[name,el(name).type==='checkbox'?el(name).checked:el(name).value])),sampleText:el('Sample').textContent,sampleBorder:el('Sample').style.borderColor};
         layers=[];brushStrokes=[];brushMode=null;region=null;lassoDraft=null;lassoArmed=false;picking=false;pickPoint=null;resetSliders();
         el('Sample').textContent='Originalansicht · „Bearbeitung wieder anzeigen“ holt alle Änderungen zurück.';

@@ -1,3 +1,9 @@
+Version 2.56 – Verlauf entlang einer Linie
+
+In Farben bearbeiten „Verlauf entlang einer Linie“ aufklappen. „Verlaufslinie zeichnen“ antippen und mit einem Finger von A nach B ziehen. Dann für Anfang A und Ende B Helligkeit, Wärme und Sättigung einstellen. 0 bedeutet unverändert. Die Werte ergänzen die normalen Farbregler. Vor A und hinter B bleibt der jeweilige Endwert konstant.
+Der Verlauf wirkt innerhalb der Farbauswahl, des Lassos und der Pinselkorrekturen. Tonwertschutz pausiert auch die Helligkeitsregler des Verlaufs; Lichtschutz bleibt wirksam. Zwei Finger zoomen und verschieben. Eine begonnene Linie wird beim Zweifinger-Zoom verworfen.
+„Linie anzeigen“ blendet nur die Orientierungslinie aus; der Effekt bleibt. „Richtung umkehren“ tauscht A und B. „Verlauf entfernen“ entfernt den aktuellen Verlauf. „Änderung merken“ speichert ihn zusammen mit seiner Auswahl, danach kann ein weiterer Verlauf gezeichnet werden. Die Orientierungslinie wird nicht in das Foto gespeichert.
+
 Version 2.55 – Malerwerkzeuge im Farbmodul
 
 Tonwerte schützen: erhält die wahrgenommene Helligkeit (OKLab); Heller/Dunkler pausiert, andere Farbregler bleiben nutzbar.
