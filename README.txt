@@ -1,3 +1,32 @@
+NEU IN 2.47 – FARBEN GEZIELT BEARBEITEN
+
+Oben „Farben bearbeiten“ öffnen, nachdem ein Foto geladen wurde.
+1. Farbfamilie auswählen oder „Farbe im Bild antippen“ verwenden.
+2. Heller/dunkler, Wunschfarbe/Überblendung und kühler/wärmer einstellen.
+3. „Farbbereich“ steuert die weiche Auswahl. „Auswahl hervorheben“ zeigt sie.
+4. „Änderung merken · nächste Farbe“ kombiniert mehrere Korrekturen.
+5. „Letzte Änderung zurück“ entfernt zunächst die aktuelle Korrektur,
+   anschließend die zuletzt gemerkte. „Alles zurücksetzen“ stellt das Eingangsbild her.
+6. „Original einblenden“ erlaubt den Vergleich. Dieser Regler und die
+   Auswahlmarkierung sind nur eine Vorschau und werden nicht exportiert.
+7. „Bearbeitetes Foto speichern“ exportiert ein PNG in der Auflösung der
+   geladenen Vorlage. „Als Malvorlage übernehmen“ lädt es in alle bisherigen
+   Werkzeuge; deren Bildanalyse und Auswahlen werden wie beim Fotoöffnen neu aufgebaut.
+
+Die Auswahl arbeitet im gesamten Bild, nicht nach Gegenständen. Ähnliche
+Farben können ebenfalls betroffen sein. Umfärben erhält die wahrgenommene
+Helligkeit weitgehend; bei extremen Farben wird die Sättigung reduziert, um
+sie darstellbar zu halten. Weiß und Schwarz bleiben beim reinen Umfärben
+entsprechend hell/dunkel – zum sichtbaren Färben ggf. die Helligkeit anpassen.
+Die Vorschau ist für flüssigere Bedienung verkleinert. Der Export verarbeitet
+die volle Auflösung und kann bei großen Fotos dauern. Änderungen bleiben beim
+Schließen des Moduls erhalten, aber nicht nach Neuladen/Schließen der App.
+Vor dem Übernehmen bei Bedarf das ursprüngliche Foto separat aufbewahren.
+
+Technische Prüfung: JavaScript-Syntax und Farbverarbeitung (gezielte Auswahl,
+Rücksetzen, Helligkeit beim Umfärben, Pipette, Abbruch veralteter Vorschauen).
+Ein echter Safari-/iPad-Bedientest konnte hier nicht durchgeführt werden.
+
 NEU IN VERSION 2.46 – GRÜN UND OLIV
 Gedämpfte Oliv- und dunkle Gelbgrüntöne werden in den 8/16/32/64-Farben der Familie Grün / Oliv zugeordnet. Jede Farbe behält genau eine Familie. Helles Gelb sowie warme Ocker- und Brauntöne bleiben getrennt.
 
