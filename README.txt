@@ -1,3 +1,20 @@
+NEU IN 2.51 – SÄTTIGUNG IM FARBMODUL
+
+Unter „Kühler / wärmer“ gibt es jetzt den Regler „Sättigung“:
+• 0 %: unverändert.
+• Nach links: gedämpfter, bei -100 % vollständig ausgewählte Farben grau.
+• Nach rechts: kräftiger, bis +100 %.
+
+Der Regler wirkt auf die gewählte Farbe/Farbfamilie oder „Alle Farben“ und
+berücksichtigt das Lasso. Außerhalb des Lassos bleibt die aktuelle Korrektur
+wirkungslos. Die wahrgenommene Helligkeit bleibt weitgehend erhalten.
+Sehr kräftige Farben werden auf den darstellbaren Farbraum begrenzt.
+Sättigung wird beim Merken, Zurücksetzen, Speichern und Übernehmen berücksichtigt.
+
+Im Browser geprüft: Entsättigen bis Grau, Verstärken, Rücksetzen, getrennte
+Lasso-Bereiche mit derselben Ausgangsfarbe, gemerkte Korrekturen und voller
+PNG-Export. Zusätzlich Zeichnen nach Touch-Zoom und Abbruch bei Zwei-Finger-Gesten.
+
 NEU IN 2.50 – LASSO IM FARBMODUL
 
 1. „Farben bearbeiten“ öffnen und „Bereich mit Lasso auswählen“ antippen.
