@@ -1,3 +1,22 @@
+NEU IN 2.52 – ALLES ZURÜCKSETZEN UND WIEDER ANZEIGEN
+
+„Alles zurücksetzen“ kann jetzt zum Vergleichen umgeschaltet werden:
+• Einmal tippen: Originalbild ohne Farbkorrekturen und Lasso anzeigen.
+• Der gleiche Knopf heißt jetzt „Bearbeitung wieder anzeigen“.
+• Erneut tippen: alle gemerkten Änderungen, die aktuelle Korrektur,
+  Reglerwerte, Farbauswahl, Pipette und Lasso wiederherstellen.
+• Beliebig oft hin- und herschalten.
+
+In der Originalansicht sind die Bearbeitungsregler vorübergehend gesperrt,
+damit der gespeicherte Vergleichsstand erhalten bleibt. Zoom, Einpassen,
+Schließen, Speichern und Übernehmen bleiben möglich. Speichern/Übernehmen
+bezieht sich immer auf die gerade angezeigte Fassung. Beim Laden einer neuen
+Vorlage oder Neuladen der App wird der Vergleichsstand verworfen.
+
+Geprüft im Browser: mehrfaches Umschalten mit pixelgenau gleicher Rückkehr,
+gemerkte und aktuelle Änderungen, Sättigungs-/Helligkeitswerte, Lasso sowie
+Schließen und erneutes Öffnen des Moduls während der Originalansicht.
+
 NEU IN 2.51 – SÄTTIGUNG IM FARBMODUL
 
 Unter „Kühler / wärmer“ gibt es jetzt den Regler „Sättigung“:

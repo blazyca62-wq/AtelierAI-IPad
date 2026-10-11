@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.51</title>
+  <title>AtelierAI iPad 2.52</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.51</div>
+    <div class="title">AtelierAI · iPad 2.52</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7539,10 +7539,10 @@ const mixes=chooseMixes(target,paletteKey);
         if(i%65536===0){await new Promise(r=>setTimeout(r,0));if(token!==revision)return null;}}
       return out;
     }
-    function labels(){for(const name of ['Range','Light','Blend','Warm','Saturation','Original'])el(name+'Val').textContent=el(name).value+(name==='Light'||name==='Warm'?'':' %');el('Range').disabled=busy;}
-    async function render(){if(!preview||busy)return;labels();const token=++revision;el('Status').textContent='Vorschau wird aktualisiert …';const o=current(),ops=[...layers,...(active(o)?[o]:[])];const out=await process(preview,ops,null,token);if(!out)return;const f=+el('Original').value/100;if(f)for(let i=0;i<out.data.length;i+=4)for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*(1-f)+preview.data[i+j]*f;lastCleanPreview=new ImageData(new Uint8ClampedArray(out.data),out.width,out.height);if(el('Mask').checked){const area=spatialMask(o.region,out.width,out.height);for(let i=0;i<out.data.length;i+=4){const c=Array.from(preview.data.slice(i,i+3)),w=weight(o,c,lab(...c))*spatialAlpha(area,(i/4)%out.width,Math.floor(i/4/out.width))/255;for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*.3+(j===0?255:j===2?190:30)*w*.7;}}ctx.putImageData(out,0,0);el('Status').textContent=layers.length+' gemerkte Änderungen · Vorschau';}
+    function labels(){for(const name of ['Range','Light','Blend','Warm','Saturation','Original'])el(name+'Val').textContent=el(name).value+(name==='Light'||name==='Warm'?'':' %');el('Range').disabled=busy;syncResetToggle();}
+    async function render(){if(!preview||busy)return;labels();const token=++revision;el('Status').textContent='Vorschau wird aktualisiert …';const o=current(),ops=[...layers,...(active(o)?[o]:[])];const out=await process(preview,ops,null,token);if(!out)return;const f=+el('Original').value/100;if(f)for(let i=0;i<out.data.length;i+=4)for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*(1-f)+preview.data[i+j]*f;lastCleanPreview=new ImageData(new Uint8ClampedArray(out.data),out.width,out.height);if(el('Mask').checked){const area=spatialMask(o.region,out.width,out.height);for(let i=0;i<out.data.length;i+=4){const c=Array.from(preview.data.slice(i,i+3)),w=weight(o,c,lab(...c))*spatialAlpha(area,(i/4)%out.width,Math.floor(i/4/out.width))/255;for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*.3+(j===0?255:j===2?190:30)*w*.7;}}ctx.putImageData(out,0,0);el('Status').textContent=resetSnapshot?'Originalansicht · alle Bearbeitungen bleiben zum Wiederanzeigen gespeichert.':layers.length+' gemerkte Änderungen · Vorschau';}
     function resetSliders(){for(const n of ['Light','Blend','Warm','Saturation','Original'])el(n).value=0;el('Mask').checked=false;}
-    button.onclick=()=>{if(!loaded){alert('Bitte zuerst ein Foto öffnen.');return;}if(lastSource!==img){base=document.createElement('canvas');base.width=sourceCanvas.width;base.height=sourceCanvas.height;base.getContext('2d').drawImage(sourceCanvas,0,0);lastSource=img;layers=[];sample=null;lastCleanPreview=null;region=null;lassoDraft=null;lassoArmed=false;picking=false;pickPoint=null;resetSliders();const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));ctx.drawImage(base,0,0,cv.width,cv.height);preview=ctx.getImageData(0,0,cv.width,cv.height);}panel.hidden=false;fitEditor();syncRegion();render();};
+    button.onclick=()=>{if(!loaded){alert('Bitte zuerst ein Foto öffnen.');return;}if(lastSource!==img){base=document.createElement('canvas');base.width=sourceCanvas.width;base.height=sourceCanvas.height;base.getContext('2d').drawImage(sourceCanvas,0,0);lastSource=img;resetSnapshot=null;layers=[];sample=null;lastCleanPreview=null;region=null;lassoDraft=null;lassoArmed=false;picking=false;pickPoint=null;resetSliders();const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));ctx.drawImage(base,0,0,cv.width,cv.height);preview=ctx.getImageData(0,0,cv.width,cv.height);}panel.hidden=false;fitEditor();syncRegion();render();};
     el('Close').onclick=()=>{panel.hidden=true;revision++;clearGesture();button.focus();};
     for(const n of ['Range','Light','Blend','Warm','Saturation','Target','Original','Mask'])el(n).addEventListener('input',render);
     el('Family').onchange=()=>{picking=false;pickPoint=null;positionCircle();el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');if(el('Family').value==='pick')armPicker(false);else el('Sample').textContent='Auswahl: '+el('Family').selectedOptions[0].textContent;render();};
@@ -7664,8 +7664,37 @@ const mixes=chooseMixes(target,paletteKey);
     if('ResizeObserver' in window)new ResizeObserver(()=>{if(!panel.hidden)fitEditor();}).observe(stage);
     el('Keep').onclick=()=>{const o=current();if(o.family==='pick'&&!sample){el('Status').textContent='Bitte zuerst eine Farbe antippen.';return;}if(active(o))layers.push(o);resetSliders();render();};
     el('Undo').onclick=()=>{if(active(current()))resetSliders();else layers.pop();render();};
-    el('Reset').onclick=()=>{layers=[];region=null;lassoDraft=null;lassoArmed=false;resetSliders();syncRegion();render();};
-    async function output(apply){if(busy)return;busy=true;const token=++revision;panel.querySelectorAll('button,input,select').forEach(e=>e.disabled=true);el('Status').textContent='Foto in voller Auflösung wird erstellt …';try{const data=base.getContext('2d').getImageData(0,0,base.width,base.height),o=current(),result=await process(data,[...layers,...(active(o)?[o]:[])],null,token);if(!result)throw Error('Abgebrochen');const out=document.createElement('canvas');out.width=base.width;out.height=base.height;out.getContext('2d').putImageData(result,0,0);const blob=await new Promise(resolve=>out.toBlob(resolve,'image/png'));if(!blob)throw Error('Bild konnte nicht erstellt werden');if(apply){const dt=new DataTransfer();dt.items.add(new File([blob],'AtelierAI_Farbvorlage.png',{type:'image/png'}));fileInput.files=dt.files;fileInput.dispatchEvent(new Event('change'));panel.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_Farbvorlage.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}el('Status').textContent=apply?'Als Malvorlage übernommen.':'Foto als PNG gespeichert.';}catch(e){el('Status').textContent='Fehler: '+e.message;}finally{busy=false;panel.querySelectorAll('button,input,select').forEach(e=>e.disabled=false);}}
+    // Reversible full reset for comparing the untouched photo with every saved edit.
+    let resetSnapshot=null;
+    const resetControlNames=['Family','Range','Light','Blend','Warm','Saturation','Target','Original','Mask','Diameter'];
+    function syncResetToggle(){
+      el('Reset').textContent=resetSnapshot?'Bearbeitung wieder anzeigen':'Alles zurücksetzen';
+      el('Reset').setAttribute('aria-pressed',String(!!resetSnapshot));
+      panel.querySelectorAll('button,input,select').forEach(node=>{
+        const allowed=['ceReset','ceClose','ceFit','ceSave','ceApply'].includes(node.id);
+        node.disabled=busy||!!resetSnapshot&&!allowed;
+      });
+      if(!busy&&!resetSnapshot)el('LassoClear').disabled=!region&&!lassoDraft;
+    }
+    function toggleReset(){
+      if(busy)return;
+      clearGesture();
+      if(resetSnapshot){
+        const saved=resetSnapshot;resetSnapshot=null;
+        layers=saved.layers;region=saved.region;sample=saved.sample;picking=saved.picking;pickTarget=saved.pickTarget;pickPoint=saved.pickPoint;lassoArmed=saved.lassoArmed;
+        for(const [name,value] of Object.entries(saved.controls)){if(name==='Mask')el(name).checked=value;else el(name).value=value;}
+        el('Sample').textContent=saved.sampleText;el('Sample').style.borderColor=saved.sampleBorder;
+      }else{
+        resetSnapshot={layers:JSON.parse(JSON.stringify(layers)),region:region?region.map(p=>({...p})):null,sample:sample?.slice()||null,picking,pickTarget,pickPoint:pickPoint?{...pickPoint}:null,lassoArmed,
+          controls:Object.fromEntries(resetControlNames.map(name=>[name,name==='Mask'?el(name).checked:el(name).value])),sampleText:el('Sample').textContent,sampleBorder:el('Sample').style.borderColor};
+        layers=[];region=null;lassoDraft=null;lassoArmed=false;picking=false;pickPoint=null;resetSliders();
+        el('Sample').textContent='Originalansicht · „Bearbeitung wieder anzeigen“ holt alle Änderungen zurück.';
+      }
+      el('Pick').setAttribute('aria-pressed',String(picking&&!pickTarget));el('TargetPick').setAttribute('aria-pressed',String(picking&&pickTarget));
+      positionCircle();syncRegion();syncResetToggle();render();
+    }
+    el('Reset').onclick=toggleReset;
+    async function output(apply){if(busy)return;busy=true;const token=++revision;panel.querySelectorAll('button,input,select').forEach(e=>e.disabled=true);el('Status').textContent='Foto in voller Auflösung wird erstellt …';try{const data=base.getContext('2d').getImageData(0,0,base.width,base.height),o=current(),result=await process(data,[...layers,...(active(o)?[o]:[])],null,token);if(!result)throw Error('Abgebrochen');const out=document.createElement('canvas');out.width=base.width;out.height=base.height;out.getContext('2d').putImageData(result,0,0);const blob=await new Promise(resolve=>out.toBlob(resolve,'image/png'));if(!blob)throw Error('Bild konnte nicht erstellt werden');if(apply){const dt=new DataTransfer();dt.items.add(new File([blob],'AtelierAI_Farbvorlage.png',{type:'image/png'}));fileInput.files=dt.files;fileInput.dispatchEvent(new Event('change'));panel.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_Farbvorlage.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}el('Status').textContent=apply?'Als Malvorlage übernommen.':'Foto als PNG gespeichert.';}catch(e){el('Status').textContent='Fehler: '+e.message;}finally{busy=false;syncResetToggle();}}
     el('Save').onclick=()=>output(false);el('Apply').onclick=()=>output(true);
   })();
 
