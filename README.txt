@@ -1,3 +1,31 @@
+NEU IN 2.50 – LASSO IM FARBMODUL
+
+1. „Farben bearbeiten“ öffnen und „Bereich mit Lasso auswählen“ antippen.
+2. Mit einem Finger oder der Maus den gewünschten Bereich umzeichnen.
+   Beim Loslassen wird die Linie automatisch geschlossen. Die gestrichelte
+   Umrandung zeigt den aktiven Bereich. Ein neuer Lasso-Strich ersetzt ihn.
+3. Eine Farbfamilie, die Pipette oder „Alle Farben“ wählen und die Regler benutzen.
+   Änderungen wirken nur innerhalb der Umrandung. Außerhalb bleibt das Bild
+   unverändert, abgesehen von zuvor bereits gemerkten Änderungen.
+4. „Änderung merken · nächste Farbe“ speichert auch den zugehörigen Bereich.
+   So können verschiedene Bereiche unabhängig voneinander bearbeitet werden.
+5. „Bereichsauswahl aufheben“ entfernt die aktuelle räumliche Begrenzung:
+   Die noch nicht gemerkte Korrektur wirkt dann wieder im gesamten Bild.
+   Bereits gemerkte Änderungen behalten ihren ursprünglichen Lasso-Bereich.
+6. „Alles zurücksetzen“ entfernt alle Korrekturen und die Bereichsauswahl.
+
+Zwei Finger zoomen und verschieben auch bei eingeschaltetem Lasso. Sobald
+beim Zeichnen ein zweiter Finger hinzukommt, wird der unfertige Strich verworfen;
+ein vorheriger Bereich bleibt erhalten. Die Auswahl sitzt auch nach dem Zoomen
+an derselben Bildstelle. Die gestrichelte Linie wird nicht mitgespeichert.
+Die Lasso-Grenze ist präzise mit geglätteter Kante; keine breite weiche Ausblendung.
+
+Im Browser geprüft: echte simulierte Touch-Eingaben für Zeichnen nach Zoom,
+Zoom-/Pipetten-Regressionsprüfung, identische Farben innerhalb und außerhalb,
+mehrere getrennte Bereiche, PNG-Export in voller Originalauflösung,
+Aufheben/Zurücknehmen/Zurücksetzen und Abbruch beim Wechsel zu zwei Fingern.
+Kein direkter Test auf einem echten iPad.
+
 NEU IN 2.49 – ZOOM UND PIPETTENKREIS IM FARBMODUL
 
 • Zwei Finger: Bild bis 1200 % vergrößern und verschieben.
