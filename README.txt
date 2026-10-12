@@ -1,3 +1,14 @@
+AtelierAI iPad 2.65 – Malflächen vereinfachen
+
+Im Farbaufbau den Bereich „Malflächen vereinfachen“ öffnen.
+• Ähnliche Farben zusammenfassen: Stärke wählen und Anwenden drücken. Nur Mischfarben; neue Erkennung setzt die Auswahl und eigene Ersatzfarben zurück. 0 + Anwenden stellt die ursprüngliche Farbaufteilung wieder her.
+• Kleine Flecken ausblenden: 0–10; Aktualisierung nach Loslassen. 0 zeigt alle Details wieder. Wirkt auch in Ergänzungen und Detail-Kästchen. Die Grenze bezieht sich auf die Fläche der jeweiligen Analyse.
+• Ausgeblendete Flecken bleiben Hintergrund; wichtige kleine Details können betroffen sein.
+• Beide Funktionen starten ausgeschaltet. Keine Markierung gemalter Farben.
+• Alle Startdateien ersetzen und Offline-Update aktivieren; oben muss 2.65 stehen.
+
+Geprüft: JavaScript-Syntax, Farbzusammenfassung, Schutz reiner Farben, reversible Fleckenmaske, Bildränder und Vollbilddarstellung mit Testdaten. Kein direkter iPad-/Safari-Test.
+
 AtelierAI iPad 2.64 – Varianten vom Ursprung
 
 • Ein leerer Platz B oder C startet mit dem unbearbeiteten Ausgangsbild des Farbeditors, ohne Änderungen, Lasso oder Notizen.
