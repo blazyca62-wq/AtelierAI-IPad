@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.66</title>
+  <title>AtelierAI iPad 2.67</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.66</div>
+    <div class="title">AtelierAI · iPad 2.67</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1165,6 +1165,9 @@
           <div class="formsValue" id="formsValue">Aus</div>
         </div>
         <p>1 = viele ruhige Malflächen, 5 = stärkere Vereinfachung mit weniger großen Farbflächen. Ähnliche Farben werden zu großen zusammenhängenden Malflächen vereinigt. Kleine Farbinseln verschwinden, wichtige Kanten bleiben erhalten.</p>
+        <label for="formsSpots">Kleine Flecken auffüllen: <span id="formsSpotsVal">Aus</span></label>
+        <input id="formsSpots" type="range" min="0" max="10" step="1" value="0" style="width:100%;min-height:44px">
+        <p class="tiny">Kleine Farbinseln übernehmen die Farbe der angrenzenden größeren Fläche. Wirkt in den Stufen 1–5, nach dem Loslassen. 0 stellt die Details der gewählten Stufe wieder her.</p>
       </div>
 
       <div class="section" id="sketchPanel">
@@ -5327,8 +5330,8 @@ const mixes=chooseMixes(target,paletteKey);
   }
   // Relabel small connected islands; never turn them into background pixels.
   // Work from immutable source ranks so every setting is reversible.
-  function build32FilledRanks(data){
-    const amount=Number(document.getElementById('build32Spots').value),ranks=data.ranks;
+  function build32FilledRanks(data,amount=Number(document.getElementById('build32Spots').value)){
+    const ranks=data.ranks;
     if(!amount)return ranks;
     if(data.filledCache?.amount===amount)return data.filledCache.ranks;
     const width=data.width||data.w,n=ranks.length,threshold=Math.max(2,Math.round(n*amount*amount/1000000));
@@ -6415,10 +6418,46 @@ const mixes=chooseMixes(target,paletteKey);
   }
 
   let toneSourcePixels=null, toneOutputPixels=null, toneBackgroundPixels=null;
-  let renderedFormLevel=null;
+  let renderedFormLevel=null, renderedFormSpots=null, formsBasePixels=null, formsRankData=null;
+  function renderFormsFilled(){
+    if(!formsBasePixels)return;
+    const amount=Number(document.getElementById('formsSpots').value);
+    const base=formsBasePixels,work=document.createElement('canvas');
+    work.width=base.width;work.height=base.height;
+    const ctx=work.getContext('2d'),out=ctx.createImageData(base.width,base.height);
+    out.data.set(base.data);
+    if(amount){
+      if(!formsRankData){
+        const palette=[],lookup=new Map(),ranks=new Uint32Array(base.width*base.height);
+        for(let i=0;i<ranks.length;i++){
+          const k=i*4,key=(base.data[k]<<16)|(base.data[k+1]<<8)|base.data[k+2];
+          if(!lookup.has(key)){lookup.set(key,palette.length);palette.push([base.data[k],base.data[k+1],base.data[k+2]]);}
+          ranks[i]=lookup.get(key);
+        }
+        formsRankData={width:base.width,ranks,palette};
+      }
+      const ranks=build32FilledRanks(formsRankData,amount);
+      for(let i=0;i<ranks.length;i++){
+        const rgb=formsRankData.palette[ranks[i]],k=i*4;
+        out.data[k]=rgb[0];out.data[k+1]=rgb[1];out.data[k+2]=rgb[2];
+      }
+    }
+    ctx.putImageData(out,0,0);
+    formCtx.clearRect(0,0,formCanvas.width,formCanvas.height);
+    formCtx.imageSmoothingEnabled=formLevel!==1;formCtx.imageSmoothingQuality='high';
+    formCtx.drawImage(work,0,0,formCanvas.width,formCanvas.height);
+    renderedFormSpots=amount;toneSourcePixels=null;
+  }
+  function finishForms(base){
+    formsBasePixels=base;formsRankData=null;renderFormsFilled();
+  }
   function rebuildForms(){
     if(!loaded) return;
-    if(renderedFormLevel===formLevel) return;
+    if(renderedFormLevel===formLevel){
+      if(formLevel && renderedFormSpots!==Number(document.getElementById('formsSpots').value))renderFormsFilled();
+      return;
+    }
+    formsBasePixels=null;formsRankData=null;renderedFormSpots=null;
     renderedFormLevel=formLevel;
     toneSourcePixels=null;
 
@@ -6478,9 +6517,7 @@ const mixes=chooseMixes(target,paletteKey);
     // Stufe 1: extrem grob und sehr schnell.
     // Keine große Nachbarschaftssuche; nur Farbflächen quantisieren.
     if(formLevel===1){
-      wctx.putImageData(cur,0,0);
-      formCtx.imageSmoothingEnabled = false;
-      formCtx.drawImage(work,0,0,ww,wh,0,0,w,h);
+      finishForms(cur);
       return;
     }
 
@@ -6543,13 +6580,7 @@ const mixes=chooseMixes(target,paletteKey);
       cur=next;
     }
 
-    wctx.putImageData(cur,0,0);
-
-    // 3) Ergebnis zurück auf Originalgröße.
-    // Glatte Skalierung nur geometrisch – keine zusätzliche Unschärfeanalyse.
-    formCtx.imageSmoothingEnabled = true;
-    formCtx.imageSmoothingQuality = 'high';
-    formCtx.drawImage(work,0,0,ww,wh,0,0,w,h);
+    finishForms(cur);
   }
   let toneUpdateFrame=0;
   function scheduleToneImage(){
@@ -6824,6 +6855,12 @@ const mixes=chooseMixes(target,paletteKey);
     });
   });
 
+  document.getElementById('formsSpots').addEventListener('input',e=>{
+    document.getElementById('formsSpotsVal').textContent=Number(e.target.value)?e.target.value+' / 10':'Aus';
+  });
+  document.getElementById('formsSpots').addEventListener('change',()=>{
+    rebuildForms();rebuildToneImage();
+  });
   formsOriginal.addEventListener('click',()=>setFormLevel(0));
   formsSlider.addEventListener('input',()=>setFormLevel(formsSlider.value));
   formBtns.forEach(b=>b.addEventListener('click',()=>setFormLevel(b.dataset.level)));
