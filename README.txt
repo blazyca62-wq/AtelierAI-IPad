@@ -4,6 +4,10 @@ Im Modul Großformen eine Stufe 1–5 wählen. Mit „Kleine Flecken auffüllen�
 
 Geprüft: JavaScript-Syntax, Auffüllen und Rücksetzen mit Testbilddaten, unveränderte Ausgangspixel. Kein direkter iPad-/Safari-Test.
 
+AtelierAI iPad 2.68 – Umgebungsfarbe der Mischvorschläge
+
+Über den Mischvorschlägen: „Umgebung im Bild wählen“ antippen, anschließend die gewünschte Umgebungsstelle im Foto. Das bisher graue Feld hinter Zielfarbe und Mischung übernimmt diese Farbe. Die Farben und Rezepte bleiben gleich. Alternativ Farbfeld öffnen und frei wählen. „Grau“ stellt den neutralen Hintergrund wieder her. Auswahl lässt sich abbrechen. Ein neues Foto setzt die Umgebung auf Grau.
+
 AtelierAI iPad 2.66 – Geschlossene Malflächen
 
 • Kleine Flecken auffüllen: Kleine Farbinseln übernehmen die Farbe der größeren angrenzenden Fläche mit dem längsten gemeinsamen Rand. Keine Hintergrundlöcher. 0 stellt die Details wieder her.
