@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.63</title>
+  <title>AtelierAI iPad 2.64</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.63</div>
+    <div class="title">AtelierAI · iPad 2.64</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7533,7 +7533,7 @@ const mixes=chooseMixes(target,paletteKey);
     <details id="ceProjectPanel"><summary>Mein Malprojekt · Varianten &amp; Notizen</summary>
     <label>Projektname <input id="ceProjectName" type="text" maxlength="80" value="Mein Malprojekt" style="width:100%;box-sizing:border-box"></label>
     <strong>Bildvarianten · direkt umschalten</strong><div style="display:flex;gap:8px" role="group" aria-label="Bildvarianten"><button id="ceVariantA" aria-pressed="true">A</button><button id="ceVariantB" aria-pressed="false">B</button><button id="ceVariantC" aria-pressed="false">C</button></div>
-    <p id="ceVariantStatus" class="tiny">Variante A aktiv. Ein freier Platz übernimmt die aktuelle Bearbeitung. Beim Wechsel bleibt jede Variante erhalten.</p>
+    <p id="ceVariantStatus" class="tiny">Variante A aktiv. Ein freier Platz startet mit dem unbearbeiteten Ausgangsbild. Beim Wechsel bleibt jede Variante erhalten.</p>
     <button id="ceNoteAdd" class="secondary" aria-pressed="false">Farbnotiz im Bild setzen</button>
     <label><input id="ceNotesVisible" type="checkbox" checked> Nummern im Bild anzeigen</label>
     <div id="ceNotesList"></div><p class="tiny">Notizen gehören zur jeweiligen Variante. Die Farbe wird beim Setzen aufgenommen. Mischungen und Malhinweise kannst du dazuschreiben. Im gespeicherten Foto erscheinen keine Nummern.</p>
@@ -8085,9 +8085,18 @@ const mixes=chooseMixes(target,paletteKey);
     });
     el('Reset').onclick=toggleReset;
 
-    // 2.63: editable variants share one lossless source image, with per-variant notes.
+    // 2.64: editable variants share one lossless source image, with per-variant notes.
     const copyProject=value=>JSON.parse(JSON.stringify(value));
     let variants=[null,null,null],variantIndex=0,notes=[],noteArmed=false,projectURL=null;
+    // Fresh slots use neutral controls, never the edits of the previous slot.
+    const originalVariantControls=Object.fromEntries(resetControlNames.map(n=>{
+      const control=el(n);
+      return [n,n==='Family'?'all':control.type==='checkbox'?control.defaultChecked:control.defaultValue];
+    }));
+    function createOriginalVariant(){
+      return {spot:null,gradient:null,brushStrokes:[],layers:[],region:null,sample:null,
+        controls:copyProject(originalVariantControls),sampleText:'Ausgangspunkt: unbearbeitetes Ausgangsbild',sampleBorder:'',notes:[]};
+    }
     function captureVariant(){
       const saved=resetSnapshot||{spot,gradient,brushStrokes,layers,region,sample,
         controls:Object.fromEntries(resetControlNames.map(n=>[n,el(n).type==='checkbox'?el(n).checked:el(n).value])),
@@ -8106,7 +8115,7 @@ const mixes=chooseMixes(target,paletteKey);
     }
     function syncProject(){
       ['A','B','C'].forEach((letter,i)=>{el('Variant'+letter).setAttribute('aria-pressed',String(i===variantIndex));el('Variant'+letter).textContent=letter+(i===variantIndex?' ✓':variants[i]?'':' +');});
-      el('VariantStatus').textContent='Variante '+['A','B','C'][variantIndex]+' aktiv · A/B/C direkt antippen, ohne Datei zu laden. Ein Platz mit + übernimmt den aktuellen Stand.';
+      el('VariantStatus').textContent='Variante '+['A','B','C'][variantIndex]+' aktiv · A/B/C direkt antippen, ohne Datei zu laden. Ein Platz mit + startet vom unbearbeiteten Ausgangsbild. Bearbeitete Varianten bleiben erhalten.';
       el('NoteAdd').textContent=noteArmed?'Im Bild antippen · Abbrechen':'Farbnotiz im Bild setzen';
       el('NoteAdd').setAttribute('aria-pressed',String(noteArmed));
       el('NotesList').replaceChildren();
@@ -8150,7 +8159,7 @@ const mixes=chooseMixes(target,paletteKey);
     ['A','B','C'].forEach((letter,i)=>el('Variant'+letter).onclick=()=>{
       if(busy||!base||i===variantIndex)return;
       const state=captureVariant();variants[variantIndex]=state;
-      if(!variants[i])variants[i]=copyProject(state);
+      if(!variants[i])variants[i]=createOriginalVariant();
       variantIndex=i;restoreVariant(variants[i]);
     });
     el('NoteAdd').onclick=()=>{

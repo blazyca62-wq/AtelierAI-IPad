@@ -1,3 +1,10 @@
+AtelierAI iPad 2.64 – Varianten vom Ursprung
+
+• Ein leerer Platz B oder C startet mit dem unbearbeiteten Ausgangsbild des Farbeditors, ohne Änderungen, Lasso oder Notizen.
+• A bleibt erhalten. Beim Wechsel werden die Änderungen jeder Variante gemerkt.
+• Bereits belegte Varianten und gespeicherte Projekte bleiben erhalten.
+• ZIP entpacken und die Dateien im bestehenden GitHub-Projekt ersetzen. Nach dem Update muss oben 2.64 stehen.
+
 AtelierAI iPad 2.63 – Varianten erhalten
 
 • Nach „Als Malvorlage übernehmen“ und erneutem Öffnen von „Farben bearbeiten“ bleiben A/B/C und ihre Notizen erhalten, solange die Hauptansicht nicht anderweitig verändert oder ein anderes Foto geladen wird.
