@@ -1,3 +1,7 @@
+AtelierAI iPad 2.73 – Praktische Öl-Mischrezepte
+
+Ölrezepte werden auf kleine ganzzahlige Portionen vereinfacht (höchstens 24 vor Kürzung je Zutat). Nicht dosierbare Spuren können entfallen. Die tatsächliche vereinfachte Mischung wird neu simuliert und bewertet; Anzeige, Rezept und verwendete Tubenfarben gehören zur gleichen Mischung. Mehrfarbige Rezepte müssen auch nach Vereinfachung besser als einfache Mischungen treffen. Ein Teil ist eine frei gewählte kleine Portion, keine feste Menge.
+
 AtelierAI iPad 2.72 – Öl-Aufhellungsreihe
 
 Im Korrekturmodul „Öl · Aufhellungsreihe mit Titanweiß“ öffnen. Pipettenfarbe aufnehmen, bei Bedarf korrigieren, Reihe erstellen. Sieben große Farbfelder: Grundmischung sowie 8:1, 4:1, 2:1, 1:1, 1:2 und 1:4 (Grundmischung:Titanweiß). Eine Stufe auswählen und als Öl-Zielfarbe zum Mischen übernehmen. Verwendet die vorhandene Artisan-Ölfarbensimulation. Verhältnisse sind Startwerte zum Probemischen, keine gemessenen Pigmentrezepte. Die Reihe bleibt bis zur nächsten Erstellung stabil.
