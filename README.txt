@@ -1,3 +1,10 @@
+AtelierAI iPad 2.74 – Großflächen aus dem Zusammenkneifen-Blick
+
+Großformen → Zusätzlich: Augen zusammenkneifen → Ruhige Großflächen einschalten.
+Details ausblenden 1–12, Aktualisierung nach Loslassen. Stufen 1–5 reduzieren auf bis zu 16/12/8/6/4 Farben. Kleine Flecken auffüllen funktioniert zusätzlich. Ausschalten kehrt zu den bisherigen Großformen zurück; Zurück zum Original zeigt die Ausgangsansicht. Pipette, Raster und Bildspeicherung verwenden die normale Bildpipeline. Farbänderungen im Editor vorher als Malvorlage übernehmen. Die Bildwirkungs-Prüfansicht bleibt separat.
+
+Technik: begrenzte Arbeitsauflösung, dreifache gleitende Mittelung mit Randfortsetzung und Farbgruppen aus dem beruhigten Bild. Keine Abhängigkeit von Canvas.filter. Geprüft: JavaScript-Syntax, Farbanzahl aller fünf Stufen, Fleckenauffüllung, pixelgenaue Rückkehr zur bisherigen Ansicht und unverändertes Ausgangsbild. Kein direkter Test auf einem iPad.
+
 AtelierAI iPad 2.73 – Praktische Öl-Mischrezepte
 
 Ölrezepte werden auf kleine ganzzahlige Portionen vereinfacht (höchstens 24 vor Kürzung je Zutat). Nicht dosierbare Spuren können entfallen. Die tatsächliche vereinfachte Mischung wird neu simuliert und bewertet; Anzeige, Rezept und verwendete Tubenfarben gehören zur gleichen Mischung. Mehrfarbige Rezepte müssen auch nach Vereinfachung besser als einfache Mischungen treffen. Ein Teil ist eine frei gewählte kleine Portion, keine feste Menge.

@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.73</title>
+  <title>AtelierAI iPad 2.74</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.73</div>
+    <div class="title">AtelierAI · iPad 2.74</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1152,6 +1152,12 @@
       <div class="section" id="formsPanel">
         <h3>Großformen</h3>
         <button id="formsOriginal" class="secondary" style="width:100%;margin-bottom:8px;">Zurück zum Original</button>
+        <details style="margin:10px 0"><summary>Zusätzlich: Augen zusammenkneifen</summary>
+        <label style="display:block;margin:10px 0"><input id="formsSquint" type="checkbox"> Ruhige Großflächen einschalten</label>
+        <label for="formsSquintBlur">Details ausblenden: <span id="formsSquintBlurVal">5</span></label>
+        <input id="formsSquintBlur" type="range" min="1" max="12" value="5" step="1" style="width:100%;min-height:44px">
+        <p class="tiny">Erst Details beruhigen, dann klare Malflächen bilden. Stufe 1 = bis zu 16 Farben, Stufe 5 = bis zu 4 Farben. Der Regler wirkt nach dem Loslassen. Ausschalten zeigt wieder die bisherigen Großformen. Bearbeitete Farben vorher als Malvorlage übernehmen.</p>
+        </details>
         <div class="formsButtons">
           <button class="formBtn secondary" data-level="1">1</button>
           <button class="formBtn secondary" data-level="2">2</button>
@@ -6551,6 +6557,7 @@ const mixes=chooseMixes(target,paletteKey);
   }
 
   let toneSourcePixels=null, toneOutputPixels=null, toneBackgroundPixels=null;
+  let renderedFormMode=null;
   let renderedFormLevel=null, renderedFormSpots=null, formsBasePixels=null, formsRankData=null;
   function renderFormsFilled(){
     if(!formsBasePixels)return;
@@ -6584,14 +6591,57 @@ const mixes=chooseMixes(target,paletteKey);
   function finishForms(base){
     formsBasePixels=base;formsRankData=null;renderFormsFilled();
   }
+  // Separable, edge-clamped box blur: independent of Canvas.filter support in Safari.
+  function squintBlurPixels(input,w,h,radius){
+    let data=new Float32Array(input);
+    for(let pass=0;pass<3;pass++)for(let axis=0;axis<2;axis++){
+      const out=new Float32Array(data.length),length=axis?h:w,lines=axis?w:h;
+      for(let line=0;line<lines;line++)for(let c=0;c<4;c++){
+        const at=t=>((axis?Math.max(0,Math.min(length-1,t))*w+line:line*w+Math.max(0,Math.min(length-1,t)))*4+c);
+        let sum=0;for(let t=-radius;t<=radius;t++)sum+=data[at(t)];
+        for(let t=0;t<length;t++){out[at(t)]=sum/(2*radius+1);sum+=data[at(t+radius+1)]-data[at(t-radius)];}
+      }
+      data=out;
+    }
+    return data;
+  }
+  function squintPalette(data,count){
+    const samples=[];for(let i=0;i<data.length;i+=16)samples.push([data[i],data[i+1],data[i+2]]);
+    const distance=(a,b)=>.2126*(a[0]-b[0])**2+.7152*(a[1]-b[1])**2+.0722*(a[2]-b[2])**2;
+    const sorted=samples.slice().sort((a,b)=>luminance(...a)-luminance(...b));
+    const palette=[sorted[Math.floor(sorted.length/2)].slice()];
+    while(palette.length<count){let best=null,score=0;for(const c of samples){const d=Math.min(...palette.map(p=>distance(c,p)));if(d>score){score=d;best=c;}}if(!best||score<1)break;palette.push(best.slice());}
+    for(let pass=0;pass<8;pass++){
+      const sums=palette.map(()=>[0,0,0,0]);
+      for(const c of samples){let best=0,d=Infinity;palette.forEach((p,j)=>{const n=distance(c,p);if(n<d){d=n;best=j;}});for(let k=0;k<3;k++)sums[best][k]+=c[k];sums[best][3]++;}
+      sums.forEach((v,j)=>{if(v[3])palette[j]=v.slice(0,3).map(n=>n/v[3]);});
+    }
+    return palette.map(c=>c.map(Math.round));
+  }
+  function rebuildSquintForms(){
+    const w=sourceCanvas.width,h=sourceCanvas.height,scale=Math.min(1,360/Math.max(w,h));
+    const work=document.createElement('canvas');work.width=Math.max(1,Math.round(w*scale));work.height=Math.max(1,Math.round(h*scale));
+    const c=work.getContext('2d',{willReadFrequently:true});c.drawImage(sourceCanvas,0,0,work.width,work.height);
+    const pixels=c.getImageData(0,0,work.width,work.height);
+    const radius=Math.max(1,Math.round(+document.getElementById('formsSquintBlur').value*Math.min(work.width,work.height)/300));
+    const blurred=squintBlurPixels(pixels.data,work.width,work.height,radius);
+    const palette=squintPalette(blurred,[16,12,8,6,4][formLevel-1]);
+    for(let i=0;i<pixels.data.length;i+=4){
+      let best=palette[0],distance=Infinity;
+      for(const rgb of palette){const d=.2126*(blurred[i]-rgb[0])**2+.7152*(blurred[i+1]-rgb[1])**2+.0722*(blurred[i+2]-rgb[2])**2;if(d<distance){distance=d;best=rgb;}}
+      pixels.data[i]=best[0];pixels.data[i+1]=best[1];pixels.data[i+2]=best[2];
+    }
+    finishForms(pixels);
+  }
   function rebuildForms(){
     if(!loaded) return;
-    if(renderedFormLevel===formLevel){
+    const mode=document.getElementById('formsSquint').checked?'squint:'+document.getElementById('formsSquintBlur').value:'classic';
+    if(renderedFormLevel===formLevel && renderedFormMode===mode){
       if(formLevel && renderedFormSpots!==Number(document.getElementById('formsSpots').value))renderFormsFilled();
       return;
     }
     formsBasePixels=null;formsRankData=null;renderedFormSpots=null;
-    renderedFormLevel=formLevel;
+    renderedFormLevel=formLevel;renderedFormMode=mode;
     toneSourcePixels=null;
 
     const w = sourceCanvas.width, h = sourceCanvas.height;
@@ -6602,6 +6652,8 @@ const mixes=chooseMixes(target,paletteKey);
       formCtx.drawImage(sourceCanvas,0,0);
       return;
     }
+
+    if(mode.startsWith('squint:')){ rebuildSquintForms(); return; }
 
     // Schnellere Großformen:
     // Analyse auf begrenzter Arbeitsauflösung, danach kantenschonend hochskalieren.
@@ -6994,7 +7046,10 @@ const mixes=chooseMixes(target,paletteKey);
   document.getElementById('formsSpots').addEventListener('change',()=>{
     rebuildForms();rebuildToneImage();
   });
-  formsOriginal.addEventListener('click',()=>setFormLevel(0));
+  document.getElementById('formsSquint').addEventListener('change',()=>{setFormLevel(formLevel||3);});
+  document.getElementById('formsSquintBlur').addEventListener('input',e=>{document.getElementById('formsSquintBlurVal').textContent=e.target.value;});
+  document.getElementById('formsSquintBlur').addEventListener('change',()=>{if(document.getElementById('formsSquint').checked){rebuildForms();rebuildToneImage();}});
+  formsOriginal.addEventListener('click' ,()=>setFormLevel(0));
   formsSlider.addEventListener('input',()=>setFormLevel(formsSlider.value));
   formBtns.forEach(b=>b.addEventListener('click',()=>setFormLevel(b.dataset.level)));
 
@@ -7613,6 +7668,7 @@ const mixes=chooseMixes(target,paletteKey);
     surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';
     areaPickerMode=null;smartPickerArmed=false;
     smartPickerBtn.classList.remove('active');smartPickerBtn.classList.add('secondary');
+    document.getElementById('formsSquint').checked=false;
     formLevel=0;formsSlider.value=0;formsValue.textContent='Aus';
     formBtns.forEach(b=>{const active=+b.dataset.level===0;b.classList.toggle('active',active);b.classList.toggle('secondary',!active);});
     [lightSlider,midSlider,darkSlider].forEach(sl=>sl.value=100);
