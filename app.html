@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.60</title>
+  <title>AtelierAI iPad 2.61</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.60</div>
+    <div class="title">AtelierAI · iPad 2.61</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7326,15 +7326,21 @@ const mixes=chooseMixes(target,paletteKey);
     startPicturePalette();resetSketchImage();rebuildToneGrayOriginal();
     renderedFormLevel=null;rebuildForms();rebuildToneImage();fitImage();
   }
-  function loadPhoto(file,keepOriginal=false){
+  function loadPhoto(file,keepOriginal=false,onComplete=null){
     const token=++photoLoadRevision,url=URL.createObjectURL(file),photo=new Image();
+    const loadTimer=onComplete?setTimeout(()=>{
+      URL.revokeObjectURL(url);if(token===photoLoadRevision)photoLoadRevision++;
+      photo.onload=photo.onerror=null;onComplete(Error('Das Laden dauert zu lange. Bitte erneut versuchen.'));
+    },30000):null;
     photo.onload=()=>{
-      URL.revokeObjectURL(url);if(token!==photoLoadRevision)return;
-      if(!keepOriginal)originalPhoto=photo;
-      else resetPhotoFilters();
-      installPhoto(photo);
+      clearTimeout(loadTimer);URL.revokeObjectURL(url);if(token!==photoLoadRevision){onComplete?.(Error('Ein anderes Foto wurde geöffnet.'));return;}
+      try{
+        if(!keepOriginal)originalPhoto=photo;
+        else resetPhotoFilters();
+        installPhoto(photo);onComplete?.();
+      }catch(error){hint.textContent='Das Foto konnte nicht übernommen werden.';onComplete?.(error);}
     };
-    photo.onerror=()=>{URL.revokeObjectURL(url);if(token===photoLoadRevision)hint.textContent='Das Foto konnte nicht geladen werden.';};
+    photo.onerror=()=>{clearTimeout(loadTimer);URL.revokeObjectURL(url);if(token===photoLoadRevision)hint.textContent='Das Foto konnte nicht geladen werden.';onComplete?.(Error('Das Foto konnte nicht geladen werden.'));};
     photo.src=url;
   }
   fileInput.addEventListener('change',e=>{
@@ -7579,7 +7585,7 @@ const mixes=chooseMixes(target,paletteKey);
     <label>Original einblenden <output id="ceOriginalVal"></output><input id="ceOriginal" type="range" min="0" max="100" value="0"></label>
     <button id="ceKeep">Änderung merken · nächste Farbe</button><button id="ceUndo" class="secondary">Letzte Änderung zurück</button><button id="ceReset" class="secondary">Alles zurücksetzen</button>
     <p class="tiny">Ohne Lasso gilt die Farbauswahl im ganzen Bild. Mit Lasso wird nur der umrandete Bereich bearbeitet. „Alle Farben“ bearbeitet dort sämtliche Farben. Gemerkte Änderungen behalten ihren eigenen Bereich. Licht und Schatten bleiben beim Umfärben weitgehend erhalten. „Farbbereich“ erweitert die Auswahl mit weichen Übergängen. Noch nicht gemerkte Regler gelten für die aktuelle Auswahl.</p>
-    <button id="ceSave">Bearbeitetes Foto speichern</button><button id="ceApply">Als Malvorlage übernehmen</button><p id="ceStatus" role="status"></p>
+    <button id="ceSave">Bearbeitetes Foto speichern</button><button id="ceApply">Als Malvorlage übernehmen</button><button id="ceCancelOutput" class="secondary" hidden>Berechnung abbrechen</button><a id="ceDownload" hidden download="AtelierAI_Farbvorlage.png">PNG herunterladen</a><p id="ceStatus" role="status" aria-live="polite"></p>
     </div></div>`;
     document.body.append(panel);
     const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceReviewCanvas[hidden],#ceReviewBadge[hidden]{display:none}#ceReviewBadge{position:absolute;top:8px;left:8px;z-index:2;padding:5px 9px;border-radius:6px;background:#172822d9;color:white;font-size:12px;pointer-events:none}#ceCanvas,#ceReviewCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceLassoOutline{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls details{margin:12px 0;padding:10px;border:1px solid #c4ccc7;border-radius:8px}.ce-controls summary{cursor:pointer;font-weight:bold}.ce-controls>label,.ce-controls details>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
@@ -7597,27 +7603,27 @@ const mixes=chooseMixes(target,paletteKey);
       // Feather the existing AtelierAI family boundaries in colour space.
       const delta=2+o.range*.25;let n=build32FamilyOf(rgb0)===o.family?2:0;
       for(let ch=0;ch<3;ch++)for(const sign of [-1,1]){const c=rgb0.slice();c[ch]=clamp(c[ch]+delta*sign,0,255);if(build32FamilyOf(c)===o.family)n++;}return n/8;}
-    function spatialMask(polygon,width,height){
+    function spatialMask(polygon,width,height,fullHeight=height,offsetY=0){
       if(!polygon||polygon.length<3)return null;
-      const xs=polygon.map(p=>p.x*width),ys=polygon.map(p=>p.y*height);
+      const xs=polygon.map(p=>p.x*width),ys=polygon.map(p=>p.y*fullHeight-offsetY);
       const x=Math.max(0,Math.floor(Math.min(...xs))-1),y=Math.max(0,Math.floor(Math.min(...ys))-1);
       const w=Math.max(1,Math.min(width,Math.ceil(Math.max(...xs))+1)-x),h=Math.max(1,Math.min(height,Math.ceil(Math.max(...ys))+1)-y);
       const mask=document.createElement('canvas');mask.width=w;mask.height=h;const mc=mask.getContext('2d');
-      mc.beginPath();polygon.forEach((p,i)=>mc[i?'lineTo':'moveTo'](p.x*width-x,p.y*height-y));mc.closePath();mc.fillStyle='#fff';mc.fill('evenodd');
+      mc.beginPath();polygon.forEach((p,i)=>mc[i?'lineTo':'moveTo'](p.x*width-x,p.y*fullHeight-offsetY-y));mc.closePath();mc.fillStyle='#fff';mc.fill('evenodd');
       const d=mc.getImageData(0,0,w,h).data,a=new Uint8Array(w*h);for(let i=0;i<a.length;i++)a[i]=d[i*4+3];mask.width=mask.height=1;
       return {x,y,w,h,a};
     }
     function spatialAlpha(mask,x,y){if(!mask)return 255;const mx=x-mask.x,my=y-mask.y;return mx<0||my<0||mx>=mask.w||my>=mask.h?0:mask.a[my*mask.w+mx];}
-    function brushMask(strokes,width,height){
+    function brushMask(strokes,width,height,fullHeight=height,offsetY=0){
       if(!strokes?.length)return null;
       const c=document.createElement('canvas');c.width=width;c.height=height;
-      const x=c.getContext('2d');x.lineCap='round';x.lineJoin='round';
+      const x=c.getContext('2d');x.translate(0,-offsetY);x.lineCap='round';x.lineJoin='round';
       for(const stroke of strokes){
         if(!stroke.points.length)continue;
         x.strokeStyle=x.fillStyle=stroke.mode==='add'?'#ff0000':'#0000ff';
-        x.lineWidth=stroke.size*Math.min(width,height);
-        x.beginPath();stroke.points.forEach((p,i)=>x[i?'lineTo':'moveTo'](p.x*width,p.y*height));
-        if(stroke.points.length===1){const p=stroke.points[0];x.arc(p.x*width,p.y*height,x.lineWidth/2,0,Math.PI*2);x.fill();}else x.stroke();
+        x.lineWidth=stroke.size*Math.min(width,fullHeight);
+        x.beginPath();stroke.points.forEach((p,i)=>x[i?'lineTo':'moveTo'](p.x*width,p.y*fullHeight));
+        if(stroke.points.length===1){const p=stroke.points[0];x.arc(p.x*width,p.y*fullHeight,x.lineWidth/2,0,Math.PI*2);x.fill();}else x.stroke();
       }
       const d=x.getImageData(0,0,width,height).data;
       // Red/blue carry additive/subtractive coverage in premultiplied form.
@@ -7654,17 +7660,18 @@ const mixes=chooseMixes(target,paletteKey);
       if(r<1){if(g.soft<=0)inside=1;else{const t=clamp((1-r)/g.soft);inside=t*t*(3-2*t);}}
       return Math.round((g.outside?1-inside:inside)*g.strength*2048);
     }
-    async function process(data,ops,maskOp,token){
+    async function process(data,ops,maskOp,token,fullHeight=data.height,offsetY=0){
+      let sliceStart=performance.now();
       const out=new ImageData(new Uint8ClampedArray(data.data),data.width,data.height),cache=new Map(),d=data.data;
-      const masks=ops.map(o=>spatialMask(o.region,data.width,data.height)),brushes=ops.map(o=>brushMask(o.strokes,data.width,data.height));
+      const masks=ops.map(o=>spatialMask(o.region,data.width,data.height,fullHeight,offsetY)),brushes=ops.map(o=>brushMask(o.strokes,data.width,data.height,fullHeight,offsetY));
       const spatial=masks.some(Boolean)||brushes.some(Boolean);
-      const projections=ops.map(o=>gradientProjection(o.gradient,data.width,data.height)),hasGradient=projections.some(Boolean);
-      const spots=ops.map(o=>spotGeometry(o.spot,data.width,data.height)),hasSpot=spots.some(Boolean);
+      const projections=ops.map(o=>gradientProjection(o.gradient,data.width,fullHeight)),hasGradient=projections.some(Boolean);
+      const spots=ops.map(o=>spotGeometry(o.spot,data.width,fullHeight)),hasSpot=spots.some(Boolean);
       for(let i=0;i<d.length;i+=4){
         const pixel=i/4,px=pixel%data.width,py=Math.floor(pixel/data.width);
         const amounts=spatial?ops.map((o,j)=>[spatialAlpha(masks[j],px,py),brushes[j]?.[pixel*2]||0,brushes[j]?.[pixel*2+1]||0]):null;
-        const steps=hasGradient?projections.map(p=>gradientStep(p,px,py)):null;
-        const spotSteps=hasSpot?spots.map(s=>spotStep(s,px,py)):null;
+        const steps=hasGradient?projections.map(p=>gradientStep(p,px,py+offsetY)):null;
+        const spotSteps=hasSpot?spots.map(s=>spotStep(s,px,py+offsetY)):null;
         let key=(d[i]<<16)|(d[i+1]<<8)|d[i+2];if(spatial)key+=':'+amounts.flat().join(',');if(steps)key+='g'+steps.join(',');if(spotSteps)key+='s'+spotSteps.join(',');
         let c=cache.get(key);
         if(!c){
@@ -7677,10 +7684,10 @@ const mixes=chooseMixes(target,paletteKey);
             a+=(o.target[1]-a)*o.blend*w;b+=(o.target[2]-b)*o.blend*w;b+=(o.warm+g.warm)*w;
             const sat=Math.max(0,1+((o.saturation||0)+g.saturation)*w);a*=sat;b*=sat;
           }
-          c=changed?rgb(L,a,b):orig;if(cache.size<200000)cache.set(key,c);
+          c=changed?rgb(L,a,b):orig;if(cache.size<32768)cache.set(key,c);
         }
         out.data[i]=c[0];out.data[i+1]=c[1];out.data[i+2]=c[2];
-        if(i%65536===0){await new Promise(r=>setTimeout(r,0));if(token!==revision)return null;}
+        if(i%8192===0&&performance.now()-sliceStart>=12){await new Promise(r=>setTimeout(r,0));if(token!==revision)return null;sliceStart=performance.now();}
       }
       return out;
     }
@@ -8064,7 +8071,62 @@ const mixes=chooseMixes(target,paletteKey);
       panel.hidden=true;clearGesture();syncResetToggle();
     });
     el('Reset').onclick=toggleReset;
-    async function output(apply){if(busy)return;busy=true;const token=++revision;panel.querySelectorAll('button,input,select').forEach(e=>e.disabled=true);el('Status').textContent='Foto in voller Auflösung wird erstellt …';try{const data=base.getContext('2d').getImageData(0,0,base.width,base.height),o=current(),result=await process(data,[...layers,...(active(o)?[o]:[])],null,token);if(!result)throw Error('Abgebrochen');const out=document.createElement('canvas');out.width=base.width;out.height=base.height;out.getContext('2d').putImageData(result,0,0);const blob=await new Promise(resolve=>out.toBlob(resolve,'image/png'));if(!blob)throw Error('Bild konnte nicht erstellt werden');if(apply){loadPhoto(blob,true);panel.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_Farbvorlage.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}el('Status').textContent=apply?'Als Malvorlage übernommen.':'Foto als PNG gespeichert.';}catch(e){el('Status').textContent='Fehler: '+e.message;}finally{busy=false;syncResetToggle();}}
+    // Full-resolution export in strips: masks and pixel copies stay bounded.
+    let downloadURL=null;
+    el('CancelOutput').onclick=()=>{revision++;el('CancelOutput').disabled=true;el('Status').textContent='Wird abgebrochen …';};
+    async function output(apply){
+      if(busy||!base)return;
+      busy=true;const token=++revision;let out=null;
+      try{
+        clearGesture();syncResetToggle();
+        el('CancelOutput').hidden=false;el('CancelOutput').disabled=false;
+        el('Download').hidden=true;
+        if(downloadURL){URL.revokeObjectURL(downloadURL);downloadURL=null;}
+        el('Status').textContent='Foto wird erstellt · 0 %';
+        await new Promise(r=>setTimeout(r,0));
+        const source=base,o=current(),ops=[...layers,...(active(o)?[o]:[])];
+        out=document.createElement('canvas');out.width=source.width;out.height=source.height;
+        const target=out.getContext('2d'),input=source.getContext('2d');
+        if(!target)throw Error('Nicht genügend Speicher für das Bild.');
+        const rows=Math.max(1,Math.min(64,Math.floor(131072/source.width)));
+        for(let y=0;y<source.height;y+=rows){
+          if(token!==revision)throw Error('Abgebrochen');
+          const h=Math.min(rows,source.height-y);
+          const result=await process(input.getImageData(0,y,source.width,h),ops,null,token,source.height,y);
+          if(!result||token!==revision)throw Error('Abgebrochen');
+          target.putImageData(result,0,y);
+          el('Status').textContent='Foto wird erstellt · '+Math.round((y+h)/source.height*100)+' %';
+          await new Promise(r=>setTimeout(r,0));
+        }
+        if(token!==revision)throw Error('Abgebrochen');
+        el('Status').textContent='PNG wird vorbereitet …';
+        const blob=await new Promise((resolve,reject)=>{
+          let settled=false;
+          const finish=(value,error)=>{if(settled)return;settled=true;clearTimeout(timer);clearInterval(cancel);error?reject(error):resolve(value);};
+          const timer=setTimeout(()=>finish(null,Error('PNG-Erstellung dauert zu lange. Bitte erneut versuchen.')),45000);
+          const cancel=setInterval(()=>{if(token!==revision)finish(null,Error('Abgebrochen'));},100);
+          try{out.toBlob(b=>finish(b,b?null:Error('Bild konnte nicht erstellt werden.')),'image/png');}catch(e){finish(null,e);}
+        });
+        out.width=out.height=1;out=null;
+        if(token!==revision)throw Error('Abgebrochen');
+        if(apply){
+          el('CancelOutput').hidden=true;
+          el('Status').textContent='Malvorlage wird geöffnet …';
+          await new Promise((resolve,reject)=>loadPhoto(blob,true,error=>error?reject(error):resolve()));
+          panel.hidden=true;
+          hint.textContent='Bearbeitetes Bild als Malvorlage übernommen.';
+        }else{
+          downloadURL=URL.createObjectURL(blob);
+          const link=el('Download');link.href=downloadURL;link.hidden=false;link.click();
+          el('Status').textContent='PNG bereit. Falls kein Download startet: „PNG herunterladen“ antippen.';
+        }
+      }catch(e){
+        el('Status').textContent=e.message==='Abgebrochen'?'Abgebrochen · deine Bearbeitung bleibt erhalten.':'Fehler: '+e.message;
+      }finally{
+        if(out)out.width=out.height=1;
+        busy=false;el('CancelOutput').hidden=true;syncResetToggle();
+      }
+    }
     el('Save').onclick=()=>output(false);el('Apply').onclick=()=>output(true);
   })();
 

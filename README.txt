@@ -1,3 +1,17 @@
+AtelierAI iPad 2.61 – Farbbearbeitung speichern und übernehmen
+
+Die Ausgabe verarbeitet Fotos in kleinen Streifen in voller Auflösung.
+Fortschrittsanzeige und Abbrechen ergänzt; Änderungen bleiben beim Abbruch erhalten.
+Ein sichtbarer PNG-Downloadlink bleibt nach der Berechnung verfügbar.
+Malvorlage wird erst nach dem Laden geschlossen; Fehler geben die Bedienung frei.
+
+Geprüft: JavaScript-Syntax, Farb-/Verlaufsberechnung, Speichern/Übernehmen,
+Abbruch und Fehlerfreigabe in automatisierten Funktionstests.
+Kein direkter iPad-/Safari-Test.
+
+Zum Aktualisieren app.html und sw.js sowie die übrigen Startdateien aus diesem Paket hochladen.
+Danach die angebotene Offline-Aktualisierung aktivieren; oben muss 2.61 stehen.
+
 Version 2.60 – Bildwirkung prüfen
 
 Unter Farben bearbeiten „Bildwirkung prüfen“ aufklappen. Augen zusammenkneifen reduziert Details durch eine regelbare weiche Darstellung; Schwarz-Weiß zeigt die Hell-Dunkel-Verteilung; horizontal spiegeln hilft beim Prüfen von Proportionen und Bildaufteilung. Alle drei Ansichten sind kombinierbar. „Zur normalen Ansicht“ beendet die gesamte Prüfung mit einem Klick.
