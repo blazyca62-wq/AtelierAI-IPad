@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.69</title>
+  <title>AtelierAI iPad 2.70</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.69</div>
+    <div class="title">AtelierAI · iPad 2.70</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1626,11 +1626,11 @@
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label for="corrBackground">Umgebung</label><input id="corrBackground" type="color" value="#808080" style="width:48px;height:44px" aria-label="Hintergrund der Korrekturfarben"><button id="corrGray" class="secondary" type="button">Grau</button><button id="corrUseSurround" class="secondary" type="button">Wie Mischfarbe</button></div>
         <div id="corrInfo" class="tiny" style="margin:10px 0">Noch keine Farbe übernommen.</div>
-        <div class="control-line"><label>Helligkeit</label><input id="corrLight" type="range" min="-100" max="100" step="1" value="0"><span id="corrLightVal">0</span></div>
-        <div class="control-line"><label>Wärme</label><input id="corrWarm" type="range" min="-100" max="100" step="1" value="0"><span id="corrWarmVal">0</span></div>
-        <div class="control-line"><label>Sättigung</label><input id="corrSat" type="range" min="-100" max="100" step="1" value="0"><span id="corrSatVal">0</span></div>
-        <div class="control-line"><label>Farbton</label><input id="corrHue" type="range" min="-180" max="180" step="1" value="0"><span id="corrHueVal">0°</span></div>
-        <p class="tiny">Helligkeit reicht bis Weiß oder Schwarz. Neue Pipettenfarben starten ohne Korrektur. Doppeltippen auf einen Regler setzt ihn auf 0.</p>
+        <div class="control-line"><label>Helligkeit</label><input id="corrLight" type="range" min="-100" max="100" step="0.1" value="0"><span id="corrLightVal">0</span></div>
+        <div class="control-line"><label>Wärme</label><input id="corrWarm" type="range" min="-100" max="100" step="0.1" value="0"><span id="corrWarmVal">0</span></div>
+        <div class="control-line"><label>Sättigung</label><input id="corrSat" type="range" min="-100" max="100" step="0.1" value="0"><span id="corrSatVal">0</span></div>
+        <div class="control-line"><label>Farbton</label><input id="corrHue" type="range" min="-180" max="180" step="0.1" value="0"><span id="corrHueVal">0°</span></div>
+        <p class="tiny">Feinfühlige Regler: um die Mitte sehr sanft, weiter außen stärker. Die Zahl zeigt die tatsächliche Korrektur. Helligkeit reicht weiterhin bis Weiß oder Schwarz. Neue Pipettenfarben starten ohne Korrektur. Doppeltippen auf einen Regler setzt ihn auf 0.</p>
         <div class="grid2">
           <button id="corrTakeBtn">Pipettenfarbe übernehmen</button>
           <button id="corrMixBtn">Korrigierte Farbe mischen</button>
@@ -4551,9 +4551,18 @@ const mixes=chooseMixes(target,paletteKey);
     for(const id of ['corrLight','corrWarm','corrSat','corrHue'])document.getElementById(id).value=0;
     refreshCorrection();
   }
+  // Fine control near zero, with the full correction range at the endpoints.
+  function correctionFineValue(value,limit){
+    const x=Math.max(-1,Math.min(1,Number(value)/limit));
+    return Math.sign(x)*x*x*limit;
+  }
+  function correctionFineLabel(value,limit){
+    const v=correctionFineValue(value,limit);
+    return (Math.abs(v)<0.05?0:v).toFixed(1).replace('.',',');
+  }
   function correctedColor(){
     if(!correctionBase)return null;
-    const light=Number(corrLight.value)/100,warm=Number(corrWarm.value)/100,sat=Number(corrSat.value)/100,hue=Number(document.getElementById('corrHue').value);
+    const light=correctionFineValue(corrLight.value,100)/100,warm=correctionFineValue(corrWarm.value,100)/100,sat=correctionFineValue(corrSat.value,100)/100,hue=correctionFineValue(document.getElementById('corrHue').value,180);
     if(!light&&!warm&&!sat&&!hue)return [...correctionBase];
     let rgb=correctionBase.map((v,i)=>Math.max(0,Math.min(255,v+warm*[65,12,-65][i])));
     let [h,sv,v]=rgbToHsv(rgb);
@@ -4563,10 +4572,10 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function refreshCorrection(){
     const c=correctedColor();
-    corrLightVal.textContent=corrLight.value;
-    corrWarmVal.textContent=corrWarm.value;
-    corrSatVal.textContent=corrSat.value;
-    document.getElementById('corrHueVal').textContent=document.getElementById('corrHue').value+'°';
+    corrLightVal.textContent=correctionFineLabel(corrLight.value,100);
+    corrWarmVal.textContent=correctionFineLabel(corrWarm.value,100);
+    corrSatVal.textContent=correctionFineLabel(corrSat.value,100);
+    document.getElementById('corrHueVal').textContent=correctionFineLabel(document.getElementById('corrHue').value,180)+'°';
     if(!correctionBase||!c){corrInfo.textContent='Noch keine Farbe übernommen.';return;}
     corrOriginal.style.background=rgbHex(correctionBase);
     corrResult.style.background=rgbHex(c);
