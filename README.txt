@@ -1,3 +1,7 @@
+AtelierAI iPad 2.81 – Sichtbare Pastellwirkung
+
+Sanfte Farbigkeit wirkt nun deutlicher: größerer Bereich gedeckter Töne, stärkere Farbigkeit und behutsame Aufhellung. 0 % unverändert, 100 % deutlich pastelliger. Flächenzuordnung bleibt stabil.
+
 AtelierAI iPad 2.80 – Sanfte Farbigkeit
 
 Ersetzt „Helle Farbtöne bevorzugen“. Stabile Farbflächen, sanfte Tönung neutraler Farben bei erhaltener Helligkeit. Kräftige Farben und tiefe Schatten werden geschützt. 0 % zeigt die unveränderte Farbauswahl. Originalvergleich weiter mit demselben Knopf.
