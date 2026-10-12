@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.68</title>
+  <title>AtelierAI iPad 2.69</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.68</div>
+    <div class="title">AtelierAI · iPad 2.69</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1620,11 +1620,17 @@
       <div class="section" id="correctionStudioPanel">
         <h3>Korrekturatelier</h3>
         <p>Aufgenommene Farbe malerisch korrigieren und anschließend neu mischen.</p>
-        <div class="swatch-line"><div id="corrOriginal" class="small-swatch" style="background:#808080"></div><span class="tiny">Ausgangsfarbe</span></div>
-        <div class="swatch-line"><div id="corrResult" class="small-swatch" style="background:#808080"></div><span id="corrInfo" class="tiny">Noch keine Farbe übernommen.</span></div>
-        <div class="control-line"><label>Helligkeit</label><input id="corrLight" type="range" min="-50" max="50" value="0"><span id="corrLightVal">0</span></div>
-        <div class="control-line"><label>Wärme</label><input id="corrWarm" type="range" min="-50" max="50" value="0"><span id="corrWarmVal">0</span></div>
-        <div class="control-line"><label>Sättigung</label><input id="corrSat" type="range" min="-50" max="50" value="0"><span id="corrSatVal">0</span></div>
+        <div id="corrCompare" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:22px 18px;background:#808080;color:white;border-radius:10px;margin:12px 0">
+          <div><div style="margin-bottom:12px;font-size:13px">Aufgenommene Farbe</div><div id="corrOriginal" style="height:150px;width:100%;background:#808080"></div></div>
+          <div><div style="margin-bottom:12px;font-size:13px">Korrigierte Farbe</div><div id="corrResult" style="height:150px;width:100%;background:#808080"></div></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label for="corrBackground">Umgebung</label><input id="corrBackground" type="color" value="#808080" style="width:48px;height:44px" aria-label="Hintergrund der Korrekturfarben"><button id="corrGray" class="secondary" type="button">Grau</button><button id="corrUseSurround" class="secondary" type="button">Wie Mischfarbe</button></div>
+        <div id="corrInfo" class="tiny" style="margin:10px 0">Noch keine Farbe übernommen.</div>
+        <div class="control-line"><label>Helligkeit</label><input id="corrLight" type="range" min="-100" max="100" step="1" value="0"><span id="corrLightVal">0</span></div>
+        <div class="control-line"><label>Wärme</label><input id="corrWarm" type="range" min="-100" max="100" step="1" value="0"><span id="corrWarmVal">0</span></div>
+        <div class="control-line"><label>Sättigung</label><input id="corrSat" type="range" min="-100" max="100" step="1" value="0"><span id="corrSatVal">0</span></div>
+        <div class="control-line"><label>Farbton</label><input id="corrHue" type="range" min="-180" max="180" step="1" value="0"><span id="corrHueVal">0°</span></div>
+        <p class="tiny">Helligkeit reicht bis Weiß oder Schwarz. Neue Pipettenfarben starten ohne Korrektur. Doppeltippen auf einen Regler setzt ihn auf 0.</p>
         <div class="grid2">
           <button id="corrTakeBtn">Pipettenfarbe übernehmen</button>
           <button id="corrMixBtn">Korrigierte Farbe mischen</button>
@@ -3483,7 +3489,7 @@ const mixes=chooseMixes(target,paletteKey);
       `<span class="tiny">${smart ? 'Smart-Malfarbe aktiv' : 'Kreis-Durchschnitt aufgenommen'} · ${samples.length} Messpunkte</span>`;
     // also update the existing smart color display for consistency
     if(robust) showSmartColor(robust);
-    correctionBase=[...lastSmartColor]; refreshCorrection(); ideasBase=[...lastSmartColor]; refreshIdea();
+    takeCorrectionColor(lastSmartColor); ideasBase=[...lastSmartColor]; refreshIdea();
     showStudioMixPage();
   }
 
@@ -4540,19 +4546,27 @@ const mixes=chooseMixes(target,paletteKey);
     },30);
   }
 
+  function takeCorrectionColor(rgb){
+    correctionBase=[...rgb];
+    for(const id of ['corrLight','corrWarm','corrSat','corrHue'])document.getElementById(id).value=0;
+    refreshCorrection();
+  }
   function correctedColor(){
-    if(!correctionBase) return null;
-    let [h,sv,v]=rgbToHsv(correctionBase);
-    v=Math.max(0,Math.min(1,v+Number(corrLight.value)/100));
-    sv=Math.max(0,Math.min(1,sv+Number(corrSat.value)/100));
-    h=(h+Number(corrWarm.value)*0.55+360)%360;
-    return hsvToRgb(h,sv,v);
+    if(!correctionBase)return null;
+    const light=Number(corrLight.value)/100,warm=Number(corrWarm.value)/100,sat=Number(corrSat.value)/100,hue=Number(document.getElementById('corrHue').value);
+    if(!light&&!warm&&!sat&&!hue)return [...correctionBase];
+    let rgb=correctionBase.map((v,i)=>Math.max(0,Math.min(255,v+warm*[65,12,-65][i])));
+    let [h,sv,v]=rgbToHsv(rgb);
+    sv=sat>=0?sv+(1-sv)*sat:sv*(1+sat);
+    rgb=hsvToRgb((h+hue+360)%360,sv,v);
+    return rgb.map(v=>Math.round(light>=0?v+(255-v)*light:v*(1+light)));
   }
   function refreshCorrection(){
     const c=correctedColor();
     corrLightVal.textContent=corrLight.value;
     corrWarmVal.textContent=corrWarm.value;
     corrSatVal.textContent=corrSat.value;
+    document.getElementById('corrHueVal').textContent=document.getElementById('corrHue').value+'°';
     if(!correctionBase||!c){corrInfo.textContent='Noch keine Farbe übernommen.';return;}
     corrOriginal.style.background=rgbHex(correctionBase);
     corrResult.style.background=rgbHex(c);
@@ -6152,7 +6166,7 @@ const mixes=chooseMixes(target,paletteKey);
       row.querySelector('.surfaceMixBtn').onclick=()=>{
         setMedium(paletteKey==='artisan'?'oil':'water');paintPalette.value=paletteKey;
         setMixTarget(c.rgb,`${nuanceMode ? 'Nuance' : 'Hauptfarbe'} ${i+1}`);
-        correctionBase=[...c.rgb]; refreshCorrection();
+        takeCorrectionColor(c.rgb);
         showStudioMixPage();
       };
       surfaceResults.appendChild(row);
@@ -6850,7 +6864,7 @@ const mixes=chooseMixes(target,paletteKey);
     colorBox.style.background=rgbHex(adaptiveDisplayColor(rgb));
     colorText.innerHTML=`RGB: ${rgb.join(', ')}<br>HEX: ${hex}`;
     setMixTarget(rgb,'Pipette');
-    correctionBase=[...rgb]; refreshCorrection(); ideasBase=[...rgb]; refreshIdea();
+    takeCorrectionColor(rgb); ideasBase=[...rgb]; refreshIdea();
     showMixes();
 
     // Farbreise: ohne Umschalten zwei Farben nacheinander aufnehmen.
@@ -7187,10 +7201,18 @@ const mixes=chooseMixes(target,paletteKey);
   refreshGlazePaletteStatus();
   setGlazeMedium('water');
 
-  [corrLight,corrWarm,corrSat].forEach(x=>x.addEventListener('input',refreshCorrection));
-  corrTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){correctionBase=[...t];refreshCorrection();}});
+  [corrLight,corrWarm,corrSat,document.getElementById('corrHue')].forEach(x=>{x.addEventListener('input',refreshCorrection);x.addEventListener('dblclick',()=>{x.value=0;refreshCorrection();});});
+  corrTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){takeCorrectionColor(t);}});
   corrMixBtn.addEventListener('click',()=>{const c=correctedColor();if(c){setMixTarget(c,'Korrekturatelier');showStudioMixPage();}});
-  corrResetBtn.addEventListener('click',()=>{corrLight.value=0;corrWarm.value=0;corrSat.value=0;refreshCorrection();});
+  corrResetBtn.addEventListener('click',()=>{corrLight.value=0;corrWarm.value=0;corrSat.value=0;document.getElementById('corrHue').value=0;refreshCorrection();});
+  function setCorrectionBackground(hex){
+    const box=document.getElementById('corrCompare'),rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
+    box.style.background=hex;box.style.color=luminance(...rgb)>145?'#111':'#fff';document.getElementById('corrBackground').value=hex;
+  }
+  document.getElementById('corrBackground').addEventListener('input',e=>setCorrectionBackground(e.target.value));
+  document.getElementById('corrGray').addEventListener('click',()=>setCorrectionBackground('#808080'));
+  document.getElementById('corrUseSurround').addEventListener('click',()=>setCorrectionBackground(document.getElementById('mixSurroundColor').value));
+
 
 
   [ideaLight,ideaWarm,ideaSat].forEach(x=>x.addEventListener('input',refreshIdea));

@@ -1,3 +1,7 @@
+AtelierAI iPad 2.69 – Korrekturatelier
+
+Große Vergleichsflächen (150 px hoch), neutralgraue oder frei wählbare Umgebung; „Wie Mischfarbe“ übernimmt deren Umgebungsfarbe. Helligkeit -100 bis +100 reicht von Schwarz bis Weiß. Wärme und Sättigung erweitert, eigener Farbtonregler. Neue aufgenommene Farben starten ohne alte Korrekturen. Doppeltippen setzt einen Regler zurück. Die Ausgangsfarbe bleibt unverändert.
+
 AtelierAI iPad 2.67 – Großformen: kleine Flecken auffüllen
 
 Im Modul Großformen eine Stufe 1–5 wählen. Mit „Kleine Flecken auffüllen“ (0–10) übernehmen kleine Farbinseln die Farbe der angrenzenden größeren Fläche. Aktualisierung nach Loslassen. 0 stellt die unveränderte Großformen-Stufe wieder her. „Zurück zum Original“ zeigt weiterhin das Original. Der Regler ist unabhängig vom 8/16/32/64-Farben-Modul.
