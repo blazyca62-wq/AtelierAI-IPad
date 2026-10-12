@@ -1,3 +1,17 @@
+AtelierAI iPad 2.76 – Zusammenkneifen-Vorschau im Großformen-Modul
+
+Zusätzlich: Augen zusammenkneifen → Zusammenkneifen ansehen. Die Stärke 0–12 steuert die weiche Vorschau. Farbflächen ansehen übernimmt dieselbe Einstellung und verwendet die Farben dieses beruhigten Bildes. Beide Ansichten lassen sich vergleichen, aufnehmen und speichern. Kleine Flecken auffüllen ist nur in der Flächenansicht aktiv.
+
+Stufenrichtung korrigiert: 1 = gröber, 5 = feiner, passend zu den bisherigen Großformen. Im Zusatzmodus bis zu 20/24/28/34/40 Farben. Die Stufen verändern die Farbflächen; die weiche Vorschau hängt nur von der Stärke ab. Die ursprüngliche Großformenberechnung bleibt unverändert. Kein direkter iPad-Test.
+
+AtelierAI iPad 2.75 – Farben im Zusammenkneifen-Modus erhalten
+
+Die zusätzliche Großformenansicht nutzt jetzt 40/34/28/24/20 Farben statt 16/12/8/6/4. Die Auswahl erfolgt nach wahrgenommenen Farbunterschieden. Flächenfarben werden aus tatsächlich vorhandenen Farben des beruhigten Bildes gewählt, statt aus RGB-Durchschnittsfarben. So bleiben helle und kleine Farbgruppen besser unterscheidbar. Es wird kein künstlicher Pastellfilter hinzugefügt.
+
+Zum Vergleich mit der Prüfansicht dort und hier dieselbe Detailstärke einstellen, z. B. 4. Die Formansicht vereinfacht weiterhin; sie ist keine exakte Kopie der weichen Prüfansicht. Die ursprünglichen Großformen ohne Zusatzmodus bleiben unverändert.
+
+Geprüft: JavaScript-Syntax, fünf Farbstufen, Fleckenauffüllung, pixelgenaue Rückkehr zur klassischen Ansicht, unverändertes Ausgangsbild. Farbauswahl zusätzlich am zweiten Screenshot visuell geprüft. Kein direkter iPad-/Safari-Test.
+
 AtelierAI iPad 2.74 – Großflächen aus dem Zusammenkneifen-Blick
 
 Großformen → Zusätzlich: Augen zusammenkneifen → Ruhige Großflächen einschalten.
