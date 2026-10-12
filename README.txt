@@ -1,3 +1,7 @@
+AtelierAI iPad 2.72 – Öl-Aufhellungsreihe
+
+Im Korrekturmodul „Öl · Aufhellungsreihe mit Titanweiß“ öffnen. Pipettenfarbe aufnehmen, bei Bedarf korrigieren, Reihe erstellen. Sieben große Farbfelder: Grundmischung sowie 8:1, 4:1, 2:1, 1:1, 1:2 und 1:4 (Grundmischung:Titanweiß). Eine Stufe auswählen und als Öl-Zielfarbe zum Mischen übernehmen. Verwendet die vorhandene Artisan-Ölfarbensimulation. Verhältnisse sind Startwerte zum Probemischen, keine gemessenen Pigmentrezepte. Die Reihe bleibt bis zur nächsten Erstellung stabil.
+
 AtelierAI iPad 2.71 – Übersichtliche Modulauswahl
 
 Das separate Modul Farbanalyse wurde aus der Bedienung entfernt. Die Farbbearbeitung bleibt unverändert erhalten.

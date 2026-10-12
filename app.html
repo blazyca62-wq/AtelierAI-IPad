@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.71</title>
+  <title>AtelierAI iPad 2.72</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.71</div>
+    <div class="title">AtelierAI · iPad 2.72</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1636,6 +1636,15 @@
           <button id="corrMixBtn">Korrigierte Farbe mischen</button>
         </div>
         <button id="corrResetBtn" class="secondary" style="width:100%;margin-top:7px;">Korrektur zurücksetzen</button>
+        <details id="oilTintPanel" style="margin-top:14px">
+          <summary style="padding:12px 0;font-weight:700;cursor:pointer">Öl · Aufhellungsreihe mit Titanweiß</summary>
+          <p class="tiny">Aus einer Grundmischung zusammengehörige Licht- und Halbtöne entwickeln.</p>
+          <button id="oilTintMake" type="button" style="width:100%">Reihe aus aktueller Korrekturfarbe erstellen</button>
+          <div id="oilTintStatus" class="tiny" style="margin:10px 0" aria-live="polite">Zuerst eine Farbe mit der Pipette aufnehmen.</div>
+          <div id="oilTintColors" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px;background:#808080;border-radius:10px"></div>
+          <p class="tiny">Verhältnisse = Grundmischung : Titanweiß, als Startwert zum Probemischen. Bildschirm-Simulation, keine gemessenen Tubenrezepte. Eine Stufe antippen und unten übernehmen.</p>
+          <button id="oilTintUse" type="button" disabled style="width:100%">Gewählte Stufe als Öl-Zielfarbe mischen</button>
+        </details>
       </div>
 
       <div class="section" id="mixPalettePanel">
@@ -4546,6 +4555,44 @@ const mixes=chooseMixes(target,paletteKey);
     },30);
   }
 
+  let oilTintSelected=null;
+  function oilTintSeries(base){
+    const white=(PALETTES.artisan.find(([name])=>name==='Titanium White')||['Titanweiß',[245,245,241]])[1];
+    return [[1,0],[8,1],[4,1],[2,1],[1,1],[1,2],[1,4]].map(parts=>({
+      parts,rgb:parts[1]?pigmentMix([base,white],parts,'artisan'):[...base]
+    }));
+  }
+  function renderOilTintSeries(){
+    const base=correctedColor()||targetArray(),status=document.getElementById('oilTintStatus');
+    if(!base){status.textContent='Bitte zuerst eine Farbe mit der Pipette aufnehmen.';return;}
+    oilTintSelected=null;document.getElementById('oilTintUse').disabled=true;
+    const box=document.getElementById('oilTintColors');box.replaceChildren();
+    box.style.background=document.getElementById('corrBackground').value;
+    status.textContent='Grundmischung '+rgbHex(base)+' gespeichert · eine Stufe auswählen. Änderungen an der Grundfarbe erst mit „Reihe erstellen“ übernehmen.';
+    oilTintSeries(base).forEach((entry,index)=>{
+      const button=document.createElement('button');button.type='button';button.className='secondary';
+      button.style.cssText='min-width:0;padding:8px;background:#fff;color:#111;border:3px solid transparent;border-radius:8px';
+      button.setAttribute('aria-pressed','false');
+      const label=index===0?'Grundmischung':entry.parts.join(' : ');
+      button.setAttribute('aria-label',label+' · '+rgbHex(entry.rgb));
+      const swatch=document.createElement('span');swatch.style.cssText='display:block;height:90px;margin-bottom:8px;background:'+rgbHex(entry.rgb);
+      const caption=document.createElement('span');caption.textContent=label;
+      button.append(swatch,caption);
+      button.addEventListener('click',()=>{
+        oilTintSelected={rgb:[...entry.rgb],label};
+        for(const b of box.children){const active=b===button;b.setAttribute('aria-pressed',String(active));b.style.borderColor=active?'#222':'transparent';}
+        status.textContent=label+' · '+rgbHex(entry.rgb)+' · Verhältnis Grundmischung : Titanweiß';
+        document.getElementById('oilTintUse').disabled=false;
+      });box.appendChild(button);
+    });
+  }
+  document.getElementById('oilTintMake').addEventListener('click',renderOilTintSeries);
+  document.getElementById('oilTintUse').addEventListener('click',()=>{
+    if(!oilTintSelected)return;
+    paintPalette.value='artisan';
+    setMixTarget(oilTintSelected.rgb,'Öl-Aufhellung '+oilTintSelected.label);
+    showStudioMixPage();
+  });
   function takeCorrectionColor(rgb){
     correctionBase=[...rgb];
     for(const id of ['corrLight','corrWarm','corrSat','corrHue'])document.getElementById(id).value=0;
