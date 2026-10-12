@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.77</title>
+  <title>AtelierAI iPad 2.78</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.77</div>
+    <div class="title">AtelierAI · iPad 2.78</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1162,7 +1162,7 @@
         <input id="formsSquintBlur" type="range" min="0" max="12" value="5" step="1" style="width:100%;min-height:44px">
         <label for="formsSquintLight">Helle Farbtöne bevorzugen: <span id="formsSquintLightVal">60 %</span></label>
         <input id="formsSquintLight" type="range" min="0" max="100" value="60" step="5" style="width:100%;min-height:44px">
-        <p class="tiny">Für die Farbflächen: 0 = bisherige Farbauswahl. Höhere Werte bevorzugen hellere vorhandene Töne innerhalb ähnlicher Farben. Tiefe Schatten bleiben erhalten. Wirkt nach dem Loslassen; die weiche Vorschau bleibt unverändert.</p>
+        <p class="tiny">Für die Farbflächen: 0 = bisherige Farbauswahl. Höhere Werte verteilen mehr erkannte Farben auf helle Töne und fassen ähnliche mittlere Brauntöne stärker zusammen. Die Farbauswahl wird neu berechnet; es wird nicht pauschal aufgehellt. Ein tiefer Schattenton bleibt erhalten. Wirkt nach dem Loslassen; die weiche Vorschau bleibt unverändert.</p>
         <p class="tiny">Erst „Zusammenkneifen ansehen“ wählen und die Stärke einstellen: 0 = klar, 12 = stark. Die weiche Vorschau folgt dem Regler. Dann „Farbflächen ansehen“ wählen: Die Farben stammen aus genau dieser Vorschau. Stufe 1 = gröber (bis zu 20 Farben), Stufe 5 = feiner (bis zu 40 Farben). Die Flächen werden nach Loslassen berechnet. Ausschalten zeigt wieder die bisherigen Großformen. Bearbeitete Farben vorher als Malvorlage übernehmen.</p>
         </details>
         <div class="formsButtons">
@@ -6619,15 +6619,25 @@ const mixes=chooseMixes(target,paletteKey);
   function squintPalette(data,count,lightPreference=0){
     // Keep actual colors of the softened image. Perceptual distance protects
     // blue, pink and pale yellow from merging into a few dominant earth tones.
+    const favor=Math.max(0,Math.min(1,lightPreference/100));
     const samples=[];
     const stride=Math.max(1,Math.floor(data.length/4/6000))*4;
-    for(let i=0;i<data.length;i+=stride){const rgb=[data[i],data[i+1],data[i+2]].map(Math.round);samples.push({rgb,lab:rgbToLabFast(rgb)});}
+    for(let i=0;i<data.length;i+=stride){const rgb=[data[i],data[i+1],data[i+2]].map(Math.round);const lab=rgbToLabFast(rgb),L=lab[0],chroma=Math.hypot(lab[1],lab[2]);
+      const hue=(Math.atan2(lab[2],lab[1])*180/Math.PI+360)%360;
+      const earth=(hue>35&&hue<100&&L>22&&L<72&&chroma>8&&chroma<60);
+      const light=Math.max(0,Math.min(1,(L-40)/45));
+      const preferredWeight=(.45+8*light*light)*(earth?.22:1);
+      samples.push({rgb,lab,weight:1+favor*(preferredWeight-1)});}
     const sorted=samples.slice().sort((a,b)=>a.lab[0]-b.lab[0]);
     const palette=[sorted[Math.floor(sorted.length/2)]];
+    // Reserve one true dark reference, then spend more palette entries on
+    // light colors and fewer on closely related middle earth tones.
+    if(favor && count>1)palette.push(sorted[0]);
     const nearest=new Float64Array(samples.length).fill(Infinity);
+    if(favor)for(let i=0;i<samples.length;i++)nearest[i]=squintDistance(samples[i].lab,palette[0].lab);
     while(palette.length<count){
       let best=0,score=0;const last=palette[palette.length-1];
-      for(let i=0;i<samples.length;i++){nearest[i]=Math.min(nearest[i],squintDistance(samples[i].lab,last.lab));if(nearest[i]>score){score=nearest[i];best=i;}}
+      for(let i=0;i<samples.length;i++){nearest[i]=Math.min(nearest[i],squintDistance(samples[i].lab,last.lab));const weighted=nearest[i]*samples[i].weight;if(weighted>score){score=weighted;best=i;}}
       if(score<1)break;palette.push(samples[best]);
     }
     for(let pass=0;pass<5;pass++){
@@ -6635,33 +6645,16 @@ const mixes=chooseMixes(target,paletteKey);
       for(let i=0;i<samples.length;i++){
         const sample=samples[i];let best=0,d=Infinity;
         for(let j=0;j<palette.length;j++){const n=squintDistance(sample.lab,palette[j].lab);if(n<d){d=n;best=j;}}
-        for(let k=0;k<3;k++)sums[best][k]+=sample.lab[k];sums[best][3]++;groups[best].push(i);
+        for(let k=0;k<3;k++)sums[best][k]+=sample.lab[k]*sample.weight;sums[best][3]+=sample.weight;groups[best].push(i);
       }
       sums.forEach((v,j)=>{
-        if(!v[3])return;const center=v.slice(0,3).map(n=>n/v[3]);let best=palette[j],d=Infinity;
+        if(!v[3]||(favor&&j===1))return;const center=v.slice(0,3).map(n=>n/v[3]);let best=palette[j],d=Infinity;
         for(const i of groups[j]){const n=squintDistance(samples[i].lab,center);if(n<d){d=n;best=samples[i];}}
         palette[j]=best;
       });
     }
     const result=palette.map(c=>c.rgb);
-    // Keep the original assignment centers: brighter representatives must not
-    // change the shapes or push other regions into darker palette entries.
     result.matchingLab=palette.map(c=>c.lab);
-    const favor=Math.max(0,Math.min(1,lightPreference/100));
-    if(favor){
-      const groups=palette.map(()=>[]);
-      for(const sample of samples){let best=0,d=Infinity;for(let j=0;j<palette.length;j++){const n=squintDistance(sample.lab,palette[j].lab);if(n<d){d=n;best=j;}}groups[best].push(sample);}
-      palette.forEach((anchor,j)=>{
-        if(anchor.lab[0]<22||!groups[j].length)return;
-        const candidates=groups[j].filter(c=>c.lab[0]>=anchor.lab[0] && c.lab[0]<=anchor.lab[0]+18 && Math.hypot(c.lab[1]-anchor.lab[1],c.lab[2]-anchor.lab[2])<=12).sort((a,b)=>a.lab[0]-b.lab[0]);
-        if(!candidates.length)return;
-        const top=candidates[Math.floor((candidates.length-1)*.95)].lab[0];
-        const target=anchor.lab[0]+(top-anchor.lab[0])*favor;
-        let selected=anchor,score=(anchor.lab[0]-target)**2;
-        for(const c of candidates){const d=(c.lab[0]-target)**2+1.5*((c.lab[1]-anchor.lab[1])**2+(c.lab[2]-anchor.lab[2])**2);if(d<score){score=d;selected=c;}}
-        result[j]=selected.rgb;
-      });
-    }
     return result;
   }
   function rebuildSquintForms(){

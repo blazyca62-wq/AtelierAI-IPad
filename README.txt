@@ -1,3 +1,9 @@
+AtelierAI iPad 2.78 – Helle Farben bei der Erkennung bevorzugen
+
+Korrektur des Reglers: Er beeinflusst nun die Farbgruppierung selbst. Helle Farben erhalten mehr Gewicht bei der Auswahl und Berechnung der Farbgruppen. Mittlere erdige Brauntöne erhalten weniger Gewicht und werden eher zusammengefasst. Eine dunkle Referenz bleibt erhalten. Alle Palettenfarben stammen aus dem beruhigten Bild; keine nachträgliche Aufhellung. Die Stärke ist eine gestalterische Vorgabe und verändert daher auch Flächengrenzen. 0 entspricht der neutralen Farberkennung aus 2.76. Die weiche Vorschau bleibt unverändert.
+
+Geprüft: Syntax, unveränderte neutrale Palette bei 0 %, geänderte Farbzentren bei 100 %, ausschließlich Farben aus dem Eingabebild. Beim bereitgestellten Screenshot steigt im Test mit 20 Farben die Zahl heller Paletteneinträge (Lab-L > 70) von 3 auf 12. Kein direkter iPad-Test.
+
 AtelierAI iPad 2.77 – Helle Farbtöne bevorzugen
 
 Neuer Regler im zusätzlichen Zusammenkneifen-Modus: 0–100 %, Startwert 60 %. Wählt innerhalb ähnlicher Farbgruppen hellere tatsächlich vorhandene Bildfarben. Farbtonabweichungen sind begrenzt, tiefe Schatten geschützt. Die Zuordnung zu den Flächen bleibt gleich. 0 stellt die Farbauswahl aus 2.76 wieder her. Die weiche Zusammenkneifen-Vorschau bleibt unverändert. Natürliche Brauntöne werden nicht vollständig entfernt.
