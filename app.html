@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.62</title>
+  <title>AtelierAI iPad 2.63</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.62</div>
+    <div class="title">AtelierAI · iPad 2.63</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7532,12 +7532,12 @@ const mixes=chooseMixes(target,paletteKey);
     <label>Sättigung <output id="ceSaturationVal">0 %</output><input id="ceSaturation" type="range" min="-100" max="100" step="1" value="0"></label>
     <details id="ceProjectPanel"><summary>Mein Malprojekt · Varianten &amp; Notizen</summary>
     <label>Projektname <input id="ceProjectName" type="text" maxlength="80" value="Mein Malprojekt" style="width:100%;box-sizing:border-box"></label>
-    <div style="display:flex;gap:8px" role="group" aria-label="Bildvarianten"><button id="ceVariantA" aria-pressed="true">A</button><button id="ceVariantB" aria-pressed="false">B</button><button id="ceVariantC" aria-pressed="false">C</button></div>
+    <strong>Bildvarianten · direkt umschalten</strong><div style="display:flex;gap:8px" role="group" aria-label="Bildvarianten"><button id="ceVariantA" aria-pressed="true">A</button><button id="ceVariantB" aria-pressed="false">B</button><button id="ceVariantC" aria-pressed="false">C</button></div>
     <p id="ceVariantStatus" class="tiny">Variante A aktiv. Ein freier Platz übernimmt die aktuelle Bearbeitung. Beim Wechsel bleibt jede Variante erhalten.</p>
     <button id="ceNoteAdd" class="secondary" aria-pressed="false">Farbnotiz im Bild setzen</button>
     <label><input id="ceNotesVisible" type="checkbox" checked> Nummern im Bild anzeigen</label>
     <div id="ceNotesList"></div><p class="tiny">Notizen gehören zur jeweiligen Variante. Die Farbe wird beim Setzen aufgenommen. Mischungen und Malhinweise kannst du dazuschreiben. Im gespeicherten Foto erscheinen keine Nummern.</p>
-    <button id="ceProjectSave">Projekt speichern</button><button id="ceProjectOpen" class="secondary">Projekt öffnen</button>
+    <hr><p class="tiny"><strong>Für später sichern oder wiederherstellen</strong></p><button id="ceProjectSave">Projekt als Datei speichern</button><button id="ceProjectOpen" class="secondary">Projektdatei öffnen …</button>
     <input id="ceProjectFile" type="file" hidden>
     <a id="ceProjectDownload" hidden>Projekt herunterladen</a><p id="ceProjectStatus" class="tiny" role="status">Speichert das Ausgangsbild, alle drei Varianten und ihre Notizen als Projektdatei. Vor dem Laden eines anderen Fotos oder Schließen der App bitte speichern.</p>
     </details><details id="ceReviewPanel"><summary>Bildwirkung prüfen · aus</summary>
@@ -7601,6 +7601,7 @@ const mixes=chooseMixes(target,paletteKey);
     const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceReviewCanvas[hidden],#ceReviewBadge[hidden]{display:none}#ceReviewBadge{position:absolute;top:8px;left:8px;z-index:2;padding:5px 9px;border-radius:6px;background:#172822d9;color:white;font-size:12px;pointer-events:none}#ceCanvas,#ceReviewCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceLassoOutline{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls details{margin:12px 0;padding:10px;border:1px solid #c4ccc7;border-radius:8px}.ce-controls summary{cursor:pointer;font-weight:bold}.ce-controls>label,.ce-controls details>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceProjectPanel button[aria-pressed=true]{background:#345c4a;color:white;outline:2px solid #84a893}#ceProjectName{font:inherit;min-height:40px;padding:6px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
     const el=id=>document.getElementById('ce'+id),cv=el('Canvas'),ctx=cv.getContext('2d');
     const reviewCanvas=el('ReviewCanvas'),reviewCtx=reviewCanvas.getContext('2d');
+    let editorReturnSource=null;
     let base=null,preview=null,layers=[],sample=null,picking=false,revision=0,busy=false,lastSource=null,lastCleanPreview=null;
     const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
     // OKLab separates perceptual lightness from colour. Gamut mapping reduces chroma.
@@ -7744,8 +7745,9 @@ const mixes=chooseMixes(target,paletteKey);
       renderCurrentArtwork(c,false);return next;
     }
     function sameEditorSource(next){
-      if(lastSource!==img||!base||base.width!==next.width||base.height!==next.height)return false;
-      const a=base.getContext('2d'),b=next.getContext('2d');
+      const reference=editorReturnSource||base;
+      if(lastSource!==img||!reference||reference.width!==next.width||reference.height!==next.height)return false;
+      const a=reference.getContext('2d'),b=next.getContext('2d');
       // Compare in strips to limit temporary memory on iPad.
       for(let y=0;y<next.height;y+=32){
         const h=Math.min(32,next.height-y),left=a.getImageData(0,y,next.width,h).data,right=b.getImageData(0,y,next.width,h).data;
@@ -8083,7 +8085,7 @@ const mixes=chooseMixes(target,paletteKey);
     });
     el('Reset').onclick=toggleReset;
 
-    // 2.62: editable variants share one lossless source image, with per-variant notes.
+    // 2.63: editable variants share one lossless source image, with per-variant notes.
     const copyProject=value=>JSON.parse(JSON.stringify(value));
     let variants=[null,null,null],variantIndex=0,notes=[],noteArmed=false,projectURL=null;
     function captureVariant(){
@@ -8103,8 +8105,8 @@ const mixes=chooseMixes(target,paletteKey);
       resetReview();syncRegion();syncResetToggle();syncProject();render();
     }
     function syncProject(){
-      ['A','B','C'].forEach((letter,i)=>{el('Variant'+letter).setAttribute('aria-pressed',String(i===variantIndex));el('Variant'+letter).textContent=letter+(variants[i]||i===variantIndex?'':' · frei');});
-      el('VariantStatus').textContent='Variante '+['A','B','C'][variantIndex]+' aktiv · Wechsel merkt deine Änderungen automatisch. Freie Plätze übernehmen diese Variante.';
+      ['A','B','C'].forEach((letter,i)=>{el('Variant'+letter).setAttribute('aria-pressed',String(i===variantIndex));el('Variant'+letter).textContent=letter+(i===variantIndex?' ✓':variants[i]?'':' +');});
+      el('VariantStatus').textContent='Variante '+['A','B','C'][variantIndex]+' aktiv · A/B/C direkt antippen, ohne Datei zu laden. Ein Platz mit + übernimmt den aktuellen Stand.';
       el('NoteAdd').textContent=noteArmed?'Im Bild antippen · Abbrechen':'Farbnotiz im Bild setzen';
       el('NoteAdd').setAttribute('aria-pressed',String(noteArmed));
       el('NotesList').replaceChildren();
@@ -8139,6 +8141,7 @@ const mixes=chooseMixes(target,paletteKey);
       el('NotesList').lastElementChild?.querySelector('textarea')?.focus();
     }
     function resetProject(){
+      editorReturnSource=null;
       variants=[null,null,null];variantIndex=0;notes=[];noteArmed=false;
       el('ProjectName').value='Mein Malprojekt';el('NotesVisible').checked=true;
       if(projectURL){URL.revokeObjectURL(projectURL);projectURL=null;}el('ProjectDownload').hidden=true;
@@ -8201,7 +8204,7 @@ const mixes=chooseMixes(target,paletteKey);
       }
       return p;
     }
-    const openProjectButton=document.createElement('button');openProjectButton.textContent='Malprojekt öffnen';openProjectButton.className='secondary';button.after(openProjectButton);
+    const openProjectButton=document.createElement('button');openProjectButton.textContent='Projektdatei öffnen …';openProjectButton.className='secondary';button.after(openProjectButton);
     const requestProject=()=>{if(!busy)el('ProjectFile').click();};
     openProjectButton.onclick=requestProject;el('ProjectOpen').onclick=requestProject;
     el('ProjectFile').onchange=async()=>{
@@ -8217,7 +8220,7 @@ const mixes=chooseMixes(target,paletteKey);
         const blob=await new Promise((resolve,reject)=>source.toBlob(b=>b?resolve(b):reject(Error('Projektbild konnte nicht geöffnet werden.')),'image/png'));
         resetPhotoFilters();
         await new Promise((resolve,reject)=>loadPhoto(blob,false,e=>e?reject(e):resolve()));
-        base=source;lastSource=img;variants=copyProject(p.variants);variantIndex=p.active;el('ProjectName').value=p.name;el('NotesVisible').checked=p.notesVisible!==false;
+        editorReturnSource=null;base=source;lastSource=img;variants=copyProject(p.variants);variantIndex=p.active;el('ProjectName').value=p.name;el('NotesVisible').checked=p.notesVisible!==false;
         const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));ctx.drawImage(base,0,0,cv.width,cv.height);preview=ctx.getImageData(0,0,cv.width,cv.height);
         panel.hidden=false;el('ProjectPanel').open=true;busy=false;restoreVariant(variants[variantIndex]);fitEditor();
         el('ProjectStatus').textContent='Projekt geöffnet · '+p.name;
@@ -8268,6 +8271,8 @@ const mixes=chooseMixes(target,paletteKey);
           el('CancelOutput').hidden=true;
           el('Status').textContent='Malvorlage wird geöffnet …';
           await new Promise((resolve,reject)=>loadPhoto(blob,true,error=>error?reject(error):resolve()));
+          // Returning from the main view must retain all editable variants and their original source.
+          lastSource=img;editorReturnSource=captureEditorSource();
           panel.hidden=true;
           hint.textContent='Bearbeitetes Bild als Malvorlage übernommen.';
         }else{

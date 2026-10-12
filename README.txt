@@ -1,3 +1,10 @@
+AtelierAI iPad 2.63 – Varianten erhalten
+
+• Nach „Als Malvorlage übernehmen“ und erneutem Öffnen von „Farben bearbeiten“ bleiben A/B/C und ihre Notizen erhalten, solange die Hauptansicht nicht anderweitig verändert oder ein anderes Foto geladen wird.
+• A/B/C sind direkte Umschalter ohne Dateiauswahl; die aktive Variante ist mit einem Häkchen markiert.
+• Datei speichern/öffnen ist als eigener Bereich für das spätere Fortsetzen gekennzeichnet.
+• Vor App-Schließen oder Laden eines anderen Fotos weiterhin die Projektdatei speichern.
+
 AtelierAI iPad 2.62 – Mein Malprojekt
 
 NEU unter „Farben bearbeiten“ → „Mein Malprojekt“:
