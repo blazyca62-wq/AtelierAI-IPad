@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.76</title>
+  <title>AtelierAI iPad 2.77</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.76</div>
+    <div class="title">AtelierAI · iPad 2.77</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1160,6 +1160,9 @@
         </div>
         <label for="formsSquintBlur">Stärke des Zusammenkneifens: <span id="formsSquintBlurVal">5</span></label>
         <input id="formsSquintBlur" type="range" min="0" max="12" value="5" step="1" style="width:100%;min-height:44px">
+        <label for="formsSquintLight">Helle Farbtöne bevorzugen: <span id="formsSquintLightVal">60 %</span></label>
+        <input id="formsSquintLight" type="range" min="0" max="100" value="60" step="5" style="width:100%;min-height:44px">
+        <p class="tiny">Für die Farbflächen: 0 = bisherige Farbauswahl. Höhere Werte bevorzugen hellere vorhandene Töne innerhalb ähnlicher Farben. Tiefe Schatten bleiben erhalten. Wirkt nach dem Loslassen; die weiche Vorschau bleibt unverändert.</p>
         <p class="tiny">Erst „Zusammenkneifen ansehen“ wählen und die Stärke einstellen: 0 = klar, 12 = stark. Die weiche Vorschau folgt dem Regler. Dann „Farbflächen ansehen“ wählen: Die Farben stammen aus genau dieser Vorschau. Stufe 1 = gröber (bis zu 20 Farben), Stufe 5 = feiner (bis zu 40 Farben). Die Flächen werden nach Loslassen berechnet. Ausschalten zeigt wieder die bisherigen Großformen. Bearbeitete Farben vorher als Malvorlage übernehmen.</p>
         </details>
         <div class="formsButtons">
@@ -6613,7 +6616,7 @@ const mixes=chooseMixes(target,paletteKey);
   function squintDistance(a,b){
     return (a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2;
   }
-  function squintPalette(data,count){
+  function squintPalette(data,count,lightPreference=0){
     // Keep actual colors of the softened image. Perceptual distance protects
     // blue, pink and pale yellow from merging into a few dominant earth tones.
     const samples=[];
@@ -6640,7 +6643,26 @@ const mixes=chooseMixes(target,paletteKey);
         palette[j]=best;
       });
     }
-    return palette.map(c=>c.rgb);
+    const result=palette.map(c=>c.rgb);
+    // Keep the original assignment centers: brighter representatives must not
+    // change the shapes or push other regions into darker palette entries.
+    result.matchingLab=palette.map(c=>c.lab);
+    const favor=Math.max(0,Math.min(1,lightPreference/100));
+    if(favor){
+      const groups=palette.map(()=>[]);
+      for(const sample of samples){let best=0,d=Infinity;for(let j=0;j<palette.length;j++){const n=squintDistance(sample.lab,palette[j].lab);if(n<d){d=n;best=j;}}groups[best].push(sample);}
+      palette.forEach((anchor,j)=>{
+        if(anchor.lab[0]<22||!groups[j].length)return;
+        const candidates=groups[j].filter(c=>c.lab[0]>=anchor.lab[0] && c.lab[0]<=anchor.lab[0]+18 && Math.hypot(c.lab[1]-anchor.lab[1],c.lab[2]-anchor.lab[2])<=12).sort((a,b)=>a.lab[0]-b.lab[0]);
+        if(!candidates.length)return;
+        const top=candidates[Math.floor((candidates.length-1)*.95)].lab[0];
+        const target=anchor.lab[0]+(top-anchor.lab[0])*favor;
+        let selected=anchor,score=(anchor.lab[0]-target)**2;
+        for(const c of candidates){const d=(c.lab[0]-target)**2+1.5*((c.lab[1]-anchor.lab[1])**2+(c.lab[2]-anchor.lab[2])**2);if(d<score){score=d;selected=c;}}
+        result[j]=selected.rgb;
+      });
+    }
+    return result;
   }
   function rebuildSquintForms(){
     const w=sourceCanvas.width,h=sourceCanvas.height,scale=Math.min(1,360/Math.max(w,h));
@@ -6651,8 +6673,8 @@ const mixes=chooseMixes(target,paletteKey);
     const radius=strength===0?0:Math.max(1,Math.round(strength*Math.min(work.width,work.height)/300));
     const blurred=radius?squintBlurPixels(pixels.data,work.width,work.height,radius):new Float32Array(pixels.data);
     if(formsSquintPreview){pixels.data.set(blurred);finishForms(pixels);return;}
-    const palette=squintPalette(blurred,[20,24,28,34,40][formLevel-1]);
-    const paletteLab=palette.map(rgbToLabFast);
+    const palette=squintPalette(blurred,[20,24,28,34,40][formLevel-1],+document.getElementById('formsSquintLight').value);
+    const paletteLab=palette.matchingLab;
     for(let i=0;i<pixels.data.length;i+=4){
       const lab=rgbToLabFast([blurred[i],blurred[i+1],blurred[i+2]]);
       let best=palette[0],distance=Infinity;
@@ -6663,7 +6685,7 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function rebuildForms(){
     if(!loaded) return;
-    const mode=document.getElementById('formsSquint').checked?'squint:'+document.getElementById('formsSquintBlur').value+':'+formsSquintPreview:'classic';
+    const mode=document.getElementById('formsSquint').checked?'squint:'+document.getElementById('formsSquintBlur').value+':'+formsSquintPreview+':'+document.getElementById('formsSquintLight').value:'classic';
     if(renderedFormLevel===formLevel && renderedFormMode===mode){
       if(formLevel && renderedFormSpots!==Number(document.getElementById('formsSpots').value))renderFormsFilled();
       return;
@@ -7096,6 +7118,8 @@ const mixes=chooseMixes(target,paletteKey);
   document.getElementById('formsSquintBlur').addEventListener('change',()=>{
     clearTimeout(formsSquintTimer);if(document.getElementById('formsSquint').checked)setFormLevel(formLevel||3);
   });
+  document.getElementById('formsSquintLight').addEventListener('input',e=>{document.getElementById('formsSquintLightVal').textContent=e.target.value+' %';});
+  document.getElementById('formsSquintLight').addEventListener('change',()=>{if(document.getElementById('formsSquint').checked&&!formsSquintPreview)setFormLevel(formLevel||3);});
   syncSquintPreview();
   formsOriginal.addEventListener('click' ,()=>{clearTimeout(formsSquintTimer);setFormLevel(0);});
   formsSlider.addEventListener('input',()=>setFormLevel(formsSlider.value));

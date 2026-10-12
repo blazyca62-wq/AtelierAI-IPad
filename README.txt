@@ -1,3 +1,7 @@
+AtelierAI iPad 2.77 – Helle Farbtöne bevorzugen
+
+Neuer Regler im zusätzlichen Zusammenkneifen-Modus: 0–100 %, Startwert 60 %. Wählt innerhalb ähnlicher Farbgruppen hellere tatsächlich vorhandene Bildfarben. Farbtonabweichungen sind begrenzt, tiefe Schatten geschützt. Die Zuordnung zu den Flächen bleibt gleich. 0 stellt die Farbauswahl aus 2.76 wieder her. Die weiche Zusammenkneifen-Vorschau bleibt unverändert. Natürliche Brauntöne werden nicht vollständig entfernt.
+
 AtelierAI iPad 2.76 – Zusammenkneifen-Vorschau im Großformen-Modul
 
 Zusätzlich: Augen zusammenkneifen → Zusammenkneifen ansehen. Die Stärke 0–12 steuert die weiche Vorschau. Farbflächen ansehen übernimmt dieselbe Einstellung und verwendet die Farben dieses beruhigten Bildes. Beide Ansichten lassen sich vergleichen, aufnehmen und speichern. Kleine Flecken auffüllen ist nur in der Flächenansicht aktiv.
