@@ -1,3 +1,14 @@
+AtelierAI iPad 2.62 – Mein Malprojekt
+
+NEU unter „Farben bearbeiten“ → „Mein Malprojekt“:
+• A/B/C: Ein freier Platz kopiert die aktuelle Bearbeitung; beim Wechsel werden Änderungen automatisch im bisherigen Platz gemerkt. Jede Variante bleibt weiter bearbeitbar.
+• Farbnotizen: Knopf aktivieren, Bild antippen, Malhinweis schreiben. Nummer und aufgenommene Farbe gehören zur jeweiligen Variante. Zwei Finger zoomen weiterhin. Nummern lassen sich ausblenden und werden nicht ins PNG eingebrannt.
+• Projekt speichern: speichert ein verlustfreies Ausgangsbild, alle Varianten, Auswahlen, Regler und Notizen in einer .atelierai-Datei.
+• Projekt öffnen: direkt neben „Farben bearbeiten“, auch ohne vorher ein Foto zu laden. Datei auswählen und weiterarbeiten.
+• Bitte vor dem Schließen der App oder Laden eines anderen Fotos das Projekt als Datei speichern. Es gibt keine automatische dauerhafte Speicherung.
+• Projekt umfasst die Farbbearbeitung; andere Module werden als Ausgangsbild übernommen, ihre vorherigen Reglereinstellungen werden nicht mitgespeichert.
+• Die Fotoausgabe aus 2.61 bleibt erhalten.
+
 AtelierAI iPad 2.61 – Farbbearbeitung speichern und übernehmen
 
 Die Ausgabe verarbeitet Fotos in kleinen Streifen in voller Auflösung.

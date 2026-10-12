@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.61</title>
+  <title>AtelierAI iPad 2.62</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.61</div>
+    <div class="title">AtelierAI · iPad 2.62</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7530,7 +7530,17 @@ const mixes=chooseMixes(target,paletteKey);
     <label>Heller / dunkler <output id="ceLightVal"></output><input id="ceLight" type="range" min="-40" max="40" step="0.5" value="0"></label>
     <label>Kühler / wärmer <output id="ceWarmVal"></output><input id="ceWarm" type="range" min="-30" max="30" step="0.5" value="0"></label>
     <label>Sättigung <output id="ceSaturationVal">0 %</output><input id="ceSaturation" type="range" min="-100" max="100" step="1" value="0"></label>
-    <details id="ceReviewPanel"><summary>Bildwirkung prüfen · aus</summary>
+    <details id="ceProjectPanel"><summary>Mein Malprojekt · Varianten &amp; Notizen</summary>
+    <label>Projektname <input id="ceProjectName" type="text" maxlength="80" value="Mein Malprojekt" style="width:100%;box-sizing:border-box"></label>
+    <div style="display:flex;gap:8px" role="group" aria-label="Bildvarianten"><button id="ceVariantA" aria-pressed="true">A</button><button id="ceVariantB" aria-pressed="false">B</button><button id="ceVariantC" aria-pressed="false">C</button></div>
+    <p id="ceVariantStatus" class="tiny">Variante A aktiv. Ein freier Platz übernimmt die aktuelle Bearbeitung. Beim Wechsel bleibt jede Variante erhalten.</p>
+    <button id="ceNoteAdd" class="secondary" aria-pressed="false">Farbnotiz im Bild setzen</button>
+    <label><input id="ceNotesVisible" type="checkbox" checked> Nummern im Bild anzeigen</label>
+    <div id="ceNotesList"></div><p class="tiny">Notizen gehören zur jeweiligen Variante. Die Farbe wird beim Setzen aufgenommen. Mischungen und Malhinweise kannst du dazuschreiben. Im gespeicherten Foto erscheinen keine Nummern.</p>
+    <button id="ceProjectSave">Projekt speichern</button><button id="ceProjectOpen" class="secondary">Projekt öffnen</button>
+    <input id="ceProjectFile" type="file" hidden>
+    <a id="ceProjectDownload" hidden>Projekt herunterladen</a><p id="ceProjectStatus" class="tiny" role="status">Speichert das Ausgangsbild, alle drei Varianten und ihre Notizen als Projektdatei. Vor dem Laden eines anderen Fotos oder Schließen der App bitte speichern.</p>
+    </details><details id="ceReviewPanel"><summary>Bildwirkung prüfen · aus</summary>
     <label><input id="ceReviewSquint" type="checkbox"> Augen zusammenkneifen</label>
     <label>Details ausblenden <output id="ceReviewBlurVal">5</output><input id="ceReviewBlur" type="range" min="1" max="12" step="1" value="5"></label>
     <label><input id="ceReviewGray" type="checkbox"> Schwarz-Weiß</label>
@@ -7588,7 +7598,7 @@ const mixes=chooseMixes(target,paletteKey);
     <button id="ceSave">Bearbeitetes Foto speichern</button><button id="ceApply">Als Malvorlage übernehmen</button><button id="ceCancelOutput" class="secondary" hidden>Berechnung abbrechen</button><a id="ceDownload" hidden download="AtelierAI_Farbvorlage.png">PNG herunterladen</a><p id="ceStatus" role="status" aria-live="polite"></p>
     </div></div>`;
     document.body.append(panel);
-    const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceReviewCanvas[hidden],#ceReviewBadge[hidden]{display:none}#ceReviewBadge{position:absolute;top:8px;left:8px;z-index:2;padding:5px 9px;border-radius:6px;background:#172822d9;color:white;font-size:12px;pointer-events:none}#ceCanvas,#ceReviewCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceLassoOutline{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls details{margin:12px 0;padding:10px;border:1px solid #c4ccc7;border-radius:8px}.ce-controls summary{cursor:pointer;font-weight:bold}.ce-controls>label,.ce-controls details>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
+    const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceReviewCanvas[hidden],#ceReviewBadge[hidden]{display:none}#ceReviewBadge{position:absolute;top:8px;left:8px;z-index:2;padding:5px 9px;border-radius:6px;background:#172822d9;color:white;font-size:12px;pointer-events:none}#ceCanvas,#ceReviewCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceLassoOutline{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls details{margin:12px 0;padding:10px;border:1px solid #c4ccc7;border-radius:8px}.ce-controls summary{cursor:pointer;font-weight:bold}.ce-controls>label,.ce-controls details>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceProjectPanel button[aria-pressed=true]{background:#345c4a;color:white;outline:2px solid #84a893}#ceProjectName{font:inherit;min-height:40px;padding:6px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
     const el=id=>document.getElementById('ce'+id),cv=el('Canvas'),ctx=cv.getContext('2d');
     const reviewCanvas=el('ReviewCanvas'),reviewCtx=reviewCanvas.getContext('2d');
     let base=null,preview=null,layers=[],sample=null,picking=false,revision=0,busy=false,lastSource=null,lastCleanPreview=null;
@@ -7749,7 +7759,7 @@ const mixes=chooseMixes(target,paletteKey);
       if(isolationBusy){alert('Bitte warten, bis die Bildansicht fertig ist.');return;}
       const next=captureEditorSource();
       if(!sameEditorSource(next)){
-        resetReview();revision++;brushStrokes=[];brushMode=null;brushDraft=null;el('ProtectTone').checked=false;el('ProtectHighlights').checked=false;base=next;lastSource=img;resetSnapshot=null;layers=[];sample=null;lastCleanPreview=null;region=null;lassoDraft=null;lassoArmed=false;picking=false;pickPoint=null;
+        resetProject();resetReview();revision++;brushStrokes=[];brushMode=null;brushDraft=null;el('ProtectTone').checked=false;el('ProtectHighlights').checked=false;base=next;lastSource=img;resetSnapshot=null;layers=[];sample=null;lastCleanPreview=null;region=null;lassoDraft=null;lassoArmed=false;picking=false;pickPoint=null;
         resetSliders();el('Family').value='all';el('Sample').textContent='Ausgangspunkt: aktuelle Bildansicht';
         el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
         const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));
@@ -7772,7 +7782,7 @@ const mixes=chooseMixes(target,paletteKey);
     const gradientControls=['GradLightA','GradWarmA','GradSatA','GradLightB','GradWarmB','GradSatB'];
     const outline=el('LassoOutline');
     function drawRegion(){
-      const polygon=lassoDraft||region;outline.replaceChildren();drawSpot();drawGradient();drawBrushDraft();
+      const polygon=lassoDraft||region;outline.replaceChildren();drawNotes();drawSpot();drawGradient();drawBrushDraft();
       if(!polygon?.length)return;
       const coords=polygon.map(p=>(view.x+p.x*cv.width*view.k)+','+(view.y+p.y*cv.height*view.k)).join(' ');
       for(const [stroke,width,dash] of [['#111',4,''],['#fff',2,'7 5']]){
@@ -7966,7 +7976,7 @@ const mixes=chooseMixes(target,paletteKey);
       if(!preview||busy||(e.pointerType==='mouse'&&e.button!==0))return;
       const p=localPoint(e);points.set(e.pointerId,p);stage.setPointerCapture?.(e.pointerId);
       if(points.size>=2)beginPinch();
-      else{const q=imagePoint(p);if(reviewActive()){gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}else if(spotArmed&&q){spotDraft=regionPoint(p);gesture={type:'spot'};drawRegion();}else if(gradientArmed&&q){const a=regionPoint(p);gradientDraft={a,b:{...a}};gesture={type:'gradient'};drawRegion();}else if(brushMode&&q){brushDraft={mode:brushMode,size:+el('BrushSize').value/view.k/Math.min(cv.width,cv.height),points:[]};addBrushPoint(p);gesture={type:'brush'};}else if(lassoArmed&&q){lassoDraft=[];addRegionPoint(p);gesture={type:'lasso'};}else if(picking&&q){pickPoint=q;positionCircle();gesture={type:'pick'};}else gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
+      else{const q=imagePoint(p);if(reviewActive()){gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}else if(noteArmed&&q){gesture={type:'note',start:p};}else if(spotArmed&&q){spotDraft=regionPoint(p);gesture={type:'spot'};drawRegion();}else if(gradientArmed&&q){const a=regionPoint(p);gradientDraft={a,b:{...a}};gesture={type:'gradient'};drawRegion();}else if(brushMode&&q){brushDraft={mode:brushMode,size:+el('BrushSize').value/view.k/Math.min(cv.width,cv.height),points:[]};addBrushPoint(p);gesture={type:'brush'};}else if(lassoArmed&&q){lassoDraft=[];addRegionPoint(p);gesture={type:'lasso'};}else if(picking&&q){pickPoint=q;positionCircle();gesture={type:'pick'};}else gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
       e.preventDefault();
     });
     stage.addEventListener('pointermove',e=>{
@@ -7982,6 +7992,7 @@ const mixes=chooseMixes(target,paletteKey);
     });
     function endEditorPointer(e){
       if(!points.has(e.pointerId))return;
+      if(e.type==='pointerup'&&points.size===1&&gesture?.type==='note'&&Math.hypot(localPoint(e).x-gesture.start.x,localPoint(e).y-gesture.start.y)<12)addNote(localPoint(e));
       const finishSpot=e.type==='pointerup'&&points.size===1&&gesture?.type==='spot';
       if(finishSpot){spot=regionPoint(localPoint(e));spotDraft=null;syncSpot();render();}
       const finishLine=e.type==='pointerup'&&points.size===1&&gesture?.type==='gradient';
@@ -8060,17 +8071,161 @@ const mixes=chooseMixes(target,paletteKey);
     // A new edit in the original view starts a fresh edit without locking controls.
     function resumeEditing(e){
       if(!resetSnapshot||busy)return;
-      if(e.target.closest?.('#ceReviewPanel')||['ceReset','ceClose','ceFit','ceSave','ceApply'].includes(e.target.id))return;
+      if(e.target.closest?.('#ceProjectPanel')||e.target.closest?.('#ceReviewPanel')||['ceReset','ceClose','ceFit','ceSave','ceApply'].includes(e.target.id))return;
       resetSnapshot=null;syncResetToggle();
     }
     panel.addEventListener('input',resumeEditing,true);
     panel.addEventListener('change',resumeEditing,true);
     panel.addEventListener('click',resumeEditing,true);
     document.addEventListener('atelier-reset-photo',()=>{
-      resetReview();revision++;lastSource=null;resetSnapshot=null;layers=[];brushStrokes=[];brushMode=null;resetSliders();
+      resetProject();resetReview();revision++;lastSource=null;resetSnapshot=null;layers=[];brushStrokes=[];brushMode=null;resetSliders();
       panel.hidden=true;clearGesture();syncResetToggle();
     });
     el('Reset').onclick=toggleReset;
+
+    // 2.62: editable variants share one lossless source image, with per-variant notes.
+    const copyProject=value=>JSON.parse(JSON.stringify(value));
+    let variants=[null,null,null],variantIndex=0,notes=[],noteArmed=false,projectURL=null;
+    function captureVariant(){
+      const saved=resetSnapshot||{spot,gradient,brushStrokes,layers,region,sample,
+        controls:Object.fromEntries(resetControlNames.map(n=>[n,el(n).type==='checkbox'?el(n).checked:el(n).value])),
+        sampleText:el('Sample').textContent,sampleBorder:el('Sample').style.borderColor};
+      return copyProject({spot:saved.spot,gradient:saved.gradient,brushStrokes:saved.brushStrokes,layers:saved.layers,region:saved.region,sample:saved.sample,
+        controls:saved.controls,sampleText:saved.sampleText,sampleBorder:saved.sampleBorder,notes});
+    }
+    function restoreVariant(saved){
+      const v=copyProject(saved);revision++;resetSnapshot=null;clearGesture();
+      spot=v.spot;gradient=v.gradient;brushStrokes=v.brushStrokes;layers=v.layers;region=v.region;sample=v.sample;notes=v.notes;
+      spotArmed=gradientArmed=lassoArmed=picking=noteArmed=false;brushMode=null;pickPoint=null;
+      for(const n of resetControlNames){if(el(n).type==='checkbox')el(n).checked=v.controls[n];else el(n).value=v.controls[n];}
+      el('Sample').textContent=v.sampleText;el('Sample').style.borderColor=v.sampleBorder;
+      el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
+      resetReview();syncRegion();syncResetToggle();syncProject();render();
+    }
+    function syncProject(){
+      ['A','B','C'].forEach((letter,i)=>{el('Variant'+letter).setAttribute('aria-pressed',String(i===variantIndex));el('Variant'+letter).textContent=letter+(variants[i]||i===variantIndex?'':' · frei');});
+      el('VariantStatus').textContent='Variante '+['A','B','C'][variantIndex]+' aktiv · Wechsel merkt deine Änderungen automatisch. Freie Plätze übernehmen diese Variante.';
+      el('NoteAdd').textContent=noteArmed?'Im Bild antippen · Abbrechen':'Farbnotiz im Bild setzen';
+      el('NoteAdd').setAttribute('aria-pressed',String(noteArmed));
+      el('NotesList').replaceChildren();
+      notes.forEach((note,i)=>{
+        const row=document.createElement('div');row.style.cssText='margin:10px 0;padding:8px;border:1px solid #ccd2cd;border-radius:8px';
+        const label=document.createElement('label');label.textContent=(i+1)+'. Farbnotiz · '+note.color;label.style.display='block';
+        const swatch=document.createElement('span');swatch.style.cssText='display:inline-block;width:24px;height:20px;border:1px solid #777;vertical-align:middle;margin-right:6px;background:'+note.color;label.prepend(swatch);
+        const input=document.createElement('textarea');input.value=note.text;input.maxLength=2000;input.rows=3;input.placeholder='Zum Beispiel: Ocker + Ultramarin, Lichter aussparen …';input.style.cssText='width:100%;box-sizing:border-box;font:inherit';
+        input.setAttribute('aria-label','Malhinweis zu Farbnotiz '+(i+1));input.oninput=()=>{note.text=input.value;};
+        const del=document.createElement('button');del.textContent='Notiz '+(i+1)+' löschen';del.className='secondary';del.onclick=()=>{notes.splice(i,1);syncProject();};
+        row.append(label,input,del);el('NotesList').append(row);
+      });
+      drawRegion();
+    }
+    function drawNotes(){
+      if(!el('NotesVisible').checked)return;
+      notes.forEach((note,i)=>{
+        const group=document.createElementNS('http://www.w3.org/2000/svg','g');
+        group.setAttribute('transform',`translate(${view.x+note.x*cv.width*view.k},${view.y+note.y*cv.height*view.k})`);
+        const dot=document.createElementNS(group.namespaceURI,'circle');
+        for(const [k,v] of Object.entries({r:13,fill:'#fff',stroke:'#24392f','stroke-width':2}))dot.setAttribute(k,v);
+        const text=document.createElementNS(group.namespaceURI,'text');text.textContent=i+1;
+        for(const [k,v] of Object.entries({'text-anchor':'middle',y:5,fill:'#172822','font-size':14,'font-weight':'bold'}))text.setAttribute(k,v);
+        group.append(dot,text);outline.append(group);
+      });
+    }
+    function addNote(p){
+      const q=imagePoint(p);if(!q||!lastCleanPreview)return;
+      const d=lastCleanPreview.data,i=(Math.floor(q.y)*cv.width+Math.floor(q.x))*4;
+      const color='#'+Array.from(d.slice(i,i+3),v=>v.toString(16).padStart(2,'0')).join('');
+      notes.push({...regionPoint(p),color,text:''});noteArmed=false;syncProject();
+      el('NotesList').lastElementChild?.querySelector('textarea')?.focus();
+    }
+    function resetProject(){
+      variants=[null,null,null];variantIndex=0;notes=[];noteArmed=false;
+      el('ProjectName').value='Mein Malprojekt';el('NotesVisible').checked=true;
+      if(projectURL){URL.revokeObjectURL(projectURL);projectURL=null;}el('ProjectDownload').hidden=true;
+      syncProject();
+    }
+    ['A','B','C'].forEach((letter,i)=>el('Variant'+letter).onclick=()=>{
+      if(busy||!base||i===variantIndex)return;
+      const state=captureVariant();variants[variantIndex]=state;
+      if(!variants[i])variants[i]=copyProject(state);
+      variantIndex=i;restoreVariant(variants[i]);
+    });
+    el('NoteAdd').onclick=()=>{
+      if(busy||!preview)return;const armed=!noteArmed;clearGesture();resetReview();
+      picking=lassoArmed=gradientArmed=spotArmed=false;brushMode=null;pickPoint=null;
+      el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
+      noteArmed=armed;syncRegion();syncBrush();syncGradient();syncSpot();syncProject();
+    };
+    el('NotesVisible').oninput=drawRegion;
+    panel.addEventListener('click',e=>{if(noteArmed&&!e.target.closest('#ceProjectPanel')&&!e.target.closest('.ce-stage')){noteArmed=false;syncProject();}},true);
+    el('ProjectPanel').addEventListener('toggle',()=>{if(!el('ProjectPanel').open){noteArmed=false;syncProject();}});
+    function blobDataURL(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('Bild konnte nicht gelesen werden.'));reader.readAsDataURL(blob);});}
+    el('ProjectSave').onclick=async()=>{
+      if(busy||!base)return;busy=true;revision++;syncResetToggle();
+      el('ProjectStatus').textContent='Projekt wird vorbereitet …';
+      try{
+        variants[variantIndex]=captureVariant();
+        const blob=await new Promise((resolve,reject)=>base.toBlob(b=>b?resolve(b):reject(Error('Bild konnte nicht gespeichert werden.')),'image/png'));
+        const project={format:'AtelierAI-Malprojekt',version:1,name:el('ProjectName').value,source:await blobDataURL(blob),active:variantIndex,variants,notesVisible:el('NotesVisible').checked};
+        const file=new Blob([JSON.stringify(project)],{type:'application/json'});
+        if(projectURL)URL.revokeObjectURL(projectURL);projectURL=URL.createObjectURL(file);
+        const link=el('ProjectDownload');link.href=projectURL;link.download=(project.name.replace(/[^\p{L}\p{N}_-]+/gu,'_').slice(0,80)||'Mein_Malprojekt')+'.atelierai';link.hidden=false;link.click();
+        el('ProjectStatus').textContent='Projektdatei bereit · falls nötig „Projekt herunterladen“ antippen. Zum Fortsetzen später „Projekt öffnen“ wählen.';
+      }catch(e){el('ProjectStatus').textContent='Speichern fehlgeschlagen: '+e.message;}
+      finally{busy=false;syncResetToggle();render();}
+    };
+    // Only accept well-formed editor snapshots before replacing the current photo.
+    function validateProject(p){
+      const fail=()=>{throw Error('Keine gültige AtelierAI-Projektdatei.');};
+      const num=(x,a,b)=>typeof x==='number'&&Number.isFinite(x)&&x>=a&&x<=b;
+      const point=x=>x&&num(x.x,0,1)&&num(x.y,0,1);
+      const polygon=x=>x===null||(Array.isArray(x)&&x.length<=50000&&x.every(point));
+      const strokes=x=>Array.isArray(x)&&x.length<=2000&&x.every(s=>s&&['add','remove'].includes(s.mode)&&num(s.size,0,10)&&Array.isArray(s.points)&&s.points.length<=50000&&s.points.every(point));
+      const rgb=x=>x===null||(Array.isArray(x)&&x.length===3&&x.every(n=>num(n,0,255)));
+      const delta=x=>x&&num(x.light,-.4,.4)&&num(x.warm,-.06,.06)&&num(x.saturation,-1,1);
+      const grad=x=>x===null||(x&&point(x.a)&&point(x.b)&&delta(x.from)&&delta(x.to));
+      const spotOp=x=>x===null||(x&&point(x.center)&&num(x.width,.02,2)&&num(x.height,.02,2)&&num(x.soft,0,1)&&num(x.strength,0,1)&&typeof x.outside==='boolean'&&delta(x));
+      const families=Array.from(el('Family').options,o=>o.value);
+      const layer=o=>o&&families.includes(o.family)&&polygon(o.region)&&strokes(o.strokes)&&rgb(o.sample)&&num(o.range,5,100)&&delta(o)&&num(o.blend,0,1)&&Array.isArray(o.target)&&o.target.length===3&&o.target.every(n=>num(n,-1,1))&&grad(o.gradient)&&spotOp(o.spot)&&typeof o.protectTone==='boolean'&&typeof o.protectHighlights==='boolean';
+      if(!p||p.format!=='AtelierAI-Malprojekt'||p.version!==1||typeof p.name!=='string'||p.name.length>80||!Number.isInteger(p.active)||p.active<0||p.active>2||!Array.isArray(p.variants)||p.variants.length!==3||!p.variants[p.active]||typeof p.source!=='string'||!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(p.source))fail();
+      for(const v of p.variants){if(v===null)continue;
+        if(!v||!Array.isArray(v.layers)||v.layers.length>2000||!v.layers.every(layer)||!polygon(v.region)||!strokes(v.brushStrokes)||!rgb(v.sample)||!(v.spot===null||point(v.spot))||!(v.gradient===null||(point(v.gradient?.a)&&point(v.gradient?.b)))||typeof v.sampleText!=='string'||v.sampleText.length>1000||typeof v.sampleBorder!=='string'||v.sampleBorder.length>100||!v.controls||!Array.isArray(v.notes)||v.notes.length>1000)fail();
+        for(const n of resetControlNames){const e=el(n),value=v.controls[n];
+          if(e.type==='checkbox'){if(typeof value!=='boolean')fail();}
+          else if(typeof value!=='string')fail();
+          else if(e.type==='range'){if(value.trim()===''||!Number.isFinite(Number(value))||+value<+e.min||+value>+e.max)fail();}
+          else if(n==='Family'){if(!families.includes(value))fail();}
+          else if(n==='Target'&&!/^#[a-f0-9]{6}$/i.test(value))fail();
+        }
+        if(!v.notes.every(n=>point(n)&&/^#[a-f0-9]{6}$/i.test(n.color)&&typeof n.text==='string'&&n.text.length<=2000))fail();
+      }
+      return p;
+    }
+    const openProjectButton=document.createElement('button');openProjectButton.textContent='Malprojekt öffnen';openProjectButton.className='secondary';button.after(openProjectButton);
+    const requestProject=()=>{if(!busy)el('ProjectFile').click();};
+    openProjectButton.onclick=requestProject;el('ProjectOpen').onclick=requestProject;
+    el('ProjectFile').onchange=async()=>{
+      const file=el('ProjectFile').files[0];el('ProjectFile').value='';if(!file||busy)return;
+      busy=true;syncResetToggle();
+      try{
+        if(file.size>150*1024*1024)throw Error('Diese Projektdatei ist zu groß (maximal 150 MB).');
+        const p=validateProject(JSON.parse(await file.text()));
+        const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(Error('Das Projektbild ist beschädigt.'));image.src=p.source;});
+        if(!image.width||!image.height||image.width*image.height>40000000)throw Error('Projektbild ist zu groß.');
+        if(base&&!confirm('Projekt öffnen? Nicht als Projektdatei gespeicherte Änderungen werden ersetzt.'))return;
+        const source=document.createElement('canvas');source.width=image.width;source.height=image.height;source.getContext('2d').drawImage(image,0,0);
+        const blob=await new Promise((resolve,reject)=>source.toBlob(b=>b?resolve(b):reject(Error('Projektbild konnte nicht geöffnet werden.')),'image/png'));
+        resetPhotoFilters();
+        await new Promise((resolve,reject)=>loadPhoto(blob,false,e=>e?reject(e):resolve()));
+        base=source;lastSource=img;variants=copyProject(p.variants);variantIndex=p.active;el('ProjectName').value=p.name;el('NotesVisible').checked=p.notesVisible!==false;
+        const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));ctx.drawImage(base,0,0,cv.width,cv.height);preview=ctx.getImageData(0,0,cv.width,cv.height);
+        panel.hidden=false;el('ProjectPanel').open=true;busy=false;restoreVariant(variants[variantIndex]);fitEditor();
+        el('ProjectStatus').textContent='Projekt geöffnet · '+p.name;
+      }catch(e){alert('Projekt konnte nicht geöffnet werden: '+e.message);}
+      finally{busy=false;syncResetToggle();}
+    };
+    syncProject();
+
     // Full-resolution export in strips: masks and pixel copies stay bounded.
     let downloadURL=null;
     el('CancelOutput').onclick=()=>{revision++;el('CancelOutput').disabled=true;el('Status').textContent='Wird abgebrochen …';};
