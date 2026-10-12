@@ -1,3 +1,7 @@
+AtelierAI iPad 2.80 – Sanfte Farbigkeit
+
+Ersetzt „Helle Farbtöne bevorzugen“. Stabile Farbflächen, sanfte Tönung neutraler Farben bei erhaltener Helligkeit. Kräftige Farben und tiefe Schatten werden geschützt. 0 % zeigt die unveränderte Farbauswahl. Originalvergleich weiter mit demselben Knopf.
+
 AtelierAI iPad 2.79 – Originalvergleich im Großformen-Modul
 
 „Zurück zum Original“ ist jetzt ein Umschalter. Erster Tipp zeigt die Ausgangsansicht; der Knopf heißt dann „Zurück zu Großformen“. Zweiter Tipp bringt die vorherige Ansicht zurück, einschließlich Stufe, Zusammenkneifen-Vorschau, Stärke, Farbbevorzugung und Fleckenauffüllung. Einstellungen bleiben stehen. Wird während des Vergleichs eine Großformen-Einstellung geändert, geht die Ansicht direkt zur Bearbeitung zurück. Ein neues Bild oder Zurücksetzen beendet den Vergleich.

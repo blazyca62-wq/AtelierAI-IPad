@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.79</title>
+  <title>AtelierAI iPad 2.80</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.79</div>
+    <div class="title">AtelierAI · iPad 2.80</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1160,10 +1160,10 @@
         </div>
         <label for="formsSquintBlur">Stärke des Zusammenkneifens: <span id="formsSquintBlurVal">5</span></label>
         <input id="formsSquintBlur" type="range" min="0" max="12" value="5" step="1" style="width:100%;min-height:44px">
-        <label for="formsSquintLight">Helle Farbtöne bevorzugen: <span id="formsSquintLightVal">60 %</span></label>
+        <label for="formsSquintLight">Sanfte Farbigkeit: <span id="formsSquintLightVal">60 %</span></label>
         <input id="formsSquintLight" type="range" min="0" max="100" value="60" step="5" style="width:100%;min-height:44px">
-        <p class="tiny">Für die Farbflächen: 0 = bisherige Farbauswahl. Höhere Werte verteilen mehr erkannte Farben auf helle Töne und fassen ähnliche mittlere Brauntöne stärker zusammen. Die Farbauswahl wird neu berechnet; es wird nicht pauschal aufgehellt. Ein tiefer Schattenton bleibt erhalten. Wirkt nach dem Loslassen; die weiche Vorschau bleibt unverändert.</p>
-        <p class="tiny">Erst „Zusammenkneifen ansehen“ wählen und die Stärke einstellen: 0 = klar, 12 = stark. Die weiche Vorschau folgt dem Regler. Dann „Farbflächen ansehen“ wählen: Die Farben stammen aus genau dieser Vorschau. Stufe 1 = gröber (bis zu 20 Farben), Stufe 5 = feiner (bis zu 40 Farben). Die Flächen werden nach Loslassen berechnet. Ausschalten zeigt wieder die bisherigen Großformen. Bearbeitete Farben vorher als Malvorlage übernehmen.</p>
+        <p class="tiny">0 % = originalgetreue Farbflächen. Höhere Werte geben neutralen Grau- und Brauntönen eine sanfte Farbigkeit: warmes Beige, bläuliches Grau oder Lavendel. Kräftige Farben, Helligkeitsunterschiede und tiefe Schatten bleiben erhalten. Die Flächenaufteilung bleibt gleich. Wirkt nach dem Loslassen; die weiche Vorschau bleibt unverändert.</p>
+        <p class="tiny">Erst „Zusammenkneifen ansehen“ wählen und die Stärke einstellen: 0 = klar, 12 = stark. Die weiche Vorschau folgt dem Regler. Dann „Farbflächen ansehen“ wählen: Bei 0 % sanfter Farbigkeit stammen die Farben aus dieser Vorschau. Stufe 1 = gröber (bis zu 20 Farben), Stufe 5 = feiner (bis zu 40 Farben). Die Flächen werden nach Loslassen berechnet. Ausschalten zeigt wieder die bisherigen Großformen. Bearbeitete Farben vorher als Malvorlage übernehmen.</p>
         </details>
         <div class="formsButtons">
           <button class="formBtn secondary" data-level="1">1</button>
@@ -6628,25 +6628,33 @@ const mixes=chooseMixes(target,paletteKey);
   function squintDistance(a,b){
     return (a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2;
   }
+  function squintGentleColor(rgb,lab,amount){
+    const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+    const [L,a,b]=lab,chroma=Math.hypot(a,b);
+    // Fade smoothly out of saturated colors, deepest shadows and paper whites.
+    const mix=Math.max(0,Math.min(1,amount/100))*(1-smooth(12,34,chroma))*smooth(8,30,L)*(1-smooth(92,100,L));
+    if(!mix)return rgb.slice();
+    const warmth=smooth(-3,12,b);
+    const aa=a+(4-a)*mix;
+    const bb=b+((-9+23*warmth)-b)*mix;
+    // Keep CIELAB lightness constant; only change the neutral color cast.
+    const fy=(L+16)/116,fx=fy+aa/500,fz=fy-bb/200;
+    const inv=v=>v*v*v>.008856?v*v*v:(v-16/116)/7.787;
+    const x=.95047*inv(fx),y=inv(fy),z=1.08883*inv(fz);
+    const enc=v=>Math.round(255*Math.max(0,Math.min(1,v<=.0031308?12.92*v:1.055*Math.pow(v,1/2.4)-.055)));
+    return [enc(3.2404542*x-1.5371385*y-.4985314*z),enc(-.969266*x+1.8760108*y+.041556*z),enc(.0556434*x-.2040259*y+1.0572252*z)];
+  }
   function squintPalette(data,count,lightPreference=0){
-    // Keep actual colors of the softened image. Perceptual distance protects
-    // blue, pink and pale yellow from merging into a few dominant earth tones.
-    const favor=Math.max(0,Math.min(1,lightPreference/100));
+    // Stable original palette: styling never changes color allocation or shapes.
     const samples=[];
     const stride=Math.max(1,Math.floor(data.length/4/6000))*4;
-    for(let i=0;i<data.length;i+=stride){const rgb=[data[i],data[i+1],data[i+2]].map(Math.round);const lab=rgbToLabFast(rgb),L=lab[0],chroma=Math.hypot(lab[1],lab[2]);
-      const hue=(Math.atan2(lab[2],lab[1])*180/Math.PI+360)%360;
-      const earth=(hue>35&&hue<100&&L>22&&L<72&&chroma>8&&chroma<60);
-      const light=Math.max(0,Math.min(1,(L-40)/45));
-      const preferredWeight=(.45+8*light*light)*(earth?.22:1);
-      samples.push({rgb,lab,weight:1+favor*(preferredWeight-1)});}
+    for(let i=0;i<data.length;i+=stride){
+      const rgb=[data[i],data[i+1],data[i+2]].map(Math.round);
+      samples.push({rgb,lab:rgbToLabFast(rgb),weight:1});
+    }
     const sorted=samples.slice().sort((a,b)=>a.lab[0]-b.lab[0]);
     const palette=[sorted[Math.floor(sorted.length/2)]];
-    // Reserve one true dark reference, then spend more palette entries on
-    // light colors and fewer on closely related middle earth tones.
-    if(favor && count>1)palette.push(sorted[0]);
     const nearest=new Float64Array(samples.length).fill(Infinity);
-    if(favor)for(let i=0;i<samples.length;i++)nearest[i]=squintDistance(samples[i].lab,palette[0].lab);
     while(palette.length<count){
       let best=0,score=0;const last=palette[palette.length-1];
       for(let i=0;i<samples.length;i++){nearest[i]=Math.min(nearest[i],squintDistance(samples[i].lab,last.lab));const weighted=nearest[i]*samples[i].weight;if(weighted>score){score=weighted;best=i;}}
@@ -6660,12 +6668,12 @@ const mixes=chooseMixes(target,paletteKey);
         for(let k=0;k<3;k++)sums[best][k]+=sample.lab[k]*sample.weight;sums[best][3]+=sample.weight;groups[best].push(i);
       }
       sums.forEach((v,j)=>{
-        if(!v[3]||(favor&&j===1))return;const center=v.slice(0,3).map(n=>n/v[3]);let best=palette[j],d=Infinity;
+        if(!v[3])return;const center=v.slice(0,3).map(n=>n/v[3]);let best=palette[j],d=Infinity;
         for(const i of groups[j]){const n=squintDistance(samples[i].lab,center);if(n<d){d=n;best=samples[i];}}
         palette[j]=best;
       });
     }
-    const result=palette.map(c=>c.rgb);
+    const result=palette.map(c=>squintGentleColor(c.rgb,c.lab,lightPreference));
     result.matchingLab=palette.map(c=>c.lab);
     return result;
   }
