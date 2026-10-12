@@ -1,3 +1,7 @@
+AtelierAI iPad 2.82 – Sanftes Zusammenkneifen
+
+Stärkeregler mit 0,1-Schritten, flachem Beginn und kontinuierlichen Zwischenstufen statt des Sprungs auf den ersten vollen Weichzeichnungsradius. Wirkt in Vorschau und Großformfarben. 0 bleibt klar, 12 bleibt stark.
+
 AtelierAI iPad 2.81 – Sichtbare Pastellwirkung
 
 Sanfte Farbigkeit wirkt nun deutlicher: größerer Bereich gedeckter Töne, stärkere Farbigkeit und behutsame Aufhellung. 0 % unverändert, 100 % deutlich pastelliger. Flächenzuordnung bleibt stabil.

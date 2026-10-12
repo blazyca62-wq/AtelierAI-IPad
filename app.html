@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.81</title>
+  <title>AtelierAI iPad 2.82</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.81</div>
+    <div class="title">AtelierAI · iPad 2.82</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1159,11 +1159,11 @@
           <button id="formsSquintFlat" class="active" type="button" aria-pressed="true">Farbflächen ansehen</button>
         </div>
         <label for="formsSquintBlur">Stärke des Zusammenkneifens: <span id="formsSquintBlurVal">5</span></label>
-        <input id="formsSquintBlur" type="range" min="0" max="12" value="5" step="1" style="width:100%;min-height:44px">
+        <input id="formsSquintBlur" type="range" min="0" max="12" value="5" step="0.1" style="width:100%;min-height:44px">
         <label for="formsSquintLight">Sanfte Farbigkeit: <span id="formsSquintLightVal">60 %</span></label>
         <input id="formsSquintLight" type="range" min="0" max="100" value="60" step="5" style="width:100%;min-height:44px">
         <p class="tiny">0 % = originalgetreue Farbflächen. Höhere Werte machen gedeckte Grau- und Brauntöne sichtbar pastelliger und heller: warmes Beige, bläuliches Grau oder Lavendel. 50 % = mittlere Wirkung, 100 % = deutliche Wirkung. Kräftige Farben und tiefe Schatten bleiben geschützt. Die Flächenaufteilung bleibt gleich. Wirkt nach dem Loslassen; die weiche Vorschau bleibt unverändert.</p>
-        <p class="tiny">Erst „Zusammenkneifen ansehen“ wählen und die Stärke einstellen: 0 = klar, 12 = stark. Die weiche Vorschau folgt dem Regler. Dann „Farbflächen ansehen“ wählen: Bei 0 % sanfter Farbigkeit stammen die Farben aus dieser Vorschau. Stufe 1 = gröber (bis zu 20 Farben), Stufe 5 = feiner (bis zu 40 Farben). Die Flächen werden nach Loslassen berechnet. Ausschalten zeigt wieder die bisherigen Großformen. Bearbeitete Farben vorher als Malvorlage übernehmen.</p>
+        <p class="tiny">Erst „Zusammenkneifen ansehen“ wählen und die Stärke einstellen: 0 = klar, 12 = stark. Feine 0,1-Schritte und ein besonders sanfter Beginn erleichtern die Dosierung. Die weiche Vorschau folgt dem Regler. Dann „Farbflächen ansehen“ wählen: Bei 0 % sanfter Farbigkeit stammen die Farben aus dieser Vorschau. Stufe 1 = gröber (bis zu 20 Farben), Stufe 5 = feiner (bis zu 40 Farben). Die Flächen werden nach Loslassen berechnet. Ausschalten zeigt wieder die bisherigen Großformen. Bearbeitete Farben vorher als Malvorlage übernehmen.</p>
         </details>
         <div class="formsButtons">
           <button class="formBtn secondary" data-level="1">1</button>
@@ -6625,6 +6625,17 @@ const mixes=chooseMixes(target,paletteKey);
     }
     return data;
   }
+  // Continuous interpolation avoids the old mandatory jump to radius 1.
+  function squintSoftBlur(input,w,h,strength){
+    const value=Math.max(0,Math.min(12,Number(strength)||0));
+    const radius=(value*value/12)*Math.min(w,h)/300;
+    const low=Math.floor(radius),fraction=radius-low;
+    const a=low?squintBlurPixels(input,w,h,low):new Float32Array(input);
+    if(fraction<1e-8)return a;
+    const b=squintBlurPixels(input,w,h,low+1);
+    for(let i=0;i<a.length;i++)a[i]+=(b[i]-a[i])*fraction;
+    return a;
+  }
   function squintDistance(a,b){
     return (a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2;
   }
@@ -6686,8 +6697,7 @@ const mixes=chooseMixes(target,paletteKey);
     const c=work.getContext('2d',{willReadFrequently:true});c.drawImage(sourceCanvas,0,0,work.width,work.height);
     const pixels=c.getImageData(0,0,work.width,work.height);
     const strength=+document.getElementById('formsSquintBlur').value;
-    const radius=strength===0?0:Math.max(1,Math.round(strength*Math.min(work.width,work.height)/300));
-    const blurred=radius?squintBlurPixels(pixels.data,work.width,work.height,radius):new Float32Array(pixels.data);
+    const blurred=squintSoftBlur(pixels.data,work.width,work.height,strength);
     if(formsSquintPreview){pixels.data.set(blurred);finishForms(pixels);return;}
     const palette=squintPalette(blurred,[20,24,28,34,40][formLevel-1],+document.getElementById('formsSquintLight').value);
     const paletteLab=palette.matchingLab;
@@ -7127,7 +7137,7 @@ const mixes=chooseMixes(target,paletteKey);
   document.getElementById('formsSquintFlat').addEventListener('click',()=>chooseSquintPreview(false));
   document.getElementById('formsSquint').addEventListener('change',()=>{clearTimeout(formsSquintTimer);syncSquintPreview();setFormLevel(formLevel||3);});
   document.getElementById('formsSquintBlur').addEventListener('input',e=>{
-    document.getElementById('formsSquintBlurVal').textContent=e.target.value;
+    document.getElementById('formsSquintBlurVal').textContent=Number(e.target.value).toLocaleString('de-DE',{maximumFractionDigits:1});
     clearTimeout(formsSquintTimer);
     if(document.getElementById('formsSquint').checked&&formsSquintPreview){formsSquintTimer=setTimeout(()=>{if(loaded)setFormLevel(formLevel||3);},100);}
   });
