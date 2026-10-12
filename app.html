@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.65</title>
+  <title>AtelierAI iPad 2.66</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.65</div>
+    <div class="title">AtelierAI · iPad 2.66</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1103,13 +1103,13 @@
         <button id="build32Analyze" style="width:100%">32 Farben erkennen</button>
 
         <details style="margin-top:12px"><summary style="padding:10px 0;cursor:pointer;font-weight:bold">Malflächen vereinfachen</summary>
-          <label for="build32Merge">Ähnliche Farben zusammenfassen: <span id="build32MergeVal">Aus</span></label>
-          <input id="build32Merge" type="range" min="0" max="15" step="1" value="0" style="width:100%;min-height:44px">
+          <label for="build32Merge">Zielfarbanzahl: <span id="build32MergeVal">32 → 32 Farben</span></label>
+          <input id="build32Merge" type="range" min="2" max="32" step="1" value="32" style="width:100%;min-height:44px">
           <button id="build32MergeApply" class="secondary" type="button" style="width:100%">Zusammenfassen anwenden</button>
-          <p class="tiny">Links fein, rechts stärker. „Anwenden“ erkennt die Farben neu und setzt Farbauswahl und eigene Ersatzfarben zurück. Aus + Anwenden stellt die ursprüngliche Farbaufteilung wieder her. Nur für Mischfarben.</p>
-          <label for="build32Spots">Kleine Flecken ausblenden: <span id="build32SpotsVal">Aus</span></label>
+          <p class="tiny">Gewünschte Anzahl wählen, z. B. 64 → 56 Farben. Ähnlichste Farben werden schrittweise zusammengefasst. „Anwenden“ setzt Farbauswahl und eigene Ersatzfarben zurück. Die höchste Anzahl stellt die ursprüngliche Aufteilung wieder her. Nur für Mischfarben.</p>
+          <label for="build32Spots">Kleine Flecken auffüllen: <span id="build32SpotsVal">Aus</span></label>
           <input id="build32Spots" type="range" min="0" max="10" step="1" value="0" style="width:100%;min-height:44px">
-          <p class="tiny">Blendet kleine zusammenhängende Farbinseln aus. Nach dem Loslassen wird aktualisiert. 0 zeigt alle Details wieder. Gilt auch für Ergänzungen; kleine wichtige Details können ebenfalls verschwinden.</p>
+          <p class="tiny">Kleine Farbinseln übernehmen die Farbe der angrenzenden größeren Fläche – ohne Hintergrundlöcher. Nach dem Loslassen wird aktualisiert. 0 stellt alle Details wieder her. Kleine wichtige Details können ebenfalls verschwinden.</p>
         </details>
         <div style="margin-top:14px"><label>Farbfamilien einblenden</label>
         <div id="build32FamilyButtons" class="family-multi" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:7px">
@@ -5077,6 +5077,7 @@ const mixes=chooseMixes(target,paletteKey);
   function build32ColorCount(){if(build32Data)return build32Data.palette.length;return Number(document.getElementById('build32Count').value);}
   for(const id of ['build32Count','build32CountSide'])document.getElementById(id).addEventListener('change',e=>{
     for(const other of ['build32Count','build32CountSide'])document.getElementById(other).value=e.target.value;
+    syncBuild32Merge(true);
     resetBuild32();
     document.getElementById('build32Analyze').textContent=build32ColorCount()+' Farben erkennen';
     if(loaded)document.getElementById('build32Analyze').click();
@@ -5194,7 +5195,7 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function build32RenderDetailOnly(direction){
     if(!build32Data||!build32DetailCell)return false;
-    const palette=build32DetailCell.palette, ranks=build32DetailCell.ranks;
+    const palette=build32DetailCell.palette, ranks=build32FilledRanks(build32DetailCell);
     const width=build32DetailCell.w,height=build32DetailCell.h;
     const selectedFamilies=build32SelectedFamilies();
     const lightCount=Math.min(Number(document.getElementById('build32light').value)||0,palette.length);
@@ -5208,15 +5209,14 @@ const mixes=chooseMixes(target,paletteKey);
     build32Selection.clear();combined.forEach(i=>build32Selection.add(i));
     const bg=build32BackgroundValue((lightCount>0&&darkCount===0)?128:(darkCount>0&&lightCount===0?255:128));
     const dc=build32DetailCanvas.getContext('2d'),frame=dc.createImageData(width,height);
-    const spotMask=build32SpotMask(build32DetailCell);
     for(let i=0;i<ranks.length;i++){
-      const rank=ranks[i],show=build32Selection.has(rank)&&(!spotMask||spotMask[i]),rgb=show?palette[rank]:[bg,bg,bg];
+      const rank=ranks[i],show=build32Selection.has(rank),rgb=show?palette[rank]:[bg,bg,bg];
       frame.data[i*4]=rgb[0];frame.data[i*4+1]=rgb[1];frame.data[i*4+2]=rgb[2];frame.data[i*4+3]=255;
     }
     // Apply the smoothing slider locally to the selected cell only.
     if(build32Smoothing>0){
       const localMask=new Uint8Array(ranks.length);
-      for(let i=0;i<ranks.length;i++) localMask[i]=build32Selection.has(ranks[i])&&(!spotMask||spotMask[i])?1:0;
+      for(let i=0;i<ranks.length;i++) localMask[i]=build32Selection.has(ranks[i])?1:0;
       const smoothed=smoothBuild32Pixels(frame.data,localMask,width,height,build32Smoothing);
       frame.data.set(smoothed);
     }
@@ -5258,7 +5258,7 @@ const mixes=chooseMixes(target,paletteKey);
     document.getElementById('build32Extras').textContent=build32Extras?'Farbaufbau wieder anzeigen':'Nur Ergänzungen zeigen';
     document.getElementById('build32Extras').disabled=!build32Extras&&(direction==='middle'||!build32SelectedFamilies().includes('all')||Number(document.getElementById('build32light').value)!==build32ColorCount());
     build32Direction=direction;build32Active=true;
-    const {palette,ranks,width,height}=build32Data;
+    const {palette,width,height}=build32Data,ranks=build32FilledRanks(build32Data);
     const lightCount=Number(document.getElementById('build32light').value);
     const darkCount=Number(document.getElementById('build32dark').value);
     for(const d of ['light','dark']){
@@ -5286,10 +5286,9 @@ const mixes=chooseMixes(target,paletteKey);
     combinedSelection.forEach(i=>build32Selection.add(i));
     const bg=build32BackgroundValue((lightCount>0&&darkCount===0)?128:(darkCount>0&&lightCount===0?255:128));
     const c=build32Canvas.getContext('2d'),frame=c.createImageData(width,height);
-    const spotMask=build32SpotMask(build32DetailCell||build32Data);
     build32VisibleMask=new Uint8Array(ranks.length);
     for(let i=0;i<ranks.length;i++){
-      const rank=ranks[i],show=build32Selection.has(rank)&&(!spotMask||spotMask[i]);
+      const rank=ranks[i],show=build32Selection.has(rank);
       build32VisibleMask[i]=show?1:0;
       const rgb=show?build32DisplayColor(rank,i):[bg,bg,bg];
       frame.data[i*4]=rgb[0];frame.data[i*4+1]=rgb[1];frame.data[i*4+2]=rgb[2];frame.data[i*4+3]=255;
@@ -5305,56 +5304,60 @@ const mixes=chooseMixes(target,paletteKey);
     build32ExtrasNotice();syncBuild32ReturnButtons();draw();
   }
 
-  // Conservative complete-link groups: every pair must be similar; no color chains.
-  function build32MergeResult(result,amount){
-    if(!amount||result.pure||result.palette.length<2)return result;
-    const ranks=new Uint8Array(result.ranks),counts=new Uint32Array(result.palette.length);
-    for(const rank of ranks)counts[rank]++;
-    const labs=result.palette.map(rgbToLabFast),groups=[];
-    const order=result.palette.map((_,i)=>i).sort((a,b)=>counts[b]-counts[a]||a-b);
-    for(const index of order){
-      let best=null,distance=Infinity;
-      for(const group of groups){
-        const d=Math.max(...group.map(j=>deltaE76FromLab(labs[index],labs[j])));
-        if(d<=amount&&d<distance){best=group;distance=d;}
+  // Merge the nearest palette pair until the explicit target count is reached.
+  function build32MergeResult(result,target){
+    if(!target||result.pure||result.palette.length<=target)return result;
+    const ranks=new Uint8Array(result.ranks).slice(),counts=new Uint32Array(result.palette.length);
+    for(const r of ranks)counts[r]++;
+    const groups=result.palette.map((rgb,i)=>({rgb:rgb.slice(),weight:counts[i]||1,ids:[i]}));
+    while(groups.length>Math.max(2,target)){
+      const labs=groups.map(g=>rgbToLabFast(g.rgb));let best=Infinity,a=0,b=1;
+      for(let i=0;i<groups.length;i++)for(let j=i+1;j<groups.length;j++){
+        const d=deltaE76FromLab(labs[i],labs[j]);if(d<best){best=d;a=i;b=j;}
       }
-      if(best)best.push(index);else groups.push([index]);
+      const x=groups[a],y=groups[b],weight=x.weight+y.weight;
+      x.rgb=x.rgb.map((v,c)=>(v*x.weight+y.rgb[c]*y.weight)/weight);
+      x.weight=weight;x.ids.push(...y.ids);groups.splice(b,1);
     }
-    groups.sort((a,b)=>Math.min(...a)-Math.min(...b));
+    groups.sort((a,b)=>rgbToLabFast(b.rgb)[0]-rgbToLabFast(a.rgb)[0]);
     const map=new Uint8Array(result.palette.length);
-    const palette=groups.map((group,k)=>{
-      let weight=0;const sum=[0,0,0];
-      for(const j of group){map[j]=k;const w=counts[j]||1;weight+=w;for(let c=0;c<3;c++)sum[c]+=result.palette[j][c]*w;}
-      return sum.map(v=>Math.round(v/weight));
-    });
+    groups.forEach((g,i)=>g.ids.forEach(j=>map[j]=i));
     for(let i=0;i<ranks.length;i++)ranks[i]=map[ranks[i]];
-    return {...result,palette,ranks:ranks.buffer};
+    return {...result,palette:groups.map(g=>g.rgb.map(Math.round)),ranks:ranks.buffer};
   }
-  // Cache connected component sizes once per rank map, independent of selection.
-  function build32SpotMask(data){
-    const amount=Number(document.getElementById('build32Spots').value);
-    if(!amount)return null;
-    const ranks=data.ranks,width=data.width||data.w,n=ranks.length;
-    if(!data.spotSizes){
-      const sizes=new Uint32Array(n),seen=new Uint8Array(n),queue=new Int32Array(n);
-      for(let start=0;start<n;start++){
-        if(seen[start]||ranks[start]===65535)continue;
-        let head=0,tail=1;queue[0]=start;seen[start]=1;const rank=ranks[start];
-        const visit=j=>{if(!seen[j]&&ranks[j]===rank){seen[j]=1;queue[tail++]=j;}};
-        while(head<tail){const i=queue[head++],x=i%width;
-          if(x)visit(i-1);if(x+1<width)visit(i+1);if(i>=width)visit(i-width);if(i+width<n)visit(i+width);
-        }
-        for(let j=0;j<tail;j++)sizes[queue[j]]=tail;
-      }
-      data.spotSizes=sizes;
+  // Relabel small connected islands; never turn them into background pixels.
+  // Work from immutable source ranks so every setting is reversible.
+  function build32FilledRanks(data){
+    const amount=Number(document.getElementById('build32Spots').value),ranks=data.ranks;
+    if(!amount)return ranks;
+    if(data.filledCache?.amount===amount)return data.filledCache.ranks;
+    const width=data.width||data.w,n=ranks.length,threshold=Math.max(2,Math.round(n*amount*amount/1000000));
+    const ids=new Int32Array(n);ids.fill(-1);
+    const queue=new Int32Array(n),components=[];
+    const neighbors=(i,visit)=>{const x=i%width;if(x)visit(i-1);if(x+1<width)visit(i+1);if(i>=width)visit(i-width);if(i+width<n)visit(i+width);};
+    for(let start=0;start<n;start++){
+      if(ids[start]!==-1||ranks[start]===65535)continue;
+      const id=components.length,rank=ranks[start];let head=0,tail=1;queue[0]=start;ids[start]=id;
+      while(head<tail)neighbors(queue[head++],j=>{if(ids[j]===-1&&ranks[j]===rank){ids[j]=id;queue[tail++]=j;}});
+      components.push({rank,size:tail,border:new Map()});
     }
-    const threshold=Math.max(2,Math.round(n*amount*amount/1000000));
-    const mask=new Uint8Array(n);for(let i=0;i<n;i++)mask[i]=data.spotSizes[i]>=threshold?1:0;
-    return mask;
+    for(let i=0;i<n;i++){
+      const id=ids[i];if(id<0||components[id].size>=threshold)continue;
+      neighbors(i,j=>{const other=ids[j];if(other<0||other===id||components[other].size<threshold)return;
+        const r=components[other].rank,m=components[id].border;m.set(r,(m.get(r)||0)+1);
+      });
+    }
+    const replacements=components.map(c=>{let rank=c.rank,best=0;for(const [r,v] of c.border)if(v>best){rank=r;best=v;}return rank;});
+    const filled=new ranks.constructor(ranks);
+    for(let i=0;i<n;i++)if(ids[i]>=0)filled[i]=replacements[ids[i]];
+    data.filledCache={amount,ranks:filled};return filled;
   }
-  document.getElementById('build32Merge').addEventListener('input',e=>{
-    document.getElementById('build32MergeVal').textContent=Number(e.target.value)?e.target.value+' / 15':'Aus';
-  });
+  function syncBuild32Merge(reset=false){
+    const base=Number(document.getElementById('build32Count').value),slider=document.getElementById('build32Merge');
+    slider.max=base;if(reset||Number(slider.value)>base)slider.value=base;
+    document.getElementById('build32MergeVal').textContent=base+' → '+slider.value+' Farben';
+  }
+  document.getElementById('build32Merge').addEventListener('input',()=>syncBuild32Merge());
   let build32SimplifyShowAll=false;
   document.getElementById('build32MergeApply').addEventListener('click',()=>{
     if(build32IsPure()){build32Status.textContent='Zusammenfassen ist nur in der Darstellung Mischfarben verfügbar.';return;}
@@ -5450,13 +5453,12 @@ const mixes=chooseMixes(target,paletteKey);
     if(!build32Data)return;
     syncBuild32Middle();
     if(build32DetailCell){
-      const palette=build32DetailCell.palette,ranks=build32DetailCell.ranks,width=build32DetailCell.w,height=build32DetailCell.h;
+      const palette=build32DetailCell.palette,ranks=build32FilledRanks(build32DetailCell),width=build32DetailCell.w,height=build32DetailCell.h;
       build32Active=true;build32Manual=true;
       const bg=build32BackgroundValue(build32Selected!==null&&rgbToLabFast(palette[build32Selected])[0]<55?255:128);
       const dc=build32DetailCanvas.getContext('2d'),frame=dc.createImageData(width,height);
-      const spotMask=build32SpotMask(build32DetailCell||build32Data);
-    build32VisibleMask=new Uint8Array(ranks.length);
-      for(let i=0;i<ranks.length;i++){const show=build32Selection.has(ranks[i])&&(!spotMask||spotMask[i]),rgb=show?palette[ranks[i]]:[bg,bg,bg];build32VisibleMask[i]=show?1:0;frame.data.set([...rgb,255],i*4);}
+      build32VisibleMask=new Uint8Array(ranks.length);
+      for(let i=0;i<ranks.length;i++){const show=build32Selection.has(ranks[i]),rgb=show?palette[ranks[i]]:[bg,bg,bg];build32VisibleMask[i]=show?1:0;frame.data.set([...rgb,255],i*4);}
       dc.putImageData(frame,0,0);
       const c=build32Canvas.getContext('2d');c.clearRect(0,0,build32Canvas.width,build32Canvas.height);c.drawImage(build32DetailBaseCanvas,0,0);c.drawImage(build32DetailCanvas,build32DetailCell.x,build32DetailCell.y,width,height);
       [...document.getElementById('build32Palette').children].forEach((el,i)=>{el.setAttribute('aria-pressed',String(build32Selection.has(i)));el.textContent=String(i+1)+(build32DetailColorOverrides.has(i)?' ✓':'');});
@@ -5469,11 +5471,10 @@ const mixes=chooseMixes(target,paletteKey);
     build32Active=true;
     document.getElementById('build32Extras').disabled=!build32Extras;
     document.getElementById('build32Extras').textContent=build32Extras?'Farbaufbau wieder anzeigen':'Nur Ergänzungen zeigen';
-    const {palette,ranks,width,height}=build32Data,c=build32Canvas.getContext('2d'),frame=c.createImageData(width,height);
+    const {palette,width,height}=build32Data,ranks=build32FilledRanks(build32Data),c=build32Canvas.getContext('2d'),frame=c.createImageData(width,height);
     const bg=build32BackgroundValue(build32Selected!==null&&rgbToLabFast(palette[build32Selected])[0]<55?255:128);
-    const spotMask=build32SpotMask(build32DetailCell||build32Data);
     build32VisibleMask=new Uint8Array(ranks.length);
-    for(let i=0;i<ranks.length;i++){const show=build32Selection.has(ranks[i])&&(!spotMask||spotMask[i]),rgb=show?build32DisplayColor(ranks[i],i):[bg,bg,bg];build32VisibleMask[i]=show?1:0;frame.data.set([...rgb,255],i*4);}
+    for(let i=0;i<ranks.length;i++){const show=build32Selection.has(ranks[i]),rgb=show?build32DisplayColor(ranks[i],i):[bg,bg,bg];build32VisibleMask[i]=show?1:0;frame.data.set([...rgb,255],i*4);}
     c.putImageData(frame,0,0);rebuildBuild32Foreground(frame);
     [...document.getElementById('build32Palette').children].forEach((el,i)=>{el.style.opacity='1';el.setAttribute('aria-pressed',String(build32Selection.has(i)));});
     build32Status.textContent=build32Selection.size+' von '+palette.length+' Farben sichtbar · auf '+(bg===255?'Weiß':'Mittelgrau');
@@ -5724,7 +5725,7 @@ const mixes=chooseMixes(target,paletteKey);
     return {pixels:output,changed,visible};
   }
   function build32DisplayColor(rank,pixel){
-    if(build32Extras && build32Data.reference && !build32ColorOverrides.has(rank))
+    if(build32Extras && build32Data.reference && rank===build32Data.ranks[pixel] && !build32ColorOverrides.has(rank))
       return build32Data.reference.subarray(pixel*4,pixel*4+3);
     return build32Data.palette[rank];
   }
