@@ -1,3 +1,7 @@
+AtelierAI iPad 2.71 – Übersichtliche Modulauswahl
+
+Das separate Modul Farbanalyse wurde aus der Bedienung entfernt. Die Farbbearbeitung bleibt unverändert erhalten.
+
 AtelierAI iPad 2.70 – Feinfühlige Korrekturregler
 
 Helligkeit, Wärme, Sättigung und Farbton reagieren um die Mitte deutlich langsamer. Der gesamte Änderungsbereich bleibt an den Enden erhalten. Anzeigen zeigen die tatsächliche Korrektur; Zehntelschritte erlauben feinere Anpassungen.

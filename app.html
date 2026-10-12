@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.70</title>
+  <title>AtelierAI iPad 2.71</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.70</div>
+    <div class="title">AtelierAI · iPad 2.71</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1238,7 +1238,7 @@
         </div>
       </div>
 
-      <div class="section" id="colorAnalysisPanel">
+      <div id="colorAnalysisPanel" hidden aria-hidden="true" style="display:none">
         <h3>Farbanalyse</h3>
         <div class="mode" style="margin-bottom:8px;">
           <button id="smartPickerBtn" class="secondary" style="display:none">Smart-Pipette</button>
@@ -7370,7 +7370,7 @@ const mixes=chooseMixes(target,paletteKey);
     const side=document.querySelector('aside.side');
     if(!side) return;
 
-    const sections=[...side.querySelectorAll(':scope > .section')].filter(sec=>sec.id!=='colorIdeasPanel');
+    const sections=[...side.querySelectorAll(':scope > .section')].filter(sec=>!['colorIdeasPanel','colorAnalysisPanel'].includes(sec.id));
     if(!sections.length) return;
 
     // 1.9 hatte die Bereiche bereits als Accordion umgebaut.
@@ -7385,7 +7385,6 @@ const mixes=chooseMixes(target,paletteKey);
       paintMixPanel:'Mischen',
       colorAdvisorPanel:'Farbmischpult',
       colorJourneyPanel:'Farbreise',
-      colorAnalysisPanel:'Farbanalyse',
       surfaceAdvisorPanel:'Flächenberater',
       glazePanel:'Lasuren',
       correctionStudioPanel:'Korrektur',
