@@ -1,3 +1,7 @@
+AtelierAI iPad 2.79 – Originalvergleich im Großformen-Modul
+
+„Zurück zum Original“ ist jetzt ein Umschalter. Erster Tipp zeigt die Ausgangsansicht; der Knopf heißt dann „Zurück zu Großformen“. Zweiter Tipp bringt die vorherige Ansicht zurück, einschließlich Stufe, Zusammenkneifen-Vorschau, Stärke, Farbbevorzugung und Fleckenauffüllung. Einstellungen bleiben stehen. Wird während des Vergleichs eine Großformen-Einstellung geändert, geht die Ansicht direkt zur Bearbeitung zurück. Ein neues Bild oder Zurücksetzen beendet den Vergleich.
+
 AtelierAI iPad 2.78 – Helle Farben bei der Erkennung bevorzugen
 
 Korrektur des Reglers: Er beeinflusst nun die Farbgruppierung selbst. Helle Farben erhalten mehr Gewicht bei der Auswahl und Berechnung der Farbgruppen. Mittlere erdige Brauntöne erhalten weniger Gewicht und werden eher zusammengefasst. Eine dunkle Referenz bleibt erhalten. Alle Palettenfarben stammen aus dem beruhigten Bild; keine nachträgliche Aufhellung. Die Stärke ist eine gestalterische Vorgabe und verändert daher auch Flächengrenzen. 0 entspricht der neutralen Farberkennung aus 2.76. Die weiche Vorschau bleibt unverändert.

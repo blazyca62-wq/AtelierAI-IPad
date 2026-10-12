@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.78</title>
+  <title>AtelierAI iPad 2.79</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.78</div>
+    <div class="title">AtelierAI · iPad 2.79</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -2005,7 +2005,7 @@
   let mode = 'move';
   let paintMode = 'water';
   let toneView = 'all';
-  let formLevel = 0;
+  let formLevel = 0, formsOriginalPreview = false;
   let touches = new Map();
   let gestureStart = null;
   let smartPickerArmed = false;
@@ -6512,8 +6512,20 @@ const mixes=chooseMixes(target,paletteKey);
     rebuildToneImage();
   }
 
+  function syncFormsOriginal(){
+    formsOriginal.textContent=formsOriginalPreview?'Zurück zu Großformen':'Zurück zum Original';
+    formsOriginal.setAttribute('aria-pressed',String(formsOriginalPreview));
+    formsOriginal.disabled=!loaded||formLevel===0;
+  }
+  function toggleFormsOriginal(){
+    if(!loaded||!formLevel)return;
+    clearTimeout(formsSquintTimer);formsOriginalPreview=!formsOriginalPreview;
+    syncFormsOriginal();rebuildForms();rebuildToneImage();
+  }
   function setFormLevel(level){
+    formsOriginalPreview=false;
     formLevel = +level;
+    syncFormsOriginal();
     formsSlider.value = formLevel;
     formsValue.textContent = formLevel===0 ? 'Aus' : String(formLevel);
     formBtns.forEach(b=>{
@@ -6678,7 +6690,7 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function rebuildForms(){
     if(!loaded) return;
-    const mode=document.getElementById('formsSquint').checked?'squint:'+document.getElementById('formsSquintBlur').value+':'+formsSquintPreview+':'+document.getElementById('formsSquintLight').value:'classic';
+    const mode=formsOriginalPreview?'original':document.getElementById('formsSquint').checked?'squint:'+document.getElementById('formsSquintBlur').value+':'+formsSquintPreview+':'+document.getElementById('formsSquintLight').value:'classic';
     if(renderedFormLevel===formLevel && renderedFormMode===mode){
       if(formLevel && renderedFormSpots!==Number(document.getElementById('formsSpots').value))renderFormsFilled();
       return;
@@ -6691,7 +6703,7 @@ const mixes=chooseMixes(target,paletteKey);
     formCanvas.width = w; formCanvas.height = h;
     formCtx.clearRect(0,0,w,h);
 
-    if(formLevel===0){
+    if(formLevel===0 || formsOriginalPreview){
       formCtx.drawImage(sourceCanvas,0,0);
       return;
     }
@@ -7087,7 +7099,7 @@ const mixes=chooseMixes(target,paletteKey);
     document.getElementById('formsSpotsVal').textContent=Number(e.target.value)?e.target.value+' / 10':'Aus';
   });
   document.getElementById('formsSpots').addEventListener('change',()=>{
-    rebuildForms();rebuildToneImage();
+    setFormLevel(formLevel);
   });
   function syncSquintPreview(){
     const enabled=document.getElementById('formsSquint').checked;
@@ -7114,7 +7126,8 @@ const mixes=chooseMixes(target,paletteKey);
   document.getElementById('formsSquintLight').addEventListener('input',e=>{document.getElementById('formsSquintLightVal').textContent=e.target.value+' %';});
   document.getElementById('formsSquintLight').addEventListener('change',()=>{if(document.getElementById('formsSquint').checked&&!formsSquintPreview)setFormLevel(formLevel||3);});
   syncSquintPreview();
-  formsOriginal.addEventListener('click' ,()=>{clearTimeout(formsSquintTimer);setFormLevel(0);});
+  formsOriginal.addEventListener('click',toggleFormsOriginal);
+  syncFormsOriginal();
   formsSlider.addEventListener('input',()=>setFormLevel(formsSlider.value));
   formBtns.forEach(b=>b.addEventListener('click',()=>setFormLevel(b.dataset.level)));
 
@@ -7697,8 +7710,9 @@ const mixes=chooseMixes(target,paletteKey);
   // Keep the uploaded original across internal colour-template applications.
   let originalPhoto=null,photoLoadRevision=0;
   function installPhoto(photo){
+    clearTimeout(formsSquintTimer);formsOriginalPreview=false;
     setMixSurround('#808080');
-    img=photo;loaded=true;placeholder.style.display='none';
+    img=photo;loaded=true;placeholder.style.display='none';syncFormsOriginal();
     resetBuild32();cancelIsolation();isolationRevision++;isolationSentKey=null;
     sourceCanvas.width=img.width;sourceCanvas.height=img.height;
     sourceCtx.clearRect(0,0,img.width,img.height);sourceCtx.drawImage(img,0,0);
@@ -7735,7 +7749,7 @@ const mixes=chooseMixes(target,paletteKey);
     smartPickerBtn.classList.remove('active');smartPickerBtn.classList.add('secondary');
     clearTimeout(formsSquintTimer);formsSquintPreview=false;
     document.getElementById('formsSquint').checked=false;syncSquintPreview();
-    formLevel=0;formsSlider.value=0;formsValue.textContent='Aus';
+    formLevel=0;formsOriginalPreview=false;syncFormsOriginal();formsSlider.value=0;formsValue.textContent='Aus';
     formBtns.forEach(b=>{const active=+b.dataset.level===0;b.classList.toggle('active',active);b.classList.toggle('secondary',!active);});
     [lightSlider,midSlider,darkSlider].forEach(sl=>sl.value=100);
     [lightValue,midValue,darkValue].forEach(el=>el.textContent='100');
