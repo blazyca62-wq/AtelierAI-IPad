@@ -1,3 +1,7 @@
+AtelierAI iPad 2.90 – Oberfläche auch offline vergrößern
+
+Der Seitenzoom ist nun ausdrücklich erlaubt. Zum Vergrößern der ganzen Oberfläche zwei Finger im Bedienbereich, beispielsweise auf der Zielfarbe, auseinanderziehen. Im Motivbereich steuert die Geste weiterhin den Bildzoom.
+
 AtelierAI iPad 2.89 – Pipette aus der Bildschirmansicht
 
 Punkt- und Kreis-Pipette mit Quelle „Sichtbares Bild“ messen jetzt die Darstellung bei aktuellem Zoom und Bildschirmauflösung. Dieselbe Zeichenfunktion wird für Bildanzeige und Messung genutzt. Transparenz wird vor der Messung mit dem sichtbaren Hintergrund verrechnet; Raster und Auswahlrahmen bleiben ausgeschlossen. Haupt-Bildflächen verwenden ausdrücklich sRGB. Der Originalbild-Modus bleibt unverändert. Der exakte HEX-/RGB-Wert steht zusätzlich direkt unter der Zielfarbe.
