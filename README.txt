@@ -1,3 +1,11 @@
+AtelierAI iPad 2.84 – Echte Farbflächen-Gruppierung
+
+Sanfte Farben bevorzugen fasst jetzt ähnliche Palettenfarben zusammen und beruhigt kleine Nachbarflächen. Die Grundpalette wird ohne Helligkeitsgewichtung ermittelt. Farbgruppen-Anzeige zeigt die Zusammenfassung. 0 % erhält die bisherige neutrale Erkennung. Zusammenkneifen-Vorschau und klassische Großformen bleiben erhalten.
+
+AtelierAI iPad 2.83 – Sanfte Farben bei der Erkennung bevorzugen
+
+Der Regler gewichtet helle, sanft farbige Originaltöne bereits bei Farbauswahl und Gruppierung. Dadurch verändern sich Palette und Farbflächen. Keine nachträgliche Pastelltönung. Bei 0 % bleibt die neutrale Erkennung erhalten. Die sanfte Zusammenkneifen-Regelung aus 2.82 bleibt enthalten.
+
 AtelierAI iPad 2.82 – Sanftes Zusammenkneifen
 
 Stärkeregler mit 0,1-Schritten, flachem Beginn und kontinuierlichen Zwischenstufen statt des Sprungs auf den ersten vollen Weichzeichnungsradius. Wirkt in Vorschau und Großformfarben. 0 bleibt klar, 12 bleibt stark.
