@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.86</title>
+  <title>AtelierAI iPad 2.88</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.86</div>
+    <div class="title">AtelierAI · iPad 2.88</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1151,6 +1151,9 @@
       </div>
       <div class="section" id="formsPanel">
         <h3>Großformen</h3>
+        <button id="formsApply" type="button" style="width:100%;margin-bottom:8px" disabled>Als Malvorlage übernehmen</button>
+        <p class="tiny">Hält die Großformen als neue Arbeitsvorlage für alle anderen Module fest. Das ursprüngliche Foto bleibt über „Zurücksetzen“ erreichbar.</p>
+        <p id="formsApplyStatus" class="tiny" role="status" aria-live="polite"></p>
         <button id="formsOriginal" class="secondary" style="width:100%;margin-bottom:8px;">Zurück zum Original</button>
         <details style="margin:10px 0"><summary>Zusätzlich: Augen zusammenkneifen</summary>
         <label style="display:block;margin:10px 0"><input id="formsSquint" type="checkbox"> Ruhige Großflächen einschalten</label>
@@ -1294,7 +1297,7 @@
           <option value="visible">Sichtbares Bild</option>
           <option value="original">Originalbild</option>
         </select>
-        <div class="tiny" style="margin-top:4px;">PC-Standard: Sichtbares/bearbeitetes Bild.</div>
+        <div class="tiny" style="margin-top:4px;">Sichtbares Bild: aktuelle Ansicht einschließlich Überblendungen. Originalbild: unveränderte Vorlage.</div>
 
         <div class="mode" style="margin-top:8px;">
           <button id="managePaletteBtn" class="secondary">Meine Farben auswählen</button>
@@ -3528,11 +3531,11 @@ const mixes=chooseMixes(target,paletteKey);
     const avg=linearAverageRGB(samples);
     const robust=robustSmartColor(samples);
     lastAverageColor=avg;
-    lastSmartColor=robust ? robust.smart : avg;
+    lastSmartColor=smart && robust ? robust.smart : avg;
     avgTargetBox.style.background=rgbHex(adaptiveDisplayColor(avg));
     smartTargetBox.style.background=rgbHex(adaptiveDisplayColor(lastSmartColor));
     targetInfo.innerHTML=`Durchschnitt ${rgbHex(avg)} · RGB ${avg.join(', ')}<br>`+
-      `Smart ${rgbHex(lastSmartColor)} · RGB ${lastSmartColor.join(', ')}<br>`+
+      `Aktive Zielfarbe ${rgbHex(lastSmartColor)} · RGB ${lastSmartColor.join(', ')}<br>`+
       `<span class="tiny">${smart ? 'Smart-Malfarbe aktiv' : 'Kreis-Durchschnitt aufgenommen'} · ${samples.length} Messpunkte</span>`;
     // also update the existing smart color display for consistency
     if(robust) showSmartColor(robust);
@@ -3747,9 +3750,17 @@ const mixes=chooseMixes(target,paletteKey);
     }
   }
 
+  // Sample the same artwork composition as the viewer, without grid/selection outlines.
+  const pickerArtworkCanvas=document.createElement('canvas');
+  const pickerArtworkCtx=pickerArtworkCanvas.getContext('2d',{colorSpace:'srgb',willReadFrequently:true});
   function sourceContextForPicker(){
     flushToneImage();
-    return pickerSource && pickerSource.value==='original' ? sourceCtx : processedCtx;
+    if(pickerSource && pickerSource.value==='original') return sourceCtx;
+    if(pickerArtworkCanvas.width!==sourceCanvas.width) pickerArtworkCanvas.width=sourceCanvas.width;
+    if(pickerArtworkCanvas.height!==sourceCanvas.height) pickerArtworkCanvas.height=sourceCanvas.height;
+    pickerArtworkCtx.clearRect(0,0,pickerArtworkCanvas.width,pickerArtworkCanvas.height);
+    renderCurrentArtwork(pickerArtworkCtx,false);
+    return pickerArtworkCtx;
   }
 
   function drawGridOverlay(targetCtx, w, h, density, highContrast=false){
@@ -5967,7 +5978,7 @@ const mixes=chooseMixes(target,paletteKey);
     if(!build32Canvas || !build32VisibleMask)return null;
     const x=Math.floor(ix/sourceCanvas.width*build32Canvas.width),y=Math.floor(iy/sourceCanvas.height*build32Canvas.height);
     if(x<0||y<0||x>=build32Canvas.width||y>=build32Canvas.height||!build32VisibleMask[y*build32Canvas.width+x])return null;
-    const d=build32Canvas.getContext('2d').getImageData(x,y,1,1).data;
+    const d=readImageDataSRGB(sourceContextForPicker(),Math.floor(ix),Math.floor(iy),1,1).data;
     return [d[0],d[1],d[2]];
   }
   function syncBuild32Grid(){
@@ -6513,11 +6524,38 @@ const mixes=chooseMixes(target,paletteKey);
     rebuildToneImage();
   }
 
+  let formsApplyBusy=false;
   function syncFormsOriginal(){
+    document.getElementById('formsApply').disabled=formsApplyBusy||!loaded||formLevel===0||formsOriginalPreview;
     formsOriginal.textContent=formsOriginalPreview?'Zurück zu Großformen':'Zurück zum Original';
     formsOriginal.setAttribute('aria-pressed',String(formsOriginalPreview));
     formsOriginal.disabled=!loaded||formLevel===0;
   }
+  async function applyFormsTemplate(){
+    if(formsApplyBusy||!loaded||!formLevel||formsOriginalPreview)return;
+    const button=document.getElementById('formsApply'),status=document.getElementById('formsApplyStatus');
+    const revision=photoLoadRevision;
+    formsApplyBusy=true;syncFormsOriginal();status.textContent='Großformen werden übernommen …';
+    let snapshot=null;
+    try{
+      clearTimeout(formsSquintTimer);
+      rebuildForms();
+      // Capture the artwork itself, independent of zoom, grid and other module overlays.
+      snapshot=document.createElement('canvas');snapshot.width=formCanvas.width;snapshot.height=formCanvas.height;
+      snapshot.getContext('2d').drawImage(formCanvas,0,0);
+      const blob=await new Promise((resolve,reject)=>{
+        const timer=setTimeout(()=>reject(Error('Bitte erneut versuchen: Die Bildübernahme dauert zu lange.')),30000);
+        snapshot.toBlob(value=>{clearTimeout(timer);value?resolve(value):reject(Error('Das Bild konnte nicht erstellt werden.'));},'image/png');
+      });
+      if(revision!==photoLoadRevision)throw Error('Inzwischen wurde ein anderes Bild geöffnet. Bitte erneut wählen.');
+      await new Promise((resolve,reject)=>loadPhoto(blob,true,error=>error?reject(error):resolve()));
+      setMode('move');
+      status.textContent='Großformen als Malvorlage übernommen. Du kannst jetzt in einem anderen Modul weiterarbeiten.';
+      hint.textContent=status.textContent;
+    }catch(error){status.textContent='Nicht übernommen: '+error.message;}
+    finally{if(snapshot)snapshot.width=snapshot.height=1;formsApplyBusy=false;syncFormsOriginal();}
+  }
+  document.getElementById('formsApply').addEventListener('click',applyFormsTemplate);
   function toggleFormsOriginal(){
     if(!loaded||!formLevel)return;
     clearTimeout(formsSquintTimer);formsOriginalPreview=!formsOriginalPreview;

@@ -1,3 +1,12 @@
+AtelierAI iPad 2.88 – Pipette: sichtbare Ansicht und Kreisfarbe
+
+Die Quelle „Sichtbares Bild“ berücksichtigt jetzt Überblendungen und sichtbare Bearbeitungen. Raster und Auswahlumrandungen werden nicht aufgenommen. Originalbild bleibt eine separate Quelle.
+Die Kreis-Pipette verwendet den Durchschnitt als Mischziel; nur die Maler-Pipette verwendet die Smart-Auswertung. Keine pauschale Aufhellung.
+
+AtelierAI iPad 2.87 – Großformen als Malvorlage
+
+In Großformen die gewünschte Ansicht einstellen und „Als Malvorlage übernehmen“ antippen. Die aktuelle Großformen-Ansicht (auch weiches Zusammenkneifen, Farbflächen und aufgefüllte Flecken) wird zur Arbeitsgrundlage aller Module. Großformen werden danach ausgeschaltet, damit die Wirkung nicht doppelt angewendet wird. Das ursprüngliche Foto bleibt über Zurücksetzen erreichbar.
+
 AtelierAI iPad 2.86 – Bewährte Standardwerte
 
 Zusammenkneifen startet mit 1,5; Sanfte Farben bevorzugen mit 0 %. Beide Regler bleiben frei einstellbar.
