@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.84</title>
+  <title>AtelierAI iPad 2.85</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.84</div>
+    <div class="title">AtelierAI · iPad 2.85</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -6605,7 +6605,8 @@ const mixes=chooseMixes(target,paletteKey);
     }
     ctx.putImageData(out,0,0);
     formCtx.clearRect(0,0,formCanvas.width,formCanvas.height);
-    formCtx.imageSmoothingEnabled=formLevel!==1 || (document.getElementById('formsSquint').checked && formsSquintPreview);formCtx.imageSmoothingQuality='high';
+    // Flat squint forms also need interpolation, including at the coarsest level.
+    formCtx.imageSmoothingEnabled=formLevel!==1 || document.getElementById('formsSquint').checked;formCtx.imageSmoothingQuality='high';
     formCtx.drawImage(work,0,0,formCanvas.width,formCanvas.height);
     renderedFormSpots=amount;toneSourcePixels=null;
   }
@@ -6752,9 +6753,13 @@ const mixes=chooseMixes(target,paletteKey);
     return current;
   }
   function rebuildSquintForms(){
-    const w=sourceCanvas.width,h=sourceCanvas.height,scale=Math.min(1,360/Math.max(w,h));
+    // Higher working resolution keeps curved and diagonal boundaries clean on iPad.
+    // Blur radius already scales with dimensions, preserving the squint strength.
+    const w=sourceCanvas.width,h=sourceCanvas.height,scale=Math.min(1,960/Math.max(w,h));
     const work=document.createElement('canvas');work.width=Math.max(1,Math.round(w*scale));work.height=Math.max(1,Math.round(h*scale));
-    const c=work.getContext('2d',{willReadFrequently:true});c.drawImage(sourceCanvas,0,0,work.width,work.height);
+    const c=work.getContext('2d',{willReadFrequently:true});
+    c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
+    c.drawImage(sourceCanvas,0,0,work.width,work.height);
     const pixels=c.getImageData(0,0,work.width,work.height);
     const strength=+document.getElementById('formsSquintBlur').value;
     const blurred=squintSoftBlur(pixels.data,work.width,work.height,strength);

@@ -1,3 +1,7 @@
+AtelierAI iPad 2.85 – Feinere Großflächen ohne Pixelblöcke
+
+Zusammenkneifen und ruhige Großflächen werden mit bis zu 960 statt 360 Pixeln berechnet. Hochwertige Kantenglättung ist auch bei Großflächen-Stufe 1 aktiv. Stärke des Zusammenkneifens bleibt proportional zur Bildgröße. Farbgruppierung aus 2.84 bleibt erhalten.
+
 AtelierAI iPad 2.84 – Echte Farbflächen-Gruppierung
 
 Sanfte Farben bevorzugen fasst jetzt ähnliche Palettenfarben zusammen und beruhigt kleine Nachbarflächen. Die Grundpalette wird ohne Helligkeitsgewichtung ermittelt. Farbgruppen-Anzeige zeigt die Zusammenfassung. 0 % erhält die bisherige neutrale Erkennung. Zusammenkneifen-Vorschau und klassische Großformen bleiben erhalten.
