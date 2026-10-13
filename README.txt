@@ -1,3 +1,7 @@
+AtelierAI iPad 2.86 – Bewährte Standardwerte
+
+Zusammenkneifen startet mit 1,5; Sanfte Farben bevorzugen mit 0 %. Beide Regler bleiben frei einstellbar.
+
 AtelierAI iPad 2.85 – Feinere Großflächen ohne Pixelblöcke
 
 Zusammenkneifen und ruhige Großflächen werden mit bis zu 960 statt 360 Pixeln berechnet. Hochwertige Kantenglättung ist auch bei Großflächen-Stufe 1 aktiv. Stärke des Zusammenkneifens bleibt proportional zur Bildgröße. Farbgruppierung aus 2.84 bleibt erhalten.

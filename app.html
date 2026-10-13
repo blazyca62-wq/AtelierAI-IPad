@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.85</title>
+  <title>AtelierAI iPad 2.86</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.85</div>
+    <div class="title">AtelierAI · iPad 2.86</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1158,10 +1158,10 @@
           <button id="formsSquintSoft" class="secondary" type="button" aria-pressed="false">Zusammenkneifen ansehen</button>
           <button id="formsSquintFlat" class="active" type="button" aria-pressed="true">Farbflächen ansehen</button>
         </div>
-        <label for="formsSquintBlur">Stärke des Zusammenkneifens: <span id="formsSquintBlurVal">5</span></label>
-        <input id="formsSquintBlur" type="range" min="0" max="12" value="5" step="0.1" style="width:100%;min-height:44px">
-        <label for="formsSquintLight">Sanfte Farben bevorzugen: <span id="formsSquintLightVal">60 %</span></label>
-        <input id="formsSquintLight" type="range" min="0" max="100" value="60" step="5" style="width:100%;min-height:44px">
+        <label for="formsSquintBlur">Stärke des Zusammenkneifens: <span id="formsSquintBlurVal">1,5</span></label>
+        <input id="formsSquintBlur" type="range" min="0" max="12" value="1.5" step="0.1" style="width:100%;min-height:44px">
+        <label for="formsSquintLight">Sanfte Farben bevorzugen: <span id="formsSquintLightVal">0 %</span></label>
+        <input id="formsSquintLight" type="range" min="0" max="100" value="0" step="5" style="width:100%;min-height:44px">
         <p class="tiny">0 % = ursprüngliche Farbflächen. Höhere Werte fassen ähnliche Farbtöne zu größeren, ruhigeren Flächen zusammen und bevorzugen dabei sanfte Bildfarben. Kleine Flecken werden an passende Nachbarflächen angeschlossen. Deutliche Farbwechsel und tiefe Schatten bleiben getrennt. Die Änderung erscheint nach dem Loslassen in „Farbflächen ansehen“.</p>
         <p class="tiny" id="formsSquintGrouping" aria-live="polite"></p>
         <p class="tiny">Erst „Zusammenkneifen ansehen“ wählen und die Stärke einstellen: 0 = klar, 12 = stark. Feine 0,1-Schritte und ein besonders sanfter Beginn erleichtern die Dosierung. Die weiche Vorschau folgt dem Regler. Dann „Farbflächen ansehen“ wählen: Die Farben stammen aus dieser Vorschau; „Sanfte Farben bevorzugen“ fasst ähnliche Farben und Nachbarflächen zusammen. Stufe 1 = gröber (bis zu 20 Farben), Stufe 5 = feiner (bis zu 40 Farben). Die Flächen werden nach Loslassen berechnet. Ausschalten zeigt wieder die bisherigen Großformen. Bearbeitete Farben vorher als Malvorlage übernehmen.</p>
