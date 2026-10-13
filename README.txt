@@ -1,3 +1,9 @@
+AtelierAI iPad 2.89 – Pipette aus der Bildschirmansicht
+
+Punkt- und Kreis-Pipette mit Quelle „Sichtbares Bild“ messen jetzt die Darstellung bei aktuellem Zoom und Bildschirmauflösung. Dieselbe Zeichenfunktion wird für Bildanzeige und Messung genutzt. Transparenz wird vor der Messung mit dem sichtbaren Hintergrund verrechnet; Raster und Auswahlrahmen bleiben ausgeschlossen. Haupt-Bildflächen verwenden ausdrücklich sRGB. Der Originalbild-Modus bleibt unverändert. Der exakte HEX-/RGB-Wert steht zusätzlich direkt unter der Zielfarbe.
+
+Die Kreis-Pipette bildet weiterhin einen Durchschnitt; die Maler-Pipette darf eine andere Smart-Malfarbe wählen. Keine pauschale Aufhellung oder feste Farbkorrektur.
+
 AtelierAI iPad 2.88 – Pipette: sichtbare Ansicht und Kreisfarbe
 
 Die Quelle „Sichtbares Bild“ berücksichtigt jetzt Überblendungen und sichtbare Bearbeitungen. Raster und Auswahlumrandungen werden nicht aufgenommen. Originalbild bleibt eine separate Quelle.

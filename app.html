@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.88</title>
+  <title>AtelierAI iPad 2.89</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.88</div>
+    <div class="title">AtelierAI · iPad 2.89</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1297,7 +1297,7 @@
           <option value="visible">Sichtbares Bild</option>
           <option value="original">Originalbild</option>
         </select>
-        <div class="tiny" style="margin-top:4px;">Sichtbares Bild: aktuelle Ansicht einschließlich Überblendungen. Originalbild: unveränderte Vorlage.</div>
+        <div class="tiny" style="margin-top:4px;">Sichtbares Bild: aktuelle Bildschirmansicht einschließlich Zoom und Überblendungen. Originalbild: unveränderte Vorlage.</div>
 
         <div class="mode" style="margin-top:8px;">
           <button id="managePaletteBtn" class="secondary">Meine Farben auswählen</button>
@@ -1773,7 +1773,7 @@
 (() => {
   const canvas = document.getElementById('canvas');
   // Die Anzeigefläche wird nur gezeichnet; Pixel liest die separate Analysefläche.
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', {colorSpace:'srgb'});
   const viewer = document.getElementById('viewer');
   const fileInput = document.getElementById('fileInput');
   const placeholder = document.getElementById('placeholder');
@@ -2092,11 +2092,11 @@
 
 
   let sourceCanvas = document.createElement('canvas');
-  let sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+  let sourceCtx = sourceCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
   let formCanvas = document.createElement('canvas');
-  let formCtx = formCanvas.getContext('2d', { willReadFrequently: true });
+  let formCtx = formCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
   let toneGrayCanvas = document.createElement('canvas');
-  let toneGrayCtx = toneGrayCanvas.getContext('2d', { willReadFrequently: true });
+  let toneGrayCtx = toneGrayCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
   function rebuildToneGrayOriginal(){
     if(!sourceCanvas.width || !sourceCanvas.height) return;
     toneGrayCanvas.width=sourceCanvas.width; toneGrayCanvas.height=sourceCanvas.height;
@@ -2111,10 +2111,10 @@
   }
 
   let toneGrayBackgroundCanvas = document.createElement('canvas');
-  let toneGrayBackgroundCtx = toneGrayBackgroundCanvas.getContext('2d', { willReadFrequently: true });
+  let toneGrayBackgroundCtx = toneGrayBackgroundCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
 
   let processedCanvas = document.createElement('canvas');
-  let processedCtx = processedCanvas.getContext('2d', { willReadFrequently: true });
+  let processedCtx = processedCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
   let originalBlendPercent=0;
 
   // Vorzeichnung: geglättete Konturen, dünne Linien und zusammenhängende Formen.
@@ -2574,6 +2574,11 @@
     const step=Math.max(1,Math.floor(Math.sqrt((w*h)/700)));
     for(let y=0;y<h;y+=step){
       for(let x=0;x<w;x+=step){
+        // Do not average the viewer margin when the circle crosses the photo edge.
+        if(visible){
+          const ax=((x+x0+.5)/dpr-offsetX)/scale,ay=((y+y0+.5)/dpr-offsetY)/scale;
+          if(ax<0||ay<0||ax>=img.width||ay>=img.height)continue;
+        }
         const i=(y*w+x)*4;
         if(data[i+3]>20) samples.push([data[i],data[i+1],data[i+2]]);
       }
@@ -3467,7 +3472,7 @@ const mixes=chooseMixes(target,paletteKey);
       card.innerHTML=`
         <div class="mix-head"><b>Vorschlag ${idx+1}</b><span>${m.score}/100 Bildschirmnähe</span></div>
         <div class="mix-swatches">
-          <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${targetHex}"></div></div>
+          <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${targetHex}"></div><div class="tiny" style="margin-top:6px">${targetHex} · RGB ${target.join(', ')}</div></div>
           <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex}"></div></div>
         </div>
         <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i].toLocaleString('de-DE')} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)':'Öl · spektrale Näherung; Mengen als Startrezept'}. Auf Papier/Palette prüfen.</span></div>
@@ -3512,16 +3517,20 @@ const mixes=chooseMixes(target,paletteKey);
     const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
     if(ix<0||iy<0||ix>=img.width||iy>=img.height) return;
     const radiusScreen=Number(pickerRadius.value);
-    const radius=Math.max(2,Math.round(radiusScreen/Math.max(scale,0.01)));
-    const x0=Math.max(0,Math.floor(ix-radius)), y0=Math.max(0,Math.floor(iy-radius));
-    const x1=Math.min(img.width,Math.ceil(ix+radius)), y1=Math.min(img.height,Math.ceil(iy+radius));
+    const visible=pickerSource.value!=='original';
+    const sampleCtx=visible?renderPickerDisplay():sourceContextForPicker();
+    const dpr=Math.max(1,window.devicePixelRatio||1);
+    const cx=visible?p.x*dpr:ix,cy=visible?p.y*dpr:iy;
+    const radius=visible?radiusScreen*dpr:Math.max(2,Math.round(radiusScreen/Math.max(scale,0.01)));
+    const x0=Math.max(0,Math.floor(cx-radius)), y0=Math.max(0,Math.floor(cy-radius));
+    const x1=Math.min(sampleCtx.canvas.width,Math.ceil(cx+radius)), y1=Math.min(sampleCtx.canvas.height,Math.ceil(cy+radius));
     const w=Math.max(1,x1-x0), h=Math.max(1,y1-y0);
-    const data=readImageDataSRGB(sourceContextForPicker(),x0,y0,w,h).data;
+    const data=readImageDataSRGB(sampleCtx,x0,y0,w,h).data;
     const samples=[];
-    const step=Math.max(1,Math.floor(Math.sqrt((w*h)/900)));
+    const step=visible?1:Math.max(1,Math.floor(Math.sqrt((w*h)/900)));
     for(let y=0;y<h;y+=step){
       for(let x=0;x<w;x+=step){
-        const dx=(x+x0-ix), dy=(y+y0-iy);
+        const dx=(x+x0-cx), dy=(y+y0-cy);
         if(dx*dx+dy*dy>radius*radius) continue;
         const i=(y*w+x)*4;
         if(data[i+3]>20) samples.push([data[i],data[i+1],data[i+2]]);
@@ -3761,6 +3770,35 @@ const mixes=chooseMixes(target,paletteKey);
     pickerArtworkCtx.clearRect(0,0,pickerArtworkCanvas.width,pickerArtworkCanvas.height);
     renderCurrentArtwork(pickerArtworkCtx,false);
     return pickerArtworkCtx;
+  }
+
+  // 2.89: sample the actual display resolution and interpolation, not a
+  // separate full-resolution rendering. This also flattens transparent pixels
+  // against the same background as the viewer. No grid or selection marks.
+  const pickerDisplayCanvas=document.createElement('canvas');
+  const pickerDisplayCtx=pickerDisplayCanvas.getContext('2d',{colorSpace:'srgb',willReadFrequently:true});
+  function renderPickerDisplay(){
+    flushToneImage();
+    if(pickerDisplayCanvas.width!==canvas.width)pickerDisplayCanvas.width=canvas.width;
+    if(pickerDisplayCanvas.height!==canvas.height)pickerDisplayCanvas.height=canvas.height;
+    const pc=pickerDisplayCtx,dpr=Math.max(1,window.devicePixelRatio||1);
+    pc.setTransform(1,0,0,1,0,0);
+    pc.clearRect(0,0,pickerDisplayCanvas.width,pickerDisplayCanvas.height);
+    pc.fillStyle=getComputedStyle(viewer).backgroundColor;
+    pc.fillRect(0,0,pickerDisplayCanvas.width,pickerDisplayCanvas.height);
+    pc.save();pc.setTransform(dpr,0,0,dpr,0,0);
+    paintArtworkAtView(pc,false);
+    pc.restore();
+    return pc;
+  }
+  function sampleDisplayedPixel(ix,iy){
+    if(pickerSource.value==='original'){
+      return readImageDataSRGB(sourceCtx,Math.floor(ix),Math.floor(iy),1,1).data.slice(0,3);
+    }
+    const pc=renderPickerDisplay(),dpr=Math.max(1,window.devicePixelRatio||1);
+    const x=Math.max(0,Math.min(pc.canvas.width-1,Math.floor((offsetX+ix*scale)*dpr)));
+    const y=Math.max(0,Math.min(pc.canvas.height-1,Math.floor((offsetY+iy*scale)*dpr)));
+    return readImageDataSRGB(pc,x,y,1,1).data.slice(0,3);
   }
 
   function drawGridOverlay(targetCtx, w, h, density, highContrast=false){
@@ -5978,8 +6016,7 @@ const mixes=chooseMixes(target,paletteKey);
     if(!build32Canvas || !build32VisibleMask)return null;
     const x=Math.floor(ix/sourceCanvas.width*build32Canvas.width),y=Math.floor(iy/sourceCanvas.height*build32Canvas.height);
     if(x<0||y<0||x>=build32Canvas.width||y>=build32Canvas.height||!build32VisibleMask[y*build32Canvas.width+x])return null;
-    const d=readImageDataSRGB(sourceContextForPicker(),Math.floor(ix),Math.floor(iy),1,1).data;
-    return [d[0],d[1],d[2]];
+    return Array.from(sampleDisplayedPixel(ix,iy));
   }
   function syncBuild32Grid(){
     const button=document.getElementById('build32Grid');
@@ -7126,17 +7163,21 @@ const mixes=chooseMixes(target,paletteKey);
     if(includeGrid && gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value,(build32Active || (!!surfaceMarkCanvas && isolationGray && !sketchActive)));
   }
 
+  function paintArtworkAtView(targetCtx,includeGrid){
+    targetCtx.save();
+    targetCtx.imageSmoothingEnabled=true;
+    targetCtx.imageSmoothingQuality='high';
+    targetCtx.translate(offsetX,offsetY);
+    targetCtx.scale(scale,scale);
+    renderCurrentArtwork(targetCtx,includeGrid);
+    targetCtx.restore();
+  }
+
   function paintViewer(){
     const r=viewer.getBoundingClientRect();
     ctx.clearRect(0,0,r.width,r.height);
     if(!loaded) return;
-    ctx.save();
-    ctx.imageSmoothingEnabled=true;
-    ctx.imageSmoothingQuality='high';
-    ctx.translate(offsetX,offsetY);
-    ctx.scale(scale,scale);
-    renderCurrentArtwork(ctx);
-    ctx.restore();
+    paintArtworkAtView(ctx,true);
     if(surfacePreview && !sketchActive && !build32Active){
       const sx=offsetX+surfacePreview.x*scale, sy=offsetY+surfacePreview.y*scale;
       const sz=surfacePreview.size*scale;
@@ -7175,9 +7216,7 @@ const mixes=chooseMixes(target,paletteKey);
       rgb=sampleBuild32Color(ix,iy);
       if(!rgb){hint.textContent='Bitte eine eingeblendete Farbfläche antippen, nicht den Hintergrund.';return;}
     }else{
-      const pc=sourceContextForPicker();
-      const d=readImageDataSRGB(pc,Math.floor(ix),Math.floor(iy),1,1).data;
-      rgb=[d[0],d[1],d[2]];
+      rgb=Array.from(sampleDisplayedPixel(ix,iy));
     }
     surfaceSelectedIndex=null;
     cancelIsolation();
