@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.99</title>
+  <title>AtelierAI iPad 3.00</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,13 +1031,14 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.99</div>
+    <div class="title">AtelierAI · iPad 3.00</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="saveCurrentViewBtn" type="button">Ansicht speichern</button>
     <button id="visibleCropBtn" type="button" class="secondary" disabled>Sichtbaren Ausschnitt als Malvorlage übernehmen</button>
+    <button id="gridCellCropBtn" type="button" class="secondary" disabled aria-pressed="false">Rasterkästchen als Malvorlage auswählen</button>
     <button id="visibleCropBack" type="button" class="secondary" hidden>Zurück zum ganzen Bild</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -8013,8 +8014,48 @@ const mixes=chooseMixes(target,paletteKey);
 
   // Keep the uploaded original across internal colour-template applications.
   let originalPhoto=null,photoLoadRevision=0;
-  let visibleCropWhole=null;
+  let visibleCropWhole=null,visibleCropGrid=null,gridCellCropArmed=false;
+  function rememberCropWhole(){
+    if(visibleCropWhole)return;
+    visibleCropWhole=img;
+    visibleCropGrid={reference:gridReference?{...gridReference}:null,adjust:{...gridAdjust},density:gridDensity.value,enabled:gridEnabled};
+  }
+  function syncGridCellCrop(){
+    const button=document.getElementById('gridCellCropBtn');
+    button.disabled=!loaded;
+    button.textContent=gridCellCropArmed?'Auswahl abbrechen · Kästchen antippen':'Rasterkästchen als Malvorlage auswählen';
+    button.setAttribute('aria-pressed',String(gridCellCropArmed));
+    button.classList.toggle('active',gridCellCropArmed);
+  }
+  document.getElementById('gridCellCropBtn').addEventListener('click',()=>{
+    if(!loaded)return;
+    gridCellCropArmed=!gridCellCropArmed;
+    if(gridCellCropArmed){
+      if(!gridEnabled)gridToggleBtn.click();
+      syncBuild32Grid();
+      hint.textContent='Ein Rasterkästchen antippen. Verschieben und Zwei-Finger-Zoom bleiben möglich.';
+    }else hint.textContent='Kästchenauswahl abgebrochen.';
+    syncGridCellCrop();
+  });
+  function cropSelectedGridCell(e){
+    const p=canvasPoint(e.clientX,e.clientY),ix=(p.x-offsetX)/scale,iy=(p.y-offsetY)/scale;
+    if(ix<0||iy<0||ix>=sourceCanvas.width||iy>=sourceCanvas.height)return;
+    const cell=build32GridCellAt(ix,iy);
+    if(!cell||cell.w<2||cell.h<2){hint.textContent='Dieses Kästchen ist zu klein. Bitte ein größeres auswählen.';return;}
+    const crop=document.createElement('canvas');crop.width=cell.w;crop.height=cell.h;
+    crop.getContext('2d').drawImage(sourceCanvas,cell.x,cell.y,cell.w,cell.h,0,0,cell.w,cell.h);
+    rememberCropWhole();
+    gridCellCropArmed=false;gridReference=null;
+    Object.assign(gridAdjust,{size:100,x:0,y:0,width:100,height:100,locked:false});
+    gridDensity.value='4';gridDensityVal.textContent='4';
+    centerGridControls();syncGridAdjust();syncBuild32Grid();
+    photoLoadRevision++;resetPhotoFilters();installPhoto(crop);
+    document.dispatchEvent(new Event('atelier-reset-photo'));
+    setMode('move');
+    hint.textContent='Rasterkästchen als Original-Malvorlage übernommen · '+cell.w+' × '+cell.h+' Bildpixel. Neues Raster: 4 – über den Rasterregler weiter unterteilen.';
+  }
   function syncVisibleCrop(){
+    syncGridCellCrop();
     document.getElementById('visibleCropBtn').disabled=!loaded;
     document.getElementById('visibleCropBack').hidden=!visibleCropWhole;
   }
@@ -8036,7 +8077,7 @@ const mixes=chooseMixes(target,paletteKey);
     // Copy source pixels 1:1, never the screen, quantized view or grid.
     const crop=document.createElement('canvas');crop.width=box.width;crop.height=box.height;
     crop.getContext('2d').drawImage(sourceCanvas,box.x,box.y,box.width,box.height,0,0,box.width,box.height);
-    if(!visibleCropWhole)visibleCropWhole=img;
+    rememberCropWhole();
     const ref=gridReference||{width:sourceCanvas.width,height:sourceCanvas.height,x:0,y:0,viewWidth:sourceCanvas.width,viewHeight:sourceCanvas.height};
     const rx=ref.viewWidth/sourceCanvas.width,ry=ref.viewHeight/sourceCanvas.height;
     gridReference={width:ref.width,height:ref.height,x:ref.x+box.x*rx,y:ref.y+box.y*ry,viewWidth:box.width*rx,viewHeight:box.height*ry};
@@ -8048,12 +8089,20 @@ const mixes=chooseMixes(target,paletteKey);
   });
   document.getElementById('visibleCropBack').addEventListener('click',()=>{
     if(!visibleCropWhole)return;
-    const whole=visibleCropWhole;visibleCropWhole=null;gridReference=null;photoLoadRevision++;
+    const whole=visibleCropWhole;visibleCropWhole=null;gridCellCropArmed=false;
+    gridReference=visibleCropGrid?.reference||null;
+    if(visibleCropGrid){
+      Object.assign(gridAdjust,visibleCropGrid.adjust);gridDensity.value=visibleCropGrid.density;gridDensityVal.textContent=gridDensity.value;
+      if(gridEnabled!==visibleCropGrid.enabled)gridToggleBtn.click();
+      centerGridControls();syncGridAdjust();syncBuild32Grid();
+    }
+    visibleCropGrid=null;photoLoadRevision++;
     resetPhotoFilters();installPhoto(whole);
     document.dispatchEvent(new Event('atelier-reset-photo'));
     setMode('move');hint.textContent='Ganze Malvorlage wiederhergestellt. Ausschnitt-Bearbeitungen werden nicht in das Gesamtbild eingesetzt.';
   });
   function installPhoto(photo){
+    gridCellCropArmed=false;
     clearTimeout(formsSquintTimer);formsOriginalPreview=false;
     setMixSurround('#808080');
     img=photo;loaded=true;syncVisibleCrop();placeholder.style.display='none';syncFormsOriginal();
@@ -8072,7 +8121,7 @@ const mixes=chooseMixes(target,paletteKey);
     photo.onload=()=>{
       clearTimeout(loadTimer);URL.revokeObjectURL(url);if(token!==photoLoadRevision){onComplete?.(Error('Ein anderes Foto wurde geöffnet.'));return;}
       try{
-        if(!keepOriginal){originalPhoto=photo;visibleCropWhole=null;gridReference=null;}
+        if(!keepOriginal){originalPhoto=photo;visibleCropWhole=null;visibleCropGrid=null;gridReference=null;}
         // Every newly opened source starts neutral, including ordinary photo imports.
         resetPhotoFilters();
         installPhoto(photo);
@@ -8111,7 +8160,7 @@ const mixes=chooseMixes(target,paletteKey);
     if(!loaded)return;
     photoLoadRevision++;
     resetPhotoFilters();
-    visibleCropWhole=null;gridReference=null;installPhoto(originalPhoto||img);
+    visibleCropWhole=null;visibleCropGrid=null;gridReference=null;installPhoto(originalPhoto||img);
     document.dispatchEvent(new Event('atelier-reset-photo'));
     setMode('move');hint.textContent='Foto und Bildfilter zurückgesetzt.';
   });
@@ -8125,6 +8174,7 @@ const mixes=chooseMixes(target,paletteKey);
 
   // Select only on release: a second finger or a drag never samples a color.
   function selectViewerPoint(e){
+    if(gridCellCropArmed){cropSelectedGridCell(e);e.preventDefault();return;}
     if(mixSurroundArmed){pickMixSurround(e.clientX,e.clientY);e.preventDefault();return;}
     if(pickSurfaceAt(e)) return;
     // Detail-Kästchen: ein Rasterfeld auswählen und nur dort die aktuelle

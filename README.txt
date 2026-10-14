@@ -1,3 +1,13 @@
+AtelierAI iPad 3.00 – Rasterkästchen als Malvorlage
+
+„Rasterkästchen als Malvorlage auswählen“ drücken und ein Kästchen antippen.
+Das Kästchen wird aus den Originalpixeln übernommen, ohne eingebrannte Linien.
+Es erhält ein eigenes Raster mit Dichte 4. Die Dichte lässt sich wie gewohnt
+ändern, z. B. auf 8. Verschobene und verformte Raster werden berücksichtigt.
+Der gleiche Auswahlknopf bricht die Auswahl ab.
+„Zurück zum ganzen Bild“ stellt Bild und vorherige Rastereinstellungen wieder her.
+Die bisherige sichtbare Ausschnittfunktion behält das Ursprungsraster.
+
 AtelierAI iPad 2.99 – Feine Rasterlinien
 
 Die Rasterlinien behalten beim Vergrößern eine feine Bildschirmstärke.
