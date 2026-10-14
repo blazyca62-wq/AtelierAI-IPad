@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.97</title>
+  <title>AtelierAI iPad 2.98</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.97</div>
+    <div class="title">AtelierAI · iPad 2.98</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -2041,6 +2041,7 @@
   let surfaceMode=null;
   let correctionBase=null;
   let gridEnabled=false;
+  let gridReference=null; // Original image coordinates retained through nested crops.
   const gridAdjust={size:100,x:0,y:0,width:100,height:100,locked:false};
   let gridFine=true;
   const gridCenters={size:100,x:0,y:0,width:100,height:100};
@@ -2054,10 +2055,13 @@
   }
   // One image-relative geometry shared by drawing, export and cell selection.
   function gridGeometry(w,h,density){
-    const base=Math.min(w,h)/Math.max(2,Number(density)||8);
-    const cellX=base*gridAdjust.size/100*gridAdjust.width/100;
-    const cellY=base*gridAdjust.size/100*gridAdjust.height/100;
-    const cx=w*(.5+gridAdjust.x/100),cy=h*(.5+gridAdjust.y/100);
+    const ref=gridReference||{width:w,height:h,x:0,y:0,viewWidth:w,viewHeight:h};
+    const sx=w/ref.viewWidth,sy=h/ref.viewHeight;
+    const base=Math.min(ref.width,ref.height)/Math.max(2,Number(density)||8);
+    const cellX=base*gridAdjust.size/100*gridAdjust.width/100*sx;
+    const cellY=base*gridAdjust.size/100*gridAdjust.height/100*sy;
+    const cx=(ref.width*(.5+gridAdjust.x/100)-ref.x)*sx;
+    const cy=(ref.height*(.5+gridAdjust.y/100)-ref.y)*sy;
     return {cellX,cellY,firstX:cx-Math.ceil(cx/cellX)*cellX,firstY:cy-Math.ceil(cy/cellY)*cellY};
   }
   function syncGridAdjust(){
@@ -8034,15 +8038,18 @@ const mixes=chooseMixes(target,paletteKey);
     const crop=document.createElement('canvas');crop.width=box.width;crop.height=box.height;
     crop.getContext('2d').drawImage(sourceCanvas,box.x,box.y,box.width,box.height,0,0,box.width,box.height);
     if(!visibleCropWhole)visibleCropWhole=img;
+    const ref=gridReference||{width:sourceCanvas.width,height:sourceCanvas.height,x:0,y:0,viewWidth:sourceCanvas.width,viewHeight:sourceCanvas.height};
+    const rx=ref.viewWidth/sourceCanvas.width,ry=ref.viewHeight/sourceCanvas.height;
+    gridReference={width:ref.width,height:ref.height,x:ref.x+box.x*rx,y:ref.y+box.y*ry,viewWidth:box.width*rx,viewHeight:box.height*ry};
     photoLoadRevision++;
     resetPhotoFilters();installPhoto(crop);
     document.dispatchEvent(new Event('atelier-reset-photo'));
     setMode('move');
-    hint.textContent='Originalausschnitt übernommen · '+box.width+' × '+box.height+' Bildpixel. Wähle jetzt selbst das gewünschte Modul.';
+    hint.textContent='Originalausschnitt übernommen · '+box.width+' × '+box.height+' Bildpixel. Das Raster bleibt am Gesamtbild ausgerichtet. Wähle jetzt das gewünschte Modul.';
   });
   document.getElementById('visibleCropBack').addEventListener('click',()=>{
     if(!visibleCropWhole)return;
-    const whole=visibleCropWhole;visibleCropWhole=null;photoLoadRevision++;
+    const whole=visibleCropWhole;visibleCropWhole=null;gridReference=null;photoLoadRevision++;
     resetPhotoFilters();installPhoto(whole);
     document.dispatchEvent(new Event('atelier-reset-photo'));
     setMode('move');hint.textContent='Ganze Malvorlage wiederhergestellt. Ausschnitt-Bearbeitungen werden nicht in das Gesamtbild eingesetzt.';
@@ -8066,7 +8073,7 @@ const mixes=chooseMixes(target,paletteKey);
     photo.onload=()=>{
       clearTimeout(loadTimer);URL.revokeObjectURL(url);if(token!==photoLoadRevision){onComplete?.(Error('Ein anderes Foto wurde geöffnet.'));return;}
       try{
-        if(!keepOriginal){originalPhoto=photo;visibleCropWhole=null;}
+        if(!keepOriginal){originalPhoto=photo;visibleCropWhole=null;gridReference=null;}
         // Every newly opened source starts neutral, including ordinary photo imports.
         resetPhotoFilters();
         installPhoto(photo);
@@ -8105,7 +8112,7 @@ const mixes=chooseMixes(target,paletteKey);
     if(!loaded)return;
     photoLoadRevision++;
     resetPhotoFilters();
-    visibleCropWhole=null;installPhoto(originalPhoto||img);
+    visibleCropWhole=null;gridReference=null;installPhoto(originalPhoto||img);
     document.dispatchEvent(new Event('atelier-reset-photo'));
     setMode('move');hint.textContent='Foto und Bildfilter zurückgesetzt.';
   });

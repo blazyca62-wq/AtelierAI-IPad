@@ -1,3 +1,10 @@
+AtelierAI iPad 2.98 – Ursprungsraster im Ausschnitt
+
+Ausschnitte behalten Abstand und Position des ursprünglichen Rasters.
+Das gilt auch für weitere Ausschnitte und für die Farbanalyse.
+Zurück zum ganzen Bild stellt die Rasterausrichtung des Gesamtbilds wieder her.
+Ein neues Foto startet ohne Ausschnittbezug. Raster bleibt eine separate Ebene.
+
 AtelierAI iPad 2.97 – Grundbild als Standard
 
 Der Malaufbau startet mit „Grundbild · danach übermalen und verfeinern“.
