@@ -1,3 +1,16 @@
+AtelierAI iPad 2.92 – Endgültige Farben, ohne Übermalen
+
+Im Malaufbau die Malweise „Endgültige Farben · Flächen schrittweise füllen“
+wählen und „16 → 32 → 48 → 64 vorbereiten“ drücken.
+Ein einziges 64-Farben-Zielbild wird berechnet. Die 16 größten Farbflächen
+kommen zuerst; weitere Gruppen füllen nur bisher ausgesparte Bereiche.
+Bisher / Nur neue Farben / Zusammen und Ein-/Ausblenden bleiben verfügbar.
+Graue oder weiße Lücken sind nur Hintergrund und werden noch nicht gemalt.
+Übergangsglättung ist in dieser Ansicht ausgesetzt, damit alle Farben und
+Flächengrenzen über sämtliche Stufen exakt gleich bleiben.
+Die bisherige Malweise „Grundbild · danach übermalen und verfeinern“
+ist weiterhin auswählbar. Bei farbarmen Bildern sind weniger Farben möglich.
+
 AtelierAI iPad 2.91 – Malaufbau in 16er-Schritten
 
 Im Farbaufbau „16 → 32 → 48 → 64 vorbereiten“ wählen.

@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.91</title>
+  <title>AtelierAI iPad 2.92</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.91</div>
+    <div class="title">AtelierAI · iPad 2.92</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1105,13 +1105,14 @@
 
         <details id="build32StagesPanel" style="margin:12px 0" open>
           <summary style="padding:10px 0;font-weight:bold">Malaufbau in 16er-Schritten</summary>
+          <label for="build32StagesMode">Malweise</label><select id="build32StagesMode" style="width:100%;min-height:44px;margin-bottom:8px"><option value="final" selected>Endgültige Farben · Flächen schrittweise füllen</option><option value="layer">Grundbild · danach übermalen und verfeinern</option></select>
           <button id="build32StagesStart" type="button" style="width:100%">16 → 32 → 48 → 64 vorbereiten</button>
           <div id="build32StagesControls" hidden>
             <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" class="secondary" data-paint-stage="0">16 Farben</button><button type="button" class="secondary" data-paint-stage="1">32 Farben</button><button type="button" class="secondary" data-paint-stage="2">48 Farben</button><button type="button" class="secondary" data-paint-stage="3">64 Farben</button></div>
             <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" class="secondary" data-paint-view="before">Bisher</button><button type="button" class="secondary" data-paint-view="new">Nur neue Farben</button><button type="button" data-paint-view="all">Zusammen</button></div>
             <button id="build32StagesToggle" type="button" class="secondary" style="width:100%;margin-top:8px">Neue Farben ausblenden</button>
           </div>
-          <p id="build32StagesInfo" class="tiny" role="status">Ein vollständiges 16-Farben-Grundbild, danach bis zu 16 zusätzliche Farben pro Stufe. Die bisherigen Farbtöne bleiben fest; neue Malflächen verfeinern Teile des Grundbildes. Nur Mischfarben. Bei farbarmen Motiven sind es weniger Farben.</p>
+          <p id="build32StagesInfo" class="tiny" role="status">Endgültige Farben: zuerst das 64-Farben-Zielbild berechnen, dann die 16 flächenmäßig größten Farben malen. Weitere Gruppen füllen nur freie Flächen. Die Lücken sind Hintergrund, keine graue Malfarbe. Die bisherige Malweise bleibt wählbar. Nur Mischfarben; bei farbarmen Motiven weniger Farben.</p>
         </details>
         <details style="margin-top:12px"><summary style="padding:10px 0;cursor:pointer;font-weight:bold">Malflächen vereinfachen</summary>
           <label for="build32Merge">Zielfarbanzahl: <span id="build32MergeVal">32 → 32 Farben</span></label>
@@ -4991,6 +4992,18 @@ const mixes=chooseMixes(target,paletteKey);
     for(const p of points){let best=Infinity,id=0;paletteLab.forEach((c,i)=>{const d=distance(p.lab,c);if(d<best){best=d;id=i;}});lut[p.key]=id;}
     const ranks=new Uint8Array(pixels.length/4);
     for(let i=0,n=0;i<pixels.length;i+=4,n++)ranks[n]=lut[key(pixels[i],pixels[i+1],pixels[i+2])];
+    if(data.finalStages){
+      // One final partition, ordered by painted area; all four masks use it.
+      const counts=new Uint32Array(palette.length);
+      for(const rank of ranks)counts[rank]++;
+      const order=palette.map((_,i)=>i).sort((a,b)=>counts[b]-counts[a]||a-b);
+      const remap=new Uint8Array(palette.length);
+      order.forEach((old,i)=>{remap[old]=i;});
+      const finalRanks=Uint8Array.from(ranks,i=>remap[i]);
+      return {width:data.width,height:data.height,palette:order.map(i=>palette[i]),
+        ranks:finalRanks.slice().buffer,stages:[finalRanks,finalRanks,finalRanks,finalRanks],
+        stageCounts:[16,32,48,64].map(n=>Math.min(n,palette.length)),finalStages:true};
+    }
     if(data.progressive){
       // Freeze the ordinary 16-color base exactly. Append colors; never refit it.
       const stages=[ranks.slice()], stageCounts=[palette.length];
@@ -5342,7 +5355,7 @@ const mixes=chooseMixes(target,paletteKey);
   });
   const build32Status=document.getElementById('build32Status');
   function resetBuild32(){
-    build32StageView=null;document.getElementById("build32StagesControls").hidden=true;
+    build32StageView=null;syncBuild32StageButtons();document.getElementById("build32StagesControls").hidden=true;
     document.getElementById("build32StagesStart").disabled=false;
     build32ExtrasBase=null;
     document.getElementById('build32DetailCell').disabled=false;
@@ -5612,7 +5625,7 @@ const mixes=chooseMixes(target,paletteKey);
 
   function acceptBuild32(result,generation){
     if(generation!==build32Generation)return;
-    result=build32MergeResult(result,Number(document.getElementById('build32Merge').value));
+    if(!result.stages)result=build32MergeResult(result,Number(document.getElementById('build32Merge').value));
     build32Data={...result,ranks:result.pure?new Uint16Array(result.ranks):new Uint8Array(result.ranks)};
     build32OriginalPalette=result.palette.map(rgb=>[...rgb]);
     build32ColorOverrides.clear();build32ReplaceArmed=false;
@@ -5639,6 +5652,9 @@ const mixes=chooseMixes(target,paletteKey);
   function syncBuild32StageButtons(){
     document.querySelectorAll('[data-paint-stage]').forEach(b=>{const on=!!build32StageView&&Number(b.dataset.paintStage)===build32StageIndex;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
     document.querySelectorAll('[data-paint-view]').forEach(b=>{const on=b.dataset.paintView===build32StageView;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));b.disabled=build32StageIndex===0&&b.dataset.paintView==='before';});
+    const fixed=!!build32StageView&&!!build32Data?.finalStages;
+    document.getElementById('build32Smooth').disabled=fixed;
+    document.getElementById('build32Smooth').title=fixed?'Feste Malflächen: Übergänge bleiben unverändert.':'';
     const toggle=document.getElementById('build32StagesToggle');toggle.disabled=build32StageIndex===0;toggle.textContent=build32StageView==='all'?'Neue Farben ausblenden':'Neue Farben einblenden';
   }
   function renderBuild32Stage(){
@@ -5651,12 +5667,12 @@ const mixes=chooseMixes(target,paletteKey);
     build32Selection.clear();for(let i=view==='new'?previous:0;i<(view==='before'?previous:end);i++)build32Selection.add(i);
     const c=build32Canvas.getContext('2d'),frame=c.createImageData(data.width,data.height),bg=build32BackgroundValue(128);
     build32VisibleMask=new Uint8Array(ranks.length);
-    for(let i=0;i<ranks.length;i++){const show=view!=='new'||ranks[i]>=previous;build32VisibleMask[i]=show?1:0;const rgb=show?data.palette[ranks[i]]:[bg,bg,bg];frame.data.set([...rgb,255],i*4);}
+    for(let i=0;i<ranks.length;i++){const show=data.finalStages?build32Selection.has(ranks[i]):(view!=='new'||ranks[i]>=previous);build32VisibleMask[i]=show?1:0;const rgb=show?data.palette[ranks[i]]:[bg,bg,bg];frame.data.set([...rgb,255],i*4);}
     c.putImageData(frame,0,0);rebuildBuild32Foreground(frame);
     [...document.getElementById('build32Palette').children].forEach((b,i)=>{b.setAttribute('aria-pressed',String(build32Selection.has(i)));b.style.opacity=build32Selection.has(i)?'1':'.4';});
     document.getElementById('build32Extras').disabled=true;
-    const message='Malstufe '+(stage+1)+' · '+(view==='before'?previous+' bisherige Farben':view==='new'?(end-previous)+' neue Farben (Nr. '+(previous+1)+'–'+end+')':end+' Farben zusammen');
-    build32Status.textContent=message;document.getElementById('build32StagesInfo').textContent=message+(end===previous?' · Keine weiteren Farben im Motiv.':'');
+    const message=(data.finalStages?'Endgültige Farben · ':'')+'Malstufe '+(stage+1)+' · '+(view==='before'?previous+' bisherige Farben':view==='new'?(end-previous)+' neue Farben (Nr. '+(previous+1)+'–'+end+')':end+' Farben zusammen');
+    build32Status.textContent=message;document.getElementById('build32StagesInfo').textContent=message+(end===previous?' · Keine weiteren Farben im Motiv.':data.finalStages?' · Freie Flächen bleiben ausgespart. Größte Farbflächen zuerst.':'');
     document.getElementById('build32Recipe').textContent='Farbfeld antippen für die Mischung. Mit den Stufenknöpfen zurück zum Malaufbau.';
     syncBuild32StageButtons();syncBuild32ReturnButtons();draw();
   }
@@ -5665,7 +5681,7 @@ const mixes=chooseMixes(target,paletteKey);
     for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).value='mixed';
     syncBuild32SimpleLimit();
     for(const id of ['build32Count','build32CountSide'])document.getElementById(id).value='64';
-    syncBuild32Merge(true);document.getElementById('build32Analyze').textContent='64 Farben erkennen';build32StageRequest=true;document.getElementById('build32Analyze').click();
+    syncBuild32Merge(true);document.getElementById('build32Analyze').textContent='64 Farben erkennen';build32StageRequest=document.getElementById('build32StagesMode').value;document.getElementById('build32Analyze').click();
     build32Status.textContent='Vier feste Malstufen werden vorbereitet …';
   });
   document.querySelectorAll('[data-paint-stage]').forEach(b=>b.addEventListener('click',()=>{
@@ -5871,7 +5887,7 @@ const mixes=chooseMixes(target,paletteKey);
     if(!build32RawFrame||!build32Canvas||!build32VisibleMask)return;
     const {width,height}=build32Canvas,c=build32Canvas.getContext('2d');
     const frame=c.createImageData(width,height);
-    frame.data.set(smoothBuild32Pixels(build32RawFrame.data,build32VisibleMask,width,height,build32Smoothing));
+    frame.data.set(smoothBuild32Pixels(build32RawFrame.data,build32VisibleMask,width,height,build32StageView&&build32Data?.finalStages?0:build32Smoothing));
     c.putImageData(frame,0,0);
     if(!build32Foreground)build32Foreground=document.createElement('canvas');
     build32Foreground.width=width;build32Foreground.height=height;
@@ -5976,7 +5992,7 @@ const mixes=chooseMixes(target,paletteKey);
     const work=document.createElement('canvas'),ratio=Math.min(1,1600/Math.max(sourceCanvas.width,sourceCanvas.height));
     work.width=Math.max(1,Math.round(sourceCanvas.width*ratio));work.height=Math.max(1,Math.round(sourceCanvas.height*ratio));
     const wc=work.getContext('2d');wc.fillStyle='#fff';wc.fillRect(0,0,work.width,work.height);wc.drawImage(sourceCanvas,0,0,work.width,work.height);
-    const data={progressive,colorCount:progressive?16:build32ColorCount(),pixels:wc.getImageData(0,0,work.width,work.height).data.buffer,width:work.width,height:work.height};
+    const data={progressive:progressive==='layer',finalStages:progressive==='final',colorCount:progressive==='layer'?16:build32ColorCount(),pixels:wc.getImageData(0,0,work.width,work.height).data.buffer,width:work.width,height:work.height};
     if(build32IsSimple())document.getElementById('build32MixPalette').value='artisan';
     const key=document.getElementById('build32MixPalette').value;
     const quantizer=build32IsPure()?quantizeBuild32Pure:quantizeBuild32;
