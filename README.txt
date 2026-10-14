@@ -1,3 +1,15 @@
+AtelierAI iPad 2.93 – Weichere endgültige Farbflächen
+
+Endgültige Farben werden jetzt mit bis zu 2400 statt 1600 Pixeln
+an der langen Bildkante berechnet (abhängig vom geladenen Bild).
+„Angrenzende Farben verblenden“ ist auch hier verfügbar, Startwert 11 %.
+0 % zeigt die klaren Farbflächen. Die Glättung mischt nur an Grenzen
+benachbarter Farben; dadurch entstehen dort zusätzliche Zwischentöne.
+Das vollständige Zielbild wird geglättet und erst danach in Malgruppen
+aufgeteilt: Bereits sichtbare Pixel bleiben bei gleicher Reglereinstellung
+beim Stufenwechsel exakt gleich. Graue/weiße Lücken bleiben ausgespart.
+Nach dem Öffnen das Foto laden und den Malaufbau neu vorbereiten.
+
 AtelierAI iPad 2.92 – Endgültige Farben, ohne Übermalen
 
 Im Malaufbau die Malweise „Endgültige Farben · Flächen schrittweise füllen“
