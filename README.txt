@@ -1,3 +1,14 @@
+AtelierAI iPad 2.91 – Malaufbau in 16er-Schritten
+
+Im Farbaufbau „16 → 32 → 48 → 64 vorbereiten“ wählen.
+Stufe wählen, dann Bisher / Nur neue Farben / Zusammen.
+„Neue Farben ausblenden“ schaltet mit demselben Knopf zurück.
+Die ersten 16 Farben entsprechen der normalen 16-Farben-Erkennung.
+Weitere Farben werden ergänzt, ohne bisherige Farbtöne neu zu berechnen.
+Neue Flächen übermalen Teile des Grundbilds; Bisher stellt es exakt wieder her.
+Bei farbarmen Motiven können weniger als 64 unterschiedliche Farben entstehen.
+Die normale Farberkennung und die bisherigen Ergänzungen bleiben separat nutzbar.
+
 AtelierAI iPad 2.90 – Oberfläche auch offline vergrößern
 
 Der Seitenzoom ist nun ausdrücklich erlaubt. Zum Vergrößern der ganzen Oberfläche zwei Finger im Bedienbereich, beispielsweise auf der Zielfarbe, auseinanderziehen. Im Motivbereich steuert die Geste weiterhin den Bildzoom.

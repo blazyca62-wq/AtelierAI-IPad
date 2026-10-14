@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.90</title>
+  <title>AtelierAI iPad 2.91</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.90</div>
+    <div class="title">AtelierAI · iPad 2.91</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1102,6 +1102,17 @@
         <label>Darstellung <select id="build32PaintModeSide"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Artisan – einfache Mischungen</option></select></label><label id="build32SimpleLimitLabelSide" hidden>Mischungen <select id="build32SimpleLimitSide" aria-label="Anzahl einfacher Artisan-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><p class="tiny">Ungemischt: Farben der gewählten Palette. Aquarell mit Wasserverdünnung und Papierweiß; Öl ohne Ausmischen. Artisan – einfache Mischungen: mit Weiß, Gelb oder Blau, bei Bedarf zusätzlich Weiß. Bildschirm-Simulation.</p><label for="build32CountSide">Anzahl Farben</label><select id="build32CountSide" style="min-height:44px;margin:8px"><option value="8">8</option><option value="16">16</option><option value="32" selected>32</option><option value="48">48</option><option value="64">64</option></select>
         <button id="build32Analyze" style="width:100%">32 Farben erkennen</button>
 
+
+        <details id="build32StagesPanel" style="margin:12px 0" open>
+          <summary style="padding:10px 0;font-weight:bold">Malaufbau in 16er-Schritten</summary>
+          <button id="build32StagesStart" type="button" style="width:100%">16 → 32 → 48 → 64 vorbereiten</button>
+          <div id="build32StagesControls" hidden>
+            <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" class="secondary" data-paint-stage="0">16 Farben</button><button type="button" class="secondary" data-paint-stage="1">32 Farben</button><button type="button" class="secondary" data-paint-stage="2">48 Farben</button><button type="button" class="secondary" data-paint-stage="3">64 Farben</button></div>
+            <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" class="secondary" data-paint-view="before">Bisher</button><button type="button" class="secondary" data-paint-view="new">Nur neue Farben</button><button type="button" data-paint-view="all">Zusammen</button></div>
+            <button id="build32StagesToggle" type="button" class="secondary" style="width:100%;margin-top:8px">Neue Farben ausblenden</button>
+          </div>
+          <p id="build32StagesInfo" class="tiny" role="status">Ein vollständiges 16-Farben-Grundbild, danach bis zu 16 zusätzliche Farben pro Stufe. Die bisherigen Farbtöne bleiben fest; neue Malflächen verfeinern Teile des Grundbildes. Nur Mischfarben. Bei farbarmen Motiven sind es weniger Farben.</p>
+        </details>
         <details style="margin-top:12px"><summary style="padding:10px 0;cursor:pointer;font-weight:bold">Malflächen vereinfachen</summary>
           <label for="build32Merge">Zielfarbanzahl: <span id="build32MergeVal">32 → 32 Farben</span></label>
           <input id="build32Merge" type="range" min="2" max="32" step="1" value="32" style="width:100%;min-height:44px">
@@ -4980,8 +4991,32 @@ const mixes=chooseMixes(target,paletteKey);
     for(const p of points){let best=Infinity,id=0;paletteLab.forEach((c,i)=>{const d=distance(p.lab,c);if(d<best){best=d;id=i;}});lut[p.key]=id;}
     const ranks=new Uint8Array(pixels.length/4);
     for(let i=0,n=0;i<pixels.length;i+=4,n++)ranks[n]=lut[key(pixels[i],pixels[i+1],pixels[i+2])];
+    if(data.progressive){
+      // Freeze the ordinary 16-color base exactly. Append colors; never refit it.
+      const stages=[ranks.slice()], stageCounts=[palette.length];
+      const usedColors=new Set(palette.map(c=>c.join(",")));
+      const nearest=points.map(p=>Math.min(...paletteLab.map(c=>distance(p.lab,c))));
+      const ids=points.map(p=>lut[p.key]);
+      for(let stage=1;stage<4;stage++){
+        const target=16*(stage+1);
+        while(palette.length<target){
+          let best=-1,score=0;
+          points.forEach((p,i)=>{const value=nearest[i]*Math.pow(p.weight,.7);if(value>score&&nearest[i]>0.01&&!usedColors.has(p.rgb.map(Math.round).join(","))){score=value;best=i;}});
+          if(best<0)break;
+          const rgb=points[best].rgb.map(Math.round),lab=toLab(rgb),id=palette.length;
+          palette.push(rgb);paletteLab.push(lab);usedColors.add(rgb.join(","));
+          points.forEach((p,i)=>{const d=distance(p.lab,lab);if(d<nearest[i]){nearest[i]=d;ids[i]=id;}});
+        }
+        points.forEach((p,i)=>{lut[p.key]=ids[i];});
+        const next=new Uint8Array(ranks.length);
+        for(let i=0,n=0;i<pixels.length;i+=4,n++)next[n]=lut[key(pixels[i],pixels[i+1],pixels[i+2])];
+        stages.push(next);stageCounts.push(palette.length);
+      }
+      return {width:data.width,height:data.height,palette,ranks:stages[3].slice().buffer,stages,stageCounts};
+    }
     return {width:data.width,height:data.height,palette,ranks:ranks.buffer};
   }
+  let build32StageRequest=false,build32StageIndex=0,build32StageView=null;
   let build32ExtrasBase=null;
   let build32GrayBlend=0,build32Foreground=null;
   let build32Smoothing=0,build32RawFrame=null,build32SmoothPending=false;
@@ -5078,7 +5113,7 @@ const mixes=chooseMixes(target,paletteKey);
       }else{
         result=quantizeBuild32(data);
       }
-      result=build32MergeResult(result,Number(document.getElementById('build32Merge').value));
+      if(!result.stages)result=build32MergeResult(result,Number(document.getElementById('build32Merge').value));
       build32DetailCell={...cell,palette:result.palette,ranks:new Uint8Array(result.ranks)};
       build32DetailOriginalPalette=result.palette.map(rgb=>[...rgb]);
       build32DetailColorOverrides.clear();
@@ -5114,7 +5149,8 @@ const mixes=chooseMixes(target,paletteKey);
   document.getElementById('build32Background').addEventListener('change',()=>{
     if(!build32Data)return;
     const active=build32Active;
-    if(build32Manual)renderBuild32Selection();
+    if(build32StageView&&build32Data.stages)renderBuild32Stage();
+    else if(build32Manual)renderBuild32Selection();
     else if(build32Extras)showBuild32Extras();
     else renderBuild32(build32Direction);
     build32Active=active;syncBuild32ReturnButtons();draw();
@@ -5306,6 +5342,8 @@ const mixes=chooseMixes(target,paletteKey);
   });
   const build32Status=document.getElementById('build32Status');
   function resetBuild32(){
+    build32StageView=null;document.getElementById("build32StagesControls").hidden=true;
+    document.getElementById("build32StagesStart").disabled=false;
     build32ExtrasBase=null;
     document.getElementById('build32DetailCell').disabled=false;
     document.getElementById('build32middle').value='0';
@@ -5350,7 +5388,8 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function build32RenderCurrent(){
     if(!build32Data)return;
-    if(build32Manual)renderBuild32Selection();
+    if(build32StageView&&build32Data.stages)renderBuild32Stage();
+    else if(build32Manual)renderBuild32Selection();
     else if(build32Extras)showBuild32Extras();
     else renderBuild32(build32Direction);
   }
@@ -5447,6 +5486,7 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function renderBuild32(direction){
     if(!build32Data)return;
+    build32StageView=null;syncBuild32StageButtons();
     build32Direction=direction;build32Manual=false;
     syncBuild32Middle();
     if(build32DetailCell && build32DetailBaseCanvas){ build32RenderDetailOnly(direction); return; }
@@ -5592,7 +5632,56 @@ const mixes=chooseMixes(target,paletteKey);
     for(const d of ['light','dark']){document.getElementById('build32'+d).disabled=false;document.getElementById('build32'+d).value=0;}
     if(result.pure||build32SimplifyShowAll){build32SimplifyShowAll=false;build32Families=new Set(['all']);build32Family='all';build32RememberedLight=build32ColorCount();syncBuild32FamilyRanges();document.getElementById('build32light').value=build32ColorCount();}
     renderBuild32('light');
+    if(result.stages){build32StageIndex=0;build32StageView='all';document.getElementById('build32StagesControls').hidden=false;renderBuild32Stage();}
+    document.getElementById('build32StagesStart').disabled=false;
   }
+
+  function syncBuild32StageButtons(){
+    document.querySelectorAll('[data-paint-stage]').forEach(b=>{const on=!!build32StageView&&Number(b.dataset.paintStage)===build32StageIndex;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
+    document.querySelectorAll('[data-paint-view]').forEach(b=>{const on=b.dataset.paintView===build32StageView;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));b.disabled=build32StageIndex===0&&b.dataset.paintView==='before';});
+    const toggle=document.getElementById('build32StagesToggle');toggle.disabled=build32StageIndex===0;toggle.textContent=build32StageView==='all'?'Neue Farben ausblenden':'Neue Farben einblenden';
+  }
+  function renderBuild32Stage(){
+    if(!build32Data?.stages)return;
+    const data=build32Data,stage=build32StageIndex,view=build32StageView||'all';build32StageView=view;build32MixRequest++;
+    const previous=stage?data.stageCounts[stage-1]:0,end=data.stageCounts[stage];
+    const ranks=data.stages[view==='before'?Math.max(0,stage-1):stage];
+    data.ranks=ranks;delete data.filledCache;
+    build32Extras=false;build32ExtrasBase=null;build32Manual=false;build32Active=true;build32Selected=null;build32AllPrevious=null;build32SoloPrevious=null;
+    build32Selection.clear();for(let i=view==='new'?previous:0;i<(view==='before'?previous:end);i++)build32Selection.add(i);
+    const c=build32Canvas.getContext('2d'),frame=c.createImageData(data.width,data.height),bg=build32BackgroundValue(128);
+    build32VisibleMask=new Uint8Array(ranks.length);
+    for(let i=0;i<ranks.length;i++){const show=view!=='new'||ranks[i]>=previous;build32VisibleMask[i]=show?1:0;const rgb=show?data.palette[ranks[i]]:[bg,bg,bg];frame.data.set([...rgb,255],i*4);}
+    c.putImageData(frame,0,0);rebuildBuild32Foreground(frame);
+    [...document.getElementById('build32Palette').children].forEach((b,i)=>{b.setAttribute('aria-pressed',String(build32Selection.has(i)));b.style.opacity=build32Selection.has(i)?'1':'.4';});
+    document.getElementById('build32Extras').disabled=true;
+    const message='Malstufe '+(stage+1)+' · '+(view==='before'?previous+' bisherige Farben':view==='new'?(end-previous)+' neue Farben (Nr. '+(previous+1)+'–'+end+')':end+' Farben zusammen');
+    build32Status.textContent=message;document.getElementById('build32StagesInfo').textContent=message+(end===previous?' · Keine weiteren Farben im Motiv.':'');
+    document.getElementById('build32Recipe').textContent='Farbfeld antippen für die Mischung. Mit den Stufenknöpfen zurück zum Malaufbau.';
+    syncBuild32StageButtons();syncBuild32ReturnButtons();draw();
+  }
+  document.getElementById('build32StagesStart').addEventListener('click',()=>{
+    if(!loaded){build32Status.textContent='Bitte zuerst ein Foto öffnen.';return;}
+    for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).value='mixed';
+    syncBuild32SimpleLimit();
+    for(const id of ['build32Count','build32CountSide'])document.getElementById(id).value='64';
+    syncBuild32Merge(true);document.getElementById('build32Analyze').textContent='64 Farben erkennen';build32StageRequest=true;document.getElementById('build32Analyze').click();
+    build32Status.textContent='Vier feste Malstufen werden vorbereitet …';
+  });
+  document.querySelectorAll('[data-paint-stage]').forEach(b=>b.addEventListener('click',()=>{
+    if(!build32Data?.stages)return;
+    if(build32DetailCell)clearBuild32DetailCell();
+    build32StageIndex=Number(b.dataset.paintStage);build32StageView='all';renderBuild32Stage();
+  }));
+  document.querySelectorAll('[data-paint-view]').forEach(b=>b.addEventListener('click',()=>{
+    if(build32DetailCell)clearBuild32DetailCell();
+    build32StageView=b.dataset.paintView;renderBuild32Stage();
+  }));
+  document.getElementById('build32StagesToggle').addEventListener('click',()=>{
+    if(build32DetailCell)clearBuild32DetailCell();
+    build32StageView=build32StageView==='all'?'before':'all';renderBuild32Stage();
+  });
+
   function updateBuild32Recipe(){
     const index=build32Selected,request=++build32MixRequest;
     if(index===null||!build32Data)return;
@@ -5650,6 +5739,7 @@ const mixes=chooseMixes(target,paletteKey);
   }
   function renderBuild32Selection(){
     if(!build32Data)return;
+    build32StageView=null;syncBuild32StageButtons();
     syncBuild32Middle();
     if(build32DetailCell){
       const palette=build32DetailCell.palette,ranks=build32FilledRanks(build32DetailCell),width=build32DetailCell.w,height=build32DetailCell.h;
@@ -5879,17 +5969,19 @@ const mixes=chooseMixes(target,paletteKey);
   });
   document.getElementById('build32Analyze').addEventListener('click',()=>{
     if(!loaded){build32Status.textContent='Bitte zuerst ein Foto öffnen.';return;}
+    const progressive=build32StageRequest;build32StageRequest=false;
     resetBuild32();const generation=build32Generation;
+    document.getElementById('build32StagesStart').disabled=true;
     build32Status.textContent=build32ColorCount()+' Farben werden ermittelt …';document.getElementById('build32Analyze').disabled=true;
     const work=document.createElement('canvas'),ratio=Math.min(1,1600/Math.max(sourceCanvas.width,sourceCanvas.height));
     work.width=Math.max(1,Math.round(sourceCanvas.width*ratio));work.height=Math.max(1,Math.round(sourceCanvas.height*ratio));
     const wc=work.getContext('2d');wc.fillStyle='#fff';wc.fillRect(0,0,work.width,work.height);wc.drawImage(sourceCanvas,0,0,work.width,work.height);
-    const data={colorCount:build32ColorCount(),pixels:wc.getImageData(0,0,work.width,work.height).data.buffer,width:work.width,height:work.height};
+    const data={progressive,colorCount:progressive?16:build32ColorCount(),pixels:wc.getImageData(0,0,work.width,work.height).data.buffer,width:work.width,height:work.height};
     if(build32IsSimple())document.getElementById('build32MixPalette').value='artisan';
     const key=document.getElementById('build32MixPalette').value;
     const quantizer=build32IsPure()?quantizeBuild32Pure:quantizeBuild32;
     if(build32IsPure()){data.pureColors=build32IsSimple()?build32SimpleColors():build32PureColors(key);data.simpleLimit=build32IsSimple()?Number(document.getElementById('build32SimpleLimit').value):0;data.watercolor=['watercolor','horadam','akademie'].includes(key);build32Status.textContent=build32IsSimple()?'Einfache Artisan-Mischungen werden zugeordnet …':'Ungemischte Palettenfarben werden zugeordnet …';}
-    const fail=()=>{if(generation!==build32Generation)return;document.getElementById('build32Analyze').disabled=false;build32Status.textContent='Farberkennung fehlgeschlagen. Bitte erneut versuchen.';};
+    const fail=()=>{if(generation!==build32Generation)return;document.getElementById('build32Analyze').disabled=false;document.getElementById('build32StagesStart').disabled=false;build32Status.textContent='Farberkennung fehlgeschlagen. Bitte erneut versuchen.';};
     const fallback=()=>setTimeout(()=>{if(generation!==build32Generation)return;try{acceptBuild32(quantizer(data),generation);}catch(e){fail();}},20);
     try{
       const url=URL.createObjectURL(new Blob(['self.onmessage=e=>{const r=('+quantizer.toString()+')(e.data);self.postMessage(r,[r.ranks]);};'],{type:'text/javascript'}));
@@ -7826,7 +7918,7 @@ const mixes=chooseMixes(target,paletteKey);
       side.scrollTop=0;
       selectSketchTool(sec.id);
       if(sec.id!=='build32Panel' && build32Active){build32Active=false;draw();}
-      if(sec.id==='build32Panel'){setMode('move');syncBuild32Grid();if(build32Data){if(build32Manual)renderBuild32Selection();else if(build32Extras)showBuild32Extras();else renderBuild32(build32Direction);}}
+      if(sec.id==='build32Panel'){setMode('move');syncBuild32Grid();if(build32Data){build32RenderCurrent();}}
 
       // 1.9: Farbreise ist wirklich sofort aufnahmebereit.
       // Nicht nur den Modus setzen, sondern denselben Pipetten-Klick auslösen
