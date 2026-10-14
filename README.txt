@@ -1,3 +1,17 @@
+AtelierAI iPad 2.94 – Sichtbaren Ausschnitt bearbeiten
+
+Gesicht oder Detail im normalen Bildfenster heranzoomen und positionieren.
+Oben „Sichtbaren Ausschnitt als Malvorlage übernehmen“ drücken.
+Der sichtbare Teil wird ohne Raster, Bildschirmtexte oder Farbreduktion
+1:1 aus der aktuellen Malvorlage übernommen. Freie Bildränder entfallen.
+32 Mischfarben werden automatisch nur für diesen Ausschnitt berechnet.
+Andere Farbanzahlen und alle anderen Module sind anschließend nutzbar.
+„Zurück zum ganzen Bild“ lädt die vollständige Malvorlage vor dem ersten
+Ausschnitt wieder. Bearbeitungen des Ausschnitts werden nicht automatisch
+in das ganze Bild eingesetzt. Ansichten bei Bedarf vorher speichern.
+Auch mehrfaches Zuschneiden behält die Rückkehr zum ganzen Bild.
+Ein neu geöffnetes Foto oder Zurücksetzen beendet den Ausschnittmodus.
+
 AtelierAI iPad 2.93 – Weichere endgültige Farbflächen
 
 Endgültige Farben werden jetzt mit bis zu 2400 statt 1600 Pixeln

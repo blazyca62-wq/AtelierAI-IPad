@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.93</title>
+  <title>AtelierAI iPad 2.94</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,12 +1031,14 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.93</div>
+    <div class="title">AtelierAI · iPad 2.94</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="saveCurrentViewBtn" type="button">Ansicht speichern</button>
+    <button id="visibleCropBtn" type="button" class="secondary" disabled>Sichtbaren Ausschnitt als Malvorlage übernehmen</button>
+    <button id="visibleCropBack" type="button" class="secondary" hidden>Zurück zum ganzen Bild</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
   </div>
@@ -8008,10 +8010,53 @@ const mixes=chooseMixes(target,paletteKey);
 
   // Keep the uploaded original across internal colour-template applications.
   let originalPhoto=null,photoLoadRevision=0;
+  let visibleCropWhole=null;
+  function syncVisibleCrop(){
+    document.getElementById('visibleCropBtn').disabled=!loaded;
+    document.getElementById('visibleCropBack').hidden=!visibleCropWhole;
+  }
+  function visibleCropBounds(width,height,viewWidth,viewHeight,zoom,x,y){
+    if(!(zoom>0)||!Number.isFinite(zoom)||viewWidth<=0||viewHeight<=0)return null;
+    const left=Math.max(0,Math.min(width,Math.floor(-x/zoom)));
+    const top=Math.max(0,Math.min(height,Math.floor(-y/zoom)));
+    const right=Math.max(0,Math.min(width,Math.ceil((viewWidth-x)/zoom)));
+    const bottom=Math.max(0,Math.min(height,Math.ceil((viewHeight-y)/zoom)));
+    return right>left&&bottom>top?{x:left,y:top,width:right-left,height:bottom-top}:null;
+  }
+  document.getElementById('visibleCropBtn').addEventListener('click',()=>{
+    if(!loaded)return;
+    const view=viewer.getBoundingClientRect();
+    const box=visibleCropBounds(sourceCanvas.width,sourceCanvas.height,view.width,view.height,scale,offsetX,offsetY);
+    if(!box){hint.textContent='Bitte den gewünschten Bildbereich in die Ansicht schieben.';return;}
+    if(box.width===sourceCanvas.width&&box.height===sourceCanvas.height){hint.textContent='Bitte zuerst heranzoomen, bis nur der gewünschte Ausschnitt sichtbar ist.';return;}
+    if(box.width<2||box.height<2){hint.textContent='Der sichtbare Bildbereich ist zu klein. Bitte etwas herauszoomen.';return;}
+    // Copy source pixels 1:1, never the screen, quantized view or grid.
+    const crop=document.createElement('canvas');crop.width=box.width;crop.height=box.height;
+    crop.getContext('2d').drawImage(sourceCanvas,box.x,box.y,box.width,box.height,0,0,box.width,box.height);
+    if(!visibleCropWhole)visibleCropWhole=img;
+    photoLoadRevision++;
+    resetPhotoFilters();installPhoto(crop);
+    document.dispatchEvent(new Event('atelier-reset-photo'));
+    setMode('move');
+    for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).value='mixed';
+    syncBuild32SimpleLimit();
+    for(const id of ['build32Count','build32CountSide'])document.getElementById(id).value='32';
+    syncBuild32Merge(true);document.getElementById('build32Analyze').textContent='32 Farben erkennen';
+    window.activateToolPage?.('build32Panel');
+    build32SimplifyShowAll=true;document.getElementById('build32Analyze').click();
+    hint.textContent='Ausschnitt übernommen · '+box.width+' × '+box.height+' Bildpixel · 32 Farben nur für diesen Bereich. Die freie Fläche am Bildrand wird nicht übernommen.';
+  });
+  document.getElementById('visibleCropBack').addEventListener('click',()=>{
+    if(!visibleCropWhole)return;
+    const whole=visibleCropWhole;visibleCropWhole=null;photoLoadRevision++;
+    resetPhotoFilters();installPhoto(whole);
+    document.dispatchEvent(new Event('atelier-reset-photo'));
+    setMode('move');hint.textContent='Ganze Malvorlage wiederhergestellt. Ausschnitt-Bearbeitungen werden nicht in das Gesamtbild eingesetzt.';
+  });
   function installPhoto(photo){
     clearTimeout(formsSquintTimer);formsOriginalPreview=false;
     setMixSurround('#808080');
-    img=photo;loaded=true;placeholder.style.display='none';syncFormsOriginal();
+    img=photo;loaded=true;syncVisibleCrop();placeholder.style.display='none';syncFormsOriginal();
     resetBuild32();cancelIsolation();isolationRevision++;isolationSentKey=null;
     sourceCanvas.width=img.width;sourceCanvas.height=img.height;
     sourceCtx.clearRect(0,0,img.width,img.height);sourceCtx.drawImage(img,0,0);
@@ -8027,7 +8072,7 @@ const mixes=chooseMixes(target,paletteKey);
     photo.onload=()=>{
       clearTimeout(loadTimer);URL.revokeObjectURL(url);if(token!==photoLoadRevision){onComplete?.(Error('Ein anderes Foto wurde geöffnet.'));return;}
       try{
-        if(!keepOriginal)originalPhoto=photo;
+        if(!keepOriginal){originalPhoto=photo;visibleCropWhole=null;}
         else resetPhotoFilters();
         installPhoto(photo);onComplete?.();
       }catch(error){hint.textContent='Das Foto konnte nicht übernommen werden.';onComplete?.(error);}
@@ -8063,7 +8108,7 @@ const mixes=chooseMixes(target,paletteKey);
     if(!loaded)return;
     photoLoadRevision++;
     resetPhotoFilters();
-    installPhoto(originalPhoto||img);
+    visibleCropWhole=null;installPhoto(originalPhoto||img);
     document.dispatchEvent(new Event('atelier-reset-photo'));
     setMode('move');hint.textContent='Foto und Bildfilter zurückgesetzt.';
   });
