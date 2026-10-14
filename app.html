@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.01</title>
+  <title>AtelierAI iPad 3.02</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,22 +1031,15 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.01</div>
+    <div class="title">AtelierAI · iPad 3.02</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="saveCurrentViewBtn" type="button">Ansicht speichern</button>
     <button id="visibleCropBtn" type="button" class="secondary" disabled>Sichtbaren Ausschnitt als Malvorlage übernehmen</button>
-    <label style="font-size:13px">Raster-Auswahl
-      <select id="gridCellCropShape" aria-label="Anzahl und Anordnung der Rasterkästchen" disabled>
-        <option value="1x1">1 Kästchen</option>
-        <option value="2x1">2 nebeneinander</option>
-        <option value="1x2">2 übereinander</option>
-        <option value="2x2">4 Kästchen (2 × 2)</option>
-      </select>
-    </label>
     <button id="gridCellCropBtn" type="button" class="secondary" disabled aria-pressed="false">Rasterkästchen als Malvorlage auswählen</button>
+    <button id="gridCellCropApply" type="button" hidden disabled>Als Malvorlage übernehmen</button>
     <button id="visibleCropBack" type="button" class="secondary" hidden>Zurück zum ganzen Bild</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
     <button id="resetBtn" class="secondary">Zurücksetzen</button>
@@ -7318,6 +7311,7 @@ const mixes=chooseMixes(target,paletteKey);
     ctx.clearRect(0,0,r.width,r.height);
     if(!loaded) return;
     paintArtworkAtView(ctx,true);
+    drawGridCropSelection();
     if(surfacePreview && !sketchActive && !build32Active){
       const sx=offsetX+surfacePreview.x*scale, sy=offsetY+surfacePreview.y*scale;
       const sz=surfacePreview.size*scale;
@@ -8023,53 +8017,80 @@ const mixes=chooseMixes(target,paletteKey);
   // Keep the uploaded original across internal colour-template applications.
   let originalPhoto=null,photoLoadRevision=0;
   let visibleCropWhole=null,visibleCropGrid=null,gridCellCropArmed=false;
+  const gridCropSelection=new Map();
+  let gridCropGeometryKey='';
   function rememberCropWhole(){
     if(visibleCropWhole)return;
     visibleCropWhole=img;
     visibleCropGrid={reference:gridReference?{...gridReference}:null,adjust:{...gridAdjust},density:gridDensity.value,enabled:gridEnabled};
   }
+  function selectedGridCropBounds(cells){
+    if(![1,2,4].includes(cells.length))return null;
+    const cols=cells.map(c=>c.col),rows=cells.map(c=>c.row);
+    if((Math.max(...cols)-Math.min(...cols)+1)*(Math.max(...rows)-Math.min(...rows)+1)!==cells.length)return null;
+    const x=Math.min(...cells.map(c=>c.x)),y=Math.min(...cells.map(c=>c.y));
+    return {x,y,w:Math.max(...cells.map(c=>c.x+c.w))-x,h:Math.max(...cells.map(c=>c.y+c.h))-y};
+  }
+  function checkGridCropGeometry(){
+    const key=JSON.stringify(gridGeometry(sourceCanvas.width,sourceCanvas.height,gridDensity.value));
+    if(key!==gridCropGeometryKey){
+      gridCropSelection.clear();gridCropGeometryKey=key;syncGridCellCrop();
+    }
+  }
   function syncGridCellCrop(){
     const button=document.getElementById('gridCellCropBtn');
     button.disabled=!loaded;
-    document.getElementById('gridCellCropShape').disabled=!loaded;
-    button.textContent=gridCellCropArmed?'Auswahl abbrechen · Kästchen antippen':'Rasterkästchen als Malvorlage auswählen';
+    button.textContent=gridCellCropArmed?'Kästchenauswahl abbrechen':'Rasterkästchen als Malvorlage auswählen';
     button.setAttribute('aria-pressed',String(gridCellCropArmed));
     button.classList.toggle('active',gridCellCropArmed);
+    const apply=document.getElementById('gridCellCropApply');
+    apply.hidden=!gridCellCropArmed;
+    apply.disabled=!selectedGridCropBounds([...gridCropSelection.values()]);
+    apply.textContent='Als Malvorlage übernehmen ('+gridCropSelection.size+')';
   }
   document.getElementById('gridCellCropBtn').addEventListener('click',()=>{
     if(!loaded)return;
-    gridCellCropArmed=!gridCellCropArmed;
+    gridCellCropArmed=!gridCellCropArmed;gridCropSelection.clear();
     if(gridCellCropArmed){
+      setMode('move');
       if(!gridEnabled)gridToggleBtn.click();
-      syncBuild32Grid();
-      hint.textContent='Das linke obere Kästchen des gewünschten Bereichs antippen. Auswahl: '+document.getElementById('gridCellCropShape').selectedOptions[0].textContent+'. Verschieben und Zwei-Finger-Zoom bleiben möglich.';
+      syncBuild32Grid();checkGridCropGeometry();
+      hint.textContent='1, 2 oder 4 Kästchen nacheinander antippen. Erneutes Antippen wählt ab. Danach „Als Malvorlage übernehmen“. Die Kästchen müssen ein Rechteck bilden.';
     }else hint.textContent='Kästchenauswahl abgebrochen.';
-    syncGridCellCrop();
+    syncGridCellCrop();draw();
   });
-  function gridCropBlock(cell,geometry,width,height,cols,rows){
-    const {cellX,cellY,firstX,firstY}=geometry;
-    // Keep the tapped cell as the upper-left corner; never silently select fewer cells.
-    const lastX=firstX+(cell.col+cols-1)*cellX;
-    const lastY=firstY+(cell.row+rows-1)*cellY;
-    if(lastX>=width||lastY>=height)return null;
-    const right=Math.floor(Math.min(width,firstX+(cell.col+cols)*cellX));
-    const bottom=Math.floor(Math.min(height,firstY+(cell.row+rows)*cellY));
-    return {x:cell.x,y:cell.y,w:right-cell.x,h:bottom-cell.y};
+  function drawGridCropSelection(){
+    if(!gridCellCropArmed)return;
+    checkGridCropGeometry();
+    ctx.save();ctx.translate(offsetX,offsetY);ctx.scale(scale,scale);
+    ctx.fillStyle='rgba(0,175,255,.22)';ctx.strokeStyle='#00bfff';ctx.lineWidth=2/scale;
+    for(const c of gridCropSelection.values()){
+      ctx.fillRect(c.x,c.y,c.w,c.h);ctx.strokeRect(c.x,c.y,c.w,c.h);
+    }
+    ctx.restore();
   }
-  document.getElementById('gridCellCropShape').addEventListener('change',()=>{
-    if(gridCellCropArmed)hint.textContent='Das linke obere Kästchen antippen · '+document.getElementById('gridCellCropShape').selectedOptions[0].textContent;
-  });
   function cropSelectedGridCell(e){
+    checkGridCropGeometry();
     const p=canvasPoint(e.clientX,e.clientY),ix=(p.x-offsetX)/scale,iy=(p.y-offsetY)/scale;
     if(ix<0||iy<0||ix>=sourceCanvas.width||iy>=sourceCanvas.height)return;
-    let cell=build32GridCellAt(ix,iy);
-    const shape=document.getElementById('gridCellCropShape');
-    const [cols,rows]=shape.value.split('x').map(Number);
-    if(cell){
-      cell=gridCropBlock(cell,gridGeometry(sourceCanvas.width,sourceCanvas.height,gridDensity.value),sourceCanvas.width,sourceCanvas.height,cols,rows);
-      if(!cell){hint.textContent='Hier passen nicht alle Kästchen ins Bild. Bitte weiter links oder oben antippen.';return;}
+    const cell=build32GridCellAt(ix,iy);
+    if(!cell||cell.w<2||cell.h<2)return;
+    const key=cell.col+':'+cell.row;
+    if(gridCropSelection.has(key))gridCropSelection.delete(key);
+    else{
+      if(gridCropSelection.size>=4){hint.textContent='Maximal 4 Kästchen. Zum Abwählen ein markiertes Kästchen erneut antippen.';return;}
+      gridCropSelection.set(key,cell);
     }
-    if(!cell||cell.w<2||cell.h<2){hint.textContent='Dieses Kästchen ist zu klein. Bitte ein größeres auswählen.';return;}
+    const count=gridCropSelection.size,valid=selectedGridCropBounds([...gridCropSelection.values()]);
+    hint.textContent=count+' Kästchen ausgewählt. '+(valid?'Weitere Kästchen antippen oder als Malvorlage übernehmen.':'Bitte 1, 2 oder 4 Kästchen zu einem vollständigen Rechteck auswählen.');
+    syncGridCellCrop();draw();
+  }
+  document.getElementById('gridCellCropApply').addEventListener('click',()=>{
+    if(!gridCellCropArmed||!loaded)return;
+    checkGridCropGeometry();
+    const cell=selectedGridCropBounds([...gridCropSelection.values()]);
+    if(!cell)return;
+    const count=gridCropSelection.size;
     const crop=document.createElement('canvas');crop.width=cell.w;crop.height=cell.h;
     crop.getContext('2d').drawImage(sourceCanvas,cell.x,cell.y,cell.w,cell.h,0,0,cell.w,cell.h);
     rememberCropWhole();
@@ -8080,8 +8101,8 @@ const mixes=chooseMixes(target,paletteKey);
     photoLoadRevision++;resetPhotoFilters();installPhoto(crop);
     document.dispatchEvent(new Event('atelier-reset-photo'));
     setMode('move');
-    hint.textContent=shape.selectedOptions[0].textContent+' als Original-Malvorlage übernommen · '+cell.w+' × '+cell.h+' Bildpixel. Neues Raster: 4 – über den Rasterregler weiter unterteilen.';
-  }
+    hint.textContent=count+' Rasterkästchen als Original-Malvorlage übernommen · '+cell.w+' × '+cell.h+' Bildpixel. Neues Raster: 4 – über den Rasterregler weiter unterteilen.';
+  });
   function syncVisibleCrop(){
     syncGridCellCrop();
     document.getElementById('visibleCropBtn').disabled=!loaded;
@@ -8130,7 +8151,7 @@ const mixes=chooseMixes(target,paletteKey);
     setMode('move');hint.textContent='Ganze Malvorlage wiederhergestellt. Ausschnitt-Bearbeitungen werden nicht in das Gesamtbild eingesetzt.';
   });
   function installPhoto(photo){
-    gridCellCropArmed=false;
+    gridCellCropArmed=false;gridCropSelection.clear();
     clearTimeout(formsSquintTimer);formsOriginalPreview=false;
     setMixSurround('#808080');
     img=photo;loaded=true;syncVisibleCrop();placeholder.style.display='none';syncFormsOriginal();

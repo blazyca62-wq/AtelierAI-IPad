@@ -1,3 +1,12 @@
+AtelierAI iPad 3.02 – Kästchen einzeln auswählen
+
+„Rasterkästchen als Malvorlage auswählen“ aktivieren.
+Gewünschte Kästchen nacheinander antippen: Blau bedeutet ausgewählt.
+Erneutes Antippen wählt ab. 1, 2 oder 4 Kästchen müssen ein vollständiges Rechteck bilden.
+Dann „Als Malvorlage übernehmen“ drücken und bei Bedarf das Raster feiner einstellen.
+Bei Änderungen am Raster wird die Auswahl geleert. Verschieben/Zoomen erhält die Auswahl.
+
+Ältere Versionshinweise:
 AtelierAI iPad 3.01 – Mehrere Rasterkästchen
 
 Raster-Auswahl: 1 Kästchen, 2 nebeneinander, 2 übereinander oder 4 (2 × 2).
