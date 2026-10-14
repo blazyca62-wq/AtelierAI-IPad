@@ -1,4 +1,4 @@
-AtelierAI iPad 2.95 – Originalausschnitt frei weiterbearbeiten
+AtelierAI iPad 2.96 – Originalausschnitt frei weiterbearbeiten
 
 „Sichtbaren Ausschnitt als Malvorlage übernehmen“ zeigt zunächst nur
 den unveränderten Ausschnitt der aktuellen Malvorlage. Kein automatischer
