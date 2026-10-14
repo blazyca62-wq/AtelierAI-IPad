@@ -1,3 +1,11 @@
+AtelierAI iPad 3.03 – Beliebig viele Rasterkästchen
+
+Die Begrenzung auf vier Kästchen ist aufgehoben. Auch 3, 6, 9 oder mehr sind möglich.
+Kästchen nacheinander antippen, bei Bedarf abwählen und als Malvorlage übernehmen.
+Die Auswahl muss ein vollständiges Rechteck bilden.
+Ein feineres Raster kann anschließend wie bisher eingestellt werden.
+
+Ältere Versionshinweise:
 AtelierAI iPad 3.02 – Kästchen einzeln auswählen
 
 „Rasterkästchen als Malvorlage auswählen“ aktivieren.

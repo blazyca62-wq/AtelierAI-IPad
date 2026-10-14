@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.02</title>
+  <title>AtelierAI iPad 3.03</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.02</div>
+    <div class="title">AtelierAI · iPad 3.03</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -8025,7 +8025,7 @@ const mixes=chooseMixes(target,paletteKey);
     visibleCropGrid={reference:gridReference?{...gridReference}:null,adjust:{...gridAdjust},density:gridDensity.value,enabled:gridEnabled};
   }
   function selectedGridCropBounds(cells){
-    if(![1,2,4].includes(cells.length))return null;
+    if(!cells.length)return null;
     const cols=cells.map(c=>c.col),rows=cells.map(c=>c.row);
     if((Math.max(...cols)-Math.min(...cols)+1)*(Math.max(...rows)-Math.min(...rows)+1)!==cells.length)return null;
     const x=Math.min(...cells.map(c=>c.x)),y=Math.min(...cells.map(c=>c.y));
@@ -8055,7 +8055,7 @@ const mixes=chooseMixes(target,paletteKey);
       setMode('move');
       if(!gridEnabled)gridToggleBtn.click();
       syncBuild32Grid();checkGridCropGeometry();
-      hint.textContent='1, 2 oder 4 Kästchen nacheinander antippen. Erneutes Antippen wählt ab. Danach „Als Malvorlage übernehmen“. Die Kästchen müssen ein Rechteck bilden.';
+      hint.textContent='Beliebig viele Kästchen nacheinander antippen. Erneutes Antippen wählt ab. Danach „Als Malvorlage übernehmen“. Die Kästchen müssen ein Rechteck bilden.';
     }else hint.textContent='Kästchenauswahl abgebrochen.';
     syncGridCellCrop();draw();
   });
@@ -8078,11 +8078,10 @@ const mixes=chooseMixes(target,paletteKey);
     const key=cell.col+':'+cell.row;
     if(gridCropSelection.has(key))gridCropSelection.delete(key);
     else{
-      if(gridCropSelection.size>=4){hint.textContent='Maximal 4 Kästchen. Zum Abwählen ein markiertes Kästchen erneut antippen.';return;}
       gridCropSelection.set(key,cell);
     }
     const count=gridCropSelection.size,valid=selectedGridCropBounds([...gridCropSelection.values()]);
-    hint.textContent=count+' Kästchen ausgewählt. '+(valid?'Weitere Kästchen antippen oder als Malvorlage übernehmen.':'Bitte 1, 2 oder 4 Kästchen zu einem vollständigen Rechteck auswählen.');
+    hint.textContent=count+' Kästchen ausgewählt. '+(valid?'Weitere Kästchen antippen oder als Malvorlage übernehmen.':'Bitte die Auswahl zu einem vollständigen Rechteck ergänzen oder Kästchen abwählen.');
     syncGridCellCrop();draw();
   }
   document.getElementById('gridCellCropApply').addEventListener('click',()=>{
