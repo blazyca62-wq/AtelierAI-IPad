@@ -1,3 +1,11 @@
+AtelierAI iPad 2.95 – Originalausschnitt frei weiterbearbeiten
+
+„Sichtbaren Ausschnitt als Malvorlage übernehmen“ zeigt zunächst nur
+den unveränderten Ausschnitt der aktuellen Malvorlage. Kein automatischer
+Modulwechsel und keine automatische Farberkennung. Das gewünschte Modul
+und die Farbanzahl anschließend selbst auswählen.
+„Zurück zum ganzen Bild“ bleibt verfügbar.
+
 AtelierAI iPad 2.94 – Sichtbaren Ausschnitt bearbeiten
 
 Gesicht oder Detail im normalen Bildfenster heranzoomen und positionieren.

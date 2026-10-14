@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 2.94</title>
+  <title>AtelierAI iPad 2.95</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,7 +1031,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 2.94</div>
+    <div class="title">AtelierAI · iPad 2.95</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -8038,13 +8038,7 @@ const mixes=chooseMixes(target,paletteKey);
     resetPhotoFilters();installPhoto(crop);
     document.dispatchEvent(new Event('atelier-reset-photo'));
     setMode('move');
-    for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).value='mixed';
-    syncBuild32SimpleLimit();
-    for(const id of ['build32Count','build32CountSide'])document.getElementById(id).value='32';
-    syncBuild32Merge(true);document.getElementById('build32Analyze').textContent='32 Farben erkennen';
-    window.activateToolPage?.('build32Panel');
-    build32SimplifyShowAll=true;document.getElementById('build32Analyze').click();
-    hint.textContent='Ausschnitt übernommen · '+box.width+' × '+box.height+' Bildpixel · 32 Farben nur für diesen Bereich. Die freie Fläche am Bildrand wird nicht übernommen.';
+    hint.textContent='Originalausschnitt übernommen · '+box.width+' × '+box.height+' Bildpixel. Wähle jetzt selbst das gewünschte Modul.';
   });
   document.getElementById('visibleCropBack').addEventListener('click',()=>{
     if(!visibleCropWhole)return;
