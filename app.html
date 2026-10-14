@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.00</title>
+  <title>AtelierAI iPad 3.01</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1031,13 +1031,21 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.00</div>
+    <div class="title">AtelierAI · iPad 3.01</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="saveCurrentViewBtn" type="button">Ansicht speichern</button>
     <button id="visibleCropBtn" type="button" class="secondary" disabled>Sichtbaren Ausschnitt als Malvorlage übernehmen</button>
+    <label style="font-size:13px">Raster-Auswahl
+      <select id="gridCellCropShape" aria-label="Anzahl und Anordnung der Rasterkästchen" disabled>
+        <option value="1x1">1 Kästchen</option>
+        <option value="2x1">2 nebeneinander</option>
+        <option value="1x2">2 übereinander</option>
+        <option value="2x2">4 Kästchen (2 × 2)</option>
+      </select>
+    </label>
     <button id="gridCellCropBtn" type="button" class="secondary" disabled aria-pressed="false">Rasterkästchen als Malvorlage auswählen</button>
     <button id="visibleCropBack" type="button" class="secondary" hidden>Zurück zum ganzen Bild</button>
     <button id="fitBtn" class="secondary">Einpassen</button>
@@ -8023,6 +8031,7 @@ const mixes=chooseMixes(target,paletteKey);
   function syncGridCellCrop(){
     const button=document.getElementById('gridCellCropBtn');
     button.disabled=!loaded;
+    document.getElementById('gridCellCropShape').disabled=!loaded;
     button.textContent=gridCellCropArmed?'Auswahl abbrechen · Kästchen antippen':'Rasterkästchen als Malvorlage auswählen';
     button.setAttribute('aria-pressed',String(gridCellCropArmed));
     button.classList.toggle('active',gridCellCropArmed);
@@ -8033,14 +8042,33 @@ const mixes=chooseMixes(target,paletteKey);
     if(gridCellCropArmed){
       if(!gridEnabled)gridToggleBtn.click();
       syncBuild32Grid();
-      hint.textContent='Ein Rasterkästchen antippen. Verschieben und Zwei-Finger-Zoom bleiben möglich.';
+      hint.textContent='Das linke obere Kästchen des gewünschten Bereichs antippen. Auswahl: '+document.getElementById('gridCellCropShape').selectedOptions[0].textContent+'. Verschieben und Zwei-Finger-Zoom bleiben möglich.';
     }else hint.textContent='Kästchenauswahl abgebrochen.';
     syncGridCellCrop();
+  });
+  function gridCropBlock(cell,geometry,width,height,cols,rows){
+    const {cellX,cellY,firstX,firstY}=geometry;
+    // Keep the tapped cell as the upper-left corner; never silently select fewer cells.
+    const lastX=firstX+(cell.col+cols-1)*cellX;
+    const lastY=firstY+(cell.row+rows-1)*cellY;
+    if(lastX>=width||lastY>=height)return null;
+    const right=Math.floor(Math.min(width,firstX+(cell.col+cols)*cellX));
+    const bottom=Math.floor(Math.min(height,firstY+(cell.row+rows)*cellY));
+    return {x:cell.x,y:cell.y,w:right-cell.x,h:bottom-cell.y};
+  }
+  document.getElementById('gridCellCropShape').addEventListener('change',()=>{
+    if(gridCellCropArmed)hint.textContent='Das linke obere Kästchen antippen · '+document.getElementById('gridCellCropShape').selectedOptions[0].textContent;
   });
   function cropSelectedGridCell(e){
     const p=canvasPoint(e.clientX,e.clientY),ix=(p.x-offsetX)/scale,iy=(p.y-offsetY)/scale;
     if(ix<0||iy<0||ix>=sourceCanvas.width||iy>=sourceCanvas.height)return;
-    const cell=build32GridCellAt(ix,iy);
+    let cell=build32GridCellAt(ix,iy);
+    const shape=document.getElementById('gridCellCropShape');
+    const [cols,rows]=shape.value.split('x').map(Number);
+    if(cell){
+      cell=gridCropBlock(cell,gridGeometry(sourceCanvas.width,sourceCanvas.height,gridDensity.value),sourceCanvas.width,sourceCanvas.height,cols,rows);
+      if(!cell){hint.textContent='Hier passen nicht alle Kästchen ins Bild. Bitte weiter links oder oben antippen.';return;}
+    }
     if(!cell||cell.w<2||cell.h<2){hint.textContent='Dieses Kästchen ist zu klein. Bitte ein größeres auswählen.';return;}
     const crop=document.createElement('canvas');crop.width=cell.w;crop.height=cell.h;
     crop.getContext('2d').drawImage(sourceCanvas,cell.x,cell.y,cell.w,cell.h,0,0,cell.w,cell.h);
@@ -8052,7 +8080,7 @@ const mixes=chooseMixes(target,paletteKey);
     photoLoadRevision++;resetPhotoFilters();installPhoto(crop);
     document.dispatchEvent(new Event('atelier-reset-photo'));
     setMode('move');
-    hint.textContent='Rasterkästchen als Original-Malvorlage übernommen · '+cell.w+' × '+cell.h+' Bildpixel. Neues Raster: 4 – über den Rasterregler weiter unterteilen.';
+    hint.textContent=shape.selectedOptions[0].textContent+' als Original-Malvorlage übernommen · '+cell.w+' × '+cell.h+' Bildpixel. Neues Raster: 4 – über den Rasterregler weiter unterteilen.';
   }
   function syncVisibleCrop(){
     syncGridCellCrop();

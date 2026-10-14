@@ -1,3 +1,11 @@
+AtelierAI iPad 3.01 – Mehrere Rasterkästchen
+
+Raster-Auswahl: 1 Kästchen, 2 nebeneinander, 2 übereinander oder 4 (2 × 2).
+Danach „Rasterkästchen als Malvorlage auswählen“ drücken und das linke obere Kästchen antippen.
+Der gesamte Block wird aus den Originalpixeln übernommen. Über den Rasterregler lässt er sich feiner unterteilen.
+Am rechten/unteren Rand bitte einen Startpunkt wählen, an dem alle Kästchen Platz haben.
+„Zurück zum ganzen Bild“ stellt das ursprüngliche Raster wieder her.
+
 AtelierAI iPad 3.00 – Rasterkästchen als Malvorlage
 
 „Rasterkästchen als Malvorlage auswählen“ drücken und ein Kästchen antippen.
