@@ -1,3 +1,9 @@
+AtelierAI iPad 2.97 – Grundbild als Standard
+
+Der Malaufbau startet mit „Grundbild · danach übermalen und verfeinern“.
+Beim frischen Start bleiben die Farbübergänge bei 0 % (klare Flächen).
+„Endgültige Farben“ bleibt als alternative Malweise verfügbar.
+
 AtelierAI iPad 2.96 – Originalausschnitt frei weiterbearbeiten
 
 „Sichtbaren Ausschnitt als Malvorlage übernehmen“ zeigt zunächst nur
