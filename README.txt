@@ -1,3 +1,8 @@
+AtelierAI iPad 2.99 – Feine Rasterlinien
+
+Die Rasterlinien behalten beim Vergrößern eine feine Bildschirmstärke.
+Auch der helle Kontrastrand ist schmaler. Die Rasterposition bleibt erhalten.
+
 AtelierAI iPad 2.98 – Ursprungsraster im Ausschnitt
 
 Ausschnitte behalten Abstand und Position des ursprünglichen Rasters.
