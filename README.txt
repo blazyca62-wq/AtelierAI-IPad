@@ -1,3 +1,10 @@
+AtelierAI iPad 3.06 – Dioxazine Purple
+
+Für Dioxazine Purple ist die frühere violette RGB-Näherung (82/48/129) wiederhergestellt. Der fast schwarze Vollton-Messwert (21/15/17) führte im RGB-basierten Mischmodell zu graurosa Weißmischungen.
+Dies ist eine vorläufige Modellkorrektur, keine gemessene Mischkalibrierung. Die 30 anderen übernommenen Messwerte und die persönliche Farbauswahl bleiben unverändert.
+Bitte Version 3.06 öffnen und die Zielfarbe erneut aufnehmen.
+
+Ältere Versionshinweise:
 AtelierAI iPad 3.05 – Artisan-Messwerte
 
 31 eindeutig zugeordnete Artisan-Grundfarben verwenden jetzt die von SensualLogic veröffentlichten, laut Quelle spektrofotometrisch gemessenen Masstone-RGB-Werte.
