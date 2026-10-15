@@ -1,3 +1,11 @@
+AtelierAI iPad 3.07 – Mischfarbe korrigieren
+
+Bei Mischvorschlägen steht jetzt „Diese Mischung korrigieren“ bereit, auch im Farbenmodul und Flächenberater.
+Das Korrekturatelier übernimmt die simulierte Mischfarbe als Ausgangsfarbe und zeigt die zugehörige Zielfarbe separat. Regler verändern nur die Ausgangsfarbe. Die Bildschirmnähe wird zur festgehaltenen Zielfarbe berechnet.
+Zurücksetzen stellt die übernommene Ausgangsmischung wieder her. Eine neue Pipettenaufnahme startet wie bisher eine frische Korrektur.
+„Neues Rezept berechnen“ sucht ein Rezept für die korrigierte Bildschirmfarbe; es berechnet keine nachträglichen Farbzugaben zu einer bereits real angerührten Mischung.
+
+Ältere Versionshinweise:
 AtelierAI iPad 3.06 – Dioxazine Purple
 
 Für Dioxazine Purple ist die frühere violette RGB-Näherung (82/48/129) wiederhergestellt. Der fast schwarze Vollton-Messwert (21/15/17) führte im RGB-basierten Mischmodell zu graurosa Weißmischungen.

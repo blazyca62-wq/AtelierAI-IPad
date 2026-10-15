@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.06</title>
+  <title>AtelierAI iPad 3.07</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.06</div>
+    <div class="title">AtelierAI · iPad 3.07</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1653,9 +1653,10 @@
 
       <div class="section" id="correctionStudioPanel">
         <h3>Korrekturatelier</h3>
-        <p>Aufgenommene Farbe malerisch korrigieren und anschließend neu mischen.</p>
-        <div id="corrCompare" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:22px 18px;background:#808080;color:white;border-radius:10px;margin:12px 0">
-          <div><div style="margin-bottom:12px;font-size:13px">Aufgenommene Farbe</div><div id="corrOriginal" style="height:150px;width:100%;background:#808080"></div></div>
+        <p>Mischvorschlag mit „Diese Mischung korrigieren“ übernehmen, an die Zielfarbe anpassen und ein neues Rezept berechnen.</p>
+        <div id="corrCompare" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding:22px 18px;background:#808080;color:white;border-radius:10px;margin:12px 0">
+          <div><div style="margin-bottom:12px;font-size:13px">Zielfarbe</div><div id="corrTargetSwatch" style="height:150px;width:100%;background:#808080"></div></div>
+          <div><div style="margin-bottom:12px;font-size:13px">Ausgangsfarbe</div><div id="corrOriginal" style="height:150px;width:100%;background:#808080"></div></div>
           <div><div style="margin-bottom:12px;font-size:13px">Korrigierte Farbe</div><div id="corrResult" style="height:150px;width:100%;background:#808080"></div></div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label for="corrBackground">Umgebung</label><input id="corrBackground" type="color" value="#808080" style="width:48px;height:44px" aria-label="Hintergrund der Korrekturfarben"><button id="corrGray" class="secondary" type="button">Grau</button><button id="corrUseSurround" class="secondary" type="button">Wie Mischfarbe</button></div>
@@ -1667,7 +1668,7 @@
         <p class="tiny">Feinfühlige Regler: um die Mitte sehr sanft, weiter außen stärker. Die Zahl zeigt die tatsächliche Korrektur. Helligkeit reicht weiterhin bis Weiß oder Schwarz. Neue Pipettenfarben starten ohne Korrektur. Doppeltippen auf einen Regler setzt ihn auf 0.</p>
         <div class="grid2">
           <button id="corrTakeBtn">Pipettenfarbe übernehmen</button>
-          <button id="corrMixBtn">Korrigierte Farbe mischen</button>
+          <button id="corrMixBtn">Neues Rezept berechnen</button>
         </div>
         <button id="corrResetBtn" class="secondary" style="width:100%;margin-top:7px;">Korrektur zurücksetzen</button>
         <details id="oilTintPanel" style="margin-top:14px">
@@ -2042,7 +2043,7 @@
   let paintMedium = 'oil';
 
   let surfaceMode=null;
-  let correctionBase=null;
+  let correctionBase=null, correctionTarget=null;
   let gridEnabled=false;
   let gridReference=null; // Original image coordinates retained through nested crops.
   const gridAdjust={size:100,x:0,y:0,width:100,height:100,locked:false};
@@ -3428,7 +3429,18 @@
     }
     return rankPictureRecipes([...unique.values()],key).slice(0,3);
   }
-  function appendPictureUseButton(box,m,key){
+  function appendPictureUseButton(box,m,key,target){
+    if(target&&m.rgb){
+      const mixRgb=m.rgb.slice(), reference=target.slice();
+      const correct=document.createElement('button');correct.type='button';correct.className='secondary';
+      correct.style.marginTop='8px';correct.textContent='Diese Mischung korrigieren';
+      correct.onclick=()=>{
+        takeCorrectionColor(mixRgb,reference);
+        if(typeof window.activateToolPage==='function')window.activateToolPage('correctionStudioPanel');
+        document.getElementById('corrCompare').scrollIntoView({behavior:'smooth',block:'nearest'});
+      };
+      box.appendChild(correct);
+    }
     const epoch=picturePaletteEpoch;
     const ids=m.tubeIds||[];
     if(!ids.length)return;
@@ -3501,7 +3513,7 @@ const mixes=chooseMixes(target,paletteKey);
         </div>
         <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i].toLocaleString('de-DE')} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)':'Öl · 30 Artisan-Grundtöne nach Messwerten; Dioxazine Purple angenähert; Mischung simuliert, Mengen als Startrezept'}. Auf Papier/Palette prüfen.</span></div>
       `;
-      appendPictureUseButton(card,m,paletteKey);
+      appendPictureUseButton(card,m,paletteKey,target);
       mixResults.appendChild(card);
     });
   }
@@ -4703,8 +4715,9 @@ const mixes=chooseMixes(target,paletteKey);
     setMixTarget(oilTintSelected.rgb,'Öl-Aufhellung '+oilTintSelected.label);
     showStudioMixPage();
   });
-  function takeCorrectionColor(rgb){
+  function takeCorrectionColor(rgb,target=rgb){
     correctionBase=[...rgb];
+    correctionTarget=[...target];
     for(const id of ['corrLight','corrWarm','corrSat','corrHue'])document.getElementById(id).value=0;
     refreshCorrection();
   }
@@ -4734,9 +4747,10 @@ const mixes=chooseMixes(target,paletteKey);
     corrSatVal.textContent=correctionFineLabel(corrSat.value,100);
     document.getElementById('corrHueVal').textContent=correctionFineLabel(document.getElementById('corrHue').value,180)+'°';
     if(!correctionBase||!c){corrInfo.textContent='Noch keine Farbe übernommen.';return;}
+    document.getElementById('corrTargetSwatch').style.background=rgbHex(correctionTarget||correctionBase);
     corrOriginal.style.background=rgbHex(correctionBase);
     corrResult.style.background=rgbHex(c);
-    corrInfo.textContent=`${rgbHex(c)} · RGB ${c.join(', ')}`;
+    corrInfo.textContent=`Zielfarbe ${rgbHex(correctionTarget||correctionBase)} · Ausgang ${rgbHex(correctionBase)} · Korrektur ${rgbHex(c)} · ${similarityPct(correctionTarget||correctionBase,c)}/100 Bildschirmnähe`;
   }
 
   function clusterArea(cx,cy,size,shape){
@@ -5728,7 +5742,7 @@ const mixes=chooseMixes(target,paletteKey);
         const title=document.createElement('b');title.textContent='Farbe '+(index+1)+' · '+m.score+'/100 Bildschirmnähe';box.appendChild(title);
         const line=document.createElement('div');line.textContent=m.names.map((n,i)=>m.parts[i].toLocaleString('de-DE')+' Teil'+(m.parts[i]!==1?'e':'')+' '+n).join(' + ');box.appendChild(line);
         const note=document.createElement('div');note.className='tiny';note.textContent=m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (kein Wasserverhältnis).':'Öl · Mengen als Startrezept.';box.appendChild(note);
-        appendPictureUseButton(box,m,key);
+        appendPictureUseButton(box,m,key,rgb);
       }catch(e){box.textContent='Mischung konnte nicht berechnet werden. Bitte eine andere Palette wählen.';}
     },30);
   }
@@ -6505,7 +6519,7 @@ const mixes=chooseMixes(target,paletteKey);
           const note=document.createElement('div');note.className='tiny';
           note.textContent=m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis).':'Öl · Mengen als Startrezept.';
           box.appendChild(note);
-          appendPictureUseButton(box,m,paletteKey);
+          appendPictureUseButton(box,m,paletteKey,c.rgb);
         }catch(error){box.textContent='Mischung konnte nicht berechnet werden. Bitte andere Palette wählen.';}
       },40+i*40);
     });
