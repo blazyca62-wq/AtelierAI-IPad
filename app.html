@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.03</title>
+  <title>AtelierAI iPad 3.04</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -34,6 +34,7 @@
     .viewer-column > .viewer{flex:1;min-height:0;}
     #build32Dock{background:var(--panel);border-radius:14px;padding:10px;max-height:42%;overflow:auto;}
     #build32Dock[hidden]{display:none;}
+    #build32Palette button[data-image-picked="true"]{outline:3px solid #00bfff;outline-offset:-3px;box-shadow:inset 0 0 0 5px #fff;}
     #build32Palette{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(2,44px);gap:6px;margin:8px 0;padding:3px;}
     #build32Palette button[hidden]{display:none!important;}
     #build32Pages{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px;}
@@ -1031,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.03</div>
+    <div class="title">AtelierAI · iPad 3.04</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1058,7 +1059,7 @@
       <div id="build32Pages" aria-label="Farbseiten"></div>
       <div id="build32Palette" aria-label="Erkannte Bildfarben"></div>
       <div id="build32Similar" hidden style="margin:6px 0"></div>
-      <div id="build32Recipe" role="status">Eine Farbe antippen – Farbfläche und Mischung erscheinen.</div><details data-picture-palette="build32MixPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details>
+      <div id="build32Recipe" role="status">Farbfläche im Bild antippen: Palettenfarbe und Mischung anzeigen. Farbfeld unten antippen: Farbe im Bild auswählen.</div><details data-picture-palette="build32MixPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details>
     </div>
     </div>
     <aside class="side">
@@ -5513,7 +5514,7 @@ const mixes=chooseMixes(target,paletteKey);
     if(!build32Data)return;
     syncBuild32FamilyRanges();
     build32Manual=false;
-    build32Selected=null;build32MixRequest++;document.getElementById('build32Recipe').textContent='Eine Farbe antippen – Farbfläche und Mischung erscheinen.';
+    build32Selected=null;build32MixRequest++;document.getElementById('build32Recipe').textContent='Farbfläche im Bild antippen: Palettenfarbe und Mischung anzeigen. Farbfeld unten antippen: Farbe im Bild auswählen.';
     document.getElementById('build32Extras').textContent=build32Extras?'Farbaufbau wieder anzeigen':'Nur Ergänzungen zeigen';
     document.getElementById('build32Extras').disabled=!build32Extras&&(direction==='middle'||!build32SelectedFamilies().includes('all')||Number(document.getElementById('build32light').value)!==build32ColorCount());
     build32Direction=direction;build32Active=true;
@@ -5728,8 +5729,52 @@ const mixes=chooseMixes(target,paletteKey);
       }catch(e){box.textContent='Mischung konnte nicht berechnet werden. Bitte eine andere Palette wählen.';}
     },30);
   }
+  function build32ImageIndexAt(ix,iy,data,detail,sourceWidth,sourceHeight){
+    if(ix<0||iy<0||ix>=sourceWidth||iy>=sourceHeight)return null;
+    let x,y,width,height;
+    if(detail){
+      if(ix<detail.x||iy<detail.y||ix>=detail.x+detail.w||iy>=detail.y+detail.h)return null;
+      x=Math.floor(ix-detail.x);y=Math.floor(iy-detail.y);width=detail.w;height=detail.h;
+    }else{
+      width=data.width;height=data.height;
+      x=Math.floor(ix*width/sourceWidth);y=Math.floor(iy*height/sourceHeight);
+    }
+    return y*width+x;
+  }
+  function inspectBuild32ImageColor(e){
+    if(!build32Active||!build32Data||sketchActive||document.getElementById('build32Dock').hidden)return false;
+    const p=canvasPoint(e.clientX,e.clientY),ix=(p.x-offsetX)/scale,iy=(p.y-offsetY)/scale;
+    const data=build32DetailCell||build32Data;
+    const pixel=build32ImageIndexAt(ix,iy,build32Data,build32DetailCell,sourceCanvas.width,sourceCanvas.height);
+    if(pixel===null){
+      if(build32DetailCell)hint.textContent='Für die lokale Palette bitte innerhalb des Detail-Kästchens antippen.';
+      return true;
+    }
+    if(build32VisibleMask&&build32VisibleMask[pixel]===0){
+      hint.textContent='Hier ist die Farbe ausgeblendet. Bitte eine sichtbare Farbfläche antippen oder „Alle Farben“ anzeigen.';
+      return true;
+    }
+    const index=build32FilledRanks(data)[pixel],palette=build32ActivePalette();
+    if(!palette?.[index])return true;
+    // Inspect the indexed colour without changing the visible colour selection.
+    build32Selected=index;
+    setBuild32Collapsed(false);showBuild32PalettePage(Math.floor(index/16));
+    [...document.getElementById('build32Palette').children].forEach((button,i)=>{
+      button.dataset.imagePicked=String(i===index);
+    });
+    document.getElementById('build32ResetColor').disabled=!build32ActiveOverrides().has(index);
+    setMixTarget(palette[index],'Bildfarbe '+(index+1));updateBuild32Recipe();
+    hint.textContent='Bildfarbe '+(index+1)+' · unten blau umrandet, mit Mischrezept. Die Bildansicht bleibt erhalten.';
+    const dock=document.getElementById('build32Dock');
+    requestAnimationFrame(()=>{
+      const recipe=document.getElementById('build32Recipe');
+      dock.scrollTop=Math.max(0,recipe.offsetTop-dock.offsetTop-dock.clientHeight+recipe.clientHeight+12);
+    });
+    return true;
+  }
   function selectBuild32Color(index){
     if(!build32Data)return;
+    [...document.getElementById('build32Palette').children].forEach(button=>delete button.dataset.imagePicked);
     if(build32DetailCell){
       const palette=build32ActivePalette();
       if(!palette||!palette[index])return;
@@ -8265,6 +8310,7 @@ const mixes=chooseMixes(target,paletteKey);
       
       return;
     }
+    if(mode==='move'&&inspectBuild32ImageColor(e)){e.preventDefault();return;}
     if(mode==='picker'){
       pickColor(e.clientX,e.clientY);
       

@@ -1,3 +1,13 @@
+AtelierAI iPad 3.04 – Bildfarbe in der Palette finden
+
+Im Farbenmodul (8/16/32/48/64) im Modus Verschieben eine sichtbare Farbfläche kurz antippen.
+Die zugehörige Palettenseite öffnet sich; die Farbe wird blau umrandet und ihre Mischung angezeigt.
+Die sichtbaren Farben bleiben erhalten. Ziehen verschiebt weiterhin, zwei Finger zoomen.
+Pipette, Rasterkästchenauswahl und Farbe ersetzen behalten Vorrang.
+Bei geglätteten Übergängen wird die zugrunde liegende Palettenfarbe angezeigt.
+Mischrezepte sind wie bisher simulierte Startrezepte.
+
+Ältere Versionshinweise:
 AtelierAI iPad 3.03 – Beliebig viele Rasterkästchen
 
 Die Begrenzung auf vier Kästchen ist aufgehoben. Auch 3, 6, 9 oder mehr sind möglich.
