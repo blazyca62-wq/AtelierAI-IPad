@@ -1,3 +1,13 @@
+AtelierAI iPad 3.05 – Artisan-Messwerte
+
+31 eindeutig zugeordnete Artisan-Grundfarben verwenden jetzt die von SensualLogic veröffentlichten, laut Quelle spektrofotometrisch gemessenen Masstone-RGB-Werte.
+Quelle: https://sensuallogic.com/artistcolordata (abgerufen am 15.10.2026).
+Die neun übrigen Katalogfarben bleiben unverändert, einschließlich Viridian Hue (Quelle nennt nur Viridian).
+Die spektrale Mischsimulation bleibt eine Näherung: Es wurden keine gemessenen Mischparameter oder Aufhellungsreihen integriert. Eine höhere Genauigkeit echter Mischrezepte ist noch nicht validiert.
+Eigene Farben bleiben unverändert. Neue Berechnungen verwenden die aktualisierten Katalogwerte; bereits gespeicherte Rezepte gegebenenfalls neu berechnen.
+Online alle Dateien austauschen und die aktualisierte Version 3.05 öffnen.
+
+Ältere Versionshinweise:
 AtelierAI iPad 3.04 – Bildfarbe in der Palette finden
 
 Im Farbenmodul (8/16/32/48/64) im Modus Verschieben eine sichtbare Farbfläche kurz antippen.
