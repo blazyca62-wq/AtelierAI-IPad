@@ -1,3 +1,8 @@
+AtelierAI iPad 3.08 – Verbesserte Öl-Rezeptsuche
+
+Die Suche optimiert jetzt die angezeigten ganzen Mischteile und prüft ergänzende vierte Tubenfarben. Maximal 24 Teile; bisherige Kandidaten bleiben erhalten. Aquarell unverändert.
+Korrekturatelier: Bildschirmkorrektur und Pigmentrezept werden verständlich unterschieden. Keine Garantie für 95 % oder eine reale Pigmentübereinstimmung; das Mischmodell bleibt unkalibriert.
+
 AtelierAI iPad 3.07 – Mischfarbe korrigieren
 
 Bei Mischvorschlägen steht jetzt „Diese Mischung korrigieren“ bereit, auch im Farbenmodul und Flächenberater.

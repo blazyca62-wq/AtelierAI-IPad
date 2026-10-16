@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.07</title>
+  <title>AtelierAI iPad 3.08</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.07</div>
+    <div class="title">AtelierAI · iPad 3.08</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1653,7 +1653,7 @@
 
       <div class="section" id="correctionStudioPanel">
         <h3>Korrekturatelier</h3>
-        <p>Mischvorschlag mit „Diese Mischung korrigieren“ übernehmen, an die Zielfarbe anpassen und ein neues Rezept berechnen.</p>
+        <p>Mischvorschlag mit „Diese Mischung korrigieren“ übernehmen und die Bildschirmfarbe anpassen. Die Regler ändern noch keine Pigmentmengen. „Neues Rezept berechnen“ sucht anschließend ein Rezept für die korrigierte Farbe; dessen Übereinstimmung kann geringer sein.</p>
         <div id="corrCompare" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding:22px 18px;background:#808080;color:white;border-radius:10px;margin:12px 0">
           <div><div style="margin-bottom:12px;font-size:13px">Zielfarbe</div><div id="corrTargetSwatch" style="height:150px;width:100%;background:#808080"></div></div>
           <div><div style="margin-bottom:12px;font-size:13px">Ausgangsfarbe</div><div id="corrOriginal" style="height:150px;width:100%;background:#808080"></div></div>
@@ -3336,6 +3336,58 @@
         if(!old||item.score>old.score||(item.score===old.score&&parts.reduce((a,b)=>a+b,0)<old.parts.reduce((a,b)=>a+b,0)))practicalByRecipe.set(key,item);
       }
     }
+    // 3.08: optimise the printable recipe itself. Continuous optimisation
+    // followed by rounding can otherwise discard its useful small additions.
+    const evaluatePractical=(items,parts)=>{
+      const active=items.map((item,i)=>({item,part:parts[i]})).filter(v=>v.part>0);
+      items=active.map(v=>v.item);parts=active.map(v=>v.part);
+      const f=finishMix(mixFor(items,parts));
+      return {items,parts,rgb:f.rgb,coverage:f.coverage,cost:studioCost(f.rgb,items),score:displayPct(f.rgb)};
+    };
+    const keepPractical=x=>{
+      const key=recipeKey(x.items),old=practicalByRecipe.get(key);
+      if(!old||x.cost<old.cost-1e-8)practicalByRecipe.set(key,x);
+    };
+    const refinePractical=start=>{
+      let x=start;
+      for(let round=0;round<16;round++){
+        let best=x;
+        const total=x.parts.reduce((a,b)=>a+b,0);
+        const tryParts=parts=>{
+          if(parts.some(v=>v<0)||!parts.some(v=>v>0))return;
+          const trial=evaluatePractical(x.items,parts);
+          if(trial.cost<best.cost-1e-8)best=trial;
+        };
+        for(let i=0;i<x.parts.length;i++){
+          if(total<24){const p=x.parts.slice();p[i]++;tryParts(p);}
+          if(x.parts[i]>0){const p=x.parts.slice();p[i]--;tryParts(p);}
+          for(let j=0;j<x.parts.length;j++){
+            if(i===j||x.parts[i]<=0)continue;
+            const p=x.parts.slice();p[i]--;p[j]++;tryParts(p);
+          }
+        }
+        if(best===x)break;
+        x=best;
+      }
+      keepPractical(x);return x;
+    };
+    for(const x of [...practicalByRecipe.values()].sort((a,b)=>a.cost-b.cost).slice(0,24))refinePractical(x);
+    // A fourth tube may correct a residual hue/value error. All available
+    // pigments are eligible; keep the same maximum of 24 whole portions.
+    const additions=[];
+    for(const seed of [...practicalByRecipe.values()].sort((a,b)=>a.cost-b.cost).slice(0,8)){
+      if(seed.items.length>=4)continue;
+      for(const c of candidates){
+        if(seed.items.includes(c)||!valid([...seed.items,c]))continue;
+        for(const add of [1,2,4]){
+          const sum=seed.parts.reduce((a,b)=>a+b,0);
+          const parts=seed.parts.map(p=>Math.max(1,Math.floor(p/sum*(24-add))));
+          const x=evaluatePractical([...seed.items,c],[...parts,add]);
+          additions.push(x);keepPractical(x);
+        }
+      }
+    }
+    for(const x of additions.sort((a,b)=>a.cost-b.cost).slice(0,16))refinePractical(x);
     const practical=[...practicalByRecipe.values()];
     const practicalSimple=Math.max(-1,...practical.filter(x=>x.items.length<=2).map(x=>x.score));
     const printable=practical.filter(x=>x.items.length<=2||x.score>=practicalSimple+1);
