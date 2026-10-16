@@ -1,3 +1,12 @@
+AtelierAI iPad 3.10 – Feste Zielfarbe im Korrekturablauf
+
+Die aufgenommene Zielfarbe bleibt beim Berechnen nach einer Korrektur unverändert. Die Bildschirmkorrektur ist nur eine zusätzliche Suchhilfe. Alle resultierenden Rezepte werden gegen die ursprüngliche Zielfarbe bewertet. Neue Farbaufnahmen löschen die vorherige Suchhilfe. Bildschirmkorrektur und Rezeptbewertung sind ausdrücklich getrennt beschriftet.
+
+AtelierAI iPad 3.09 – Farbtreffer vor Bildpalette
+
+Bei Öl steht die höhere angezeigte Bildschirmnähe vor der Bevorzugung gemerkter Tuben. Bei Gleichstand werden weiterhin bekannte Farben bevorzugt.
+Konkreter Test #66198D: Permanent Rose / Dioxazine Purple / Titanium White, 1:10:2, Modellwert 76/100. Keine Behauptung einer 95-prozentigen Übereinstimmung.
+
 AtelierAI iPad 3.08 – Verbesserte Öl-Rezeptsuche
 
 Die Suche optimiert jetzt die angezeigten ganzen Mischteile und prüft ergänzende vierte Tubenfarben. Maximal 24 Teile; bisherige Kandidaten bleiben erhalten. Aquarell unverändert.

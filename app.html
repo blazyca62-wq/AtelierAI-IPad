@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.08</title>
+  <title>AtelierAI iPad 3.10</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.08</div>
+    <div class="title">AtelierAI · iPad 3.10</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1653,7 +1653,7 @@
 
       <div class="section" id="correctionStudioPanel">
         <h3>Korrekturatelier</h3>
-        <p>Mischvorschlag mit „Diese Mischung korrigieren“ übernehmen und die Bildschirmfarbe anpassen. Die Regler ändern noch keine Pigmentmengen. „Neues Rezept berechnen“ sucht anschließend ein Rezept für die korrigierte Farbe; dessen Übereinstimmung kann geringer sein.</p>
+        <p>Mischvorschlag mit „Diese Mischung korrigieren“ übernehmen und die Bildschirmfarbe anpassen. Die Regler ändern noch keine Pigmentmengen. „Rezept zur Korrektur suchen“ prüft zusätzliche Rezepte. Die ursprüngliche Zielfarbe bleibt erhalten; alle Rezeptbewertungen beziehen sich weiterhin auf sie.</p>
         <div id="corrCompare" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding:22px 18px;background:#808080;color:white;border-radius:10px;margin:12px 0">
           <div><div style="margin-bottom:12px;font-size:13px">Zielfarbe</div><div id="corrTargetSwatch" style="height:150px;width:100%;background:#808080"></div></div>
           <div><div style="margin-bottom:12px;font-size:13px">Ausgangsfarbe</div><div id="corrOriginal" style="height:150px;width:100%;background:#808080"></div></div>
@@ -1668,7 +1668,7 @@
         <p class="tiny">Feinfühlige Regler: um die Mitte sehr sanft, weiter außen stärker. Die Zahl zeigt die tatsächliche Korrektur. Helligkeit reicht weiterhin bis Weiß oder Schwarz. Neue Pipettenfarben starten ohne Korrektur. Doppeltippen auf einen Regler setzt ihn auf 0.</p>
         <div class="grid2">
           <button id="corrTakeBtn">Pipettenfarbe übernehmen</button>
-          <button id="corrMixBtn">Neues Rezept berechnen</button>
+          <button id="corrMixBtn">Rezept zur Korrektur suchen</button>
         </div>
         <button id="corrResetBtn" class="secondary" style="width:100%;margin-top:7px;">Korrektur zurücksetzen</button>
         <details id="oilTintPanel" style="margin-top:14px">
@@ -2044,6 +2044,7 @@
 
   let surfaceMode=null;
   let correctionBase=null, correctionTarget=null;
+  let correctionRecipeHint=null;
   let gridEnabled=false;
   let gridReference=null; // Original image coordinates retained through nested crops.
   const gridAdjust={size:100,x:0,y:0,width:100,height:100,locked:false};
@@ -3336,7 +3337,7 @@
         if(!old||item.score>old.score||(item.score===old.score&&parts.reduce((a,b)=>a+b,0)<old.parts.reduce((a,b)=>a+b,0)))practicalByRecipe.set(key,item);
       }
     }
-    // 3.08: optimise the printable recipe itself. Continuous optimisation
+    // 3.10: optimise the printable recipe itself. Continuous optimisation
     // followed by rounding can otherwise discard its useful small additions.
     const evaluatePractical=(items,parts)=>{
       const active=items.map((item,i)=>({item,part:parts[i]})).filter(v=>v.part>0);
@@ -3447,7 +3448,7 @@
       picturePaletteStorageOK=true;
     }catch(e){picturePaletteStorageOK=false;}
     mixResults.replaceChildren();surfaceResults.replaceChildren();
-    lastSmartColor=null;lastAverageColor=null;
+    lastSmartColor=null;lastAverageColor=null;correctionRecipeHint=null;
     renderPicturePalettePanels();
   }
   function pictureRecipeIds(recipe,key){
@@ -3462,6 +3463,9 @@
     recipes.forEach(m=>{m.referenceBest=best;});
     const count=m=>pictureRecipeIds(m,key).filter(id=>!used.has(id)).length;
     return recipes.sort((a,b)=>{
+      // Oil: colour match takes precedence. Reuse remembered tubes only
+      // when the displayed match is tied, never hide a better red addition.
+      if(key==='artisan')return b.score-a.score||count(a)-count(b)||(a.color_count||a.items?.length||0)-(b.color_count||b.items?.length||0);
       const nearA=a.score>=best-3,nearB=b.score>=best-3;
       if(nearA!==nearB)return nearA?-1:1;
       if(nearA&&count(a)!==count(b))return count(a)-count(b);
@@ -3541,6 +3545,25 @@
     });
   }
 
+  // Keep the sampled reference separate from the edited screen colour.
+  function correctionMixes(target,hint,key){
+    const candidates=[...chooseMixes(target,key),...chooseMixes(hint,key)];
+    const unique=new Map();
+    for(const m of candidates){
+      const id=JSON.stringify([m.tubeIds||m.names,m.parts,m.coverage]);
+      unique.set(id,{...m,score:similarityPct(target,m.rgb)});
+    }
+    return [...unique.values()].sort((a,b)=>b.score-a.score||a.color_count-b.color_count).slice(0,3);
+  }
+  function calculateCorrectionRecipe(){
+    const hint=correctedColor();
+    if(!hint||!correctionTarget)return;
+    // setMixTarget clears stale correction state for all normal new targets.
+    setMixTarget(correctionTarget,'Ursprüngliche Zielfarbe');
+    correctionRecipeHint=hint.slice();
+    showStudioMixPage();
+  }
+
   function showMixes(){
     const target=lastSmartColor || lastAverageColor;
     if(!target){
@@ -3548,19 +3571,24 @@
       return;
     }
     const paletteKey=paintPalette.value;
-const mixes=chooseMixes(target,paletteKey);
+const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,paletteKey):chooseMixes(target,paletteKey);
     mixResults.innerHTML=mixes.length?'':'<p>Bitte zuerst vorhandene Farben in der Palette auswählen.</p>';
     if(!selectedPaletteColors(paletteKey).length){
       mixResults.innerHTML+='<p class="tiny">Keine persönliche Auswahl aktiv: Vorschläge aus der Standardpalette'+(paletteKey==='artisan'?' ohne Schwarz':'')+'. Unter Palette kannst du deine vorhandenen Farben auswählen.</p>';
+    }
+    if(correctionRecipeHint){
+      const note=document.createElement('p');note.className='tiny';
+      note.textContent=`Vergleich bleibt bei der ursprünglichen Zielfarbe ${rgbHex(target)}. Bildschirmkorrektur ${rgbHex(correctionRecipeHint)}: ${similarityPct(target,correctionRecipeHint)}/100 zur Zielfarbe (noch kein Rezept). Die Rezepte unten wurden zusätzlich aus dieser Korrektur gesucht und werden alle gegen die ursprüngliche Zielfarbe bewertet.`;
+      mixResults.appendChild(note);
     }
     mixes.forEach((m,idx)=>{
       const card=document.createElement('div');
       card.className='mix-card';
       const targetHex=rgbHex(target), mixHex=rgbHex(m.rgb);
       card.innerHTML=`
-        <div class="mix-head"><b>Vorschlag ${idx+1}</b><span>${m.score}/100 Bildschirmnähe</span></div>
+        <div class="mix-head"><b>Vorschlag ${idx+1}</b><span>${m.score}/100 Bildschirmnähe${correctionRecipeHint?' zur ursprünglichen Zielfarbe':''}</span></div>
         <div class="mix-swatches">
-          <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${targetHex}"></div><div class="tiny" style="margin-top:6px">${targetHex} · RGB ${target.join(', ')}</div></div>
+          <div><div class="tiny">${correctionRecipeHint?'Ursprüngliche Zielfarbe':'Zielfarbe'}</div><div class="mix-swatch" style="background:${targetHex}"></div><div class="tiny" style="margin-top:6px">${targetHex} · RGB ${target.join(', ')}</div></div>
           <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex}"></div></div>
         </div>
         <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i].toLocaleString('de-DE')} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)':'Öl · 30 Artisan-Grundtöne nach Messwerten; Dioxazine Purple angenähert; Mischung simuliert, Mengen als Startrezept'}. Auf Papier/Palette prüfen.</span></div>
@@ -3627,6 +3655,7 @@ const mixes=chooseMixes(target,paletteKey);
     if(!samples.length) return;
     const avg=linearAverageRGB(samples);
     const robust=robustSmartColor(samples);
+    correctionRecipeHint=null;
     lastAverageColor=avg;
     lastSmartColor=smart && robust ? robust.smart : avg;
     avgTargetBox.style.background=rgbHex(adaptiveDisplayColor(avg));
@@ -3661,6 +3690,7 @@ const mixes=chooseMixes(target,paletteKey);
 
   function setMixTarget(rgb, label='Zielfarbe'){
     if(!rgb) return;
+    correctionRecipeHint=null;
     lastAverageColor=[...rgb];
     lastSmartColor=[...rgb];
     const hx=rgbHex(rgb);
@@ -4802,7 +4832,7 @@ const mixes=chooseMixes(target,paletteKey);
     document.getElementById('corrTargetSwatch').style.background=rgbHex(correctionTarget||correctionBase);
     corrOriginal.style.background=rgbHex(correctionBase);
     corrResult.style.background=rgbHex(c);
-    corrInfo.textContent=`Zielfarbe ${rgbHex(correctionTarget||correctionBase)} · Ausgang ${rgbHex(correctionBase)} · Korrektur ${rgbHex(c)} · ${similarityPct(correctionTarget||correctionBase,c)}/100 Bildschirmnähe`;
+    corrInfo.textContent=`Zielfarbe ${rgbHex(correctionTarget||correctionBase)} · Ausgang ${rgbHex(correctionBase)} · Korrektur ${rgbHex(c)} · ${similarityPct(correctionTarget||correctionBase,c)}/100 Bildschirmnähe der Korrektur zur ursprünglichen Zielfarbe (noch kein Pigmentrezept)`;
   }
 
   function clusterArea(cx,cy,size,shape){
@@ -7837,7 +7867,7 @@ const mixes=chooseMixes(target,paletteKey);
 
   [corrLight,corrWarm,corrSat,document.getElementById('corrHue')].forEach(x=>{x.addEventListener('input',refreshCorrection);x.addEventListener('dblclick',()=>{x.value=0;refreshCorrection();});});
   corrTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){takeCorrectionColor(t);}});
-  corrMixBtn.addEventListener('click',()=>{const c=correctedColor();if(c){setMixTarget(c,'Korrekturatelier');showStudioMixPage();}});
+  corrMixBtn.addEventListener('click',calculateCorrectionRecipe);
   corrResetBtn.addEventListener('click',()=>{corrLight.value=0;corrWarm.value=0;corrSat.value=0;document.getElementById('corrHue').value=0;refreshCorrection();});
   function setCorrectionBackground(hex){
     const box=document.getElementById('corrCompare'),rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
