@@ -1,3 +1,15 @@
+AtelierAI iPad 3.13 – Unschärfe im Linienverlauf
+
+Farben bearbeiten > Linienverlauf: Unschärfe für Anfang A und Ende B getrennt einstellen. Beispiel: A 0 %, B 50 %. Richtung umkehren, Änderung merken, Rückgängig und Projektvarianten funktionieren auch mit Unschärfe. PNG und Malvorlage übernehmen den Verlauf in voller Auflösung. Alte Projekte bleiben ladbar.
+
+AtelierAI iPad 3.12 – Rasterkästchen mit Großformen
+
+Beim Übernehmen von Rasterkästchen bleiben die vorhandenen Großformen exakt erhalten. Im Großformen-Modul schaltet „Zurück zum Original“ / „Zurück zu Großformen“ zwischen beiden Ansichten desselben Ausschnitts um. Änderungen der Großformen-Regler berechnen den Ausschnitt neu.
+
+AtelierAI iPad 3.11 – Rezepte für die Korrektur
+
+Der Korrekturknopf sucht ausschließlich für die korrigierte Farbe. Keine ursprünglichen Rezepte werden zugemischt. Sortierung nach Nähe zur Korrektur. Getrennte Angaben für Nähe zur Korrektur und ursprünglichen Zielfarbe; drei Vergleichsfelder. Die ursprüngliche Zielfarbe bleibt erhalten.
+
 AtelierAI iPad 3.10 – Feste Zielfarbe im Korrekturablauf
 
 Die aufgenommene Zielfarbe bleibt beim Berechnen nach einer Korrektur unverändert. Die Bildschirmkorrektur ist nur eine zusätzliche Suchhilfe. Alle resultierenden Rezepte werden gegen die ursprüngliche Zielfarbe bewertet. Neue Farbaufnahmen löschen die vorherige Suchhilfe. Bildschirmkorrektur und Rezeptbewertung sind ausdrücklich getrennt beschriftet.
