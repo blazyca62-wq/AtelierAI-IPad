@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.13</title>
+  <title>AtelierAI iPad 3.14</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.13</div>
+    <div class="title">AtelierAI · iPad 3.14</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -8922,7 +8922,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       el('GradientDraw').setAttribute('aria-pressed',String(gradientArmed));
       el('GradientDraw').textContent=gradientArmed?'Linie zeichnen: aktiv · beenden':gradient?'Verlaufslinie neu zeichnen':'Verlaufslinie zeichnen';
       el('GradientReverse').disabled=busy||!gradient;el('GradientClear').disabled=busy||!gradient;
-      el('GradientStatus').textContent=gradientArmed?'Mit einem Finger von Anfang A zu Ende B ziehen. Zwei Finger zoomen.':gradient?'Verlauf aktiv · Werte für A und B einstellen.':'Noch keine Linie · zuerst „Verlaufslinie zeichnen“ antippen.';
+      el('GradientStatus').textContent=gradientArmed?'Mit einem Finger von Anfang A zu Ende B ziehen. Zwei Finger zoomen.':gradient?'A / B ziehen: Endpunkte ändern · Linie ziehen: Verlauf verschieben. Werte bleiben erhalten.':'Noch keine Linie · zuerst „Verlaufslinie zeichnen“ antippen.';
       drawRegion();
     }
     function drawGradient(){
@@ -8935,6 +8935,36 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         svg('circle',{cx:p.x,cy:p.y,r:12,fill:label==='A'?'#206652':'#384c94',stroke:'#fff','stroke-width':2});
         const t=svg('text',{x:p.x,y:p.y+4,fill:'#fff','text-anchor':'middle','font-size':13,'font-weight':'bold'});t.textContent=label;
       }
+    }
+    function gradientHit(p){
+      if(!gradient||!el('GradientVisible').checked)return null;
+      const screen=q=>({x:view.x+q.x*cv.width*view.k,y:view.y+q.y*cv.height*view.k});
+      const a=screen(gradient.a),b=screen(gradient.b);
+      const da=Math.hypot(p.x-a.x,p.y-a.y),db=Math.hypot(p.x-b.x,p.y-b.y);
+      if(Math.min(da,db)<=24)return da<=db?'a':'b';
+      const dx=b.x-a.x,dy=b.y-a.y,den=dx*dx+dy*dy;
+      if(!den)return null;
+      const t=clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/den);
+      return Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy)<=16?'line':null;
+    }
+    function beginGradientMove(p){
+      const handle=gradientHit(p);if(!handle)return false;
+      gradientDraft={a:{...gradient.a},b:{...gradient.b}};
+      gesture={type:'gradientMove',handle,start:{...p},original:{a:{...gradient.a},b:{...gradient.b}}};
+      drawRegion();return true;
+    }
+    function moveGradient(p){
+      const g=gesture,original=g.original;
+      let dx=(p.x-g.start.x)/(cv.width*view.k),dy=(p.y-g.start.y)/(cv.height*view.k);
+      gradientDraft={a:{...original.a},b:{...original.b}};
+      if(g.handle==='line'){
+        dx=clamp(dx,-Math.min(original.a.x,original.b.x),1-Math.max(original.a.x,original.b.x));
+        dy=clamp(dy,-Math.min(original.a.y,original.b.y),1-Math.max(original.a.y,original.b.y));
+        for(const end of ['a','b']){gradientDraft[end].x+=dx;gradientDraft[end].y+=dy;}
+      }else{
+        gradientDraft[g.handle]={x:clamp(original[g.handle].x+dx),y:clamp(original[g.handle].y+dy)};
+      }
+      drawRegion();
     }
     function finishGradient(){
       const g=gradientDraft;gradientDraft=null;
@@ -9052,7 +9082,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(!preview||busy||(e.pointerType==='mouse'&&e.button!==0))return;
       const p=localPoint(e);points.set(e.pointerId,p);stage.setPointerCapture?.(e.pointerId);
       if(points.size>=2)beginPinch();
-      else{const q=imagePoint(p);if(reviewActive()){gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}else if(noteArmed&&q){gesture={type:'note',start:p};}else if(spotArmed&&q){spotDraft=regionPoint(p);gesture={type:'spot'};drawRegion();}else if(gradientArmed&&q){const a=regionPoint(p);gradientDraft={a,b:{...a}};gesture={type:'gradient'};drawRegion();}else if(brushMode&&q){brushDraft={mode:brushMode,size:+el('BrushSize').value/view.k/Math.min(cv.width,cv.height),points:[]};addBrushPoint(p);gesture={type:'brush'};}else if(lassoArmed&&q){lassoDraft=[];addRegionPoint(p);gesture={type:'lasso'};}else if(picking&&q){pickPoint=q;positionCircle();gesture={type:'pick'};}else gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
+      else{const q=imagePoint(p);if(reviewActive()){gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}else if(noteArmed&&q){gesture={type:'note',start:p};}else if(spotArmed&&q){spotDraft=regionPoint(p);gesture={type:'spot'};drawRegion();}else if(gradientArmed&&q){const a=regionPoint(p);gradientDraft={a,b:{...a}};gesture={type:'gradient'};drawRegion();}else if(brushMode&&q){brushDraft={mode:brushMode,size:+el('BrushSize').value/view.k/Math.min(cv.width,cv.height),points:[]};addBrushPoint(p);gesture={type:'brush'};}else if(lassoArmed&&q){lassoDraft=[];addRegionPoint(p);gesture={type:'lasso'};}else if(picking&&q){pickPoint=q;positionCircle();gesture={type:'pick'};}else if(!noteArmed&&!spotArmed&&!gradientArmed&&!brushMode&&!lassoArmed&&!picking&&beginGradientMove(p)){}else gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
       e.preventDefault();
     });
     stage.addEventListener('pointermove',e=>{
@@ -9060,6 +9090,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(points.size>=2){if(gesture.type!=='pinch')beginPinch();const [a,b]=[...points.values()],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};view.zoom=clamp(gesture.zoom*Math.hypot(a.x-b.x,a.y-b.y)/gesture.distance,1,12);view.k=Math.min(stage.clientWidth/cv.width,stage.clientHeight/cv.height)*view.zoom;view.x=mid.x-gesture.ix*view.k;view.y=mid.y-gesture.iy*view.k;placeView();}
       else if(gesture.type==='spot'){spotDraft=regionPoint(p);drawRegion();}
       else if(gesture.type==='gradient'){gradientDraft.b=regionPoint(p);drawRegion();}
+      else if(gesture.type==='gradientMove'){moveGradient(p);}
       else if(gesture.type==='brush'){addBrushPoint(p);}
       else if(gesture.type==='lasso'){addRegionPoint(p);}
       else if(gesture.type==='pick'){const q=imagePoint(p);if(q){pickPoint=q;positionCircle();}}
@@ -9073,6 +9104,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(finishSpot){spot=regionPoint(localPoint(e));spotDraft=null;syncSpot();render();}
       const finishLine=e.type==='pointerup'&&points.size===1&&gesture?.type==='gradient';
       if(finishLine){gradientDraft.b=regionPoint(localPoint(e));finishGradient();}
+      if(e.type==='pointerup'&&points.size===1&&gesture?.type==='gradientMove'){moveGradient(localPoint(e));finishGradient();drawRegion();}
       const finishBrush=e.type==='pointerup'&&points.size===1&&gesture?.type==='brush';
       if(finishBrush){addBrushPoint(localPoint(e));if(brushDraft?.points.length)brushStrokes.push(brushDraft);brushDraft=null;drawRegion();syncBrush();render();}
       const finishLasso=e.type==='pointerup'&&points.size===1&&gesture?.type==='lasso';if(finishLasso)addRegionPoint(localPoint(e));

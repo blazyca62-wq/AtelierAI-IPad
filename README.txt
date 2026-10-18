@@ -1,3 +1,7 @@
+AtelierAI iPad 3.14 – Verlaufslinie verschieben
+
+A und B mit einem Finger ziehen, um die Endpunkte zu verschieben. Die Linie zwischen den Punkten ziehen, um den gesamten Verlauf zu versetzen. Werte bleiben erhalten; die Bildwirkung wird beim Loslassen aktualisiert. Zwei Finger zoomen weiterhin. Zum Verschieben muss die Linie sichtbar und kein anderes Zeichenwerkzeug aktiv sein.
+
 AtelierAI iPad 3.13 – Unschärfe im Linienverlauf
 
 Farben bearbeiten > Linienverlauf: Unschärfe für Anfang A und Ende B getrennt einstellen. Beispiel: A 0 %, B 50 %. Richtung umkehren, Änderung merken, Rückgängig und Projektvarianten funktionieren auch mit Unschärfe. PNG und Malvorlage übernehmen den Verlauf in voller Auflösung. Alte Projekte bleiben ladbar.
