@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.26</title>
+  <title>AtelierAI iPad 3.27</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.26</div>
+    <div class="title">AtelierAI · iPad 3.27</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3572,6 +3572,7 @@
       <label>Aktiver Bereich <select id="studioAreas"></select></label>
       <input id="studioAreaName" placeholder="Neuer Bereich, z. B. Kleid" aria-label="Name des neuen Bereichs">
       <button id="studioAdd" class="secondary">Bereich hinzufügen</button>
+      <button id="studioRenameArea" class="secondary">Bereich umbenennen</button>
       <button id="studioDeleteArea" class="secondary">Bereich löschen</button>
       <p class="tiny">Eigene Farbproben, Mischungen, Markierungen und Bildstände je Bereich. Farbbearbeitung einschließlich A/B/C und Notizen wird mitgespeichert. Andere Module werden als fertiger Bildstand gesichert; deren Regler und Rückgängig-Schritte werden nicht wiederhergestellt.</p></details>
       <details><summary>Speicherort &amp; weitere Optionen</summary>
@@ -3599,6 +3600,14 @@
       const name=e('AreaName').value.trim();if(!name)throw Error('Bitte einen Bereichsnamen eingeben, z. B. Kleid.');
       await studioPersist();const a=studioClone(studioProject.areas[studioProject.active]);a.id=studioId();a.name=name;a.plan={name,samples:[],markers:true};a.palette={ids:[],enabled:true};
       studioProject.areas.push(a);await studioRestore(studioProject,studioProject.areas.length-1);await studioStore('put',studioProject);await studioList();e('AreaName').value='';
+    });
+    e('RenameArea').onclick=()=>studioRun(async()=>{
+      if(!loaded)return;
+      const name=prompt('Neuer Name für diesen Bereich:',planBook.name||'');
+      if(name===null||!name.trim())return;
+      planBook.name=name.trim().slice(0,80);
+      if(studioProject?.areas[studioProject.active]?.fullView)studioProject.areas[studioProject.active].fullView.name=planBook.name;
+      renderPalettePlan();await studioPersist();studioRender();
     });
     e('DeleteArea').onclick=()=>studioRun(async()=>{
       if(!studioProject)throw Error('Kein Projekt geöffnet.');
@@ -8653,14 +8662,35 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const id=studioProject?.areas[studioProject.active]?.returnAreaId;
     return id?studioProject.areas.findIndex(a=>a.id===id):-1;
   }
-  async function studioBeginCrop(name){
-    // Save the full view before installing a crop, so it survives reload/export.
+  async function studioBeginCrop(defaultName,box){
+    const choice=prompt('Ausschnitt übernehmen:\nLeer lassen = im aktuellen Bereich arbeiten.\nFür einen NEUEN Bereich hier den gewünschten Namen eingeben.\nAbbrechen = unverändert zurück.','');
+    if(choice===null)return null;
     await studioPersist();
     const current=studioProject.areas[studioProject.active];
-    const returnAreaId=current.returnAreaId||current.id;
-    const area={id:studioId(),name,returnAreaId};
-    studioProject.areas.push(area);studioProject.active=studioProject.areas.length-1;
-    return area;
+    const name=choice.trim().slice(0,80);
+    if(name){
+      // A new named area needs an independent full image even when its parent is cropped.
+      const returnAreaId=current.returnAreaId||current.id;
+      const area={id:studioId(),name,returnAreaId};
+      studioProject.areas.push(area);studioProject.active=studioProject.areas.length-1;
+      return area;
+    }
+    const oldMap=current.cropMap||{x:0,y:0,w:1,h:1};
+    if(!current.fullView)current.fullView=studioClone(current);
+    else studioMergeCropSamples(current);
+    current.cropMap={x:oldMap.x+box.x/sourceCanvas.width*oldMap.w,y:oldMap.y+box.y/sourceCanvas.height*oldMap.h,w:box.w/sourceCanvas.width*oldMap.w,h:box.h/sourceCanvas.height*oldMap.h};
+    return current;
+  }
+  function studioMergeCropSamples(area){
+    const full=area.fullView,map=area.cropMap;if(!full||!map)return;
+    full.plan=full.plan||{name:area.name,samples:[]};
+    for(const sample of area.plan?.samples||[]){
+      const copy=studioClone(sample);
+      if(copy.point){copy.point.x=map.x+copy.point.x*map.w;copy.point.y=map.y+copy.point.y*map.h;}
+      const index=full.plan.samples.findIndex(s=>s.id&&s.id===copy.id);
+      if(index>=0)full.plan.samples[index]=copy;else full.plan.samples.push(copy);
+    }
+    full.palette={ids:[...new Set([...(full.palette?.ids||[]),...(area.palette?.ids||[])])],enabled:area.palette?.enabled!==false};
   }
   async function studioFinishCrop(area){
     planBook={name:area.name,samples:[],markers:true};
@@ -8741,7 +8771,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const formsSnapshot=captureCroppedForms(cell);
     const crop=document.createElement('canvas');crop.width=cell.w;crop.height=cell.h;
     crop.getContext('2d').drawImage(sourceCanvas,cell.x,cell.y,cell.w,cell.h,0,0,cell.w,cell.h);
-    const area=await studioBeginCrop('Rasterbereich '+(studioProject?.areas.length||1));
+    const area=await studioBeginCrop('Rasterbereich',cell);if(!area)return;
     rememberCropWhole();
     gridCellCropArmed=false;gridReference=null;
     Object.assign(gridAdjust,{size:100,x:0,y:0,width:100,height:100,locked:false});
@@ -8757,7 +8787,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function syncVisibleCrop(){
     syncGridCellCrop();
     document.getElementById('visibleCropBtn').disabled=!loaded;
-    document.getElementById('visibleCropBack').hidden=!visibleCropWhole&&studioWholeIndex()<0;
+    document.getElementById('visibleCropBack').hidden=!visibleCropWhole&&studioWholeIndex()<0&&!studioProject?.areas[studioProject.active]?.fullView;
   }
   function visibleCropBounds(width,height,viewWidth,viewHeight,zoom,x,y){
     if(!(zoom>0)||!Number.isFinite(zoom)||viewWidth<=0||viewHeight<=0)return null;
@@ -8777,7 +8807,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     // Copy source pixels 1:1, never the screen, quantized view or grid.
     const crop=document.createElement('canvas');crop.width=box.width;crop.height=box.height;
     crop.getContext('2d').drawImage(sourceCanvas,box.x,box.y,box.width,box.height,0,0,box.width,box.height);
-    const area=await studioBeginCrop('Ausschnitt '+(studioProject?.areas.length||1));
+    const area=await studioBeginCrop('Ausschnitt',{x:box.x,y:box.y,w:box.width,h:box.height});if(!area)return;
     rememberCropWhole();
     const ref=gridReference||{width:sourceCanvas.width,height:sourceCanvas.height,x:0,y:0,viewWidth:sourceCanvas.width,viewHeight:sourceCanvas.height};
     const rx=ref.viewWidth/sourceCanvas.width,ry=ref.viewHeight/sourceCanvas.height;
@@ -8790,9 +8820,19 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     await studioFinishCrop(area);
   }));
   document.getElementById('visibleCropBack').addEventListener('click',()=>studioRun(async()=>{
+    const current=studioProject?.areas[studioProject.active];
+    if(current?.fullView){
+      await studioPersist();studioMergeCropSamples(current);
+      const full=current.fullView;full.name=current.name;full.plan.name=current.name;
+      studioProject.areas[studioProject.active]=full;
+      await studioRestore(studioProject,studioProject.active);await studioStore('put',studioProject);
+      hint.textContent='Gesamtbild geöffnet. Die gesammelten Farben bleiben im aktuellen Bereich erhalten.';return;
+    }
     const index=studioWholeIndex();
     if(index>=0){
-      await studioPersist();await studioRestore(studioProject,index);await studioStore('put',studioProject);
+      await studioPersist();
+      const parent=studioProject.areas[index];if(parent.fullView){studioMergeCropSamples(parent);const full=parent.fullView;full.name=parent.name;full.plan.name=parent.name;studioProject.areas[index]=full;}
+      await studioRestore(studioProject,index);await studioStore('put',studioProject);
       hint.textContent='Gesamtbild geöffnet. Dein Ausschnitt mit Farben und Mischungen bleibt unter Bereiche erhalten.';return;
     }
     if(!visibleCropWhole)return;
