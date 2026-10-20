@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.19</title>
+  <title>AtelierAI iPad 3.20</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.19</div>
+    <div class="title">AtelierAI · iPad 3.20</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3407,12 +3407,24 @@
     return chosen;
   }
 
-  // 3.19: named projects with independent areas, portable backups and IndexedDB storage.
+  // 3.20: named projects with independent areas, portable backups and IndexedDB storage.
   let studioProject=null,studioBusy=false,studioManaged=true,studioURL=null;
   const studioClone=v=>JSON.parse(JSON.stringify(v));
   const studioId=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   function studioStatus(text){const e=document.getElementById('studioStatus');if(e)e.textContent=text;}
-  function studioDirty(){studioStatus('Änderungen vorhanden · „Projekt speichern“ vor dem Schließen drücken.');}
+  let studioTimer=null,studioPending=false;
+  function studioDirty(){
+    if(!loaded)return;studioPending=true;clearTimeout(studioTimer);
+    studioStatus('Änderungen werden automatisch gespeichert …');
+    studioTimer=setTimeout(studioAutoSave,1200);
+  }
+  async function studioAutoSave(){
+    if(!loaded||!studioPending)return;
+    if(studioBusy||window.atelierEditorBusy?.()){studioTimer=setTimeout(studioAutoSave,1200);return;}
+    studioPending=false;await studioRun(studioPersist);
+  }
+  function studioRemember(){try{if(studioProject)localStorage.setItem('atelierai-last-project',studioProject.id);else localStorage.removeItem('atelierai-last-project');}catch(e){}}
+
   function studioDB(){return new Promise((resolve,reject)=>{
     const r=indexedDB.open('atelierai-studio-projects',1);r.onupgradeneeded=()=>r.result.createObjectStore('projects',{keyPath:'id'});
     r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(Error('Projektspeicher ist nicht verfügbar. Bitte Projektdatei sichern.'));
@@ -3436,11 +3448,12 @@
     flushToneImage();const c=document.createElement('canvas');c.width=sourceCanvas.width;c.height=sourceCanvas.height;
     renderCurrentArtwork(c.getContext('2d'),false);
     area.image=c.toDataURL('image/png');area.source=sourceCanvas.toDataURL('image/png');
+    area.editor=window.atelierEditorCapture?.()||null;
     area.plan=studioClone(planBook);area.name=planBook.name||area.name;area.palette=studioClone(picturePalette);area.medium=paintPalette.value;
     area.view={scale,offsetX,offsetY,width:canvas.getBoundingClientRect().width,height:canvas.getBoundingClientRect().height};
     area.grid={enabled:gridEnabled,density:gridDensity.value};studioProject.updated=Date.now();return studioProject;
   }
-  async function studioPersist(){const p=studioCapture();await studioStore('put',p);await studioList();studioStatus('Gespeichert: '+p.name+' · '+p.areas.length+' Bereiche.');}
+  async function studioPersist(){const p=studioCapture();await studioStore('put',p);studioRemember();studioStatus('Automatisch im Browser gespeichert · '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+'. Für eine Datei: Projekt speichern.');}
   function studioImage(data){return new Promise((resolve,reject)=>{const p=new Image();p.onload=()=>resolve(p);p.onerror=()=>reject(Error('Projektbild konnte nicht gelesen werden.'));p.src=data;});}
   async function studioRestore(project,index){
     const a=project.areas[index];if(!a?.image)throw Error('Dieser Bereich enthält kein Bild.');
@@ -3455,11 +3468,12 @@
     gridEnabled=!!a.grid?.enabled;if(a.grid?.density)gridDensity.value=a.grid.density;
     gridToggleBtn.textContent=gridEnabled?'Raster aus':'Raster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);
     const rect=canvas.getBoundingClientRect();if(a.view&&Math.abs(rect.width-a.view.width)<2&&Math.abs(rect.height-a.view.height)<2){scale=a.view.scale;offsetX=a.view.offsetX;offsetY=a.view.offsetY;syncGlobalViewControls();}
-    renderPicturePalettePanels();renderPalettePlan();studioRender();draw();
+    if(a.editor)await window.atelierEditorRestore?.(a.editor);
+    studioRemember();renderPicturePalettePanels();renderPalettePlan();studioRender();draw();
     studioStatus('Geöffnet: '+project.name+' · '+a.name+'.');
   }
   function studioClear(){
-    photoLoadRevision++;studioProject=null;studioManaged=true;planSamplePoint=null;planActiveId=null;planPlaceId=null;
+    clearTimeout(studioTimer);studioPending=false;photoLoadRevision++;studioProject=null;studioRemember();studioManaged=true;planSamplePoint=null;planActiveId=null;planPlaceId=null;
     picturePaletteEpoch++;picturePaletteId=null;picturePalette={ids:[],enabled:true};planBook={name:'Gesicht',samples:[]};
     resetPhotoFilters();resetBuild32();cancelIsolation();loaded=false;img=null;originalPhoto=null;visibleCropWhole=null;visibleCropGrid=null;gridReference=null;
     lastSmartColor=null;lastAverageColor=null;correctionRecipeHint=null;mixResultCache.clear();mixResults.replaceChildren();surfaceResults.replaceChildren();
@@ -3473,7 +3487,7 @@
     rows.sort((a,b)=>b.updated-a.updated).forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name+' · '+p.areas.length+' Bereiche';list.appendChild(o);});
   }
   async function studioRun(fn){if(studioBusy)return;studioBusy=true;const panel=document.getElementById('studioProjects');panel.querySelectorAll('button,input,select').forEach(e=>e.disabled=true);
-    try{await fn();}catch(e){studioStatus(e.message);}finally{studioBusy=false;panel.querySelectorAll('button,input,select').forEach(e=>e.disabled=false);}}
+    try{await fn();}catch(e){studioStatus('Nicht gespeichert / Aktion fehlgeschlagen: '+e.message);}finally{studioBusy=false;panel.querySelectorAll('button,input,select').forEach(e=>e.disabled=false);}}
   function studioValidate(p){
     if(p?.format!=='AtelierAI-Bildprojekt'||p.version!==1||!Array.isArray(p.areas)||!p.areas.length||p.areas.length>100)throw Error('Keine gültige AtelierAI-Bildprojektdatei.');
     for(const a of p.areas){
@@ -3489,25 +3503,31 @@
     (studioProject?.areas||[{name:planBook.name||'Gesicht'}]).forEach((a,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=a.name;list.appendChild(o);});list.value=String(studioProject?.active||0);
   }
   function initStudioProjects(){
-    const panel=document.createElement('details');panel.id='studioProjects';panel.open=true;panel.style.cssText='margin:10px;padding:10px;border:1px solid #888;border-radius:10px';
-    panel.innerHTML=`<summary><b>Bildprojekte · Gesicht, Kleid und weitere Bereiche</b></summary>
-      <label>Projektname <input id="studioName" value="Mein Bild" placeholder="z. B. Frau mit Äpfeln"></label>
-      <div><button id="studioSave">Projekt speichern</button><button id="studioNew" class="secondary">Neues Projekt · Arbeitsfläche leeren</button></div>
-      <label>Bereich <select id="studioAreas"></select></label><input id="studioAreaName" placeholder="Neuer Bereich, z. B. Kleid" aria-label="Name des neuen Bereichs">
-      <button id="studioAdd" class="secondary">Bereich hinzufügen</button>
-      <p class="tiny">Bereiche haben eigene Farben, Rezepte, Markierungen und Bildstände. Beim Wechsel wird der aktuelle Bereich gespeichert. Bildbearbeitungen werden als Bildstand übernommen; die einzelnen Bearbeitungsregler und Rückgängig-Schritte werden dabei nicht gespeichert.</p>
-      <select id="studioSaved" aria-label="Gespeichertes Projekt"></select><button id="studioOpen" class="secondary">Projekt öffnen</button>
-      <button id="studioExport" class="secondary">Projektdatei sichern</button><button id="studioImport" class="secondary">Projektdatei öffnen</button><input type="file" id="studioFile" accept=".atelierprojekt,application/json" hidden>
+    const panel=document.createElement('section');panel.id='studioProjects';panel.style.cssText='margin:10px;padding:12px;border:1px solid #888;border-radius:10px';
+    panel.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <input id="studioName" value="Mein Bild" maxlength="80" aria-label="Projektname" placeholder="Projektname">
+      <button id="studioNew" class="secondary">Neues Projekt</button>
+      <button id="studioOpen" class="secondary">Projekt öffnen</button>
+      <button id="studioSave">Projekt speichern</button></div>
+      <p id="studioStatus" class="tiny" role="status">Foto öffnen – Änderungen werden automatisch im Browser gespeichert.</p>
       <a id="studioDownload" hidden>Projektdatei herunterladen</a>
-      <p class="tiny">Vor dem Schließen „Projekt speichern“ drücken. „Projektdatei sichern“ erstellt zusätzlich eine Datei mit allen Bereichen für iPad/PC. „Neues Projekt“ speichert den bisherigen Stand und leert die Arbeitsfläche.</p>
+      <div id="studioChooser" hidden><select id="studioSaved" aria-label="Gespeichertes Projekt"></select>
+      <button id="studioLoad">Ausgewähltes Projekt öffnen</button><button id="studioImport" class="secondary">Aus Dateien auswählen …</button>
+      <p class="tiny">Die Liste enthält Projekte in diesem Browser. Eine heruntergeladene Projektdatei öffnest du über „Aus Dateien auswählen“.</p></div>
+      <input type="file" id="studioFile" accept=".atelierprojekt,.atelierai,application/json" hidden>
+      <details><summary>Bereiche · Gesicht, Kleid …</summary>
+      <label>Aktiver Bereich <select id="studioAreas"></select></label>
+      <input id="studioAreaName" placeholder="Neuer Bereich, z. B. Kleid" aria-label="Name des neuen Bereichs">
+      <button id="studioAdd" class="secondary">Bereich hinzufügen</button>
+      <p class="tiny">Eigene Farbproben, Mischungen, Markierungen und Bildstände je Bereich. Farbbearbeitung einschließlich A/B/C und Notizen wird mitgespeichert. Andere Module werden als fertiger Bildstand gesichert; deren Regler und Rückgängig-Schritte werden nicht wiederhergestellt.</p></details>
+      <details><summary>Speicherort &amp; weitere Optionen</summary>
+      <p class="tiny">Automatisch: im Speicher dieses Browsers auf diesem Gerät, nicht als Datei. Browserdaten löschen oder ein anderer App-Pfad kann den Zugriff darauf verlieren. „Projekt speichern“ lädt eine vollständige .atelierprojekt-Datei herunter. Auf dem iPad findest du sie im eingestellten Downloadordner der Dateien-App, häufig iCloud Drive → Downloads oder Auf meinem iPad → Downloads. Bei einer Teilen-Auswahl „In Dateien sichern“ wählen. Die heruntergeladene Datei wird nicht automatisch aktualisiert: am Ende erneut „Projekt speichern“ drücken.</p>
       <button id="studioLegacy" class="secondary">Frühere Farbproben dieses Fotos übernehmen</button>
-      <button id="studioDelete" class="secondary">Aktuell geöffnetes Projekt vollständig löschen</button>
-      <p id="studioStatus" role="status">Foto öffnen oder gespeichertes Projekt wählen.</p>`;
-    document.getElementById('palettePlan').before(panel);
-    const launcher=document.createElement('button');launcher.type='button';launcher.textContent='Projekte / Bereiche';launcher.className='secondary';globalMoveBtn.after(launcher);launcher.onclick=()=>{window.activateToolPage?.('paintMixPanel');panel.open=true;panel.scrollIntoView({behavior:'smooth',block:'nearest'});};
+      <button id="studioDelete" class="secondary">Aktuelles Projekt löschen</button></details>`;
+    document.querySelector('.topbar').after(panel);
     const e=id=>document.getElementById('studio'+id);
-    e('Name').onchange=()=>{if(studioProject)studioProject.name=e('Name').value.trim()||'Mein Bild';studioDirty();};
-    e('Save').onclick=()=>studioRun(async()=>{await studioPersist();studioRender();});
+    e('Name').oninput=()=>{if(studioProject)studioProject.name=e('Name').value.trim()||'Mein Bild';studioDirty();};
+    e('Open').onclick=async()=>{e('Chooser').hidden=!e('Chooser').hidden;if(!e('Chooser').hidden)try{await studioList();}catch(error){studioStatus(error.message+' Über „Aus Dateien auswählen“ öffnen.');}};
     e('New').onclick=()=>studioRun(async()=>{if(loaded)await studioPersist();studioClear();studioStatus('Neues leeres Projekt · jetzt ein neues Foto öffnen. Gespeicherte Projekte bleiben erhalten.');});
     e('Add').onclick=()=>studioRun(async()=>{
       const name=e('AreaName').value.trim();if(!name)throw Error('Bitte einen Bereichsnamen eingeben, z. B. Kleid.');
@@ -3515,16 +3535,22 @@
       studioProject.areas.push(a);await studioRestore(studioProject,studioProject.areas.length-1);await studioStore('put',studioProject);await studioList();e('AreaName').value='';
     });
     e('Areas').onchange=()=>{const index=Number(e('Areas').value);studioRun(async()=>{if(!studioProject||index===studioProject.active)return;await studioPersist();await studioRestore(studioProject,index);await studioStore('put',studioProject);});};
-    e('Open').onclick=()=>studioRun(async()=>{const id=e('Saved').value;if(!id)throw Error('Bitte ein gespeichertes Projekt wählen.');const rows=await studioStore('getAll');const p=rows.find(x=>x.id===id);if(!p)throw Error('Projekt nicht gefunden.');if(loaded)await studioPersist();await studioRestore(p,p.active||0);});
-    e('Export').onclick=()=>studioRun(async()=>{const p=studioCapture();const blob=new Blob([JSON.stringify(p)],{type:'application/json'});if(studioURL)URL.revokeObjectURL(studioURL);studioURL=URL.createObjectURL(blob);const a=e('Download');a.href=studioURL;a.download=(p.name.replace(/[^\p{L}\p{N}_-]+/gu,'_')||'Bildprojekt')+'.atelierprojekt';a.hidden=false;a.click();studioStatus('Projektdatei mit allen Bereichen bereit. Falls nötig „Projektdatei herunterladen“ antippen.');});
-    e('Import').onclick=()=>e('File').click();e('File').onchange=()=>studioRun(async()=>{const f=e('File').files[0];e('File').value='';if(!f)return;const p=studioValidate(JSON.parse(await f.text()));await studioImage(p.areas[p.active].image);if(loaded)await studioPersist();await studioRestore(p,p.active);await studioStore('put',p);await studioList();});
-    e('Delete').onclick=()=>studioRun(async()=>{if(studioProject)await studioStore('delete',studioProject.id);studioClear();await studioList();studioStatus('Geöffnetes Projekt samt Bereichen gelöscht. Andere gespeicherte Projekte bleiben erhalten.');});
+    e('Load').onclick=()=>studioRun(async()=>{const id=e('Saved').value;if(!id)throw Error('Bitte ein gespeichertes Projekt wählen.');const rows=await studioStore('getAll');const p=rows.find(x=>x.id===id);if(!p)throw Error('Projekt nicht gefunden.');if(loaded)await studioPersist();const fresh=(await studioStore('getAll')).find(x=>x.id===id);await studioRestore(fresh,fresh.active||0);e('Chooser').hidden=true;});
+    e('Save').onclick=()=>studioRun(async()=>{const p=studioCapture();let localSaved=true;try{await studioStore('put',p);studioRemember();}catch(error){localSaved=false;}const blob=new Blob([JSON.stringify(p)],{type:'application/json'});if(studioURL)URL.revokeObjectURL(studioURL);studioURL=URL.createObjectURL(blob);const a=e('Download');a.href=studioURL;a.download=(p.name.replace(/[^\p{L}\p{N}_-]+/gu,'_')||'Bildprojekt')+'.atelierprojekt';a.hidden=false;a.click();studioStatus((localSaved?'Im Browser gespeichert. ':'Browserspeicher nicht verfügbar. ')+'Datei zum Download bereit – in Dateien / Downloads nachsehen oder „In Dateien sichern“ wählen.');});
+    e('Import').onclick=()=>e('File').click();e('File').onchange=()=>studioRun(async()=>{const f=e('File').files[0];e('File').value='';if(!f)return;const raw=JSON.parse(await f.text());if(raw.format==='AtelierAI-Malprojekt'){if(loaded)await studioPersist();await window.atelierLegacyImport(raw);await studioPersist();e('Chooser').hidden=true;return;}const p=studioValidate(raw);await studioImage(p.areas[p.active].image);if(loaded)await studioPersist();await studioRestore(p,p.active);await studioStore('put',p);await studioList();e('Chooser').hidden=true;});
+    e('Delete').onclick=()=>studioRun(async()=>{if(!confirm('Aktuelles Projekt mit allen Bereichen löschen?'))return;if(studioProject)await studioStore('delete',studioProject.id);studioClear();await studioList();studioStatus('Geöffnetes Projekt samt Bereichen gelöscht. Andere gespeicherte Projekte bleiben erhalten.');});
     e('Legacy').onclick=()=>studioRun(async()=>{
       if(!loaded||!picturePaletteId)throw Error('Zuerst das frühere Foto öffnen.');
       const old=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}')[picturePaletteId];if(!old?.samples?.length)throw Error('Für dieses Foto wurden keine früheren Farbproben gefunden.');
       studioEnsure();studioCapture();const a=studioClone(studioProject.areas[studioProject.active]);a.id=studioId();a.name='Übernommene Farbproben';a.plan=studioClone(old);a.plan.name=a.name;a.palette=JSON.parse(localStorage.getItem(PICTURE_PALETTE_KEY)||'{}')[picturePaletteId]||{ids:[],enabled:true};studioProject.areas.push(a);await studioRestore(studioProject,studioProject.areas.length-1);await studioStore('put',studioProject);await studioList();
     });
-    studioRender();studioList().catch(e=>studioStatus(e.message));
+    studioRender();
+    for(const type of ['input','change','click','pointerup'])document.addEventListener(type,event=>{
+      if(event.target.closest?.('#studioProjects')||event.target===fileInput)return;
+      if(loaded&&!studioBusy)studioDirty();
+    });
+    document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(studioTimer);studioAutoSave();}});
+    setTimeout(()=>studioRun(async()=>{await studioList();let id;try{id=localStorage.getItem('atelierai-last-project');}catch(e){}if(id&&!loaded){const rows=await studioStore('getAll'),p=rows.find(x=>x.id===id);if(p)await studioRestore(p,p.active||0);}}),0);
   }
 
   // 3.15: remembered targets and exact, mass-conserving shared premixes.
@@ -8711,7 +8737,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     studioRun(async()=>{
       if(loaded)await studioPersist();
       await new Promise((resolve,reject)=>loadPhoto(file,false,error=>error?reject(error):resolve()));
-      studioProject=null;studioManaged=true;studioRender();studioStatus('Neues Foto · Projekt benennen und speichern.');
+      studioProject=null;studioManaged=true;studioRender();await studioPersist();studioRender();
     });
   });
 
@@ -8909,15 +8935,15 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <label>Kühler / wärmer <output id="ceWarmVal"></output><input id="ceWarm" type="range" min="-30" max="30" step="0.5" value="0"></label>
     <label>Sättigung <output id="ceSaturationVal">0 %</output><input id="ceSaturation" type="range" min="-100" max="100" step="1" value="0"></label>
     <details id="ceProjectPanel"><summary>Mein Malprojekt · Varianten &amp; Notizen</summary>
-    <label>Projektname <input id="ceProjectName" type="text" maxlength="80" value="Mein Malprojekt" style="width:100%;box-sizing:border-box"></label>
+    <label hidden>Projektname <input id="ceProjectName" type="text" maxlength="80" value="Mein Malprojekt" style="width:100%;box-sizing:border-box"></label>
     <strong>Bildvarianten · direkt umschalten</strong><div style="display:flex;gap:8px" role="group" aria-label="Bildvarianten"><button id="ceVariantA" aria-pressed="true">A</button><button id="ceVariantB" aria-pressed="false">B</button><button id="ceVariantC" aria-pressed="false">C</button></div>
     <p id="ceVariantStatus" class="tiny">Variante A aktiv. Ein freier Platz startet mit dem unbearbeiteten Ausgangsbild. Beim Wechsel bleibt jede Variante erhalten.</p>
     <button id="ceNoteAdd" class="secondary" aria-pressed="false">Farbnotiz im Bild setzen</button>
     <label><input id="ceNotesVisible" type="checkbox" checked> Nummern im Bild anzeigen</label>
     <div id="ceNotesList"></div><p class="tiny">Notizen gehören zur jeweiligen Variante. Die Farbe wird beim Setzen aufgenommen. Mischungen und Malhinweise kannst du dazuschreiben. Im gespeicherten Foto erscheinen keine Nummern.</p>
-    <hr><p class="tiny"><strong>Für später sichern oder wiederherstellen</strong></p><button id="ceProjectSave">Projekt als Datei speichern</button><button id="ceProjectOpen" class="secondary">Projektdatei öffnen …</button>
+    <div hidden><button id="ceProjectSave">Projekt als Datei speichern</button><button id="ceProjectOpen" class="secondary">Projektdatei öffnen …</button>
     <input id="ceProjectFile" type="file" hidden>
-    <a id="ceProjectDownload" hidden>Projekt herunterladen</a><p id="ceProjectStatus" class="tiny" role="status">Speichert das Ausgangsbild, alle drei Varianten und ihre Notizen als Projektdatei. Vor dem Laden eines anderen Fotos oder Schließen der App bitte speichern.</p>
+    <a id="ceProjectDownload" hidden>Projekt herunterladen</a><p id="ceProjectStatus" class="tiny" role="status">Speichert das Ausgangsbild, alle drei Varianten und ihre Notizen als Projektdatei. Vor dem Laden eines anderen Fotos oder Schließen der App bitte speichern.</p></div>
     </details><details id="ceReviewPanel"><summary>Bildwirkung prüfen · aus</summary>
     <label><input id="ceReviewSquint" type="checkbox"> Augen zusammenkneifen</label>
     <label>Details ausblenden <output id="ceReviewBlurVal">5</output><input id="ceReviewBlur" type="range" min="1" max="12" step="1" value="5"></label>
@@ -9672,7 +9698,27 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }
       return p;
     }
-    const openProjectButton=document.createElement('button');openProjectButton.textContent='Projektdatei öffnen …';openProjectButton.className='secondary';button.after(openProjectButton);
+    window.atelierEditorBusy=()=>busy;
+    window.atelierEditorCapture=()=>{
+      if(!base||lastSource!==img)return null;
+      variants[variantIndex]=captureVariant();
+      return {format:'AtelierAI-Malprojekt',version:1,name:el('ProjectName').value,source:base.toDataURL('image/png'),active:variantIndex,variants:copyProject(variants),notesVisible:el('NotesVisible').checked};
+    };
+    window.atelierEditorRestore=async raw=>{
+      const p=validateProject(raw),image=await studioImage(p.source);
+      base=document.createElement('canvas');base.width=image.width;base.height=image.height;base.getContext('2d').drawImage(image,0,0);
+      lastSource=img;editorReturnSource=captureEditorSource();variants=copyProject(p.variants);variantIndex=p.active;
+      el('ProjectName').value=p.name;el('NotesVisible').checked=p.notesVisible!==false;
+      const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));ctx.drawImage(base,0,0,cv.width,cv.height);preview=ctx.getImageData(0,0,cv.width,cv.height);
+      restoreVariant(variants[variantIndex]);
+    };
+    window.atelierLegacyImport=async raw=>{
+      const p=validateProject(raw),photo=await studioImage(p.source);
+      studioClear();resetPhotoFilters();originalPhoto=photo;installPhoto(photo);
+      await window.atelierEditorRestore(p);studioEnsure();studioProject.name=p.name;studioRender();
+      panel.hidden=false;fitEditor();
+    };
+    const openProjectButton=document.createElement('button');openProjectButton.textContent='Projektdatei öffnen …';openProjectButton.className='secondary';openProjectButton.hidden=true;
     const requestProject=()=>{if(!busy)el('ProjectFile').click();};
     openProjectButton.onclick=requestProject;el('ProjectOpen').onclick=requestProject;
     el('ProjectFile').onchange=async()=>{
