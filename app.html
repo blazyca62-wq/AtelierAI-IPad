@@ -3945,6 +3945,56 @@
     }
     return rankPictureRecipes([...unique.values()],key).slice(0,3);
   }
+  // 3.29: Cross-area saved-premix comparison. A saved mixture is treated as
+  // a physical premix, not silently replaced by its original tube recipe.
+  function savedPremixOptions(target,key){
+    const sources=[];
+    const add=(sample,area)=>{
+      if(!sample?.recipe?.rgb||sample.key!==key||!sample.recipe.parts?.length)return;
+      const rgb=sample.recipe.rgb;
+      if(!Array.isArray(rgb)||rgb.length!==3||rgb.some(v=>!Number.isFinite(v)))return;
+      const identity=(sample.recipe.tubeIds||[]).join('|')+'@'+sample.recipe.parts.join(',');
+      if(sources.some(x=>x.identity===identity))return;
+      sources.push({rgb,name:sample.name||'Gespeicherte Farbe',area,identity});
+    };
+    for(const sample of planBook.samples||[])add(sample,planBook.name||'Aktueller Bereich');
+    for(const area of studioProject?.areas||[]){
+      for(const sample of area.plan?.samples||[])add(sample,area.name||'Bereich');
+      for(const sample of area.fullView?.plan?.samples||[])add(sample,area.name||'Bereich');
+    }
+    const palette=effectivePaletteColors(key);
+    const out=[];
+    for(const base of sources.slice(0,80)){
+      let best={score:similarityPct(target,base.rgb),rgb:base.rgb,base,add:null,ratio:0};
+      for(const tube of palette){
+        for(const amount of [1,2,4,8,12]){
+          const rgb=pigmentMix([base.rgb,tube[1]],[16,amount],key);
+          const score=similarityPct(target,rgb);
+          if(score>best.score)best={score,rgb,base,add:tube[0],ratio:amount};
+        }
+      }
+      out.push(best);
+    }
+    return out.sort((a,b)=>b.score-a.score||(a.add?1:0)-(b.add?1:0)).slice(0,3);
+  }
+  function renderPremixComparison(target,key,normal){
+    const options=savedPremixOptions(target,key);
+    const wrap=document.createElement('div');wrap.className='mix-card';
+    const heading=document.createElement('h3');heading.textContent='Vorhandene Basismischungen prüfen';wrap.appendChild(heading);
+    const bestNormal=Math.max(0,...normal.map(x=>x.score));
+    if(!options.length){const msg=document.createElement('p');msg.textContent='Noch keine gespeicherte Mischung in diesem Projekt gefunden. Speichere zuerst Farbproben in einem Bereich.';wrap.appendChild(msg);mixResults.prepend(wrap);return;}
+    const summary=document.createElement('p');summary.textContent='Beste neue Tubenmischung: '+bestNormal+'/100. Beste Weiterverwendung: '+options[0].score+'/100. '+(options[0].score>=bestNormal-3?'Vorhandene Mischung bevorzugen (maximal 3 Punkte Abweichung).':'Neue Tubenmischung ist deutlich näher am Ziel.');wrap.appendChild(summary);
+    for(const option of options){
+      const row=document.createElement('div');row.style.cssText='border-top:1px solid #bbb;padding:8px 0';
+      const label=document.createElement('strong');label.textContent=option.base.name+' · '+option.base.area+' · '+option.score+'/100';row.appendChild(label);
+      const detail=document.createElement('p');detail.textContent=option.add?'16 Teile vorhandene Mischung + '+option.ratio+' Teile '+option.add:'Vorhandene Mischung unverändert verwenden';row.appendChild(detail);
+      const sw=document.createElement('div');sw.style.cssText='display:flex;gap:12px';
+      for(const [name,rgb] of [['Ziel',target],['Vorschau',option.rgb]]){const cell=document.createElement('div');cell.textContent=name;const color=document.createElement('div');color.style.cssText='width:72px;height:42px;border:1px solid #888;background:'+rgbHex(rgb);cell.appendChild(color);sw.appendChild(cell);}row.appendChild(sw);wrap.appendChild(row);
+    }
+    const note=document.createElement('small');note.textContent='Wichtig: Die Weiterverwendung ist eine Bildschirm-Simulation der gespeicherten Farbe, keine spektral gemessene Pigmentmischung. Vor dem Malen eine echte Probe prüfen.';wrap.appendChild(note);
+    mixResults.prepend(wrap);
+  }
+
   function appendPictureUseButton(box,m,key,target){
     if(target&&m.rgb){
       const mixRgb=m.rgb.slice(), reference=target.slice();
@@ -4071,6 +4121,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       appendPictureUseButton(card,m,paletteKey,target);
       mixResults.appendChild(card);
     });
+    if(!correctionRecipeHint)renderPremixComparison(target,paletteKey,mixes);
   }
 
   function setMedium(m){
