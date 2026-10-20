@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.21</title>
+  <title>AtelierAI iPad 3.22</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.21</div>
+    <div class="title">AtelierAI · iPad 3.22</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1323,7 +1323,7 @@
 
         <div id="paletteManager" class="palette-manager" style="display:none;">
           <div class="palette-manager-card">
-            <div class="mix-head"><b>Meine Malfarben</b><button id="closePaletteBtn" class="secondary">Schließen</button></div>
+            <div class="mix-head"><b>Meine Malfarben</b><button id="closePaletteBtn" class="secondary">Menü schließen</button></div>
             <input id="paletteSearch" type="search" placeholder="Farbe suchen…" style="width:100%;padding:9px;border:1px solid #aaa;border-radius:8px;margin:6px 0;">
             <div class="mode">
               <button id="selectAllColors" class="secondary">Alle</button>
@@ -3407,7 +3407,7 @@
     return chosen;
   }
 
-  // 3.21: named projects with independent areas, portable backups and IndexedDB storage.
+  // 3.22: named projects with independent areas, portable backups and IndexedDB storage.
   let studioProject=null,studioBusy=false,studioManaged=true,studioURL=null;
   const studioClone=v=>JSON.parse(JSON.stringify(v));
   const studioId=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
@@ -3440,7 +3440,7 @@
   }
   function studioEnsure(){
     if(!studioProject)studioProject={format:'AtelierAI-Bildprojekt',version:1,id:studioId(),name:'Mein Bild',active:0,areas:[]};
-    if(!studioProject.areas.length)studioProject.areas.push({id:studioId(),name:planBook.name||'Gesicht'});
+    if(!studioProject.areas.length)studioProject.areas.push({id:studioId(),name:planBook.name||'Gesamtbild'});
   }
   function studioCapture(){
     if(!loaded)throw Error('Bitte zuerst ein Foto öffnen.');
@@ -3476,7 +3476,7 @@
   }
   function studioClear(){
     clearTimeout(studioTimer);studioPending=false;photoLoadRevision++;studioProject=null;studioRemember();studioManaged=true;planSamplePoint=null;planActiveId=null;planPlaceId=null;
-    picturePaletteEpoch++;picturePaletteId=null;picturePalette={ids:[],enabled:true};planBook={name:'Gesicht',samples:[]};
+    picturePaletteEpoch++;picturePaletteId=null;picturePalette={ids:[],enabled:true};planBook={name:'Gesamtbild',samples:[]};
     resetPhotoFilters();resetBuild32();cancelIsolation();loaded=false;img=null;originalPhoto=null;visibleCropWhole=null;visibleCropGrid=null;gridReference=null;
     lastSmartColor=null;lastAverageColor=null;correctionRecipeHint=null;mixResultCache.clear();mixResults.replaceChildren();surfaceResults.replaceChildren();
     sourceCanvas.width=sourceCanvas.height=1;placeholder.style.display='';fileInput.value='';
@@ -3484,11 +3484,12 @@
   }
   async function studioList(){
     const list=document.getElementById('studioSaved');if(!list)return;
-    const rows=await studioStore('getAll');list.replaceChildren();
+    const selected=list.value;const rows=await studioStore('getAll');list.replaceChildren();
     const option=document.createElement('option');option.value='';option.textContent='Gespeichertes Projekt wählen';list.appendChild(option);
-    rows.sort((a,b)=>b.updated-a.updated).forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name+' · '+p.areas.length+' Bereiche';list.appendChild(o);});
+    rows.sort((a,b)=>b.updated-a.updated).forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name+' · '+p.areas.length+' Bereiche · '+new Date(p.updated||0).toLocaleString('de-DE');list.appendChild(o);});
+    if(rows.some(p=>p.id===selected))list.value=selected;
   }
-  async function studioRun(fn){if(studioBusy)return;studioBusy=true;const panel=document.getElementById('studioProjects');document.querySelectorAll('#studioProjects button,#studioProjects input,#studioProjects select,#studioAreaPanel button,#studioAreaPanel input,#studioAreaPanel select').forEach(e=>e.disabled=true);
+  async function studioRun(fn){if(studioBusy){studioStatus('Bitte kurz warten – die vorherige Aktion läuft noch.');return;}studioBusy=true;const panel=document.getElementById('studioProjects');document.querySelectorAll('#studioProjects button,#studioProjects input,#studioProjects select,#studioAreaPanel button,#studioAreaPanel input,#studioAreaPanel select').forEach(e=>e.disabled=true);
     try{await fn();}catch(e){studioStatus('Nicht gespeichert / Aktion fehlgeschlagen: '+e.message);}finally{studioBusy=false;document.querySelectorAll('#studioProjects button,#studioProjects input,#studioProjects select,#studioAreaPanel button,#studioAreaPanel input,#studioAreaPanel select').forEach(e=>e.disabled=false);}}
   function studioValidate(p){
     if(p?.format!=='AtelierAI-Bildprojekt'||p.version!==1||!Array.isArray(p.areas)||!p.areas.length||p.areas.length>100)throw Error('Keine gültige AtelierAI-Bildprojektdatei.');
@@ -3502,15 +3503,16 @@
   function studioRender(){
     const name=document.getElementById('studioName');if(!name)return;name.value=studioProject?.name||'Mein Bild';
     const list=document.getElementById('studioAreas');list.replaceChildren();
-    (studioProject?.areas||[{name:planBook.name||'Gesicht'}]).forEach((a,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=a.name;list.appendChild(o);});list.value=String(studioProject?.active||0);
+    (studioProject?.areas||[{name:planBook.name||'Gesamtbild'}]).forEach((a,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=a.name;list.appendChild(o);});list.value=String(studioProject?.active||0);
   }
   function initStudioProjects(){
     const panel=document.createElement('section');panel.id='studioProjects';panel.hidden=true;
     panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Projektverwaltung');
     panel.style.cssText='position:fixed;top:max(55px,env(safe-area-inset-top));right:12px;z-index:9999;width:min(440px,calc(100vw - 24px));max-height:80vh;overflow:auto;box-sizing:border-box;padding:14px;background:#f7f7f2;color:#222;border:1px solid #888;border-radius:12px;box-shadow:0 8px 32px #0005';
-    panel.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b>Projekt</b><button id="studioClose" class="secondary" aria-label="Projektmenü schließen">Schließen</button></div><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    panel.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b>Projekt</b><button id="studioClose" class="secondary" aria-label="Projektmenü schließen">Menü schließen</button></div><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
       <input id="studioName" value="Mein Bild" maxlength="80" aria-label="Projektname" placeholder="Projektname">
       <button id="studioNew" class="secondary">Neues Projekt</button>
+      <button id="studioFinish" class="secondary">Projekt schließen</button>
       <button id="studioOpen" class="secondary">Projekt öffnen</button>
       <button id="studioSave">Projekt speichern</button></div>
       <p id="studioStatus" class="tiny" role="status">Foto öffnen – Änderungen werden automatisch im Browser gespeichert.</p>
@@ -3519,7 +3521,7 @@
       <button id="studioLoad">Ausgewähltes Projekt öffnen</button><button id="studioImport" class="secondary">Aus Dateien auswählen …</button>
       <p class="tiny">Die Liste enthält Projekte in diesem Browser. Eine heruntergeladene Projektdatei öffnest du über „Aus Dateien auswählen“.</p></div>
       <input type="file" id="studioFile" accept=".atelierprojekt,.atelierai,application/json" hidden>
-      <details id="studioAreaPanel"><summary>Bereiche · Gesicht, Kleid …</summary>
+      <details id="studioAreaPanel"><summary>Bereiche · eigene Bildteile</summary>
       <label>Aktiver Bereich <select id="studioAreas"></select></label>
       <input id="studioAreaName" placeholder="Neuer Bereich, z. B. Kleid" aria-label="Name des neuen Bereichs">
       <button id="studioAdd" class="secondary">Bereich hinzufügen</button>
@@ -3544,16 +3546,17 @@
     e('Name').oninput=()=>{if(studioProject)studioProject.name=e('Name').value.trim()||'Mein Bild';studioDirty();};
     e('Open').onclick=async()=>{e('Chooser').hidden=!e('Chooser').hidden;if(!e('Chooser').hidden)try{await studioList();}catch(error){studioStatus(error.message+' Über „Aus Dateien auswählen“ öffnen.');}};
     e('New').onclick=()=>studioRun(async()=>{if(loaded)await studioPersist();studioClear();studioStatus('Neues leeres Projekt · jetzt ein neues Foto öffnen. Gespeicherte Projekte bleiben erhalten.');});
+    e('Finish').onclick=()=>studioRun(async()=>{if(loaded)await studioPersist();studioClear();await studioList();studioStatus('Projekt gespeichert und geschlossen. Zum Fortsetzen „Projekt öffnen“ wählen.');});
     e('Add').onclick=()=>studioRun(async()=>{
       const name=e('AreaName').value.trim();if(!name)throw Error('Bitte einen Bereichsnamen eingeben, z. B. Kleid.');
       await studioPersist();const a=studioClone(studioProject.areas[studioProject.active]);a.id=studioId();a.name=name;a.plan={name,samples:[],markers:true};a.palette={ids:[],enabled:true};
       studioProject.areas.push(a);await studioRestore(studioProject,studioProject.areas.length-1);await studioStore('put',studioProject);await studioList();e('AreaName').value='';
     });
     e('Areas').onchange=()=>{const index=Number(e('Areas').value);studioRun(async()=>{if(!studioProject||index===studioProject.active)return;await studioPersist();await studioRestore(studioProject,index);await studioStore('put',studioProject);});};
-    e('Load').onclick=()=>studioRun(async()=>{const id=e('Saved').value;if(!id)throw Error('Bitte ein gespeichertes Projekt wählen.');const rows=await studioStore('getAll');const p=rows.find(x=>x.id===id);if(!p)throw Error('Projekt nicht gefunden.');if(loaded)await studioPersist();const fresh=(await studioStore('getAll')).find(x=>x.id===id);await studioRestore(fresh,fresh.active||0);e('Chooser').hidden=true;});
+    e('Load').onclick=()=>studioRun(async()=>{const id=e('Saved').value;if(!id)throw Error('Bitte ein gespeichertes Projekt wählen.');const rows=await studioStore('getAll');const p=rows.find(x=>x.id===id);if(!p)throw Error('Projekt nicht gefunden.');if(loaded)await studioPersist();const target=studioProject?.id===id?studioClone(studioProject):p;const active=Number.isInteger(target.active)&&target.areas?.[target.active]?.image?target.active:target.areas?.findIndex(a=>a?.image);if(!(active>=0))throw Error('Dieses Projekt enthält kein gespeichertes Bild. Bitte eine gesicherte Projektdatei öffnen.');await studioRestore(target,active);e('Chooser').hidden=true;});
     e('Save').onclick=()=>studioRun(async()=>{const p=studioCapture();let localSaved=true;try{await studioStore('put',p);studioRemember();}catch(error){localSaved=false;}const blob=new Blob([JSON.stringify(p)],{type:'application/json'});if(studioURL)URL.revokeObjectURL(studioURL);studioURL=URL.createObjectURL(blob);const a=e('Download');a.href=studioURL;a.download=(p.name.replace(/[^\p{L}\p{N}_-]+/gu,'_')||'Bildprojekt')+'.atelierprojekt';a.hidden=false;a.click();studioStatus((localSaved?'Im Browser gespeichert. ':'Browserspeicher nicht verfügbar. ')+'Datei zum Download bereit – in Dateien / Downloads nachsehen oder „In Dateien sichern“ wählen.');});
     e('Import').onclick=()=>e('File').click();e('File').onchange=()=>studioRun(async()=>{const f=e('File').files[0];e('File').value='';if(!f)return;const raw=JSON.parse(await f.text());if(raw.format==='AtelierAI-Malprojekt'){if(loaded)await studioPersist();await window.atelierLegacyImport(raw);await studioPersist();e('Chooser').hidden=true;return;}const p=studioValidate(raw);await studioImage(p.areas[p.active].image);if(loaded)await studioPersist();await studioRestore(p,p.active);await studioStore('put',p);await studioList();e('Chooser').hidden=true;});
-    e('Delete').onclick=()=>studioRun(async()=>{if(!confirm('Aktuelles Projekt mit allen Bereichen löschen?'))return;if(studioProject)await studioStore('delete',studioProject.id);studioClear();await studioList();studioStatus('Geöffnetes Projekt samt Bereichen gelöscht. Andere gespeicherte Projekte bleiben erhalten.');});
+    e('Delete').onclick=()=>studioRun(async()=>{if(!studioProject)throw Error('Kein Projekt geöffnet.');if(!confirm('„'+studioProject.name+'“ wirklich aus dem Browser löschen? Zum Beenden bitte abbrechen und „Projekt schließen“ wählen. Eine heruntergeladene Projektdatei bleibt erhalten.'))return;if(studioProject)await studioStore('delete',studioProject.id);studioClear();await studioList();studioStatus('Geöffnetes Projekt samt Bereichen gelöscht. Andere gespeicherte Projekte bleiben erhalten.');});
     e('Legacy').onclick=()=>studioRun(async()=>{
       if(!loaded||!picturePaletteId)throw Error('Zuerst das frühere Foto öffnen.');
       const old=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}')[picturePaletteId];if(!old?.samples?.length)throw Error('Für dieses Foto wurden keine früheren Farbproben gefunden.');
@@ -3620,10 +3623,10 @@
   }
 
   const PLAN_KEY='atelierai_palette_plans_v1';
-  let planBook={name:'Gesicht',samples:[]},planStorageOK=true;
+  let planBook={name:'Gesamtbild',samples:[]},planStorageOK=true;
   function loadPalettePlan(){
-    if(studioManaged){planBook={name:'Gesicht',samples:[]};renderPalettePlan();return;}
-    planBook={name:'Gesicht',samples:[]};
+    if(studioManaged){planBook={name:'Gesamtbild',samples:[]};renderPalettePlan();return;}
+    planBook={name:'Gesamtbild',samples:[]};
     try {const b=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}')[picturePaletteId];
       if(b&&Array.isArray(b.samples))planBook=b;
       planStorageOK=true;
@@ -8358,7 +8361,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <p id="exportInfo" style="font-size:14px">Sichtbare Farben, Hintergrund, Überblendungen und Raster werden übernommen.</p>
     <img id="exportPreview" alt="Vorschau des zu speichernden Bildes" style="display:block;max-width:100%;max-height:48dvh;margin:12px auto;object-fit:contain">
     <p id="exportStatus" role="status" style="font-size:14px"></p>
-    <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="exportShare" type="button">Teilen / In Fotos sichern</button><a id="exportDownload" style="padding:12px;color:#174c75" download>PNG herunterladen</a><button id="exportClose" type="button" class="secondary">Schließen</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="exportShare" type="button">Teilen / In Fotos sichern</button><a id="exportDownload" style="padding:12px;color:#174c75" download>PNG herunterladen</a><button id="exportClose" type="button" class="secondary">Menü schließen</button></div>
     <p style="font-size:13px">Auf dem iPad: „Teilen“ → „Bild sichern“ oder „In Dateien sichern“. Alternativ die Vorschau länger berühren.</p>`;
   document.body.appendChild(exportDialog);
   const exportScope=document.getElementById('exportScope');
@@ -8752,7 +8755,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     studioRun(async()=>{
       if(loaded)await studioPersist();
       await new Promise((resolve,reject)=>loadPhoto(file,false,error=>error?reject(error):resolve()));
-      studioProject=null;studioManaged=true;studioRender();await studioPersist();studioRender();
+      studioProject=null;studioManaged=true;studioEnsure();studioProject.name=file.name.replace(/\.[^.]+$/,'').slice(0,80)||'Mein Bild';studioRender();await studioPersist();studioRender();
     });
   });
 
@@ -8941,7 +8944,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const button=document.createElement('button');button.textContent='Farben bearbeiten';button.id='colorEditOpen';
     document.getElementById('saveCurrentViewBtn').after(button);
     const panel=document.createElement('div');panel.id='colorEditor';panel.hidden=true;
-    panel.innerHTML=`<div class="ce-head"><strong>Farben gezielt bearbeiten</strong><button id="ceClose" class="secondary">Schließen</button></div>
+    panel.innerHTML=`<div class="ce-head"><strong>Farben gezielt bearbeiten</strong><button id="ceClose" class="secondary">Menü schließen</button></div>
     <div class="ce-body"><div class="ce-stage"><canvas id="ceCanvas"></canvas><canvas id="ceReviewCanvas" hidden aria-hidden="true"></canvas><span id="ceReviewBadge" hidden>Prüfansicht</span><svg id="ceLassoOutline" aria-hidden="true"></svg><div id="ceCircle" hidden aria-hidden="true"></div></div><div class="ce-controls">
     <button id="ceFit" class="secondary">Bild einpassen · <span id="ceZoomVal">100 %</span></button><p class="tiny">Zwei Finger: vergrößern und verschieben. Bei aktiver Pipette: Kreis mit einem Finger setzen oder verschieben.</p><button id="ceLasso" class="secondary" aria-pressed="false">Bereich mit Lasso auswählen</button><button id="ceLassoClear" class="secondary" disabled>Bereichsauswahl aufheben</button><p id="ceRegionStatus" class="tiny" role="status">Kein Lasso: Änderungen gelten im ganzen Bild.</p><label>Auswahl<select id="ceFamily"><option value="all">Alle Farben</option><option value="green" selected>Grün / Oliv</option><option value="yellow">Gelb</option><option value="ochre">Ocker</option><option value="orange">Orange</option><option value="red">Rot / Rosa</option><option value="brown">Braun / Siena / Umbra</option><option value="turquoise">Türkis</option><option value="blue">Blau</option><option value="violet">Violett</option><option value="neutral">Weiß / Grau / Schwarz</option><option value="pick">Einzelne Farbe · Pipette</option></select></label>
     <button id="cePick" class="secondary">Farbe im Bild antippen</button><label>Kreisgröße <output id="ceDiameterVal">32 px</output><input id="ceDiameter" type="range" min="8" max="80" step="2" value="32"></label><div id="ceSample">Auswahl: Grün / Oliv</div>

@@ -1,4 +1,4 @@
-AtelierAI iPad 3.21 – einfache Projektverwaltung
+AtelierAI iPad 3.22 – einfache Projektverwaltung
 
 Oben öffnet der kleine Knopf „Projekt“ ein Menü mit Neues Projekt, Projekt öffnen und Projekt speichern. Das Menü liegt über der Ansicht und nimmt dem Bild keinen Platz weg. Schließen durch „Schließen“, Tippen außerhalb oder Escape.
 Bereiche (Gesicht, Kleid usw.) befinden sich wieder im Mischmodul.

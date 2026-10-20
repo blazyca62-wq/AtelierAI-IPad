@@ -1,4 +1,4 @@
-const VERSION='3.21';
+const VERSION='3.22';
 const PREFIX='atelierai-offline-'+encodeURIComponent(self.registration.scope)+'-';
 const CACHE=PREFIX+VERSION;
 const FILES=['app.html','index.html','START.html','manifest.webmanifest','icon-192.png','icon-512.png'];
