@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.29</title>
+  <title>AtelierAI iPad 3.30</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -3947,51 +3947,61 @@
   }
   // 3.29: Cross-area saved-premix comparison. A saved mixture is treated as
   // a physical premix, not silently replaced by its original tube recipe.
+  // 3.30: compare stored physical premixes, pairs of premixes, and small tube corrections.
   function savedPremixOptions(target,key){
-    const sources=[];
+    const sources=[], seen=new Set();
     const add=(sample,area)=>{
-      if(!sample?.recipe?.rgb||sample.key!==key||!sample.recipe.parts?.length)return;
+      if(sample?.key!==key||!sample.recipe?.parts?.length)return;
       const rgb=sample.recipe.rgb;
       if(!Array.isArray(rgb)||rgb.length!==3||rgb.some(v=>!Number.isFinite(v)))return;
       const identity=(sample.recipe.tubeIds||[]).join('|')+'@'+sample.recipe.parts.join(',');
-      if(sources.some(x=>x.identity===identity))return;
-      sources.push({rgb,name:sample.name||'Gespeicherte Farbe',area,identity});
+      if(seen.has(identity))return;
+      seen.add(identity);sources.push({rgb,name:sample.name||'Gespeicherte Farbe',area,identity});
     };
     for(const sample of planBook.samples||[])add(sample,planBook.name||'Aktueller Bereich');
     for(const area of studioProject?.areas||[]){
       for(const sample of area.plan?.samples||[])add(sample,area.name||'Bereich');
       for(const sample of area.fullView?.plan?.samples||[])add(sample,area.name||'Bereich');
     }
-    const palette=effectivePaletteColors(key);
-    const out=[];
-    for(const base of sources.slice(0,80)){
-      let best={score:similarityPct(target,base.rgb),rgb:base.rgb,base,add:null,ratio:0};
+    const palette=effectivePaletteColors(key), out=[];
+    const test=(bases,weights)=>{
+      const colors=bases.map(x=>x.rgb), total=weights.reduce((a,b)=>a+b,0);
+      const baseRgb=colors.length===1?colors[0]:pigmentMix(colors,weights,key);
+      let best={score:similarityPct(target,baseRgb),rgb:baseRgb,bases,weights,add:null,ratio:0};
+      // A correction is deliberately small: never overwhelm the saved mixture.
       for(const tube of palette){
-        for(const amount of [1,2,4,8,12]){
-          const rgb=pigmentMix([base.rgb,tube[1]],[16,amount],key);
+        for(const amount of [1,2,3,4,6]){
+          const rgb=pigmentMix([...colors,tube[1]],[...weights,amount],key);
           const score=similarityPct(target,rgb);
-          if(score>best.score)best={score,rgb,base,add:tube[0],ratio:amount};
+          if(score>best.score)best={score,rgb,bases,weights,add:tube[0],ratio:amount};
         }
       }
       out.push(best);
+    };
+    const pool=sources.slice(0,50);
+    for(const base of pool)test([base],[16]);
+    // Two prepared mixtures may together match where neither works alone.
+    for(let i=0;i<pool.length;i++)for(let j=i+1;j<pool.length;j++){
+      for(const weights of [[12,4],[8,8],[4,12]])test([pool[i],pool[j]],weights);
     }
-    return out.sort((a,b)=>b.score-a.score||(a.add?1:0)-(b.add?1:0)).slice(0,3);
+    return out.sort((a,b)=>b.score-a.score||a.bases.length-b.bases.length||Number(!!a.add)-Number(!!b.add)).slice(0,5);
   }
   function renderPremixComparison(target,key,normal){
     const options=savedPremixOptions(target,key);
     const wrap=document.createElement('div');wrap.className='mix-card';
-    const heading=document.createElement('h3');heading.textContent='Vorhandene Basismischungen prüfen';wrap.appendChild(heading);
+    const heading=document.createElement('h3');heading.textContent='Vorhandene Mischungen vergleichen · 3.30';wrap.appendChild(heading);
     const bestNormal=Math.max(0,...normal.map(x=>x.score));
-    if(!options.length){const msg=document.createElement('p');msg.textContent='Noch keine gespeicherte Mischung in diesem Projekt gefunden. Speichere zuerst Farbproben in einem Bereich.';wrap.appendChild(msg);mixResults.prepend(wrap);return;}
-    const summary=document.createElement('p');summary.textContent='Beste neue Tubenmischung: '+bestNormal+'/100. Beste Weiterverwendung: '+options[0].score+'/100. '+(options[0].score>=bestNormal-3?'Vorhandene Mischung bevorzugen (maximal 3 Punkte Abweichung).':'Neue Tubenmischung ist deutlich näher am Ziel.');wrap.appendChild(summary);
+    if(!options.length){const msg=document.createElement('p');msg.textContent='Noch keine gespeicherte Mischung in diesem Projekt gefunden. Zuerst Farbproben in einem Bereich merken.';wrap.appendChild(msg);mixResults.prepend(wrap);return;}
+    const best=options[0], prefer=best.score>=bestNormal-3;
+    const summary=document.createElement('p');summary.textContent='Neue Tubenmischung: '+bestNormal+'/100 · Beste Wiederverwendung: '+best.score+'/100. '+(prefer?'Vorhandene Mischung ist innerhalb von 3 Punkten und kann bevorzugt werden.':'Neue Tubenmischung ist derzeit näher am Ziel.');wrap.appendChild(summary);
     for(const option of options){
       const row=document.createElement('div');row.style.cssText='border-top:1px solid #bbb;padding:8px 0';
-      const label=document.createElement('strong');label.textContent=option.base.name+' · '+option.base.area+' · '+option.score+'/100';row.appendChild(label);
-      const detail=document.createElement('p');detail.textContent=option.add?'16 Teile vorhandene Mischung + '+option.ratio+' Teile '+option.add:'Vorhandene Mischung unverändert verwenden';row.appendChild(detail);
+      const label=document.createElement('strong');label.textContent=option.bases.map(x=>x.name+' ('+x.area+')').join(' + ')+' · '+option.score+'/100';row.appendChild(label);
+      const detail=document.createElement('p');detail.textContent=option.weights.map((n,i)=>n+' Teile '+option.bases[i].name).join(' + ')+(option.add?' + '+option.ratio+' Teile '+option.add:' · ohne Tubenkorrektur');row.appendChild(detail);
       const sw=document.createElement('div');sw.style.cssText='display:flex;gap:12px';
       for(const [name,rgb] of [['Ziel',target],['Vorschau',option.rgb]]){const cell=document.createElement('div');cell.textContent=name;const color=document.createElement('div');color.style.cssText='width:72px;height:42px;border:1px solid #888;background:'+rgbHex(rgb);cell.appendChild(color);sw.appendChild(cell);}row.appendChild(sw);wrap.appendChild(row);
     }
-    const note=document.createElement('small');note.textContent='Wichtig: Die Weiterverwendung ist eine Bildschirm-Simulation der gespeicherten Farbe, keine spektral gemessene Pigmentmischung. Vor dem Malen eine echte Probe prüfen.';wrap.appendChild(note);
+    const note=document.createElement('small');note.textContent='Simulation anhand gespeicherter Bildschirmfarben, keine echte Pigmentmessung. Die Vorschläge sind zusätzliche Mischwege; zuerst kleine Farbproben testen.';wrap.appendChild(note);
     mixResults.prepend(wrap);
   }
 

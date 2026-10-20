@@ -1,4 +1,4 @@
-AtelierAI iPad 3.29 – Projektspeicher
+AtelierAI iPad 3.30 – Projektspeicher
 
 Die neun Dateien dieses Ordners gemeinsam hochladen und bestehende Dateien ersetzen.
 
@@ -16,6 +16,6 @@ Prüfung: JavaScript-Syntax, Projektvalidierung und Speicherzugriffe. Ein Test a
 
 3.27: Beim Ausschnitt Name eingeben für einen neuen Bereich oder leer bestätigen für den aktuellen Bereich. Gesamtbild wird erhalten; gesammelte Farbproben werden beim Zurückkehren übernommen. Bereich umbenennen ergänzt.
 
-3.28: Neue Fotos ohne Raster. Projekte öffnen mit eingepasstem Gesamtbild ohne Raster, auch beim automatischen Wiederöffnen. Eigene Bereiche bleiben erhalten.
+3.30: Neue Fotos ohne Raster. Projekte öffnen mit eingepasstem Gesamtbild ohne Raster, auch beim automatischen Wiederöffnen. Eigene Bereiche bleiben erhalten.
 
-3.29: Gespeicherte Basismischungen vergleichen; Offline-Cache auf Version 3.29 aktualisiert.
+3.30: Gespeicherte Basismischungen vergleichen; Offline-Cache auf Version 3.30 aktualisiert.
