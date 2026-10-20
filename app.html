@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.20</title>
+  <title>AtelierAI iPad 3.21</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.20</div>
+    <div class="title">AtelierAI · iPad 3.21</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3407,11 +3407,13 @@
     return chosen;
   }
 
-  // 3.20: named projects with independent areas, portable backups and IndexedDB storage.
+  // 3.21: named projects with independent areas, portable backups and IndexedDB storage.
   let studioProject=null,studioBusy=false,studioManaged=true,studioURL=null;
   const studioClone=v=>JSON.parse(JSON.stringify(v));
   const studioId=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
-  function studioStatus(text){const e=document.getElementById('studioStatus');if(e)e.textContent=text;}
+  function studioStatus(text){const e=document.getElementById('studioStatus');if(e)e.textContent=text;
+    const button=document.getElementById('studioMenu');if(button){button.title=text;button.setAttribute('aria-label','Projekt – '+text);button.textContent=/Nicht gespeichert|nicht verfügbar|fehlgeschlagen/i.test(text)?'Projekt ⚠':'Projekt';}}
+
   let studioTimer=null,studioPending=false;
   function studioDirty(){
     if(!loaded)return;studioPending=true;clearTimeout(studioTimer);
@@ -3486,8 +3488,8 @@
     const option=document.createElement('option');option.value='';option.textContent='Gespeichertes Projekt wählen';list.appendChild(option);
     rows.sort((a,b)=>b.updated-a.updated).forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name+' · '+p.areas.length+' Bereiche';list.appendChild(o);});
   }
-  async function studioRun(fn){if(studioBusy)return;studioBusy=true;const panel=document.getElementById('studioProjects');panel.querySelectorAll('button,input,select').forEach(e=>e.disabled=true);
-    try{await fn();}catch(e){studioStatus('Nicht gespeichert / Aktion fehlgeschlagen: '+e.message);}finally{studioBusy=false;panel.querySelectorAll('button,input,select').forEach(e=>e.disabled=false);}}
+  async function studioRun(fn){if(studioBusy)return;studioBusy=true;const panel=document.getElementById('studioProjects');document.querySelectorAll('#studioProjects button,#studioProjects input,#studioProjects select,#studioAreaPanel button,#studioAreaPanel input,#studioAreaPanel select').forEach(e=>e.disabled=true);
+    try{await fn();}catch(e){studioStatus('Nicht gespeichert / Aktion fehlgeschlagen: '+e.message);}finally{studioBusy=false;document.querySelectorAll('#studioProjects button,#studioProjects input,#studioProjects select,#studioAreaPanel button,#studioAreaPanel input,#studioAreaPanel select').forEach(e=>e.disabled=false);}}
   function studioValidate(p){
     if(p?.format!=='AtelierAI-Bildprojekt'||p.version!==1||!Array.isArray(p.areas)||!p.areas.length||p.areas.length>100)throw Error('Keine gültige AtelierAI-Bildprojektdatei.');
     for(const a of p.areas){
@@ -3503,8 +3505,10 @@
     (studioProject?.areas||[{name:planBook.name||'Gesicht'}]).forEach((a,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=a.name;list.appendChild(o);});list.value=String(studioProject?.active||0);
   }
   function initStudioProjects(){
-    const panel=document.createElement('section');panel.id='studioProjects';panel.style.cssText='margin:10px;padding:12px;border:1px solid #888;border-radius:10px';
-    panel.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    const panel=document.createElement('section');panel.id='studioProjects';panel.hidden=true;
+    panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Projektverwaltung');
+    panel.style.cssText='position:fixed;top:max(55px,env(safe-area-inset-top));right:12px;z-index:9999;width:min(440px,calc(100vw - 24px));max-height:80vh;overflow:auto;box-sizing:border-box;padding:14px;background:#f7f7f2;color:#222;border:1px solid #888;border-radius:12px;box-shadow:0 8px 32px #0005';
+    panel.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b>Projekt</b><button id="studioClose" class="secondary" aria-label="Projektmenü schließen">Schließen</button></div><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
       <input id="studioName" value="Mein Bild" maxlength="80" aria-label="Projektname" placeholder="Projektname">
       <button id="studioNew" class="secondary">Neues Projekt</button>
       <button id="studioOpen" class="secondary">Projekt öffnen</button>
@@ -3515,7 +3519,7 @@
       <button id="studioLoad">Ausgewähltes Projekt öffnen</button><button id="studioImport" class="secondary">Aus Dateien auswählen …</button>
       <p class="tiny">Die Liste enthält Projekte in diesem Browser. Eine heruntergeladene Projektdatei öffnest du über „Aus Dateien auswählen“.</p></div>
       <input type="file" id="studioFile" accept=".atelierprojekt,.atelierai,application/json" hidden>
-      <details><summary>Bereiche · Gesicht, Kleid …</summary>
+      <details id="studioAreaPanel"><summary>Bereiche · Gesicht, Kleid …</summary>
       <label>Aktiver Bereich <select id="studioAreas"></select></label>
       <input id="studioAreaName" placeholder="Neuer Bereich, z. B. Kleid" aria-label="Name des neuen Bereichs">
       <button id="studioAdd" class="secondary">Bereich hinzufügen</button>
@@ -3524,7 +3528,18 @@
       <p class="tiny">Automatisch: im Speicher dieses Browsers auf diesem Gerät, nicht als Datei. Browserdaten löschen oder ein anderer App-Pfad kann den Zugriff darauf verlieren. „Projekt speichern“ lädt eine vollständige .atelierprojekt-Datei herunter. Auf dem iPad findest du sie im eingestellten Downloadordner der Dateien-App, häufig iCloud Drive → Downloads oder Auf meinem iPad → Downloads. Bei einer Teilen-Auswahl „In Dateien sichern“ wählen. Die heruntergeladene Datei wird nicht automatisch aktualisiert: am Ende erneut „Projekt speichern“ drücken.</p>
       <button id="studioLegacy" class="secondary">Frühere Farbproben dieses Fotos übernehmen</button>
       <button id="studioDelete" class="secondary">Aktuelles Projekt löschen</button></details>`;
-    document.querySelector('.topbar').after(panel);
+    document.body.appendChild(panel);
+    const areaPanel=panel.querySelector('#studioAreaPanel');
+    areaPanel.style.cssText='margin:10px;padding:10px;border:1px solid #888;border-radius:10px';
+    document.getElementById('palettePlan').before(areaPanel);
+    const launcher=document.createElement('button');launcher.id='studioMenu';launcher.type='button';launcher.textContent='Projekt';launcher.className='secondary';
+    launcher.setAttribute('aria-expanded','false');launcher.setAttribute('aria-controls','studioProjects');
+    document.querySelector('.topbar .title').after(launcher);
+    const closeMenu=()=>{panel.hidden=true;launcher.setAttribute('aria-expanded','false');};
+    launcher.onclick=()=>{panel.hidden=!panel.hidden;launcher.setAttribute('aria-expanded',String(!panel.hidden));};
+    panel.querySelector('#studioClose').onclick=()=>{closeMenu();launcher.focus();};
+    document.addEventListener('click',event=>{if(!panel.hidden&&!panel.contains(event.target)&&!launcher.contains(event.target))closeMenu();});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden){closeMenu();launcher.focus();}});
     const e=id=>document.getElementById('studio'+id);
     e('Name').oninput=()=>{if(studioProject)studioProject.name=e('Name').value.trim()||'Mein Bild';studioDirty();};
     e('Open').onclick=async()=>{e('Chooser').hidden=!e('Chooser').hidden;if(!e('Chooser').hidden)try{await studioList();}catch(error){studioStatus(error.message+' Über „Aus Dateien auswählen“ öffnen.');}};
@@ -3546,7 +3561,7 @@
     });
     studioRender();
     for(const type of ['input','change','click','pointerup'])document.addEventListener(type,event=>{
-      if(event.target.closest?.('#studioProjects')||event.target===fileInput)return;
+      if(event.target.closest?.('#studioProjects, #studioAreaPanel, #studioMenu')||event.target===fileInput)return;
       if(loaded&&!studioBusy)studioDirty();
     });
     document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(studioTimer);studioAutoSave();}});
