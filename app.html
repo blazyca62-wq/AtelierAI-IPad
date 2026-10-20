@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.14</title>
+  <title>AtelierAI iPad 3.15</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.14</div>
+    <div class="title">AtelierAI · iPad 3.15</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3407,6 +3407,142 @@
     return chosen;
   }
 
+  // 3.15: remembered targets and exact, mass-conserving shared premixes.
+  const PLAN_KEY='atelierai_palette_plans_v1';
+  let planBook={name:'Gesicht',samples:[]},planStorageOK=true;
+  function loadPalettePlan(){
+    planBook={name:'Gesicht',samples:[]};
+    try {const b=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}')[picturePaletteId];
+      if(b&&Array.isArray(b.samples))planBook=b;
+      planStorageOK=true;
+    }catch(e){planStorageOK=false;}
+    renderPalettePlan();
+  }
+  function savePalettePlan(){
+    if(!picturePaletteId)return;
+    try {const all=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}');
+      all[picturePaletteId]={...planBook,time:Date.now()};
+      localStorage.setItem(PLAN_KEY,JSON.stringify(Object.fromEntries(Object.entries(all).sort((a,b)=>(b[1].time||0)-(a[1].time||0)).slice(0,40))));planStorageOK=true;
+    }catch(e){planStorageOK=false;}
+  }
+  function planRemember(m,key,target){
+    if(!picturePaletteId||!target||!m.tubeIds?.length)return;
+    const signature=JSON.stringify([key,target,m.tubeIds,m.parts,m.coverage]);
+    if(!planBook.samples.some(s=>s.signature===signature)){
+      planBook.samples.push({id:Date.now()+'-'+Math.random().toString(36).slice(2),signature,key,target:target.slice(),recipe:JSON.parse(JSON.stringify(m)),name:'Farbe '+(planBook.samples.length+1),selected:true,amount:1});
+      savePalettePlan();renderPalettePlan();
+    }
+  }
+  function appendPlanRemember(box,m,key,target){
+    if(!target)return;
+    const b=document.createElement('button');b.type='button';b.className='secondary';b.style.margin='6px 0';
+    b.textContent='Farbprobe + Rezept für Palettenplan merken';b.disabled=!picturePaletteId;
+    b.onclick=()=>{planRemember(m,key,target);b.textContent='Farbprobe und Rezept gemerkt';};box.appendChild(b);
+  }
+  function buildPalettePlan(samples){
+    const gcd=(a,b)=>b?gcd(b,a%b):a;
+    const rows=samples.map(s=>{
+      const r=s.recipe;
+      if(!r.parts.length||r.parts.some(p=>!Number.isInteger(p)||p<=0))throw new Error('Dieses Rezept enthält keine ganzzahligen Teile. Bitte ein neues Rezept merken.');
+      const d=r.parts.reduce(gcd),v={};
+      r.tubeIds.forEach((id,i)=>{v[id]=(v[id]||0)+r.parts[i]/d;});
+      return {sample:s,v,base:null,n:0};
+    });
+    const candidates=new Map();
+    for(const row of rows){
+      const ids=Object.keys(row.v).sort();
+      for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){
+        for(let a=1;a<=6;a++)for(let b=1;b<=6;b++)if(gcd(a,b)===1){
+          const v={[ids[i]]:a,[ids[j]]:b};candidates.set(JSON.stringify(v),v);
+        }
+      }
+      if(ids.length>=2){const v=Object.fromEntries(ids.map(id=>[id,row.v[id]]));candidates.set(JSON.stringify(v),v);}
+    }
+    const bases=[];
+    while(bases.length<4){
+      let best=null;
+      for(const v of candidates.values()){
+        const ids=Object.keys(v),sum=Object.values(v).reduce((a,b)=>a+b,0),uses=[];let score=0,steps=-(ids.length-1);
+        for(const row of rows.filter(r=>!r.base)){
+          const n=Math.floor(Math.min(...ids.map(id=>(row.v[id]||0)/v[id])));
+          const fraction=n*sum/Object.values(row.v).reduce((a,b)=>a+b,0);
+          if(n<1||fraction<.25)continue;
+          const removed=ids.filter(id=>row.v[id]===v[id]*n).length;
+          uses.push({row,n});score+=fraction+removed;steps+=removed-1;
+        }
+        if(uses.length>=2&&steps>=0&&(!best||score>best.score))best={v,uses,score};
+      }
+      if(!best)break;
+      const base={v:best.v,label:String.fromCharCode(65+bases.length),uses:best.uses};bases.push(base);
+      for(const {row,n} of best.uses){row.base=base;row.n=n;}
+    }
+    return {rows,bases};
+  }
+  function renderPalettePlan(){
+    let panel=document.getElementById('palettePlan');
+    if(!panel){panel=document.createElement('details');panel.id='palettePlan';panel.style.cssText='margin:12px 0;padding:10px;border:1px solid #888;border-radius:10px';
+      document.querySelector('[data-picture-palette="paintPalette"]').after(panel);}
+    const wasOpen=panel.open;panel.replaceChildren();panel.open=wasOpen;
+    const add=(tag,text,parent=panel)=>{const e=document.createElement(tag);e.textContent=text;parent.appendChild(e);return e;};
+    add('summary','Palettenplan · '+planBook.samples.length+' gemerkte Farbproben');
+    add('p','Bei einem Mischvorschlag „Farbprobe + Rezept für Palettenplan merken“ drücken. Hier die Farben eines Bereichs auswählen und benennen. Bereits früher gemerkte Tubenfarben enthalten keine Farbproben.');
+    if(!picturePaletteId){add('p','Zuerst ein Foto öffnen.');return;}
+    const name=add('input','');name.value=planBook.name;name.placeholder='Bereich, z. B. Gesicht';name.setAttribute('aria-label','Name des Bereichs');
+    name.onchange=()=>{planBook.name=name.value;savePalettePlan();};
+    add('p','Menge 1 = ein kleines Rezept; 2 = doppelte Menge. Alle Teile mit derselben kleinen Maßeinheit abnehmen. Große Flächen bei Bedarf höher gewichten.');
+    for(const s of planBook.samples){
+      const row=add('div','');row.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 0';
+      const check=add('input','',row);check.type='checkbox';check.checked=s.selected;check.setAttribute('aria-label',s.name+' auswählen');
+      const sw=add('span','',row);sw.style.cssText='display:inline-block;width:30px;height:30px;border:1px solid #888;background:'+rgbHex(s.target);sw.title='Zielfarbe '+rgbHex(s.target);
+      const label=add('input','',row);label.value=s.name;label.style.width='125px';label.setAttribute('aria-label','Name der Farbprobe');
+      const qty=add('input','',row);qty.type='number';qty.min='1';qty.max='20';qty.step='1';qty.value=s.amount;qty.style.width='65px';qty.setAttribute('aria-label','Rezeptmenge für '+s.name);
+      add('small',s.key==='artisan'?'Öl':s.key,row);
+      const remove=add('button','×',row);remove.type='button';remove.className='secondary';remove.setAttribute('aria-label',s.name+' entfernen');
+      const changed=()=>{output.replaceChildren();savePalettePlan();};
+      check.onchange=()=>{s.selected=check.checked;changed();};label.onchange=()=>{s.name=label.value||'Farbe';changed();};
+      qty.onchange=()=>{s.amount=Math.max(1,Math.min(20,Math.round(Number(qty.value)||1)));qty.value=s.amount;changed();};
+      remove.onclick=()=>{planBook.samples=planBook.samples.filter(x=>x.id!==s.id);savePalettePlan();renderPalettePlan();};
+    }
+    if(!planStorageOK)add('p','Speichern ist hier nicht verfügbar. Die Farbproben bleiben nur in dieser Sitzung erhalten.');
+    const run=add('button','Palettenplan erstellen');run.type='button';
+    const output=add('div','');output.setAttribute('aria-live','polite');
+    run.onclick=()=>{
+      output.replaceChildren();const samples=planBook.samples.filter(s=>s.selected);
+      if(!samples.length){add('p','Bitte mindestens eine Farbprobe auswählen.',output);return;}
+      if(new Set(samples.map(s=>s.key)).size!==1){add('p','Bitte nur Farbproben derselben Palette auswählen. Öl und Aquarell werden getrennt geplant.',output);return;}
+      try{
+        const {rows,bases}=buildPalettePlan(samples),names={},totals={};
+        for(const row of rows)row.sample.recipe.tubeIds.forEach((id,i)=>{names[id]=row.sample.recipe.names[i];});
+        const fmt=v=>Object.entries(v).filter(([,n])=>n>0).map(([id,n])=>n+' Teile '+names[id]).join(' + ');
+        for(const row of rows)for(const [id,n] of Object.entries(row.v))totals[id]=(totals[id]||0)+n*row.sample.amount;
+        add('h3',planBook.name+' · Mischplan',output);
+        add('p','Die gespeicherten Rezeptanteile bleiben exakt erhalten. Gemeinsame Vormischungen sparen wiederholte Arbeit; sie garantieren keine reale Pigmentübereinstimmung. Zuerst kleine Farbproben prüfen.',output);
+        add('h4','1. Tubenfarben bereitlegen',output);add('p',fmt(totals)+' (Gesamtbedarf für die gewählten Mengen).',output);
+        add('h4','2. Ausgangsmischungen vorbereiten',output);
+        if(!bases.length)add('p','Keine ausreichend praktische gemeinsame Ausgangsmischung gefunden. Die Einzelrezepte bleiben erhalten.',output);
+        for(const b of bases){
+          const batches=b.uses.reduce((sum,u)=>sum+u.n*u.row.sample.amount,0),v=Object.fromEntries(Object.entries(b.v).map(([id,n])=>[id,n*batches]));
+          add('p','Basis '+b.label+': '+fmt(v)+'. Ergibt '+Object.values(v).reduce((a,n)=>a+n,0)+' Teile. Für: '+b.uses.map(u=>u.row.sample.name).join(', ')+'.',output);
+        }
+        add('p','Jede Basis gründlich mischen und getrennt liegen lassen. Nur die angegebene Teilportion entnehmen und auf einem freien Platz ergänzen.',output);
+        add('h4','3. Teilmischungen anlegen',output);
+        rows.sort((a,b)=>(a.base?.label||'Z').localeCompare(b.base?.label||'Z')||luminance(...b.sample.recipe.rgb)-luminance(...a.sample.recipe.rgb));
+        for(const row of rows){
+          const s=row.sample,r=s.recipe,q=s.amount,remaining=Object.fromEntries(Object.entries(row.v).map(([id,n])=>[id,(n-(row.base?(row.base.v[id]||0)*row.n:0))*q]));
+          const card=add('div','',output);card.className='mix-card';
+          const title=add('h4',s.name,card);title.style.margin='4px 0';
+          const swatches=add('div','',card);swatches.style.cssText='display:flex;gap:12px;background:#808080;padding:12px;color:white';
+          for(const [label,rgb] of [['Ziel',s.target],['Mischung',r.rgb]]){const wrap=add('div',label,swatches),sw=add('div','',wrap);sw.style.cssText='width:60px;height:40px;background:'+rgbHex(rgb);}
+          const rest=fmt(remaining),amount=row.base?Object.values(row.base.v).reduce((a,n)=>a+n,0)*row.n*q:0;
+          add('p',row.base?amount+' Teile Basis '+row.base.label+(rest?' + '+rest:': unverändert verwenden.'):rest,card);
+          add('small',r.score+'/100 Bildschirmnähe · gespeichertes Rezept',card);
+          if(r.watercolor)add('p',Math.round(r.coverage*100)+' % Farbauftrag auf Weiß laut Simulation – kein Wasserverhältnis. Pigmentbasis zuerst mischen, Teilportion erst danach mit Wasser aufhellen und auf Papier testen. Papierweiß frei lassen.',card);
+          const done=add('label','',card),cb=add('input','',done);cb.type='checkbox';done.append(' Gemischt');
+        }
+      }catch(e){add('p',e.message,output);}
+    };
+  }
+
   // 2.45: confirmed tube colours, scoped to the loaded picture.
   const PICTURE_PALETTE_KEY='atelierai_picture_palettes_v1';
   let picturePalette={ids:[],enabled:true},picturePaletteId=null,picturePaletteEpoch=0;
@@ -3448,6 +3584,7 @@
       if(saved&&Array.isArray(saved.ids))picturePalette={ids:[...new Set(saved.ids.filter(x=>typeof x==='string'))],enabled:saved.enabled!==false};
       picturePaletteStorageOK=true;
     }catch(e){picturePaletteStorageOK=false;}
+    loadPalettePlan();
     mixResults.replaceChildren();surfaceResults.replaceChildren();
     lastSmartColor=null;lastAverageColor=null;correctionRecipeHint=null;
     renderPicturePalettePanels();
@@ -3487,6 +3624,7 @@
     return rankPictureRecipes([...unique.values()],key).slice(0,3);
   }
   function appendPictureUseButton(box,m,key,target){
+    appendPlanRemember(box,m,key,target);
     if(target&&m.rgb){
       const mixRgb=m.rgb.slice(), reference=target.slice();
       const correct=document.createElement('button');correct.type='button';correct.className='secondary';
@@ -8541,6 +8679,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   };
 
   renderPicturePalettePanels();
+  renderPalettePlan();
   ['paintPalette','build32MixPalette','surfaceMixPalette'].forEach(id=>document.getElementById(id).addEventListener('change',renderPicturePalettePanels));
 
   // 2.47: selective, non-destructive colour editor. All masks refer to input photo.

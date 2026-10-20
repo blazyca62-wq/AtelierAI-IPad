@@ -1,3 +1,9 @@
+AtelierAI iPad 3.15 – Palettenplan
+
+Neu: Farbprobe und ausgewähltes Rezept bei jedem Mischvorschlag merken. Unter Palettenplan Farben auswählen, benennen (z. B. Stirn, Wange), Menge einstellen und Plan erstellen. Gemeinsame Ausgangsmischungen werden aus den gespeicherten Rezeptanteilen gebildet; die Einzelrezept-Verhältnisse bleiben unverändert. Aquarell: Verdünnung jeder Teilportion erst nach der Pigmentmischung.
+
+Früher gemerkte Tubenfarben enthalten keine Zielproben; diese bitte einmal neu aufnehmen und mit Rezept merken. Speicherung je Foto im Browser, sofern verfügbar. Öl/Paletten getrennt auswählen.
+
 AtelierAI iPad 3.14 – Verlaufslinie verschieben
 
 A und B mit einem Finger ziehen, um die Endpunkte zu verschieben. Die Linie zwischen den Punkten ziehen, um den gesamten Verlauf zu versetzen. Werte bleiben erhalten; die Bildwirkung wird beim Loslassen aktualisiert. Zwei Finger zoomen weiterhin. Zum Verschieben muss die Linie sichtbar und kein anderes Zeichenwerkzeug aktiv sein.
