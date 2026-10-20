@@ -1,3 +1,11 @@
+AtelierAI iPad 3.18 – Farbmarkierungen im Bild
+
+Beim Merken einer Pipetten-/Kreisprobe wird ihre Bildposition gespeichert. Die nummerierten Marken bleiben beim Zoomen und Verschieben an der Bildstelle. Im Verschieben-Modus eine Marke antippen: Name und gespeichertes Rezept erscheinen im Palettenplan. „Farbmarken: an/aus“ blendet sie aus. Ältere Proben: „Stelle setzen“ und die Stelle im Bild antippen. Markierungen sind reine Anzeigehilfen und beeinflussen weder Pipettenmessung noch Bildexport. Positionen sind dem jeweiligen Foto/Ausschnitt zugeordnet.
+
+AtelierAI iPad 3.17 – Farbproben direkt benennen
+
+Beim Mischvorschlag vor dem Merken eine Stelle eintragen, z. B. linke Wange oder Stirnlicht. Der Name wird gemeinsam mit Farbe und Rezept gespeichert und im Palettenplan verwendet. Bereits gespeicherte Namen können dort direkt im Namensfeld geändert werden.
+
 AtelierAI iPad 3.16 – Einfaches Merken
 
 Ein gemeinsamer Knopf „Diese Farbe merken“ ersetzt die beiden Speicherknöpfe. Bereits in Version 3.15 gespeicherte Farbproben bleiben erhalten. Auch wenn die Tubenfarben schon bekannt sind, kann eine neue Farbprobe damit gespeichert werden.

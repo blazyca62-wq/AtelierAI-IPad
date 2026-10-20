@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.16</title>
+  <title>AtelierAI iPad 3.18</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.16</div>
+    <div class="title">AtelierAI · iPad 3.18</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3408,6 +3408,56 @@
   }
 
   // 3.15: remembered targets and exact, mass-conserving shared premixes.
+  // Markers use normalized image coordinates; overlays never enter picker/export pixels.
+  let planSamplePoint=null,planActiveId=null,planPlaceId=null;
+  function planPointAt(ix,iy){
+    if(!picturePaletteId||ix<0||iy<0||ix>=sourceCanvas.width||iy>=sourceCanvas.height)return null;
+    return {x:ix/sourceCanvas.width,y:iy/sourceCanvas.height,pictureId:picturePaletteId};
+  }
+  function planSignature(m,key,target,point=null){
+    const fields=[key,target,m.tubeIds,m.parts,m.coverage];
+    if(point)fields.push([Number(point.x.toFixed(6)),Number(point.y.toFixed(6))]);
+    return JSON.stringify(fields);
+  }
+  function planMarkerScreen(point){return {x:offsetX+point.x*sourceCanvas.width*scale,y:offsetY+point.y*sourceCanvas.height*scale};}
+  function drawPlanMarkers(){
+    if(!loaded||sketchActive||planBook.markers===false)return;
+    ctx.save();ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    planBook.samples.forEach((s,i)=>{
+      if(!s.point)return;const p=planMarkerScreen(s.point),active=s.id===planActiveId;
+      ctx.beginPath();ctx.arc(p.x,p.y,12,0,Math.PI*2);ctx.fillStyle=active?'#ffd24b':'#ffffff';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#222';ctx.stroke();
+      ctx.fillStyle='#111';ctx.fillText(String(i+1),p.x,p.y);
+      if(active){const text=s.name.slice(0,32),w=ctx.measureText(text).width+14;
+        ctx.fillStyle='rgba(255,255,255,.95)';ctx.fillRect(p.x+17,p.y-13,w,26);ctx.textAlign='left';ctx.fillStyle='#111';ctx.fillText(text,p.x+24,p.y);ctx.textAlign='center';}
+    });ctx.restore();
+  }
+  function openPlanMarker(sample){
+    planActiveId=sample.id;renderPalettePlan();draw();
+    if(typeof window.activateToolPage==='function')window.activateToolPage('paintMixPanel');
+    const panel=document.getElementById('palettePlan');panel.open=true;
+    panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  function placePlanMarker(e){
+    if(!planPlaceId)return false;
+    const p=canvasPoint(e.clientX,e.clientY),point=planPointAt((p.x-offsetX)/scale,(p.y-offsetY)/scale);
+    if(!point)return true;
+    const s=planBook.samples.find(s=>s.id===planPlaceId);
+    if(s){s.point={x:point.x,y:point.y};planBook.markers=true;planActiveId=s.id;savePalettePlan();}
+    planPlaceId=null;hint.textContent='Farbmarkierung gesetzt.';renderPalettePlan();draw();return true;
+  }
+  function hitPlanMarker(e){
+    if(planBook.markers===false||sketchActive)return false;
+    const p=canvasPoint(e.clientX,e.clientY);let best=null,distance=23;
+    for(const s of planBook.samples){if(!s.point)continue;const q=planMarkerScreen(s.point),d=Math.hypot(p.x-q.x,p.y-q.y);if(d<distance){distance=d;best=s;}}
+    if(!best)return false;openPlanMarker(best);return true;
+  }
+  function syncPlanMarkerToggle(){
+    let b=document.getElementById('planMarkerToggle');
+    if(!b){b=document.createElement('button');b.id='planMarkerToggle';b.type='button';b.className='secondary';globalMoveBtn.after(b);
+      b.onclick=()=>{planBook.markers=planBook.markers===false;planPlaceId=null;savePalettePlan();syncPlanMarkerToggle();draw();};}
+    b.textContent='Farbmarken: '+(planBook.markers===false?'aus':'an');b.setAttribute('aria-pressed',String(planBook.markers!==false));
+  }
+
   const PLAN_KEY='atelierai_palette_plans_v1';
   let planBook={name:'Gesicht',samples:[]},planStorageOK=true;
   function loadPalettePlan(){
@@ -3425,11 +3475,17 @@
       localStorage.setItem(PLAN_KEY,JSON.stringify(Object.fromEntries(Object.entries(all).sort((a,b)=>(b[1].time||0)-(a[1].time||0)).slice(0,40))));planStorageOK=true;
     }catch(e){planStorageOK=false;}
   }
-  function planRemember(m,key,target){
+  function planRemember(m,key,target,name='',point=null){
     if(!picturePaletteId||!target||!m.tubeIds?.length)return;
-    const signature=JSON.stringify([key,target,m.tubeIds,m.parts,m.coverage]);
-    if(!planBook.samples.some(s=>s.signature===signature)){
-      planBook.samples.push({id:Date.now()+'-'+Math.random().toString(36).slice(2),signature,key,target:target.slice(),recipe:JSON.parse(JSON.stringify(m)),name:'Farbe '+(planBook.samples.length+1),selected:true,amount:1});
+    const signature=planSignature(m,key,target,point);
+    const givenName=String(name).trim().slice(0,100);
+    const existing=planBook.samples.find(s=>s.signature===signature);
+    if(existing){
+      if(givenName&&existing.name!==givenName){existing.name=givenName;savePalettePlan();renderPalettePlan();}
+      return;
+    }
+    {
+      planBook.samples.push({id:Date.now()+'-'+Math.random().toString(36).slice(2),signature,key,target:target.slice(),recipe:JSON.parse(JSON.stringify(m)),point:point?{x:point.x,y:point.y}:null,name:givenName||'Farbe '+(planBook.samples.length+1),selected:true,amount:1});
       savePalettePlan();renderPalettePlan();
     }
   }
@@ -3473,26 +3529,40 @@
     return {rows,bases};
   }
   function renderPalettePlan(){
+    syncPlanMarkerToggle();
+    if(loaded)draw();
     let panel=document.getElementById('palettePlan');
     if(!panel){panel=document.createElement('details');panel.id='palettePlan';panel.style.cssText='margin:12px 0;padding:10px;border:1px solid #888;border-radius:10px';
       document.querySelector('[data-picture-palette="paintPalette"]').after(panel);}
     const wasOpen=panel.open;panel.replaceChildren();panel.open=wasOpen;
     const add=(tag,text,parent=panel)=>{const e=document.createElement(tag);e.textContent=text;parent.appendChild(e);return e;};
     add('summary','Palettenplan · '+planBook.samples.length+' gemerkte Farbproben');
-    add('p','Beim gewünschten Mischvorschlag einmal „Diese Farbe merken“ drücken. Farbprobe, Rezept und Tubenfarben werden gemeinsam gespeichert. Danach hier den Palettenplan erstellen. Alle gemerkten Farbproben sind bereits ausgewählt; Namen und Mengen kannst du bei Bedarf ändern.');
+    add('p','Beim gewünschten Mischvorschlag die Stelle benennen und „Diese Farbe merken“ drücken. Farbprobe, Rezept und Tubenfarben werden gemeinsam gespeichert. Danach hier den Palettenplan erstellen. Alle gemerkten Farbproben sind bereits ausgewählt; Zum Umbenennen unten direkt auf den Namen tippen, z. B. „Farbe 5“, und „linke Wange“ eintragen. Mengen kannst du ebenfalls ändern.');
     if(!picturePaletteId){add('p','Zuerst ein Foto öffnen.');return;}
     const name=add('input','');name.value=planBook.name;name.placeholder='Bereich, z. B. Gesicht';name.setAttribute('aria-label','Name des Bereichs');
     name.onchange=()=>{planBook.name=name.value;savePalettePlan();};
     add('p','Menge 1 = ein kleines Rezept; 2 = doppelte Menge. Alle Teile mit derselben kleinen Maßeinheit abnehmen. Große Flächen bei Bedarf höher gewichten.');
+    const active=planBook.samples.find(s=>s.id===planActiveId);
+    if(active){
+      const card=add('div','');card.className='mix-card';
+      add('strong','Markierung '+(planBook.samples.indexOf(active)+1)+' · '+active.name,card);
+      const sw=add('div','',card);sw.style.cssText='height:38px;margin:8px 0;background:'+rgbHex(active.target);
+      add('p',active.recipe.names.map((name,i)=>active.recipe.parts[i]+' Teile '+name).join(' + '),card);
+      if(active.recipe.watercolor)add('small',Math.round(active.recipe.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis).',card);
+    }
+    add('p','Die Nummern gehören zu den Farbmarken im Bild. Im Verschieben-Modus eine Marke antippen für Name und Rezept. „Stelle setzen“ ergänzt auch ältere Farbproben.');
     for(const s of planBook.samples){
       const row=add('div','');row.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 0';
+      add('strong',String(planBook.samples.indexOf(s)+1)+'.',row);
       const check=add('input','',row);check.type='checkbox';check.checked=s.selected;check.setAttribute('aria-label',s.name+' auswählen');
       const sw=add('span','',row);sw.style.cssText='display:inline-block;width:30px;height:30px;border:1px solid #888;background:'+rgbHex(s.target);sw.title='Zielfarbe '+rgbHex(s.target);
-      const label=add('input','',row);label.value=s.name;label.style.width='125px';label.setAttribute('aria-label','Name der Farbprobe');
+      const label=add('input','',row);label.value=s.name;label.style.width='125px';label.setAttribute('aria-label','Name der Farbprobe');label.placeholder='Stelle benennen';label.title='Antippen zum Umbenennen, z. B. linke Wange';
       const qty=add('input','',row);qty.type='number';qty.min='1';qty.max='20';qty.step='1';qty.value=s.amount;qty.style.width='65px';qty.setAttribute('aria-label','Rezeptmenge für '+s.name);
       add('small',s.key==='artisan'?'Öl':s.key,row);
+      const locate=add('button',planPlaceId===s.id?'Setzen abbrechen':s.point?'Stelle versetzen':'Stelle setzen',row);locate.type='button';locate.className='secondary';
+      locate.onclick=()=>{planPlaceId=planPlaceId===s.id?null:s.id;setMode('move');hint.textContent=planPlaceId?'Jetzt die Stelle für „'+s.name+'“ im Bild antippen.':'Setzen abgebrochen.';renderPalettePlan();};
       const remove=add('button','×',row);remove.type='button';remove.className='secondary';remove.setAttribute('aria-label',s.name+' entfernen');
-      const changed=()=>{output.replaceChildren();savePalettePlan();};
+      const changed=()=>{output.replaceChildren();savePalettePlan();draw();};
       check.onchange=()=>{s.selected=check.checked;changed();};label.onchange=()=>{s.name=label.value||'Farbe';changed();};
       qty.onchange=()=>{s.amount=Math.max(1,Math.min(20,Math.round(Number(qty.value)||1)));qty.value=s.amount;changed();};
       remove.onclick=()=>{planBook.samples=planBook.samples.filter(x=>x.id!==s.id);savePalettePlan();renderPalettePlan();};
@@ -3564,6 +3634,7 @@
     }catch(e){picturePaletteStorageOK=false;}
   }
   function startPicturePalette(){
+    planSamplePoint=null;planActiveId=null;planPlaceId=null;
     picturePaletteEpoch++;
     picturePalette={ids:[],enabled:true};
     // A small pixel fingerprint restores the same photo, regardless of filename.
@@ -3637,16 +3708,29 @@
     note.textContent=!picturePalette.enabled?'Bildpalette ausgeschaltet.':!used.size?'Mit dieser Mischung die Bildpalette beginnen.':!added.length?'Verwendet nur Farben deiner Bildpalette.':'Zusätzlich nötig: '+added.map(id=>id.split('::').slice(1).join('::')).join(', ')+'.';
     box.appendChild(note);
     const button=document.createElement('button');button.type='button';button.className='secondary';button.style.marginTop='6px';
-    const signature=JSON.stringify([key,target,m.tubeIds,m.parts,m.coverage]);
-    button.textContent=planBook.samples.some(s=>s.signature===signature)?'Diese Farbe ist gemerkt':'Diese Farbe merken';
+    const point=planSamplePoint&&planSamplePoint.pictureId===picturePaletteId&&planSamplePoint.rgb?.every((v,i)=>v===target?.[i])?{...planSamplePoint}:null;
+    const signature=planSignature(m,key,target,point);
+    const stored=planBook.samples.find(s=>s.signature===signature);
+    const nameLabel=document.createElement('label');nameLabel.textContent='Stelle benennen';
+    nameLabel.style.cssText='display:block;margin-top:10px';
+    const placeName=document.createElement('input');placeName.type='text';placeName.maxLength=100;
+    placeName.placeholder='z. B. linke Wange oder Stirnlicht';placeName.value=stored?.name||'';
+    placeName.setAttribute('aria-label','Stelle für diese Farbprobe benennen');
+    placeName.style.cssText='display:block;width:100%;box-sizing:border-box;margin-top:5px;min-height:42px';
+    nameLabel.appendChild(placeName);box.appendChild(nameLabel);
+    button.textContent=stored?'Diese Farbe ist gemerkt':'Diese Farbe merken';
+    placeName.oninput=()=>{button.textContent=planBook.samples.some(s=>s.signature===signature)?'Namen speichern':'Diese Farbe merken';};
+    placeName.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();button.click();placeName.blur();}};
     button.disabled=!picturePaletteId||!target;
     button.onclick=()=>{
       if(epoch!==picturePaletteEpoch||!picturePaletteId)return;
       picturePalette.ids=[...new Set([...picturePalette.ids,...ids])];
-      planRemember(m,key,target);
+      planRemember(m,key,target,placeName.value,point);
       savePicturePalette();renderPicturePalettePanels();
       button.textContent='Diese Farbe ist gemerkt';
-      note.textContent='Farbprobe, Rezept und Tubenfarben gespeichert – direkt im Palettenplan.';
+      const saved=planBook.samples.find(s=>s.signature===signature);
+      placeName.value=saved?.name||placeName.value;
+      note.textContent='„'+placeName.value+'“ ist mit Farbprobe und Rezept im Palettenplan gespeichert.';
     };
     box.appendChild(button);
   }
@@ -3792,6 +3876,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     correctionRecipeHint=null;
     lastAverageColor=avg;
     lastSmartColor=smart && robust ? robust.smart : avg;
+    planSamplePoint={...planPointAt(ix,iy),rgb:lastSmartColor.slice()};
     avgTargetBox.style.background=rgbHex(adaptiveDisplayColor(avg));
     smartTargetBox.style.background=rgbHex(adaptiveDisplayColor(lastSmartColor));
     targetInfo.innerHTML=`Durchschnitt ${rgbHex(avg)} · RGB ${avg.join(', ')}<br>`+
@@ -3822,7 +3907,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     },30);
   }
 
-  function setMixTarget(rgb, label='Zielfarbe'){
+  function setMixTarget(rgb, label='Zielfarbe',point=null){
+    planSamplePoint=point&&rgb?{...point,rgb:rgb.slice()}:null;
     if(!rgb) return;
     correctionRecipeHint=null;
     lastAverageColor=[...rgb];
@@ -5996,7 +6082,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       button.dataset.imagePicked=String(i===index);
     });
     document.getElementById('build32ResetColor').disabled=!build32ActiveOverrides().has(index);
-    setMixTarget(palette[index],'Bildfarbe '+(index+1));updateBuild32Recipe();
+    setMixTarget(palette[index],'Bildfarbe '+(index+1),planPointAt(ix,iy));updateBuild32Recipe();
     hint.textContent='Bildfarbe '+(index+1)+' · unten blau umrandet, mit Mischrezept. Die Bildansicht bleibt erhalten.';
     const dock=document.getElementById('build32Dock');
     requestAnimationFrame(()=>{
@@ -7626,6 +7712,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(!loaded) return;
     paintArtworkAtView(ctx,true);
     drawGridCropSelection();
+    drawPlanMarkers();
     if(surfacePreview && !sketchActive && !build32Active){
       const sx=offsetX+surfacePreview.x*scale, sy=offsetY+surfacePreview.y*scale;
       const sz=surfacePreview.size*scale;
@@ -7671,7 +7758,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const hex=rgbHex(rgb);
     colorBox.style.background=rgbHex(adaptiveDisplayColor(rgb));
     colorText.innerHTML=`RGB: ${rgb.join(', ')}<br>HEX: ${hex}`;
-    setMixTarget(rgb,'Pipette');
+    setMixTarget(rgb,'Pipette',planPointAt(ix,iy));
     takeCorrectionColor(rgb); ideasBase=[...rgb]; refreshIdea();
     showMixes();
 
@@ -8539,6 +8626,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
   // Select only on release: a second finger or a drag never samples a color.
   function selectViewerPoint(e){
+    if(placePlanMarker(e)){e.preventDefault();return;}
     if(gridCellCropArmed){cropSelectedGridCell(e);e.preventDefault();return;}
     if(mixSurroundArmed){pickMixSurround(e.clientX,e.clientY);e.preventDefault();return;}
     if(pickSurfaceAt(e)) return;
@@ -8582,6 +8670,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       
       return;
     }
+    if(mode==='move'&&hitPlanMarker(e)){e.preventDefault();return;}
     if(mode==='move'&&inspectBuild32ImageColor(e)){e.preventDefault();return;}
     if(mode==='picker'){
       pickColor(e.clientX,e.clientY);
