@@ -1,4 +1,4 @@
-AtelierAI iPad 3.23 – Projektspeicher
+AtelierAI iPad 3.24 – Projektspeicher
 
 Die neun Dateien dieses Ordners gemeinsam hochladen und bestehende Dateien ersetzen.
 
@@ -7,3 +7,5 @@ Identische Bildstände werden im Projekt nur einmal abgelegt. Automatisches Spei
 Bestehende Projektdateien bleiben lesbar.
 
 Prüfung: JavaScript-Syntax, Projektvalidierung und Speicherzugriffe. Ein Test auf einem echten iPad steht noch aus.
+
+3.24: Menü schließen bleibt während des Speicherns bedienbar. Bild- und Browser-Speicherung erhalten Zeitgrenzen; Fehler geben die Projektknöpfe wieder frei. Download startet erst nach Freigabe der Bedienung. Nach erfolgreichem Speichern wird kein unnötiger Autosave gestartet. Simulierte hängende Speicheraktionen geprüft.
