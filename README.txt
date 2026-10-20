@@ -19,3 +19,5 @@ Prüfung: JavaScript-Syntax, Projektvalidierung und Speicherzugriffe. Ein Test a
 3.30: Neue Fotos ohne Raster. Projekte öffnen mit eingepasstem Gesamtbild ohne Raster, auch beim automatischen Wiederöffnen. Eigene Bereiche bleiben erhalten.
 
 3.30: Gespeicherte Basismischungen vergleichen; Offline-Cache auf Version 3.30 aktualisiert.
+
+3.31: Gespeicherte Bereichsfarbe ab 98/100 Bildschirmnähe direkt verwenden, ohne unnötige Mischung mit anderen Farben oder Tuben.

@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.30</title>
+  <title>AtelierAI iPad 3.31</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -3963,6 +3963,11 @@
       for(const sample of area.plan?.samples||[])add(sample,area.name||'Bereich');
       for(const sample of area.fullView?.plan?.samples||[])add(sample,area.name||'Bereich');
     }
+    // 3.31: A stored ready-to-paint colour that already matches extremely well
+    // must be reused as-is, not mixed with itself, other premixes or tubes.
+    const direct=sources.map(base=>({score:similarityPct(target,base.rgb),rgb:base.rgb,bases:[base],weights:[1],add:null,ratio:0}));
+    const ready=direct.filter(option=>option.score>=98);
+    if(ready.length)return ready.sort((a,b)=>b.score-a.score).slice(0,5);
     const palette=effectivePaletteColors(key), out=[];
     const test=(bases,weights)=>{
       const colors=bases.map(x=>x.rgb), total=weights.reduce((a,b)=>a+b,0);
@@ -3989,7 +3994,7 @@
   function renderPremixComparison(target,key,normal){
     const options=savedPremixOptions(target,key);
     const wrap=document.createElement('div');wrap.className='mix-card';
-    const heading=document.createElement('h3');heading.textContent='Vorhandene Mischungen vergleichen · 3.30';wrap.appendChild(heading);
+    const heading=document.createElement('h3');heading.textContent='Vorhandene Mischungen vergleichen · 3.31';wrap.appendChild(heading);
     const bestNormal=Math.max(0,...normal.map(x=>x.score));
     if(!options.length){const msg=document.createElement('p');msg.textContent='Noch keine gespeicherte Mischung in diesem Projekt gefunden. Zuerst Farbproben in einem Bereich merken.';wrap.appendChild(msg);mixResults.prepend(wrap);return;}
     const best=options[0], prefer=best.score>=bestNormal-3;
