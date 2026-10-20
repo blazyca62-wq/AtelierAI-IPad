@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.25</title>
+  <title>AtelierAI iPad 3.26</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.25</div>
+    <div class="title">AtelierAI · iPad 3.26</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3537,6 +3537,16 @@
     }
     p.id=studioId();p.name=String(p.name||'Importiertes Bild');p.active=Number.isInteger(p.active)&&p.active>=0&&p.active<p.areas.length?p.active:0;return p;
   }
+  function studioWithoutArea(project){
+    const index=project.active,area=project.areas[index];
+    if(!area||project.areas.length<2)throw Error('Der einzige Bereich kann nicht gelöscht werden.');
+    if(index===0||project.areas.some(a=>a.returnAreaId===area.id))throw Error('Das Gesamtbild bleibt als Ausgangsbild erhalten. Bitte einen anderen Bereich wählen.');
+    const next=studioClone(project);
+    next.areas.splice(index,1);
+    const parent=next.areas.findIndex(a=>a.id===area.returnAreaId);
+    next.active=parent>=0?parent:0;next.updated=Date.now();
+    return next;
+  }
   function studioRender(){
     const name=document.getElementById('studioName');if(!name)return;name.value=studioProject?.name||'Mein Bild';
     const list=document.getElementById('studioAreas');list.replaceChildren();
@@ -3562,6 +3572,7 @@
       <label>Aktiver Bereich <select id="studioAreas"></select></label>
       <input id="studioAreaName" placeholder="Neuer Bereich, z. B. Kleid" aria-label="Name des neuen Bereichs">
       <button id="studioAdd" class="secondary">Bereich hinzufügen</button>
+      <button id="studioDeleteArea" class="secondary">Bereich löschen</button>
       <p class="tiny">Eigene Farbproben, Mischungen, Markierungen und Bildstände je Bereich. Farbbearbeitung einschließlich A/B/C und Notizen wird mitgespeichert. Andere Module werden als fertiger Bildstand gesichert; deren Regler und Rückgängig-Schritte werden nicht wiederhergestellt.</p></details>
       <details><summary>Speicherort &amp; weitere Optionen</summary>
       <p class="tiny">Automatisch: im Speicher dieses Browsers auf diesem Gerät, nicht als Datei. Browserdaten löschen oder ein anderer App-Pfad kann den Zugriff darauf verlieren. „Projekt speichern“ lädt eine vollständige .atelierprojekt-Datei herunter. Auf dem iPad findest du sie im eingestellten Downloadordner der Dateien-App, häufig iCloud Drive → Downloads oder Auf meinem iPad → Downloads. Bei einer Teilen-Auswahl „In Dateien sichern“ wählen. Die heruntergeladene Datei wird nicht automatisch aktualisiert: am Ende erneut „Projekt speichern“ drücken.</p>
@@ -3588,6 +3599,20 @@
       const name=e('AreaName').value.trim();if(!name)throw Error('Bitte einen Bereichsnamen eingeben, z. B. Kleid.');
       await studioPersist();const a=studioClone(studioProject.areas[studioProject.active]);a.id=studioId();a.name=name;a.plan={name,samples:[],markers:true};a.palette={ids:[],enabled:true};
       studioProject.areas.push(a);await studioRestore(studioProject,studioProject.areas.length-1);await studioStore('put',studioProject);await studioList();e('AreaName').value='';
+    });
+    e('DeleteArea').onclick=()=>studioRun(async()=>{
+      if(!studioProject)throw Error('Kein Projekt geöffnet.');
+      studioWithoutArea(studioProject); // Check protected areas before asking.
+      const name=planBook.name||studioProject.areas[studioProject.active].name;
+      if(!confirm('Bereich „'+name+'“ mit seinen Farbproben, Mischungen und Markierungen löschen? Das Gesamtbild und die anderen Bereiche bleiben erhalten.'))return;
+      await studioPersist();
+      const previous=studioProject,previousIndex=studioProject.active;
+      const next=studioWithoutArea(previous);
+      try{await studioRestore(next,next.active);await studioStore('put',next);}
+      catch(error){await studioRestore(previous,previousIndex);throw error;}
+      studioRemember();await studioList();
+      hint.textContent='Bereich „'+name+'“ gelöscht. Die anderen Bereiche bleiben erhalten.';
+      studioStatus('Bereich „'+name+'“ gelöscht und Projekt gespeichert.');
     });
     e('Areas').onchange=()=>{const index=Number(e('Areas').value);studioRun(async()=>{if(!studioProject||index===studioProject.active)return;await studioPersist();await studioRestore(studioProject,index);await studioStore('put',studioProject);});};
     e('Load').onclick=()=>studioRun(async()=>{const id=e('Saved').value;if(!id)throw Error('Bitte ein gespeichertes Projekt wählen.');const p=await studioStore('get',id);if(!p)throw Error('Projekt nicht gefunden.');if(loaded)await studioPersist();const target=studioProject?.id===id?studioClone(studioProject):p;const active=Number.isInteger(target.active)&&target.areas?.[target.active]?.image?target.active:target.areas?.findIndex(a=>a?.image);if(!(active>=0))throw Error('Dieses Projekt enthält kein gespeichertes Bild. Bitte eine gesicherte Projektdatei öffnen.');await studioRestore(target,active);e('Chooser').hidden=true;});

@@ -1,4 +1,4 @@
-AtelierAI iPad 3.25 – Projektspeicher
+AtelierAI iPad 3.26 – Projektspeicher
 
 Die neun Dateien dieses Ordners gemeinsam hochladen und bestehende Dateien ersetzen.
 
@@ -11,3 +11,5 @@ Prüfung: JavaScript-Syntax, Projektvalidierung und Speicherzugriffe. Ein Test a
 3.24: Menü schließen bleibt während des Speicherns bedienbar. Bild- und Browser-Speicherung erhalten Zeitgrenzen; Fehler geben die Projektknöpfe wieder frei. Download startet erst nach Freigabe der Bedienung. Nach erfolgreichem Speichern wird kein unnötiger Autosave gestartet. Simulierte hängende Speicheraktionen geprüft.
 
 3.25: Ausschnitte werden automatisch eigene Projektbereiche. Zum Gesamtbild speichert den Ausschnitt mit Farben und Mischungen und öffnet den Ausgangsbereich. Der Rückweg bleibt nach Projektladen erhalten. Rasterausrichtung wird je Bereich gespeichert. Alte Dateien ohne gespeichertes Gesamtbild können dieses nicht nachträglich wiederherstellen.
+
+3.26: Bereiche einzeln über Bereich löschen entfernen (mit Rückfrage). Das Ausgangsbild und von anderen Bereichen benötigte Gesamtbilder bleiben geschützt. Nach dem Löschen wird das Gesamtbild geöffnet und das Projekt gespeichert.
