@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.18</title>
+  <title>AtelierAI iPad 3.19</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.18</div>
+    <div class="title">AtelierAI · iPad 3.19</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3407,6 +3407,126 @@
     return chosen;
   }
 
+  // 3.19: named projects with independent areas, portable backups and IndexedDB storage.
+  let studioProject=null,studioBusy=false,studioManaged=true,studioURL=null;
+  const studioClone=v=>JSON.parse(JSON.stringify(v));
+  const studioId=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
+  function studioStatus(text){const e=document.getElementById('studioStatus');if(e)e.textContent=text;}
+  function studioDirty(){studioStatus('Änderungen vorhanden · „Projekt speichern“ vor dem Schließen drücken.');}
+  function studioDB(){return new Promise((resolve,reject)=>{
+    const r=indexedDB.open('atelierai-studio-projects',1);r.onupgradeneeded=()=>r.result.createObjectStore('projects',{keyPath:'id'});
+    r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(Error('Projektspeicher ist nicht verfügbar. Bitte Projektdatei sichern.'));
+  });}
+  async function studioStore(action,value){
+    const db=await studioDB();return new Promise((resolve,reject)=>{
+      const tx=db.transaction('projects',action==='getAll'?'readonly':'readwrite'),store=tx.objectStore('projects');
+      const r=action==='put'?store.put(value):action==='delete'?store.delete(value):store.getAll();let result;
+      r.onsuccess=()=>result=r.result;tx.oncomplete=()=>{db.close();resolve(result);};tx.onerror=tx.onabort=()=>{db.close();reject(Error('Speichern fehlgeschlagen. Projektdatei sichern; der aktuelle Stand bleibt geöffnet.'));};
+    });
+  }
+  function studioEnsure(){
+    if(!studioProject)studioProject={format:'AtelierAI-Bildprojekt',version:1,id:studioId(),name:'Mein Bild',active:0,areas:[]};
+    if(!studioProject.areas.length)studioProject.areas.push({id:studioId(),name:planBook.name||'Gesicht'});
+  }
+  function studioCapture(){
+    if(!loaded)throw Error('Bitte zuerst ein Foto öffnen.');
+    studioEnsure();
+    const title=document.getElementById('studioName');if(title)studioProject.name=title.value.trim()||'Mein Bild';
+    const area=studioProject.areas[studioProject.active];
+    flushToneImage();const c=document.createElement('canvas');c.width=sourceCanvas.width;c.height=sourceCanvas.height;
+    renderCurrentArtwork(c.getContext('2d'),false);
+    area.image=c.toDataURL('image/png');area.source=sourceCanvas.toDataURL('image/png');
+    area.plan=studioClone(planBook);area.name=planBook.name||area.name;area.palette=studioClone(picturePalette);area.medium=paintPalette.value;
+    area.view={scale,offsetX,offsetY,width:canvas.getBoundingClientRect().width,height:canvas.getBoundingClientRect().height};
+    area.grid={enabled:gridEnabled,density:gridDensity.value};studioProject.updated=Date.now();return studioProject;
+  }
+  async function studioPersist(){const p=studioCapture();await studioStore('put',p);await studioList();studioStatus('Gespeichert: '+p.name+' · '+p.areas.length+' Bereiche.');}
+  function studioImage(data){return new Promise((resolve,reject)=>{const p=new Image();p.onload=()=>resolve(p);p.onerror=()=>reject(Error('Projektbild konnte nicht gelesen werden.'));p.src=data;});}
+  async function studioRestore(project,index){
+    const a=project.areas[index];if(!a?.image)throw Error('Dieser Bereich enthält kein Bild.');
+    const photo=await studioImage(a.image); // Decode before modifying the current workspace.
+    const original=a.source?await studioImage(a.source):photo;
+    studioProject=project;studioProject.active=index;studioManaged=true;
+    originalPhoto=original;visibleCropWhole=null;visibleCropGrid=null;gridReference=null;
+    resetPhotoFilters();installPhoto(photo);document.dispatchEvent(new Event('atelier-reset-photo'));
+    planBook=studioClone(a.plan||{name:a.name,samples:[]});picturePalette=studioClone(a.palette||{ids:[],enabled:true});
+    planSamplePoint=null;planActiveId=null;planPlaceId=null;mixResultCache.clear();
+    if(a.medium&&[...paintPalette.options].some(o=>o.value===a.medium)){setMedium(a.medium==='artisan'?'oil':'water');paintPalette.value=a.medium;}
+    gridEnabled=!!a.grid?.enabled;if(a.grid?.density)gridDensity.value=a.grid.density;
+    gridToggleBtn.textContent=gridEnabled?'Raster aus':'Raster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);
+    const rect=canvas.getBoundingClientRect();if(a.view&&Math.abs(rect.width-a.view.width)<2&&Math.abs(rect.height-a.view.height)<2){scale=a.view.scale;offsetX=a.view.offsetX;offsetY=a.view.offsetY;syncGlobalViewControls();}
+    renderPicturePalettePanels();renderPalettePlan();studioRender();draw();
+    studioStatus('Geöffnet: '+project.name+' · '+a.name+'.');
+  }
+  function studioClear(){
+    photoLoadRevision++;studioProject=null;studioManaged=true;planSamplePoint=null;planActiveId=null;planPlaceId=null;
+    picturePaletteEpoch++;picturePaletteId=null;picturePalette={ids:[],enabled:true};planBook={name:'Gesicht',samples:[]};
+    resetPhotoFilters();resetBuild32();cancelIsolation();loaded=false;img=null;originalPhoto=null;visibleCropWhole=null;visibleCropGrid=null;gridReference=null;
+    lastSmartColor=null;lastAverageColor=null;correctionRecipeHint=null;mixResultCache.clear();mixResults.replaceChildren();surfaceResults.replaceChildren();
+    sourceCanvas.width=sourceCanvas.height=1;placeholder.style.display='';fileInput.value='';
+    document.dispatchEvent(new Event('atelier-reset-photo'));renderPicturePalettePanels();renderPalettePlan();studioRender();draw();
+  }
+  async function studioList(){
+    const list=document.getElementById('studioSaved');if(!list)return;
+    const rows=await studioStore('getAll');list.replaceChildren();
+    const option=document.createElement('option');option.value='';option.textContent='Gespeichertes Projekt wählen';list.appendChild(option);
+    rows.sort((a,b)=>b.updated-a.updated).forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name+' · '+p.areas.length+' Bereiche';list.appendChild(o);});
+  }
+  async function studioRun(fn){if(studioBusy)return;studioBusy=true;const panel=document.getElementById('studioProjects');panel.querySelectorAll('button,input,select').forEach(e=>e.disabled=true);
+    try{await fn();}catch(e){studioStatus(e.message);}finally{studioBusy=false;panel.querySelectorAll('button,input,select').forEach(e=>e.disabled=false);}}
+  function studioValidate(p){
+    if(p?.format!=='AtelierAI-Bildprojekt'||p.version!==1||!Array.isArray(p.areas)||!p.areas.length||p.areas.length>100)throw Error('Keine gültige AtelierAI-Bildprojektdatei.');
+    for(const a of p.areas){
+      if(typeof a.image!=='string'||!a.image.startsWith('data:image/png;base64,')||!Array.isArray(a.plan?.samples)||typeof a.name!=='string')throw Error('Ein Projektbereich ist unvollständig.');
+      for(const s of a.plan.samples){const r=s.recipe;if(!Array.isArray(s.target)||s.target.length!==3||!s.target.every(v=>Number.isFinite(v)&&v>=0&&v<=255)||!r||!Array.isArray(r.parts)||!Array.isArray(r.names)||!Array.isArray(r.tubeIds)||r.parts.length!==r.names.length||r.parts.length!==r.tubeIds.length||!r.parts.every(v=>Number.isFinite(v)&&v>0)||!Array.isArray(r.rgb)||r.rgb.length!==3)throw Error('Ungültige Farbprobe in der Projektdatei.');
+        if(s.point&&(!Number.isFinite(s.point.x)||!Number.isFinite(s.point.y)||s.point.x<0||s.point.x>1||s.point.y<0||s.point.y>1))throw Error('Ungültige Bildmarkierung.');}
+    }
+    p.id=studioId();p.name=String(p.name||'Importiertes Bild');p.active=Number.isInteger(p.active)&&p.active>=0&&p.active<p.areas.length?p.active:0;return p;
+  }
+  function studioRender(){
+    const name=document.getElementById('studioName');if(!name)return;name.value=studioProject?.name||'Mein Bild';
+    const list=document.getElementById('studioAreas');list.replaceChildren();
+    (studioProject?.areas||[{name:planBook.name||'Gesicht'}]).forEach((a,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=a.name;list.appendChild(o);});list.value=String(studioProject?.active||0);
+  }
+  function initStudioProjects(){
+    const panel=document.createElement('details');panel.id='studioProjects';panel.open=true;panel.style.cssText='margin:10px;padding:10px;border:1px solid #888;border-radius:10px';
+    panel.innerHTML=`<summary><b>Bildprojekte · Gesicht, Kleid und weitere Bereiche</b></summary>
+      <label>Projektname <input id="studioName" value="Mein Bild" placeholder="z. B. Frau mit Äpfeln"></label>
+      <div><button id="studioSave">Projekt speichern</button><button id="studioNew" class="secondary">Neues Projekt · Arbeitsfläche leeren</button></div>
+      <label>Bereich <select id="studioAreas"></select></label><input id="studioAreaName" placeholder="Neuer Bereich, z. B. Kleid" aria-label="Name des neuen Bereichs">
+      <button id="studioAdd" class="secondary">Bereich hinzufügen</button>
+      <p class="tiny">Bereiche haben eigene Farben, Rezepte, Markierungen und Bildstände. Beim Wechsel wird der aktuelle Bereich gespeichert. Bildbearbeitungen werden als Bildstand übernommen; die einzelnen Bearbeitungsregler und Rückgängig-Schritte werden dabei nicht gespeichert.</p>
+      <select id="studioSaved" aria-label="Gespeichertes Projekt"></select><button id="studioOpen" class="secondary">Projekt öffnen</button>
+      <button id="studioExport" class="secondary">Projektdatei sichern</button><button id="studioImport" class="secondary">Projektdatei öffnen</button><input type="file" id="studioFile" accept=".atelierprojekt,application/json" hidden>
+      <a id="studioDownload" hidden>Projektdatei herunterladen</a>
+      <p class="tiny">Vor dem Schließen „Projekt speichern“ drücken. „Projektdatei sichern“ erstellt zusätzlich eine Datei mit allen Bereichen für iPad/PC. „Neues Projekt“ speichert den bisherigen Stand und leert die Arbeitsfläche.</p>
+      <button id="studioLegacy" class="secondary">Frühere Farbproben dieses Fotos übernehmen</button>
+      <button id="studioDelete" class="secondary">Aktuell geöffnetes Projekt vollständig löschen</button>
+      <p id="studioStatus" role="status">Foto öffnen oder gespeichertes Projekt wählen.</p>`;
+    document.getElementById('palettePlan').before(panel);
+    const launcher=document.createElement('button');launcher.type='button';launcher.textContent='Projekte / Bereiche';launcher.className='secondary';globalMoveBtn.after(launcher);launcher.onclick=()=>{window.activateToolPage?.('paintMixPanel');panel.open=true;panel.scrollIntoView({behavior:'smooth',block:'nearest'});};
+    const e=id=>document.getElementById('studio'+id);
+    e('Name').onchange=()=>{if(studioProject)studioProject.name=e('Name').value.trim()||'Mein Bild';studioDirty();};
+    e('Save').onclick=()=>studioRun(async()=>{await studioPersist();studioRender();});
+    e('New').onclick=()=>studioRun(async()=>{if(loaded)await studioPersist();studioClear();studioStatus('Neues leeres Projekt · jetzt ein neues Foto öffnen. Gespeicherte Projekte bleiben erhalten.');});
+    e('Add').onclick=()=>studioRun(async()=>{
+      const name=e('AreaName').value.trim();if(!name)throw Error('Bitte einen Bereichsnamen eingeben, z. B. Kleid.');
+      await studioPersist();const a=studioClone(studioProject.areas[studioProject.active]);a.id=studioId();a.name=name;a.plan={name,samples:[],markers:true};a.palette={ids:[],enabled:true};
+      studioProject.areas.push(a);await studioRestore(studioProject,studioProject.areas.length-1);await studioStore('put',studioProject);await studioList();e('AreaName').value='';
+    });
+    e('Areas').onchange=()=>{const index=Number(e('Areas').value);studioRun(async()=>{if(!studioProject||index===studioProject.active)return;await studioPersist();await studioRestore(studioProject,index);await studioStore('put',studioProject);});};
+    e('Open').onclick=()=>studioRun(async()=>{const id=e('Saved').value;if(!id)throw Error('Bitte ein gespeichertes Projekt wählen.');const rows=await studioStore('getAll');const p=rows.find(x=>x.id===id);if(!p)throw Error('Projekt nicht gefunden.');if(loaded)await studioPersist();await studioRestore(p,p.active||0);});
+    e('Export').onclick=()=>studioRun(async()=>{const p=studioCapture();const blob=new Blob([JSON.stringify(p)],{type:'application/json'});if(studioURL)URL.revokeObjectURL(studioURL);studioURL=URL.createObjectURL(blob);const a=e('Download');a.href=studioURL;a.download=(p.name.replace(/[^\p{L}\p{N}_-]+/gu,'_')||'Bildprojekt')+'.atelierprojekt';a.hidden=false;a.click();studioStatus('Projektdatei mit allen Bereichen bereit. Falls nötig „Projektdatei herunterladen“ antippen.');});
+    e('Import').onclick=()=>e('File').click();e('File').onchange=()=>studioRun(async()=>{const f=e('File').files[0];e('File').value='';if(!f)return;const p=studioValidate(JSON.parse(await f.text()));await studioImage(p.areas[p.active].image);if(loaded)await studioPersist();await studioRestore(p,p.active);await studioStore('put',p);await studioList();});
+    e('Delete').onclick=()=>studioRun(async()=>{if(studioProject)await studioStore('delete',studioProject.id);studioClear();await studioList();studioStatus('Geöffnetes Projekt samt Bereichen gelöscht. Andere gespeicherte Projekte bleiben erhalten.');});
+    e('Legacy').onclick=()=>studioRun(async()=>{
+      if(!loaded||!picturePaletteId)throw Error('Zuerst das frühere Foto öffnen.');
+      const old=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}')[picturePaletteId];if(!old?.samples?.length)throw Error('Für dieses Foto wurden keine früheren Farbproben gefunden.');
+      studioEnsure();studioCapture();const a=studioClone(studioProject.areas[studioProject.active]);a.id=studioId();a.name='Übernommene Farbproben';a.plan=studioClone(old);a.plan.name=a.name;a.palette=JSON.parse(localStorage.getItem(PICTURE_PALETTE_KEY)||'{}')[picturePaletteId]||{ids:[],enabled:true};studioProject.areas.push(a);await studioRestore(studioProject,studioProject.areas.length-1);await studioStore('put',studioProject);await studioList();
+    });
+    studioRender();studioList().catch(e=>studioStatus(e.message));
+  }
+
   // 3.15: remembered targets and exact, mass-conserving shared premixes.
   // Markers use normalized image coordinates; overlays never enter picker/export pixels.
   let planSamplePoint=null,planActiveId=null,planPlaceId=null;
@@ -3461,6 +3581,7 @@
   const PLAN_KEY='atelierai_palette_plans_v1';
   let planBook={name:'Gesicht',samples:[]},planStorageOK=true;
   function loadPalettePlan(){
+    if(studioManaged){planBook={name:'Gesicht',samples:[]};renderPalettePlan();return;}
     planBook={name:'Gesicht',samples:[]};
     try {const b=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}')[picturePaletteId];
       if(b&&Array.isArray(b.samples))planBook=b;
@@ -3469,6 +3590,7 @@
     renderPalettePlan();
   }
   function savePalettePlan(){
+    if(studioManaged){studioDirty();return;}
     if(!picturePaletteId)return;
     try {const all=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}');
       all[picturePaletteId]={...planBook,time:Date.now()};
@@ -3623,6 +3745,7 @@
     return new Set(picturePalette.ids.filter(id=>available.has(id)));
   }
   function savePicturePalette(){
+    if(studioManaged){studioDirty();return;}
     if(!picturePaletteId)return;
     try{
       let all=JSON.parse(localStorage.getItem(PICTURE_PALETTE_KEY)||'{}');
@@ -3646,7 +3769,7 @@
     picturePaletteId=sourceCanvas.width+'x'+sourceCanvas.height+'-'+(hash>>>0).toString(16)+'-'+(hash2>>>0).toString(16);
     try{
       const saved=JSON.parse(localStorage.getItem(PICTURE_PALETTE_KEY)||'{}')[picturePaletteId];
-      if(saved&&Array.isArray(saved.ids))picturePalette={ids:[...new Set(saved.ids.filter(x=>typeof x==='string'))],enabled:saved.enabled!==false};
+      if(!studioManaged&&saved&&Array.isArray(saved.ids))picturePalette={ids:[...new Set(saved.ids.filter(x=>typeof x==='string'))],enabled:saved.enabled!==false};
       picturePaletteStorageOK=true;
     }catch(e){picturePaletteStorageOK=false;}
     loadPalettePlan();
@@ -8584,7 +8707,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     photo.src=url;
   }
   fileInput.addEventListener('change',e=>{
-    const file=e.target.files&&e.target.files[0];if(file)loadPhoto(file);
+    const file=e.target.files&&e.target.files[0];if(!file)return;
+    studioRun(async()=>{
+      if(loaded)await studioPersist();
+      await new Promise((resolve,reject)=>loadPhoto(file,false,error=>error?reject(error):resolve()));
+      studioProject=null;studioManaged=true;studioRender();studioStatus('Neues Foto · Projekt benennen und speichern.');
+    });
   });
 
   fitBtn.addEventListener('click',fitImage);
@@ -8764,6 +8892,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
   renderPicturePalettePanels();
   renderPalettePlan();
+  initStudioProjects();
   ['paintPalette','build32MixPalette','surfaceMixPalette'].forEach(id=>document.getElementById(id).addEventListener('change',renderPicturePalettePanels));
 
   // 2.47: selective, non-destructive colour editor. All masks refer to input photo.

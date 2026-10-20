@@ -1,3 +1,13 @@
+AtelierAI iPad 3.19 – Bildprojekte und Bereiche
+
+Unter Bildprojekte einen Projektnamen vergeben und speichern. Bereiche wie Gesicht/Kleid enthalten jeweils eigene Farbproben, Rezepte, Markierungen und Bildstände. Beim Bereichswechsel wird gespeichert. Vor dem Schließen Projekt speichern drücken. Projektdatei sichern erzeugt eine portable .atelierprojekt-Datei mit allen Bereichen.
+
+Neues Projekt speichert den bisherigen Stand und leert die Arbeitsfläche. Aktuell geöffnetes Projekt vollständig löschen entfernt nur dieses Projekt samt Bereichen. Andere Projekte bleiben erhalten.
+
+Frühere Proben: Dasselbe Foto öffnen und Frühere Farbproben dieses Fotos übernehmen drücken. Sie werden in einen eigenen Bereich übernommen.
+
+Bildbearbeitungen werden als verlustfreier PNG-Bildstand gespeichert, nicht als einzeln rückgängig machbare Bearbeitungsschritte oder aktive Modulregler. Die frühere A/B/C-Projektfunktion im Farbeditor bleibt separat.
+
 AtelierAI iPad 3.18 – Farbmarkierungen im Bild
 
 Beim Merken einer Pipetten-/Kreisprobe wird ihre Bildposition gespeichert. Die nummerierten Marken bleiben beim Zoomen und Verschieben an der Bildstelle. Im Verschieben-Modus eine Marke antippen: Name und gespeichertes Rezept erscheinen im Palettenplan. „Farbmarken: an/aus“ blendet sie aus. Ältere Proben: „Stelle setzen“ und die Stelle im Bild antippen. Markierungen sind reine Anzeigehilfen und beeinflussen weder Pipettenmessung noch Bildexport. Positionen sind dem jeweiligen Foto/Ausschnitt zugeordnet.
