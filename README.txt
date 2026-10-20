@@ -1,6 +1,10 @@
+AtelierAI iPad 3.16 – Einfaches Merken
+
+Ein gemeinsamer Knopf „Diese Farbe merken“ ersetzt die beiden Speicherknöpfe. Bereits in Version 3.15 gespeicherte Farbproben bleiben erhalten. Auch wenn die Tubenfarben schon bekannt sind, kann eine neue Farbprobe damit gespeichert werden.
+
 AtelierAI iPad 3.15 – Palettenplan
 
-Neu: Farbprobe und ausgewähltes Rezept bei jedem Mischvorschlag merken. Unter Palettenplan Farben auswählen, benennen (z. B. Stirn, Wange), Menge einstellen und Plan erstellen. Gemeinsame Ausgangsmischungen werden aus den gespeicherten Rezeptanteilen gebildet; die Einzelrezept-Verhältnisse bleiben unverändert. Aquarell: Verdünnung jeder Teilportion erst nach der Pigmentmischung.
+Neu: Einmal „Diese Farbe merken“ beim gewünschten Mischvorschlag drücken: Farbprobe, Rezept und Tubenfarben werden zusammen gespeichert und direkt in den Palettenplan übernommen. Unter Palettenplan Farben auswählen, benennen (z. B. Stirn, Wange), Menge einstellen und Plan erstellen. Gemeinsame Ausgangsmischungen werden aus den gespeicherten Rezeptanteilen gebildet; die Einzelrezept-Verhältnisse bleiben unverändert. Aquarell: Verdünnung jeder Teilportion erst nach der Pigmentmischung.
 
 Früher gemerkte Tubenfarben enthalten keine Zielproben; diese bitte einmal neu aufnehmen und mit Rezept merken. Speicherung je Foto im Browser, sofern verfügbar. Öl/Paletten getrennt auswählen.
 

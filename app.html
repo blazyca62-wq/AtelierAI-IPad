@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.15</title>
+  <title>AtelierAI iPad 3.16</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.15</div>
+    <div class="title">AtelierAI · iPad 3.16</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3433,12 +3433,6 @@
       savePalettePlan();renderPalettePlan();
     }
   }
-  function appendPlanRemember(box,m,key,target){
-    if(!target)return;
-    const b=document.createElement('button');b.type='button';b.className='secondary';b.style.margin='6px 0';
-    b.textContent='Farbprobe + Rezept für Palettenplan merken';b.disabled=!picturePaletteId;
-    b.onclick=()=>{planRemember(m,key,target);b.textContent='Farbprobe und Rezept gemerkt';};box.appendChild(b);
-  }
   function buildPalettePlan(samples){
     const gcd=(a,b)=>b?gcd(b,a%b):a;
     const rows=samples.map(s=>{
@@ -3485,7 +3479,7 @@
     const wasOpen=panel.open;panel.replaceChildren();panel.open=wasOpen;
     const add=(tag,text,parent=panel)=>{const e=document.createElement(tag);e.textContent=text;parent.appendChild(e);return e;};
     add('summary','Palettenplan · '+planBook.samples.length+' gemerkte Farbproben');
-    add('p','Bei einem Mischvorschlag „Farbprobe + Rezept für Palettenplan merken“ drücken. Hier die Farben eines Bereichs auswählen und benennen. Bereits früher gemerkte Tubenfarben enthalten keine Farbproben.');
+    add('p','Beim gewünschten Mischvorschlag einmal „Diese Farbe merken“ drücken. Farbprobe, Rezept und Tubenfarben werden gemeinsam gespeichert. Danach hier den Palettenplan erstellen. Alle gemerkten Farbproben sind bereits ausgewählt; Namen und Mengen kannst du bei Bedarf ändern.');
     if(!picturePaletteId){add('p','Zuerst ein Foto öffnen.');return;}
     const name=add('input','');name.value=planBook.name;name.placeholder='Bereich, z. B. Gesicht';name.setAttribute('aria-label','Name des Bereichs');
     name.onchange=()=>{planBook.name=name.value;savePalettePlan();};
@@ -3624,7 +3618,6 @@
     return rankPictureRecipes([...unique.values()],key).slice(0,3);
   }
   function appendPictureUseButton(box,m,key,target){
-    appendPlanRemember(box,m,key,target);
     if(target&&m.rgb){
       const mixRgb=m.rgb.slice(), reference=target.slice();
       const correct=document.createElement('button');correct.type='button';correct.className='secondary';
@@ -3644,14 +3637,16 @@
     note.textContent=!picturePalette.enabled?'Bildpalette ausgeschaltet.':!used.size?'Mit dieser Mischung die Bildpalette beginnen.':!added.length?'Verwendet nur Farben deiner Bildpalette.':'Zusätzlich nötig: '+added.map(id=>id.split('::').slice(1).join('::')).join(', ')+'.';
     box.appendChild(note);
     const button=document.createElement('button');button.type='button';button.className='secondary';button.style.marginTop='6px';
-    button.textContent=ids.every(id=>picturePalette.ids.includes(id))?'Farben bereits gemerkt':'Diese Mischung verwende ich';
-    button.disabled=!picturePaletteId||ids.every(id=>picturePalette.ids.includes(id));
+    const signature=JSON.stringify([key,target,m.tubeIds,m.parts,m.coverage]);
+    button.textContent=planBook.samples.some(s=>s.signature===signature)?'Diese Farbe ist gemerkt':'Diese Farbe merken';
+    button.disabled=!picturePaletteId||!target;
     button.onclick=()=>{
       if(epoch!==picturePaletteEpoch||!picturePaletteId)return;
       picturePalette.ids=[...new Set([...picturePalette.ids,...ids])];
+      planRemember(m,key,target);
       savePicturePalette();renderPicturePalettePanels();
-      button.textContent='Farben für dieses Bild gemerkt';button.disabled=true;
-      note.textContent='Diese Tubenfarben werden bei den nächsten Mischvorschlägen bevorzugt.';
+      button.textContent='Diese Farbe ist gemerkt';
+      note.textContent='Farbprobe, Rezept und Tubenfarben gespeichert – direkt im Palettenplan.';
     };
     box.appendChild(button);
   }
@@ -3672,7 +3667,7 @@
       check.onchange=()=>{picturePalette.enabled=check.checked;savePicturePalette();refreshPictureRecipes();};
       label.append(check,document.createTextNode(' Bereits verwendete Farben bevorzugen'));panel.appendChild(label);
       const help=document.createElement('p');help.className='tiny';
-      help.textContent=!picturePaletteId?'Zuerst ein Foto öffnen.':!picturePaletteStorageOK?'Die Bildpalette bleibt in dieser Sitzung erhalten; dauerhaftes Speichern ist hier nicht verfügbar.':'Gelungene Rezepte mit „Diese Mischung verwende ich“ bestätigen. Neue Tubenfarben nur bei besserer Farbtreue (Toleranz: 3 Punkte Bildschirmnähe).';panel.appendChild(help);
+      help.textContent=!picturePaletteId?'Zuerst ein Foto öffnen.':!picturePaletteStorageOK?'Die Bildpalette bleibt in dieser Sitzung erhalten; dauerhaftes Speichern ist hier nicht verfügbar.':'Mit „Diese Farbe merken“ werden Farbprobe, Rezept und Tubenfarben gemeinsam gespeichert. Neue Tubenfarben nur bei besserer Farbtreue (Toleranz: 3 Punkte Bildschirmnähe).';panel.appendChild(help);
       for(const id of ids){
         const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.style.margin='3px';
         const brand=id.slice(0,id.indexOf('::')),name=id.slice(id.indexOf('::')+2);
