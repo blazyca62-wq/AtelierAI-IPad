@@ -1,4 +1,4 @@
-AtelierAI iPad 3.27 – Projektspeicher
+AtelierAI iPad 3.28 – Projektspeicher
 
 Die neun Dateien dieses Ordners gemeinsam hochladen und bestehende Dateien ersetzen.
 
@@ -15,3 +15,5 @@ Prüfung: JavaScript-Syntax, Projektvalidierung und Speicherzugriffe. Ein Test a
 3.26: Bereiche einzeln über Bereich löschen entfernen (mit Rückfrage). Das Ausgangsbild und von anderen Bereichen benötigte Gesamtbilder bleiben geschützt. Nach dem Löschen wird das Gesamtbild geöffnet und das Projekt gespeichert.
 
 3.27: Beim Ausschnitt Name eingeben für einen neuen Bereich oder leer bestätigen für den aktuellen Bereich. Gesamtbild wird erhalten; gesammelte Farbproben werden beim Zurückkehren übernommen. Bereich umbenennen ergänzt.
+
+3.28: Neue Fotos ohne Raster. Projekte öffnen mit eingepasstem Gesamtbild ohne Raster, auch beim automatischen Wiederöffnen. Eigene Bereiche bleiben erhalten.
