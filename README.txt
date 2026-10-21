@@ -1,4 +1,6 @@
-AtelierAI iPad 3.42 – Kompakte Werkzeugleiste, Bild bleibt unverändert groß.
+AtelierAI 3.44 – Frei wählbare Umgebungsfarbe für isolierte Farben, auch bei Auswahl durch nummerierte Markierungen. Beide Farbwähler sind synchronisiert; mittelgrauer Hintergrund bleibt als Option erhalten.
+
+AtelierAI iPad 3.43 – Kompakte Werkzeugleiste, Bild bleibt unverändert groß.
 
 AtelierAI 3.35 – Gemeinsame Farbbasis fuer aehnliche Zielfarben
 

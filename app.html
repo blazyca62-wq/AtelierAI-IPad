@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.42</title>
+  <title>AtelierAI iPad 3.44</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1045,7 +1045,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.42</div>
+    <div class="title">AtelierAI · iPad 3.44</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1400,6 +1400,7 @@
           <button id="pickerShowAllBtn" class="secondary">Alle Farben zeigen</button>
         </div>
         <button id="isolationGrayBtn" class="secondary" aria-pressed="false" style="width:100%;margin-top:8px;">Mittelgrauer Hintergrund: Aus</button>
+        <label style="display:flex;align-items:center;gap:9px;margin-top:8px;flex-wrap:wrap">Umgebungsfarbe <input id="pickerIsolationBackgroundColor" type="color" value="#f7f7f7" aria-label="Umgebungsfarbe bei nur diese Farbe zeigen" style="width:52px;height:42px;padding:2px"></label>
         <div class="control-line" style="margin-top:8px;">
           <label for="isolationOriginalBlend">Original</label>
           <input id="isolationOriginalBlend" type="range" min="0" max="100" value="0" step="1">
@@ -1577,6 +1578,7 @@
           <button id="surfaceResetBtn" class="secondary">Flächenanalyse löschen</button>
         </div>
         <button id="surfaceIsolationGrayBtn" class="secondary" aria-pressed="false" style="width:100%;margin-top:8px;">Mittelgrauer Hintergrund: Aus</button>
+        <label style="display:flex;align-items:center;gap:9px;margin-top:8px;flex-wrap:wrap">Umgebungsfarbe <input id="surfaceIsolationBackgroundColor" type="color" value="#f7f7f7" aria-label="Umgebungsfarbe bei nur diese Farbe zeigen" style="width:52px;height:42px;padding:2px"></label>
         <details data-picture-palette="surfaceMixPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details><label for="surfaceMixPalette">Palette für alle fünf Mischungen</label><select id="surfaceMixPalette" style="width:100%;padding:9px;margin:6px 0"><option value="artisan">Winsor &amp; Newton Artisan · Öl</option><option value="watercolor">Horadam + Akademie · Aquarell</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select>
         <div id="surfaceResults" class="pc-card"><span class="tiny">Noch kein Bereich analysiert.</span></div>
       </div>
@@ -3703,7 +3705,15 @@
     });ctx.restore();
   }
   function openPlanMarker(sample){
-    planActiveId=sample.id;renderPalettePlan();draw();
+    planActiveId=sample.id;
+    // Die nummerierte Farbprobe ist auch die aktive Pipettenfarbe.
+    // Dadurch arbeitet „Nur diese Farbe zeigen“ mit der gewählten Nummer,
+    // nicht mit einem früher aufgenommenen Pipettenwert.
+    if(Array.isArray(sample.target)&&sample.target.length===3){
+      lastSmartColor=[...sample.target];
+      lastAverageColor=[...sample.target];
+    }
+    renderPalettePlan();draw();
     if(typeof window.activateToolPage==='function')window.activateToolPage('paintMixPanel');
     const panel=document.getElementById('palettePlan');panel.open=true;
     panel.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -7039,6 +7049,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     });
   }
   let isolationGray=false;
+  let isolationBackgroundColor=[247,247,247];
   let isolationRevision=0, isolationSerial=0;
   let isolationRequest=null, isolationBusy=false, isolationSentKey=null;
   let isolationWorker=null, isolationFallback=null, isolationFailed=false;
@@ -7075,7 +7086,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }
       if(!pixels)throw new Error('Keine Bilddaten');
       const output=new Uint8ClampedArray(pixels.length);
-      const limit=message.tolerance**2,background=message.gray?128:247;
+      const limit=message.tolerance**2,background=message.gray?[128,128,128]:(message.backgroundColor||[247,247,247]);
       for(let n=0,i=0;n<distances.length;n++,i+=4){
         const extension=Number(message.lightness)||0;
         // Distance to the growing Lab segment from target to neutral white/black.
@@ -7085,9 +7096,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         const fraction=length>0?Math.max(0,Math.min(Math.abs(extension)/100,dot/length)):0;
         const extendedDistance=Math.max(0,distances[n]-2*fraction*dot+fraction*fraction*length);
         const match=distances[n]<=limit || (extension!==0 && extendedDistance<=limit);
-        output[i]=match?pixels[i]:background;
-        output[i+1]=match?pixels[i+1]:background;
-        output[i+2]=match?pixels[i+2]:background;
+        output[i]=match?pixels[i]:background[0];
+        output[i+1]=match?pixels[i+1]:background[1];
+        output[i+2]=match?pixels[i+2]:background[2];
         output[i+3]=255;
       }
       return {id:message.id,width,height,pixels:output.buffer};
@@ -7128,7 +7139,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }catch(e){isolationFailed=true;}
     }
     const request=isolationRequest;
-    const message={id:request.id,target:request.target,tolerance:request.tolerance,gray:request.gray,lightness:request.lightness};
+    const message={id:request.id,target:request.target,tolerance:request.tolerance,gray:request.gray,backgroundColor:request.backgroundColor,lightness:request.lightness};
     if(request.key!==isolationSentKey){
       const c=request.context.canvas;
       const frame=request.context.getImageData(0,0,c.width,c.height);
@@ -7159,7 +7170,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     activeIsolatedColor=[...target];activeIsolatedLabel=label;
     const context=sourceContextForPicker();
     const key=[isolationRevision,context===sourceCtx?'original':'processed',...target].join(':');
-    isolationRequest={id:++isolationSerial,key,context,target:[...target],tolerance:currentColorTolerance(),gray:isolationGray,lightness:isolationLightness};
+    isolationRequest={id:++isolationSerial,key,context,target:[...target],tolerance:currentColorTolerance(),gray:isolationGray,backgroundColor:[...isolationBackgroundColor],lightness:isolationLightness};
     dispatchIsolation();
   }
 
@@ -7176,6 +7187,18 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   document.getElementById('isolationGrayBtn').addEventListener('click',toggleIsolationBackground);
   document.getElementById('surfaceIsolationGrayBtn').addEventListener('click',toggleIsolationBackground);
+  // Auch nummerierte Farbmarkierungen verwenden dieselbe frei wählbare Umgebung.
+  for(const id of ['pickerIsolationBackgroundColor','surfaceIsolationBackgroundColor']){
+    document.getElementById(id).addEventListener('input',event=>{
+      const hex=event.target.value;
+      isolationBackgroundColor=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
+      // Die Benutzerfarbe hat Vorrang vor dem Grauschalter.
+      if(isolationGray)toggleIsolationBackground();
+      for(const other of ['pickerIsolationBackgroundColor','surfaceIsolationBackgroundColor'])document.getElementById(other).value=hex;
+      if(activeIsolatedColor)isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
+    });
+  }
+
 
   function surfaceInsideSelection(x,y){
     if(!surfacePreview) return false;
