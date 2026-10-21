@@ -21,3 +21,5 @@ Prüfung: JavaScript-Syntax, Projektvalidierung und Speicherzugriffe. Ein Test a
 3.30: Gespeicherte Basismischungen vergleichen; Offline-Cache auf Version 3.30 aktualisiert.
 
 3.31: Gespeicherte Bereichsfarbe ab 98/100 Bildschirmnähe direkt verwenden, ohne unnötige Mischung mit anderen Farben oder Tuben.
+
+3.32: Offline-Cache auf 3.32 aktualisiert; GitHub Pages Update-Fix.
