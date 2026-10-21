@@ -1,4 +1,4 @@
-AtelierAI iPad 3.30 – Projektspeicher
+AtelierAI iPad 3.33 – Versions- und GitHub-Updatefix
 
 Die neun Dateien dieses Ordners gemeinsam hochladen und bestehende Dateien ersetzen.
 
@@ -23,3 +23,7 @@ Prüfung: JavaScript-Syntax, Projektvalidierung und Speicherzugriffe. Ein Test a
 3.31: Gespeicherte Bereichsfarbe ab 98/100 Bildschirmnähe direkt verwenden, ohne unnötige Mischung mit anderen Farben oder Tuben.
 
 3.32: Offline-Cache auf 3.32 aktualisiert; GitHub Pages Update-Fix.
+
+3.33: Sichtbare App-Version, HTML-Titel und Offline-Service-Worker auf 3.33 abgestimmt. In 3.32 verhinderten der alte HTML-Titel und der Versions-Check des Service Workers ein korrektes Offline-Update.
+
+GitHub Pages: ZIP entpacken und alle 9 Dateien in das gleiche Verzeichnis hochladen; vorhandene Dateien ersetzen und Commit abwarten. Webseite oeffnen; falls „Update bereit“ erscheint, antippen und bestaetigen. Danach Atelier neu starten. Geoeffnete Projekte zur Sicherheit vorher speichern.
