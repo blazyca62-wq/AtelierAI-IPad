@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.38</title>
+  <title>AtelierAI iPad 3.39</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.38</div>
+    <div class="title">AtelierAI · iPad 3.39</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3822,24 +3822,48 @@
       }
       return {...best,usable:best.score>=limit};
     };
+    // 3.39: A basis is a separately prepared mix of ORIGINAL TUBE PIGMENTS,
+    // never an already sampled target colour. Keep every individual recipe intact.
     while(remaining.length>=2&&groups.length<8){
+      const pooled=new Map();
+      for(const sample of remaining){
+        const r=sample.recipe,parts=r.parts||[],total=parts.reduce((a,n)=>a+(+n||0),0)||1;
+        for(let i=0;i<(r.tubeIds||[]).length;i++){
+          const id=r.tubeIds[i],c=colors.find(c=>paletteId(key,c[0])===id)||
+            colors.find(c=>c[0]===r.names[i]);
+          if(!c)continue;
+          const entry=pooled.get(id)||{id,c,weight:0,count:0};
+          entry.weight+=(+parts[i]||0)/total;entry.count++;pooled.set(id,entry);
+        }
+      }
+      let ranked=[...pooled.values()].sort((a,b)=>(b.count*1.4+b.weight)-(a.count*1.4+a.weight));
+      if(ranked.length<2)break;
+      // Build several neutral starting bases from commonly useful pigments.
+      const candidates=[];
+      for(const count of [2,3,4,5]){
+        if(ranked.length<count)continue;
+        const ingredients=ranked.slice(0,count);
+        for(const exponent of [0,0.5,1]){
+          const raw=ingredients.map(e=>Math.pow(Math.max(.05,e.weight),exponent));
+          const norm=Math.max(...raw);
+          const parts=raw.map(v=>Math.max(1,Math.round(v/norm*8)));
+          const rgb=pigmentMix(ingredients.map(e=>e.c[1]),parts,key);
+          if(!candidates.some(x=>JSON.stringify(x.parts)===JSON.stringify(parts)&&x.ingredients.length===count))
+            candidates.push({ingredients,parts,rgb});
+        }
+      }
       let winner=null;
-      for(const base of remaining){
+      for(const base of candidates){
+        const pseudo={recipe:{rgb:base.rgb}};
         const members=[];let penalty=0;
         for(const sample of remaining){
-          // Farbaehnlichkeit ist eine Vorselektion, keine zweite starre
-          // Qualitaetsschwelle. Auch deutlich unterschiedliche Nuancen werden auf eine brauchbare Korrektur geprueft.
-          if(similarityPct(base.target,sample.target)<73)continue;
-          const adjustment=sample===base
-            ?{score:similarityPct(sample.target,base.recipe.rgb),rgb:base.recipe.rgb,adds:[],amount:0,usable:true}
-            :findCorrection(base,sample);
+          const adjustment=findCorrection(pseudo,sample);
           if(!adjustment.usable)continue;
           members.push({sample,...adjustment});
-          penalty+=100-adjustment.score+(adjustment.adds.length*1.5);
+          penalty+=100-adjustment.score+adjustment.adds.length*2+adjustment.amount*.12;
         }
         if(members.length<2)continue;
-        const tubes=base.recipe.tubeIds?.length||base.recipe.parts.length;
-        const rank=members.length*1000-penalty-tubes*2;
+        const rank=members.length*1000-penalty-base.ingredients.length*3;
         if(!winner||rank>winner.rank)winner={base,members,rank};
       }
       if(!winner)break;
@@ -3912,12 +3936,12 @@
         if(bases.length)add('p','Jede Basis gründlich mischen und getrennt liegen lassen. Nur die angegebene Teilportion entnehmen und auf einem freien Platz ergänzen.',output);
         if(toneBases.length){
           add('h4','2a. Gemeinsame Farbbasis aus ähnlichen Farbtönen',output);
-          add('p','Alternative: Eine bereits gemerkte Farbe als Grundmischung für mehrere ähnliche Zielfarben vorbereiten. Das ist auch möglich, wenn sich die ursprünglichen Tubenrezepte unterscheiden. Die gespeicherten Einzelrezepte bleiben als Vergleich erhalten.',output);
+          add('p','Zusätzlicher Vorschlag: Eine eigenständige Grundmischung aus deinen Tubenfarben vorbereiten und daraus verschiedene Zielfarben durch Zugaben entwickeln. Die Einzelrezepte bleiben als Alternative erhalten.',output);
           for(const group of toneBases){
             const base=group.base;
             const card=add('div','',output);card.className='mix-card';
-            add('strong','Farbbasis '+group.label+' · aus „'+base.name+'“',card);
-            add('p','Einmal vorbereiten: '+base.recipe.parts.map((n,i)=>n+' Teile '+base.recipe.names[i]).join(' + ')+'.',card);
+            add('strong','Farbbasis '+group.label+' · gemeinsame Tubenmischung',card);
+            add('p','Einmal vorbereiten: '+base.parts.map((n,i)=>n+' Teile '+base.ingredients[i].c[0]).join(' + ')+'.',card);
             for(const member of group.members){
               const title=member.sample.name+': ';
               const action=member.adds.length
@@ -4085,7 +4109,7 @@
   function renderPremixComparison(target,key,normal){
     const options=savedPremixOptions(target,key);
     const wrap=document.createElement('div');wrap.className='mix-card';
-    const heading=document.createElement('h3');heading.textContent='Mischungen aus anderen Bereichen · 3.38';wrap.appendChild(heading);
+    const heading=document.createElement('h3');heading.textContent='Mischungen aus anderen Bereichen · 3.39';wrap.appendChild(heading);
     const bestNormal=Math.max(0,...normal.map(x=>x.score));
     if(!options.length){const msg=document.createElement('p');msg.textContent='Keine Mischungen aus anderen Bereichen vorhanden. Die gerade aufgenommenen Zielfarben werden nicht als fertige Mischungen behandelt. Für eine gemeinsame Farbbasis bitte im Mischplan beide Farben auswählen.';wrap.appendChild(msg);mixResults.prepend(wrap);return;}
     const best=options[0], prefer=best.score>=bestNormal-3;
