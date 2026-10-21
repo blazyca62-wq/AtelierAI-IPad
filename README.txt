@@ -1,3 +1,11 @@
+AtelierAI 3.34 – GitHub Pages Aktualisierung
+
+ZIP entpacken. Alle neun Dateien im Repository-Stammverzeichnis hochladen und mit 'Commit changes' bestaetigen. Unter Settings > Pages pruefen, dass die richtige Quelle aktiviert ist. Anschliessend die veroeffentlichte Seite neu laden.
+
+Aenderungen: Version 3.34 sichtbar; Einstieg mit Versionsparameter; Online-Dateien werden bevorzugt, Offline-Kopie bleibt erhalten. Mischlogik aus 3.32/3.33 unveraendert.
+
+WICHTIG: Eine ZIP kann keine GitHub Action ausloesen, bevor die Dateien erfolgreich committed wurden. Falls keine Action startet, bitte Repository- und Pages-Einstellungen pruefen.
+
 AtelierAI iPad 3.33 – Versions- und GitHub-Updatefix
 
 Die neun Dateien dieses Ordners gemeinsam hochladen und bestehende Dateien ersetzen.

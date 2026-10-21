@@ -1,4 +1,4 @@
-const VERSION='3.33';
+const VERSION='3.34';
 const PREFIX='atelierai-offline-'+encodeURIComponent(self.registration.scope)+'-';
 const CACHE=PREFIX+VERSION;
 const FILES=['app.html','index.html','START.html','manifest.webmanifest','icon-192.png','icon-512.png'];
@@ -29,6 +29,11 @@ self.addEventListener('fetch',event=>{
   if(!FILES.includes(file))return;
   event.respondWith((async()=>{
     const cached=await (await caches.open(CACHE)).match(urlFor(file));
+    // Prefer freshly published files when online; retain offline fallback.
+    try {
+      const fresh=await fetch(event.request,{cache:'no-store'});
+      if(fresh.ok){const cache=await caches.open(CACHE);await cache.put(urlFor(file),fresh.clone());return fresh;}
+    }catch(e){}
     return cached||fetch(event.request);
   })());
 });
