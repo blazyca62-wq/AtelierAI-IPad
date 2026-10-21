@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.40</title>
+  <title>AtelierAI iPad 3.41</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.40</div>
+    <div class="title">AtelierAI · iPad 3.41</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3901,10 +3901,10 @@
       add('p',active.recipe.names.map((name,i)=>active.recipe.parts[i]+' Teile '+name).join(' + '),card);
       if(active.recipe.watercolor)add('small',Math.round(active.recipe.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis).',card);
     }
-    add('p','Die Nummern gehören zu den Farbmarken im Bild. Im Verschieben-Modus eine Marke antippen für Name und Rezept. „Stelle setzen“ ergänzt auch ältere Farbproben.');
+    add('p','Farbnummer im Bild direkt antippen: Die zugehörige Farbe mit ihrem Rezept wird ausgewählt – auch im Pipettenmodus. „Stelle setzen“ ergänzt ältere Farbproben.');
     for(const s of planBook.samples){
       const row=add('div','');row.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 0';
-      add('strong',String(planBook.samples.indexOf(s)+1)+'.',row);
+      const number=add('button',String(planBook.samples.indexOf(s)+1)+'.',row);number.type='button';number.className=s.id===planActiveId?'active':'secondary';number.title='Farbe '+(planBook.samples.indexOf(s)+1)+' direkt auswählen';number.onclick=()=>openPlanMarker(s);
       const check=add('input','',row);check.type='checkbox';check.checked=s.selected;check.setAttribute('aria-label',s.name+' auswählen');
       const sw=add('span','',row);sw.style.cssText='display:inline-block;width:30px;height:30px;border:1px solid #888;background:'+rgbHex(s.target);sw.title='Zielfarbe '+rgbHex(s.target);
       const label=add('input','',row);label.value=s.name;label.style.width='125px';label.setAttribute('aria-label','Name der Farbprobe');label.placeholder='Stelle benennen';label.title='Antippen zum Umbenennen, z. B. linke Wange';
@@ -9134,6 +9134,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   // Select only on release: a second finger or a drag never samples a color.
   function selectViewerPoint(e){
     if(placePlanMarker(e)){e.preventDefault();return;}
+    // Farbnummern direkt antippen: auch im Pipettenmodus und unabhängig vom aktiven Werkzeug.
+    // Gezielte Platzierung hat darüber weiterhin Vorrang.
+    if(hitPlanMarker(e)){e.preventDefault();return;}
     if(gridCellCropArmed){cropSelectedGridCell(e);e.preventDefault();return;}
     if(mixSurroundArmed){pickMixSurround(e.clientX,e.clientY);e.preventDefault();return;}
     if(pickSurfaceAt(e)) return;
@@ -9177,7 +9180,6 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       
       return;
     }
-    if(mode==='move'&&hitPlanMarker(e)){e.preventDefault();return;}
     if(mode==='move'&&inspectBuild32ImageColor(e)){e.preventDefault();return;}
     if(mode==='picker'){
       pickColor(e.clientX,e.clientY);
