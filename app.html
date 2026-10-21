@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.31</title>
+  <title>AtelierAI iPad 3.35</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.29</div>
+    <div class="title">AtelierAI · iPad 3.35</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3784,6 +3784,67 @@
     }
     return {rows,bases};
   }
+
+  // 3.35: Eine gemeinsame, physisch vorbereitete Farbbasis kann sinnvoll sein,
+  // auch wenn zwei gute Einzelrezepte ganz andere Tubenfarben verwenden.
+  // Diese optionale Alternative laesst die gespeicherten Originalrezepte unangetastet.
+  function buildSimilarToneBases(samples){
+    if(samples.length<2)return [];
+    const groups=[];
+    const remaining=samples.slice();
+    const families=(a,b)=>similarityPct(a.target,b.target)>=89;
+    const key=samples[0].key;
+    const colors=effectivePaletteColors(key);
+    const normalizeName=c=>(c[2]?c[0]+' ('+c[2]+')':c[0]);
+    const findCorrection=(base,sample)=>{
+      const goal=sample.target;
+      const originalScore=Number(sample.recipe.score)||similarityPct(goal,sample.recipe.rgb);
+      // Bis zu fuenf Prozentpunkte unter dem separaten Rezept sind tolerierbar;
+      // die Farbbasis bleibt eine optionale, ausgewiesene Alternative.
+      const limit=Math.max(90,Math.min(98,originalScore-5));
+      let best={score:similarityPct(goal,base.recipe.rgb),rgb:base.recipe.rgb,add:null,amount:0};
+      // Kleine Pigmentkorrektur der *fertigen* Grundmischung, nicht alle
+      // urspruenglichen Tubenanteile erneut zusammenmischen.
+      if(best.score<limit){
+        for(const c of colors){
+          for(const n of [1,2,3,4]){
+            const rgb=pigmentMix([base.recipe.rgb,c[1]],[20,n],key);
+            const score=similarityPct(goal,rgb);
+            if(score>best.score+0.5)best={score,rgb,add:normalizeName(c),amount:n};
+          }
+        }
+      }
+      return {...best,usable:best.score>=limit};
+    };
+    // Suche die am besten wiederverwendbare gespeicherte Vormischung.
+    // Kleine Teilgruppen erlauben z.B. 2 Rottoene + 2 Gruentoene im selben Bereich.
+    while(remaining.length>=2 && groups.length<8){
+      let winner=null;
+      for(const base of remaining){
+        const members=[];
+        let penalty=0;
+        for(const sample of remaining){
+          if(!families(base,sample))continue;
+          const adjustment=sample===base
+            ?{score:similarityPct(sample.target,base.recipe.rgb),rgb:base.recipe.rgb,add:null,amount:0,usable:true}
+            :findCorrection(base,sample);
+          if(!adjustment.usable)continue;
+          members.push({sample,...adjustment});
+          penalty+=100-adjustment.score+(adjustment.add?2:0);
+        }
+        if(members.length<2)continue;
+        const tubes=base.recipe.tubeIds?.length||base.recipe.parts.length;
+        const rank=members.length*1000-penalty-tubes*2;
+        if(!winner||rank>winner.rank)winner={base,members,rank};
+      }
+      if(!winner)break;
+      winner.label=String.fromCharCode(65+groups.length);
+      groups.push(winner);
+      const taken=new Set(winner.members.map(x=>x.sample));
+      for(let i=remaining.length-1;i>=0;i--)if(taken.has(remaining[i]))remaining.splice(i,1);
+    }
+    return groups;
+  }
   function renderPalettePlan(){
     syncPlanMarkerToggle();
     if(loaded)draw();
@@ -3831,7 +3892,7 @@
       if(!samples.length){add('p','Bitte mindestens eine Farbprobe auswählen.',output);return;}
       if(new Set(samples.map(s=>s.key)).size!==1){add('p','Bitte nur Farbproben derselben Palette auswählen. Öl und Aquarell werden getrennt geplant.',output);return;}
       try{
-        const {rows,bases}=buildPalettePlan(samples),names={},totals={};
+        const {rows,bases}=buildPalettePlan(samples),toneBases=buildSimilarToneBases(samples),names={},totals={};
         for(const row of rows)row.sample.recipe.tubeIds.forEach((id,i)=>{names[id]=row.sample.recipe.names[i];});
         const fmt=v=>Object.entries(v).filter(([,n])=>n>0).map(([id,n])=>n+' Teile '+names[id]).join(' + ');
         for(const row of rows)for(const [id,n] of Object.entries(row.v))totals[id]=(totals[id]||0)+n*row.sample.amount;
@@ -3839,13 +3900,31 @@
         add('p','Die gespeicherten Rezeptanteile bleiben exakt erhalten. Gemeinsame Vormischungen sparen wiederholte Arbeit; sie garantieren keine reale Pigmentübereinstimmung. Zuerst kleine Farbproben prüfen.',output);
         add('h4','1. Tubenfarben bereitlegen',output);add('p',fmt(totals)+' (Gesamtbedarf für die gewählten Mengen).',output);
         add('h4','2. Ausgangsmischungen vorbereiten',output);
-        if(!bases.length)add('p','Keine ausreichend praktische gemeinsame Ausgangsmischung gefunden. Die Einzelrezepte bleiben erhalten.',output);
+        if(!bases.length)add('p',toneBases.length?'Keine gemeinsame Tuben-Teilrezeptur. Die gemeinsame Farbbasis nach Farbähnlichkeit steht unten.':'Keine ausreichend praktische gemeinsame Ausgangsmischung gefunden. Die Einzelrezepte bleiben erhalten.',output);
         for(const b of bases){
           const batches=b.uses.reduce((sum,u)=>sum+u.n*u.row.sample.amount,0),v=Object.fromEntries(Object.entries(b.v).map(([id,n])=>[id,n*batches]));
           add('p','Basis '+b.label+': '+fmt(v)+'. Ergibt '+Object.values(v).reduce((a,n)=>a+n,0)+' Teile. Für: '+b.uses.map(u=>u.row.sample.name).join(', ')+'.',output);
         }
-        add('p','Jede Basis gründlich mischen und getrennt liegen lassen. Nur die angegebene Teilportion entnehmen und auf einem freien Platz ergänzen.',output);
-        add('h4','3. Teilmischungen anlegen',output);
+        if(bases.length)add('p','Jede Basis gründlich mischen und getrennt liegen lassen. Nur die angegebene Teilportion entnehmen und auf einem freien Platz ergänzen.',output);
+        if(toneBases.length){
+          add('h4','2a. Gemeinsame Farbbasis aus ähnlichen Farbtönen',output);
+          add('p','Alternative: Eine bereits gemerkte Farbe als Grundmischung für mehrere ähnliche Zielfarben vorbereiten. Das ist auch möglich, wenn sich die ursprünglichen Tubenrezepte unterscheiden. Die gespeicherten Einzelrezepte bleiben als Vergleich erhalten.',output);
+          for(const group of toneBases){
+            const base=group.base;
+            const card=add('div','',output);card.className='mix-card';
+            add('strong','Farbbasis '+group.label+' · aus „'+base.name+'“',card);
+            add('p','Einmal vorbereiten: '+base.recipe.parts.map((n,i)=>n+' Teile '+base.recipe.names[i]).join(' + ')+'.',card);
+            for(const member of group.members){
+              const title=member.sample.name+': ';
+              const action=member.add?'20 Teile fertige Basis '+group.label+' + '+member.amount+' Teile '+member.add
+                :'Fertige Basis '+group.label+' direkt verwenden';
+              add('p',title+action+' · etwa '+member.score+'/100 Bildschirmnähe',card);
+            }
+          }
+          add('small','Wichtig: Die Ähnlichkeit und Korrektur beruhen auf einer RGB-Simulation, nicht auf gemessenen Pigmenten. Auf der Palette zuerst kleine Proben mischen; bei sichtbarer Abweichung das unveränderte Einzelrezept verwenden.',output);
+        }
+
+        add('h4','3. Gespeicherte Einzelrezepte (unverändert)',output);
         rows.sort((a,b)=>(a.base?.label||'Z').localeCompare(b.base?.label||'Z')||luminance(...b.sample.recipe.rgb)-luminance(...a.sample.recipe.rgb));
         for(const row of rows){
           const s=row.sample,r=s.recipe,q=s.amount,remaining=Object.fromEntries(Object.entries(row.v).map(([id,n])=>[id,(n-(row.base?(row.base.v[id]||0)*row.n:0))*q]));
@@ -3963,12 +4042,13 @@
       for(const sample of area.plan?.samples||[])add(sample,area.name||'Bereich');
       for(const sample of area.fullView?.plan?.samples||[])add(sample,area.name||'Bereich');
     }
-    // 3.31: A stored ready-to-paint colour that already matches extremely well
+    // 3.32: A stored ready-to-paint colour that already matches extremely well
     // must be reused as-is, not mixed with itself, other premixes or tubes.
     const direct=sources.map(base=>({score:similarityPct(target,base.rgb),rgb:base.rgb,bases:[base],weights:[1],add:null,ratio:0}));
     const ready=direct.filter(option=>option.score>=98);
-    if(ready.length)return ready.sort((a,b)=>b.score-a.score).slice(0,5);
-    const palette=effectivePaletteColors(key), out=[];
+    // Keep excellent ready-made colours as candidates, but still compare alternatives.
+    // An early return here hid potentially better matching recipes.
+    const palette=effectivePaletteColors(key), out=[...direct];
     const test=(bases,weights)=>{
       const colors=bases.map(x=>x.rgb), total=weights.reduce((a,b)=>a+b,0);
       const baseRgb=colors.length===1?colors[0]:pigmentMix(colors,weights,key);
@@ -3983,7 +4063,8 @@
       }
       out.push(best);
     };
-    const pool=sources.slice(0,50);
+    // Rank by target similarity instead of insertion order; cap pair search on iPad.
+    const pool=[...sources].sort((a,b)=>similarityPct(target,b.rgb)-similarityPct(target,a.rgb)).slice(0,24);
     for(const base of pool)test([base],[16]);
     // Two prepared mixtures may together match where neither works alone.
     for(let i=0;i<pool.length;i++)for(let j=i+1;j<pool.length;j++){
@@ -3994,7 +4075,7 @@
   function renderPremixComparison(target,key,normal){
     const options=savedPremixOptions(target,key);
     const wrap=document.createElement('div');wrap.className='mix-card';
-    const heading=document.createElement('h3');heading.textContent='Vorhandene Mischungen vergleichen · 3.31';wrap.appendChild(heading);
+    const heading=document.createElement('h3');heading.textContent='Vorhandene Mischungen vergleichen · 3.35';wrap.appendChild(heading);
     const bestNormal=Math.max(0,...normal.map(x=>x.score));
     if(!options.length){const msg=document.createElement('p');msg.textContent='Noch keine gespeicherte Mischung in diesem Projekt gefunden. Zuerst Farbproben in einem Bereich merken.';wrap.appendChild(msg);mixResults.prepend(wrap);return;}
     const best=options[0], prefer=best.score>=bestNormal-3;
