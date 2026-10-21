@@ -1,4 +1,21 @@
-AtelierAI iPad 3.28 – Projektspeicher
+AtelierAI 3.35 – Gemeinsame Farbbasis fuer aehnliche Zielfarben
+
+Neu im Mischmodul / Palettenplan: Nach 'Palettenplan erstellen' zeigt Abschnitt 2a eine Alternative mit einer gemeinsam vorbereiteten Farbbasis, auch wenn die bisherigen Einzelrezepte unterschiedliche Tubenfarben enthalten.
+Fuer jede Farbprobe wird die Basis entweder direkt verwendet oder mit einem kleinen Pigmentanteil korrigiert. Farben werden nur zusammengefasst, wenn die RGB-Simulation eine brauchbare Annaeherung ergibt. Originalrezepte bleiben unangetastet und werden darunter weiterhin angezeigt.
+
+ZIP entpacken, alle neun Dateien im Hauptverzeichnis des GitHub-Repositorys hochladen, Commit changes. Online laden: Cache wird durch die neue Versionsnummer 3.35 aktualisiert.
+
+Wichtig: Bildschirmwerte sind keine Messung der echten Oelfarben. Vor Benutzung die gemeinsame Farbbasis an einer kleinen Probe pruefen.
+
+AtelierAI 3.34 – GitHub Pages Aktualisierung
+
+ZIP entpacken. Alle neun Dateien im Repository-Stammverzeichnis hochladen und mit 'Commit changes' bestaetigen. Unter Settings > Pages pruefen, dass die richtige Quelle aktiviert ist. Anschliessend die veroeffentlichte Seite neu laden.
+
+Aenderungen: Version 3.34 sichtbar; Einstieg mit Versionsparameter; Online-Dateien werden bevorzugt, Offline-Kopie bleibt erhalten. Mischlogik aus 3.32/3.33 unveraendert.
+
+WICHTIG: Eine ZIP kann keine GitHub Action ausloesen, bevor die Dateien erfolgreich committed wurden. Falls keine Action startet, bitte Repository- und Pages-Einstellungen pruefen.
+
+AtelierAI iPad 3.33 – Versions- und GitHub-Updatefix
 
 Die neun Dateien dieses Ordners gemeinsam hochladen und bestehende Dateien ersetzen.
 
@@ -16,4 +33,14 @@ Prüfung: JavaScript-Syntax, Projektvalidierung und Speicherzugriffe. Ein Test a
 
 3.27: Beim Ausschnitt Name eingeben für einen neuen Bereich oder leer bestätigen für den aktuellen Bereich. Gesamtbild wird erhalten; gesammelte Farbproben werden beim Zurückkehren übernommen. Bereich umbenennen ergänzt.
 
-3.28: Neue Fotos ohne Raster. Projekte öffnen mit eingepasstem Gesamtbild ohne Raster, auch beim automatischen Wiederöffnen. Eigene Bereiche bleiben erhalten.
+3.30: Neue Fotos ohne Raster. Projekte öffnen mit eingepasstem Gesamtbild ohne Raster, auch beim automatischen Wiederöffnen. Eigene Bereiche bleiben erhalten.
+
+3.30: Gespeicherte Basismischungen vergleichen; Offline-Cache auf Version 3.30 aktualisiert.
+
+3.31: Gespeicherte Bereichsfarbe ab 98/100 Bildschirmnähe direkt verwenden, ohne unnötige Mischung mit anderen Farben oder Tuben.
+
+3.32: Offline-Cache auf 3.32 aktualisiert; GitHub Pages Update-Fix.
+
+3.33: Sichtbare App-Version, HTML-Titel und Offline-Service-Worker auf 3.33 abgestimmt. In 3.32 verhinderten der alte HTML-Titel und der Versions-Check des Service Workers ein korrektes Offline-Update.
+
+GitHub Pages: ZIP entpacken und alle 9 Dateien in das gleiche Verzeichnis hochladen; vorhandene Dateien ersetzen und Commit abwarten. Webseite oeffnen; falls „Update bereit“ erscheint, antippen und bestaetigen. Danach Atelier neu starten. Geoeffnete Projekte zur Sicherheit vorher speichern.
