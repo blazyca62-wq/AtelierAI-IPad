@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.34</title>
+  <title>AtelierAI iPad 3.31</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.34</div>
+    <div class="title">AtelierAI · iPad 3.29</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3963,13 +3963,12 @@
       for(const sample of area.plan?.samples||[])add(sample,area.name||'Bereich');
       for(const sample of area.fullView?.plan?.samples||[])add(sample,area.name||'Bereich');
     }
-    // 3.32: A stored ready-to-paint colour that already matches extremely well
+    // 3.31: A stored ready-to-paint colour that already matches extremely well
     // must be reused as-is, not mixed with itself, other premixes or tubes.
     const direct=sources.map(base=>({score:similarityPct(target,base.rgb),rgb:base.rgb,bases:[base],weights:[1],add:null,ratio:0}));
     const ready=direct.filter(option=>option.score>=98);
-    // Keep excellent ready-made colours as candidates, but still compare alternatives.
-    // An early return here hid potentially better matching recipes.
-    const palette=effectivePaletteColors(key), out=[...direct];
+    if(ready.length)return ready.sort((a,b)=>b.score-a.score).slice(0,5);
+    const palette=effectivePaletteColors(key), out=[];
     const test=(bases,weights)=>{
       const colors=bases.map(x=>x.rgb), total=weights.reduce((a,b)=>a+b,0);
       const baseRgb=colors.length===1?colors[0]:pigmentMix(colors,weights,key);
@@ -3984,8 +3983,7 @@
       }
       out.push(best);
     };
-    // Rank by target similarity instead of insertion order; cap pair search on iPad.
-    const pool=[...sources].sort((a,b)=>similarityPct(target,b.rgb)-similarityPct(target,a.rgb)).slice(0,24);
+    const pool=sources.slice(0,50);
     for(const base of pool)test([base],[16]);
     // Two prepared mixtures may together match where neither works alone.
     for(let i=0;i<pool.length;i++)for(let j=i+1;j<pool.length;j++){
@@ -3996,7 +3994,7 @@
   function renderPremixComparison(target,key,normal){
     const options=savedPremixOptions(target,key);
     const wrap=document.createElement('div');wrap.className='mix-card';
-    const heading=document.createElement('h3');heading.textContent='Vorhandene Mischungen vergleichen · 3.34';wrap.appendChild(heading);
+    const heading=document.createElement('h3');heading.textContent='Vorhandene Mischungen vergleichen · 3.31';wrap.appendChild(heading);
     const bestNormal=Math.max(0,...normal.map(x=>x.score));
     if(!options.length){const msg=document.createElement('p');msg.textContent='Noch keine gespeicherte Mischung in diesem Projekt gefunden. Zuerst Farbproben in einem Bereich merken.';wrap.appendChild(msg);mixResults.prepend(wrap);return;}
     const best=options[0], prefer=best.score>=bestNormal-3;
