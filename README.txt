@@ -1,3 +1,5 @@
+AtelierAI iPad 3.42 – Kompakte Werkzeugleiste, Bild bleibt unverändert groß.
+
 AtelierAI 3.35 – Gemeinsame Farbbasis fuer aehnliche Zielfarben
 
 Neu im Mischmodul / Palettenplan: Nach 'Palettenplan erstellen' zeigt Abschnitt 2a eine Alternative mit einer gemeinsam vorbereiteten Farbbasis, auch wenn die bisherigen Einzelrezepte unterschiedliche Tubenfarben enthalten.

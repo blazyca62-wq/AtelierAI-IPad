@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.41</title>
+  <title>AtelierAI iPad 3.42</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -21,6 +21,19 @@
     body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
     .app{height:100%;display:flex;flex-direction:column;gap:10px;padding:12px;}
     .topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 12px;}
+
+    /* 3.42: Einzeilige Kopfzeile; das Werkzeugmenü überlagert das Bild, statt es zu verkleinern. */
+    .topbar{flex-wrap:nowrap;position:relative;z-index:12;gap:8px;padding:7px 10px;min-height:56px;}
+    .topbar .title{font-size:17px;margin-right:auto;white-space:nowrap;}
+    .topbar>button,.topbar>.filelabel,.topbar>.moreTools>summary{font-size:14px;padding:9px 12px;white-space:nowrap;min-height:40px;}
+    .moreTools{position:relative;flex:0 0 auto;}
+    .moreTools>summary{display:flex;align-items:center;list-style:none;cursor:pointer;background:#e9e7e1;border-radius:12px;color:#202020;font-weight:650;}
+    .moreTools>summary::-webkit-details-marker{display:none;}
+    .moreToolsPanel{position:absolute;right:0;top:calc(100% + 10px);z-index:200;width:min(340px,80vw);padding:10px;background:white;border:1px solid #d8d6d0;box-shadow:0 12px 28px #0003;border-radius:14px;display:flex;flex-direction:column;gap:8px;}
+    .moreToolsPanel button{font-size:14px;min-height:44px;text-align:left;}
+    .moreToolsPanel button[hidden]{display:none;}
+    body.image-focus .moreToolsPanel button{white-space:normal;}
+    @media(max-width:700px){.topbar{gap:5px}.topbar .title{font-size:12px}.topbar>button,.topbar>.filelabel,.topbar>.moreTools>summary{font-size:12px;padding:7px 8px;}}
     .title{font-weight:700;font-size:20px;margin-right:auto;}
     button,.filelabel{
       appearance:none;border:0;border-radius:12px;background:var(--btn);color:var(--btnText);
@@ -1032,18 +1045,22 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.41</div>
+    <div class="title">AtelierAI · iPad 3.42</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
-    <button id="saveCurrentViewBtn" type="button">Ansicht speichern</button>
-    <button id="visibleCropBtn" type="button" class="secondary" disabled>Sichtbaren Ausschnitt als Malvorlage übernehmen</button>
-    <button id="gridCellCropBtn" type="button" class="secondary" disabled aria-pressed="false">Rasterkästchen als Malvorlage auswählen</button>
-    <button id="gridCellCropApply" type="button" hidden disabled>Als Malvorlage übernehmen</button>
     <button id="visibleCropBack" type="button" class="secondary" hidden>Zum Gesamtbild</button>
-    <button id="fitBtn" class="secondary">Einpassen</button>
-    <button id="resetBtn" class="secondary">Zurücksetzen</button>
+    <button id="gridCellCropApply" type="button" hidden disabled>Als Malvorlage übernehmen</button>
+    <details class="moreTools" id="moreTools"><summary aria-label="Weitere Werkzeuge">Werkzeuge ▾</summary>
+      <div class="moreToolsPanel">
+        <button id="saveCurrentViewBtn" type="button">Ansicht speichern</button>
+        <button id="visibleCropBtn" type="button" class="secondary" disabled>Sichtbaren Ausschnitt als Malvorlage übernehmen</button>
+        <button id="gridCellCropBtn" type="button" class="secondary" disabled aria-pressed="false">Rasterkästchen als Malvorlage auswählen</button>
+        <button id="fitBtn" class="secondary">Einpassen</button>
+        <button id="resetBtn" class="secondary">Zurücksetzen</button>
+      </div>
+    </details>
   </div>
 
   <div class="workspace">
@@ -9279,7 +9296,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   // 2.47: selective, non-destructive colour editor. All masks refer to input photo.
   (()=>{
     const button=document.createElement('button');button.textContent='Farben bearbeiten';button.id='colorEditOpen';
-    document.getElementById('saveCurrentViewBtn').after(button);
+    document.getElementById('moreTools').before(button);
     const panel=document.createElement('div');panel.id='colorEditor';panel.hidden=true;
     panel.innerHTML=`<div class="ce-head"><strong>Farben gezielt bearbeiten</strong><button id="ceClose" class="secondary">Menü schließen</button></div>
     <div class="ce-body"><div class="ce-stage"><canvas id="ceCanvas"></canvas><canvas id="ceReviewCanvas" hidden aria-hidden="true"></canvas><span id="ceReviewBadge" hidden>Prüfansicht</span><svg id="ceLassoOutline" aria-hidden="true"></svg><div id="ceCircle" hidden aria-hidden="true"></div></div><div class="ce-controls">
