@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.36</title>
+  <title>AtelierAI iPad 3.37</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.36</div>
+    <div class="title">AtelierAI · iPad 3.37</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -4042,8 +4042,13 @@
       if(seen.has(identity))return;
       seen.add(identity);sources.push({rgb,name:sample.name||'Gespeicherte Farbe',area,identity});
     };
-    for(const sample of planBook.samples||[])add(sample,planBook.name||'Aktueller Bereich');
-    for(const area of studioProject?.areas||[]){
+    // 3.37: Fresh target samples are NOT physically prepared premixes.
+    // Never recycle samples from the current area as if the user had mixed them.
+    // Only propose recipes recorded in a different, previously worked area.
+    // A new project's first area consequently starts without any premix suggestions.
+    const activeArea=studioManaged?studioProject?.active:null;
+    for(const [areaIndex,area] of (studioProject?.areas||[]).entries()){
+      if(areaIndex===activeArea)continue;
       for(const sample of area.plan?.samples||[])add(sample,area.name||'Bereich');
       for(const sample of area.fullView?.plan?.samples||[])add(sample,area.name||'Bereich');
     }
@@ -4080,9 +4085,9 @@
   function renderPremixComparison(target,key,normal){
     const options=savedPremixOptions(target,key);
     const wrap=document.createElement('div');wrap.className='mix-card';
-    const heading=document.createElement('h3');heading.textContent='Vorhandene Mischungen vergleichen · 3.36';wrap.appendChild(heading);
+    const heading=document.createElement('h3');heading.textContent='Mischungen aus anderen Bereichen · 3.37';wrap.appendChild(heading);
     const bestNormal=Math.max(0,...normal.map(x=>x.score));
-    if(!options.length){const msg=document.createElement('p');msg.textContent='Noch keine gespeicherte Mischung in diesem Projekt gefunden. Zuerst Farbproben in einem Bereich merken.';wrap.appendChild(msg);mixResults.prepend(wrap);return;}
+    if(!options.length){const msg=document.createElement('p');msg.textContent='Keine Mischungen aus anderen Bereichen vorhanden. Die gerade aufgenommenen Zielfarben werden nicht als fertige Mischungen behandelt. Für eine gemeinsame Farbbasis bitte im Mischplan beide Farben auswählen.';wrap.appendChild(msg);mixResults.prepend(wrap);return;}
     const best=options[0], prefer=best.score>=bestNormal-3;
     const summary=document.createElement('p');summary.textContent='Neue Tubenmischung: '+bestNormal+'/100 · Beste Wiederverwendung: '+best.score+'/100. '+(prefer?'Vorhandene Mischung ist innerhalb von 3 Punkten und kann bevorzugt werden.':'Neue Tubenmischung ist derzeit näher am Ziel.');wrap.appendChild(summary);
     for(const option of options){
