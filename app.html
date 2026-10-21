@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.37</title>
+  <title>AtelierAI iPad 3.38</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1032,7 +1032,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.37</div>
+    <div class="title">AtelierAI · iPad 3.38</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3798,7 +3798,7 @@
         ?+sample.recipe.score:similarityPct(target,sample.recipe.rgb);
       // Kleine Abweichung vom guten Original ist erlaubt, aber niemals
       // eine unbrauchbare Basis als identisch ausgeben.
-      const limit=Math.max(82,Math.min(97,original-4));
+      const limit=Math.max(80,Math.min(96,original-6));
       const start=similarityPct(target,base.recipe.rgb);
       let best={score:start,rgb:base.recipe.rgb,adds:[],amount:0};
       if(start>=limit)return {...best,usable:true};
@@ -3806,7 +3806,7 @@
       // werden auch feine Mengen und groessere Korrekturen getestet.
       const ranked=colors.map(c=>({c,d:colorDistance(c[1],target)}))
         .sort((a,b)=>a.d-b.d).slice(0,16).map(x=>x.c);
-      const amounts=[1,2,3,4,5,6,8,10,12,15];
+      const amounts=[1,2,3,4,5,6,8,10,12,15,18,22];
       for(const c of ranked)for(const n of amounts){
         const rgb=mix(base.recipe.rgb,c,n),score=similarityPct(target,rgb);
         if(score>best.score+0.01)best={score,rgb,adds:[{name:nameOf(c),parts:n}],amount:n};
@@ -3814,7 +3814,7 @@
       // Zweite kleine Pigmentkorrektur, aber nur wenn eine Farbe nicht reicht.
       if(best.score<limit){
         const first=best;
-        for(const c of ranked)for(const n of [1,2,3,4,6]){
+        for(const c of ranked)for(const n of [1,2,3,4,6,8]){
           if(first.adds[0]?.name===nameOf(c))continue;
           const rgb=mix(first.rgb,c,n),score=similarityPct(target,rgb);
           if(score>best.score+0.01)best={score,rgb,adds:[...first.adds,{name:nameOf(c),parts:n}],amount:first.amount+n};
@@ -3828,8 +3828,8 @@
         const members=[];let penalty=0;
         for(const sample of remaining){
           // Farbaehnlichkeit ist eine Vorselektion, keine zweite starre
-          // Qualitaetsschwelle. Auch Nuancen mit 82 statt 89 sind pruefbar.
-          if(similarityPct(base.target,sample.target)<82)continue;
+          // Qualitaetsschwelle. Auch deutlich unterschiedliche Nuancen werden auf eine brauchbare Korrektur geprueft.
+          if(similarityPct(base.target,sample.target)<73)continue;
           const adjustment=sample===base
             ?{score:similarityPct(sample.target,base.recipe.rgb),rgb:base.recipe.rgb,adds:[],amount:0,usable:true}
             :findCorrection(base,sample);
@@ -4085,7 +4085,7 @@
   function renderPremixComparison(target,key,normal){
     const options=savedPremixOptions(target,key);
     const wrap=document.createElement('div');wrap.className='mix-card';
-    const heading=document.createElement('h3');heading.textContent='Mischungen aus anderen Bereichen · 3.37';wrap.appendChild(heading);
+    const heading=document.createElement('h3');heading.textContent='Mischungen aus anderen Bereichen · 3.38';wrap.appendChild(heading);
     const bestNormal=Math.max(0,...normal.map(x=>x.score));
     if(!options.length){const msg=document.createElement('p');msg.textContent='Keine Mischungen aus anderen Bereichen vorhanden. Die gerade aufgenommenen Zielfarben werden nicht als fertige Mischungen behandelt. Für eine gemeinsame Farbbasis bitte im Mischplan beide Farben auswählen.';wrap.appendChild(msg);mixResults.prepend(wrap);return;}
     const best=options[0], prefer=best.score>=bestNormal-3;
