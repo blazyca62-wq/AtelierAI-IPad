@@ -1,4 +1,6 @@
-AtelierAI 3.44 – Frei wählbare Umgebungsfarbe für isolierte Farben, auch bei Auswahl durch nummerierte Markierungen. Beide Farbwähler sind synchronisiert; mittelgrauer Hintergrund bleibt als Option erhalten.
+AtelierAI 3.45 – Reparatur: Die Zoom-/Ansichtsleiste rechts scrollt jetzt normal, statt die Werkzeug-Reiter zu überdecken. Bildgröße und Mischfunktionen unverändert.
+
+AtelierAI 3.45 – Frei wählbare Umgebungsfarbe für isolierte Farben, auch bei Auswahl durch nummerierte Markierungen. Beide Farbwähler sind synchronisiert; mittelgrauer Hintergrund bleibt als Option erhalten.
 
 AtelierAI iPad 3.43 – Kompakte Werkzeugleiste, Bild bleibt unverändert groß.
 
