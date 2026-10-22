@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.67</title>
+  <title>AtelierAI iPad 3.68</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1046,7 +1046,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.67</div>
+    <div class="title">AtelierAI · iPad 3.68</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1417,6 +1417,7 @@
           <input id="pickerColorTolerance" type="range" min="5" max="30" value="12" step="0.5">
           <span id="pickerColorToleranceVal">12</span>
         </div>
+        <div id="isolationPairLegend" class="tiny" aria-live="polite" style="margin:7px 0 10px;padding:8px;border:1px solid #9996;border-radius:7px;display:none"></div>
         <div class="control-line" style="margin-top:8px"><label for="pickerLightnessRange">Helligkeitsbereich</label><input id="pickerLightnessRange" type="range" min="-100" max="100" step="1" value="0"><span id="pickerLightnessRangeVal">Nur Auswahl</span></div>
         <p class="tiny">← bis Schwarz · Mitte: bisherige Auswahl · bis Weiß → · Doppeltippen: Mitte</p>
         <div class="grid2">
@@ -3765,7 +3766,7 @@
     renderPalettePlan();draw();
     if(typeof window.activateToolPage==='function')window.activateToolPage('paintMixPanel');
     const panel=document.getElementById('palettePlan');panel.open=true;
-    panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+    // Keine automatische Verschiebung der linken Bedienleiste.
   }
   function placePlanMarker(e){
     if(!planPlaceId)return false;
@@ -3955,7 +3956,39 @@
     }
     return groups;
   }
+  function updateIsolationPairLegend(){
+    const legend=document.getElementById('isolationPairLegend');
+    if(!legend)return;
+    legend.replaceChildren();
+    const ids=multiIsolatedIds.filter(id=>planBook.samples.some(s=>s.id===id));
+    if(ids.length!==2){legend.style.display='none';return;}
+    legend.style.display='block';
+    const heading=document.createElement('strong');
+    heading.textContent='Überlappung – zwei Farben';
+    legend.appendChild(heading);
+    const line=document.createElement('div');
+    line.style.cssText='display:flex;gap:8px 12px;flex-wrap:wrap;margin-top:6px;align-items:center';
+    legend.appendChild(line);
+    ids.forEach((id,i)=>{
+      const sample=planBook.samples.find(s=>s.id===id);
+      const item=document.createElement('span');
+      item.style.cssText='display:inline-flex;gap:5px;align-items:center';
+      const dot=document.createElement('span');
+      dot.style.cssText='display:inline-block;width:14px;height:14px;border:1px solid #888;border-radius:3px;background:'+isolationDisplayColors[i];
+      item.appendChild(dot);
+      item.appendChild(document.createTextNode((planBook.samples.indexOf(sample)+1)+': '+sample.name));
+      line.appendChild(item);
+    });
+    const both=document.createElement('span');
+    both.style.cssText='display:inline-flex;gap:5px;align-items:center';
+    const dot=document.createElement('span');
+    dot.style.cssText='display:inline-block;width:14px;height:14px;border:1px solid #888;border-radius:3px;background:#e430a1';
+    both.appendChild(dot);
+    both.appendChild(document.createTextNode('Pink: beide Farben'));
+    line.appendChild(both);
+  }
   function renderPalettePlan(){
+    updateIsolationPairLegend();
     syncPlanMarkerToggle();
     if(loaded)draw();
     let panel=document.getElementById('palettePlan');
@@ -3995,26 +4028,11 @@
     add('p','Farbnummer im Bild direkt antippen: Die zugehörige Farbe mit ihrem Rezept wird ausgewählt – auch im Pipettenmodus. „Stelle setzen“ ergänzt ältere Farbproben.');
     if(activeIsolatedColor||multiIsolatedIds.length){
       const note=add('p','Einzelfarbenansicht aktiv: Weitere Farbnummern unten antippen, um sie zu- oder abzuschalten.');
-      note.textContent='Jede Farbnummer hat eine eigene Kennfarbe (siehe Legende). Pink = 2-fach-Überlappung; Violett = 3 oder mehr. Alle passenden Flächen bleiben sichtbar. Das ist zunächst eine Flächenanalyse, kein gesichertes Pigment-Mischrezept.';
+      note.textContent=multiIsolatedIds.length===2
+        ? 'Zwei Farben im Vergleich: Gemeinsame Flächen sind pink markiert. Die Legende steht direkt beim Ähnlichkeitsregler.'
+        : 'Farbflächen der gewählten Nummern sichtbar. Für die farbige Überlappungsanalyse genau zwei Farben wählen.';
       note.className='tiny';
       note.style.margin='6px 0 10px';
-      if(multiIsolatedIds.length>1){
-        const legend=add('div','');
-        legend.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:7px 12px;margin:6px 0 12px';
-        for(let i=0;i<multiIsolatedIds.length;i++){
-          const sample=planBook.samples.find(s=>s.id===multiIsolatedIds[i]);
-          if(!sample)continue;
-          const item=add('span','',legend);item.style.cssText='display:inline-flex;align-items:center;gap:4px;font-size:12px';
-          const color=add('span','',item);color.style.cssText='width:14px;height:14px;border:1px solid #777;border-radius:3px;background:'+isolationDisplayColors[i%isolationDisplayColors.length];
-          add('span',(planBook.samples.indexOf(sample)+1)+': '+sample.name,item);
-        }
-        for(const [color,label] of [['#ee219e','2 gemeinsam'],['#8023e3','3+ gemeinsam']]){
-          const item=add('span','',legend);item.style.cssText='display:inline-flex;align-items:center;gap:4px;font-size:12px';
-          const dot=add('span','',item);dot.style.cssText='width:14px;height:14px;border:1px solid #777;border-radius:3px;background:'+color;
-          add('span',label,item);
-        }
-      }
-
     }
     for(const s of planBook.samples){
       const row=add('div','');row.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 0';
@@ -7268,7 +7286,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       oc.putImageData(frame,0,0);
       surfaceMarkCanvas=out;
       hint.textContent=multiIsolatedIds.length>1
-        ? `${multiIsolatedIds.length} Farben vollständig sichtbar · ${(result.overlapPixels||0)} gemeinsame Pixel (2 Farben) · ${(result.overlapStrongPixels||0)} gemeinsame Pixel (3+) · Kennfarben siehe Legende`
+        ? (multiIsolatedIds.length===2
+          ? `2 Farben sichtbar · ${(result.overlapPixels||0)} gemeinsame Pixel pink markiert · Legende beim Ähnlichkeitsregler`
+          : `${multiIsolatedIds.length} Farben sichtbar · Überlappungsvergleich nur mit zwei Farben`)
         : multiIsolatedIds.length?'1 Farbnummer sichtbar – weitere Nummern antippen':`${activeIsolatedLabel}: ähnliche Farbe im ganzen Bild sichtbar`;
       draw();
     }else{
@@ -7348,7 +7368,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     // Jeder Punkt bleibt sichtbar, wenn mindestens eine gewählte Farbnummer passt.
     // Keine gegenseitige Verdrängung durch ähnlichere, aber nicht gewählte Farben.
     const key=[isolationRevision,context===sourceCtx?'original':'processed','union',...targets.flat(),currentColorTolerance(),isolationLightness,isolationGray?1:0,...isolationBackgroundColor].join(':');
-    isolationRequest={id:++isolationSerial,key,context,target:[...first.target],targets,showOverlaps:targets.length>1,tolerance:currentColorTolerance(),gray:isolationGray,backgroundColor:[...isolationBackgroundColor],lightness:isolationLightness};
+    isolationRequest={id:++isolationSerial,key,context,target:[...first.target],targets,showOverlaps:targets.length===2,tolerance:currentColorTolerance(),gray:isolationGray,backgroundColor:[...isolationBackgroundColor],lightness:isolationLightness};
     dispatchIsolation();
   }
 
@@ -9010,6 +9030,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
 
     function show(sec,btn){
+      const previousSection=active;
       sections.forEach(x=>x.classList.remove('tool-page-active'));
       [...strip.querySelectorAll('button')].forEach(b=>b.classList.remove('active'));
       sec.classList.add('tool-page-active');
@@ -9018,7 +9039,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(sec.id!=='surfaceAdvisorPanel'){surfaceMode=null;surfacePreview=null;}
       else if(loaded){surfaceCircleBtn.click();}
       document.getElementById('build32Dock').hidden=sec.id!=='build32Panel'||!build32Data;
-      side.scrollTop=0;
+      // Bei erneuter Aktivierung derselben Werkzeugseite die Scrollposition rechts erhalten.
+      if(previousSection!==sec)side.scrollTop=0;
       selectSketchTool(sec.id);
       if(sec.id!=='build32Panel' && build32Active){build32Active=false;draw();}
       if(sec.id==='build32Panel'){setMode('move');syncBuild32Grid();if(build32Data){build32RenderCurrent();}}
