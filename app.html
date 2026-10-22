@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.65</title>
+  <title>AtelierAI iPad 3.66</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1046,7 +1046,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.65</div>
+    <div class="title">AtelierAI · iPad 3.66</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3995,9 +3995,26 @@
     add('p','Farbnummer im Bild direkt antippen: Die zugehörige Farbe mit ihrem Rezept wird ausgewählt – auch im Pipettenmodus. „Stelle setzen“ ergänzt ältere Farbproben.');
     if(activeIsolatedColor||multiIsolatedIds.length){
       const note=add('p','Einzelfarbenansicht aktiv: Weitere Farbnummern unten antippen, um sie zu- oder abzuschalten.');
-      note.textContent='Farbnummern antippen: Bereiche werden ergänzt. Rotviolett = 2-fach-Überdeckung, kräftig violett = 3 oder mehr überdeckende Mischfarben.';
+      note.textContent='Jede Farbnummer hat eine eigene Kennfarbe (siehe Legende). Pink = 2-fach-Überlappung; Violett = 3 oder mehr. Alle passenden Flächen bleiben sichtbar. Das ist zunächst eine Flächenanalyse, kein gesichertes Pigment-Mischrezept.';
       note.className='tiny';
       note.style.margin='6px 0 10px';
+      if(multiIsolatedIds.length>1){
+        const legend=add('div','');
+        legend.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:7px 12px;margin:6px 0 12px';
+        for(let i=0;i<multiIsolatedIds.length;i++){
+          const sample=planBook.samples.find(s=>s.id===multiIsolatedIds[i]);
+          if(!sample)continue;
+          const item=add('span','',legend);item.style.cssText='display:inline-flex;align-items:center;gap:4px;font-size:12px';
+          const color=add('span','',item);color.style.cssText='width:14px;height:14px;border:1px solid #777;border-radius:3px;background:'+isolationDisplayColors[i%isolationDisplayColors.length];
+          add('span',(planBook.samples.indexOf(sample)+1)+': '+sample.name,item);
+        }
+        for(const [color,label] of [['#ee219e','2 gemeinsam'],['#8023e3','3+ gemeinsam']]){
+          const item=add('span','',legend);item.style.cssText='display:inline-flex;align-items:center;gap:4px;font-size:12px';
+          const dot=add('span','',item);dot.style.cssText='width:14px;height:14px;border:1px solid #777;border-radius:3px;background:'+color;
+          add('span',label,item);
+        }
+      }
+
     }
     for(const s of planBook.samples){
       const row=add('div','');row.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 0';
@@ -7118,6 +7135,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       refreshIsolationSmooth();
     });
   }
+  // Kennfarben für einzelne Flächen, unabhängig davon, wie ähnlich die Zielfarben sind.
+  const isolationDisplayColors=['#00a9db','#efae18','#35bb6d','#ec6f27','#4874e4','#93b52c','#ef6879','#18ada6'];
   let multiIsolatedIds=[]; // Farbnummern, die in der Mehrfachansicht sichtbar sind
   let isolationGray=false;
   const isolationBackgroundColor=[247,247,247];
@@ -7172,20 +7191,25 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const limit=message.tolerance**2,background=message.gray?[128,128,128]:(message.backgroundColor||[247,247,247]);
       const count=(message.targets&&message.targets.length)||1;
       const mask=new Uint8Array(width*height);
+      const singleCounts=new Uint32Array(count);
+      const displayColors=[[0,169,219],[239,174,24],[53,187,109],[236,111,39],[72,116,228],[147,181,44],[239,104,121],[24,173,166]];
       let overlapPixels=0,overlapStrongPixels=0,visiblePixels=0;
       for(let n=0;n<mask.length;n++){
         const extension=Number(message.lightness)||0;
-        let hits=0;
+        let hits=0,firstHit=-1;
         for(let j=0;j<count;j++){
           const d=n*count+j;
           const length=extension>=0?whiteLength[j]:blackLength[j];
           const dot=projections[d*2+(extension>=0?0:1)];
           const fraction=length>0?Math.max(0,Math.min(Math.abs(extension)/100,dot/length)):0;
           const extendedDistance=Math.max(0,distances[d]-2*fraction*dot+fraction*fraction*length);
-          if(distances[d]<=limit || (extension!==0 && extendedDistance<=limit))hits++;
+          if(distances[d]<=limit || (extension!==0 && extendedDistance<=limit)){hits++;if(firstHit<0)firstHit=j;}
         }
         if(hits){
-          mask[n]=!message.showOverlaps?1:(hits>=3?3:(hits===2?2:1));
+          // 1..N = nur eine bestimmte Farbe; 253/254 = gemeinsame Flächen.
+          // Jeder Treffer wird unabhängig geprüft, also keine Verdrängung.
+          mask[n]=!message.showOverlaps?1:(hits>=3?254:(hits===2?253:firstHit+1));
+          if(hits===1 && firstHit>=0)singleCounts[firstHit]++;
           visiblePixels++;
           if(hits===2)overlapPixels++;
           else if(hits>=3)overlapStrongPixels++;
@@ -7199,22 +7223,28 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           output[i+3]=255;
           continue;
         }
-        if(mask[n]===2){
+        if(message.showOverlaps && mask[n]===253){
           // 2-fach-Überdeckung: rotviolett – Übergangsbereich zwischen zwei Mischfarben.
           output[i]=Math.round(pixels[i]*.35+228*.65);
           output[i+1]=Math.round(pixels[i+1]*.35+48*.65);
           output[i+2]=Math.round(pixels[i+2]*.35+161*.65);
-        }else if(mask[n]===3){
+        }else if(message.showOverlaps && mask[n]===254){
           // 3+-fach-Überdeckung: kräftiger violett/dunkler – mehrere Mischfarben passen.
           output[i]=Math.round(pixels[i]*.22+126*.78);
           output[i+1]=Math.round(pixels[i+1]*.22+33*.78);
           output[i+2]=Math.round(pixels[i+2]*.22+219*.78);
+        }else if(message.showOverlaps){
+          const shade=displayColors[(mask[n]-1)%displayColors.length];
+          // Foto-Details bleiben dezent sichtbar, Nummern bleiben klar unterscheidbar.
+          output[i]=Math.round(pixels[i]*.22+shade[0]*.78);
+          output[i+1]=Math.round(pixels[i+1]*.22+shade[1]*.78);
+          output[i+2]=Math.round(pixels[i+2]*.22+shade[2]*.78);
         }else{
           output[i]=pixels[i];output[i+1]=pixels[i+1];output[i+2]=pixels[i+2];
         }
         output[i+3]=255;
       }
-      return {id:message.id,width,height,pixels:output.buffer,overlapPixels,overlapStrongPixels,visiblePixels};
+      return {id:message.id,width,height,pixels:output.buffer,overlapPixels,overlapStrongPixels,visiblePixels,singleCounts:Array.from(singleCounts)};
     };
   }
 
@@ -7230,7 +7260,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       oc.putImageData(frame,0,0);
       surfaceMarkCanvas=out;
       hint.textContent=multiIsolatedIds.length>1
-        ? `${multiIsolatedIds.length} Farben sichtbar · ${(result.overlapPixels||0)} 2-fach-Überdeckungen · ${(result.overlapStrongPixels||0)} 3+-Überdeckungen · weitere Farbnummern antippen`
+        ? `${multiIsolatedIds.length} Farben vollständig sichtbar · ${(result.overlapPixels||0)} gemeinsame Pixel (2 Farben) · ${(result.overlapStrongPixels||0)} gemeinsame Pixel (3+) · Kennfarben siehe Legende`
         : multiIsolatedIds.length?'1 Farbnummer sichtbar – weitere Nummern antippen':`${activeIsolatedLabel}: ähnliche Farbe im ganzen Bild sichtbar`;
       draw();
     }else{
