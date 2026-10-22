@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.60</title>
+  <title>AtelierAI iPad 3.61</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -29,7 +29,7 @@
     .moreTools{position:relative;flex:0 0 auto;}
     .moreTools>summary{display:flex;align-items:center;list-style:none;cursor:pointer;background:#e9e7e1;border-radius:12px;color:#202020;font-weight:650;}
     .moreTools>summary::-webkit-details-marker{display:none;}
-    /* 3.60: menu floats over the image rather than covering the right-hand tab bar */
+    /* 3.61: menu floats over the image rather than covering the right-hand tab bar */
     .moreToolsPanel{position:fixed;left:24px;right:auto;top:115px;z-index:200;width:min(340px,80vw);max-height:70vh;overflow-y:auto;padding:10px;background:white;border:1px solid #d8d6d0;box-shadow:0 12px 28px #0003;border-radius:14px;display:flex;flex-direction:column;gap:8px;}
     .moreToolsPanel button{font-size:14px;min-height:44px;text-align:left;}
     .moreToolsPanel button[hidden]{display:none;}
@@ -1046,7 +1046,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.60</div>
+    <div class="title">AtelierAI · iPad 3.61</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7234,12 +7234,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     const request=isolationRequest;
     const message={id:request.id,target:request.target,targets:request.targets,tolerance:request.tolerance,gray:request.gray,backgroundColor:request.backgroundColor,lightness:request.lightness};
-    if(request.key!==isolationSentKey){
-      const c=request.context.canvas;
-      const frame=request.context.getImageData(0,0,c.width,c.height);
-      Object.assign(message,{width:c.width,height:c.height,pixels:frame.data.buffer});
-      isolationSentKey=request.key;
-    }
+    // Jede neue Auswahl vollständig berechnen. Sonst kann der Worker
+    // die Abstandskarte der vorherigen (einzelnen) Zielfarbe verwenden.
+    const c=request.context.canvas;
+    const frame=request.context.getImageData(0,0,c.width,c.height);
+    Object.assign(message,{width:c.width,height:c.height,pixels:frame.data.buffer});
+    isolationSentKey=request.key;
     isolationBusy=true;
     if(isolationWorker){
       try{isolationWorker.postMessage(message,message.pixels?[message.pixels]:[]);}
