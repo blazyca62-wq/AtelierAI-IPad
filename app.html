@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.58</title>
+  <title>AtelierAI iPad 3.59</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1046,7 +1046,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.58</div>
+    <div class="title">AtelierAI · iPad 3.59</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -6623,7 +6623,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const palette=build32ActivePalette();
       if(!palette||!palette[index])return;
       const remove=build32Selection.has(index)&&(build32Additive||build32Manual);
-      if(!build32Additive)build32Selection.clear();
+      if(!build32Additive&&!build32SoloPrevious)build32Selection.clear();
       if(remove){
         build32Selection.delete(index);
         if(build32Selected===index||!build32Selection.has(build32Selected))build32Selected=[...build32Selection].pop()??null;
@@ -6633,10 +6633,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       build32Status.textContent='Detail-Kästchen · Farbe '+(index+1)+' ausgewählt. Nur lokale Farbe/Mischung wird verwendet.';
       return;
     }
-    if(build32SoloPrevious&&!build32SoloAdditive){
-      forgetBuild32AllPrevious();build32Selection.clear();build32Selection.add(index);
-      build32SimilarAnchor=index;build32Selected=index;build32Manual=true;renderBuild32Selection();return;
-    }
+    // 3.59: In der Einzelfarbenansicht schaltet jede Nummer automatisch
+    // weitere Bildfarben hinzu oder blendet sie wieder aus.
+    if(build32SoloPrevious)build32SoloAdditive=true;
     forgetBuild32AllPrevious();
     const additive=build32SoloPrevious?build32SoloAdditive:build32Additive;
     const remove=build32Selection.has(index)&&(additive||build32Manual);
@@ -6711,7 +6710,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       build32AllPrevious=previous.allPrevious;restoreBuild32State(previous.state);
     }else{
       build32SoloPrevious={state:captureBuild32State(),allPrevious:build32AllPrevious};
-      build32AllPrevious=null;build32SoloAdditive=false;
+      build32AllPrevious=null;build32SoloAdditive=true;
       const index=build32Selected??[...build32Selection].pop()??0;
       build32SimilarAnchor=index;
       build32Selection.clear();build32Selection.add(index);build32Selected=index;
