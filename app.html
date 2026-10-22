@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.61</title>
+  <title>AtelierAI iPad 3.62</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -29,7 +29,7 @@
     .moreTools{position:relative;flex:0 0 auto;}
     .moreTools>summary{display:flex;align-items:center;list-style:none;cursor:pointer;background:#e9e7e1;border-radius:12px;color:#202020;font-weight:650;}
     .moreTools>summary::-webkit-details-marker{display:none;}
-    /* 3.61: menu floats over the image rather than covering the right-hand tab bar */
+    /* 3.62: menu floats over the image rather than covering the right-hand tab bar */
     .moreToolsPanel{position:fixed;left:24px;right:auto;top:115px;z-index:200;width:min(340px,80vw);max-height:70vh;overflow-y:auto;padding:10px;background:white;border:1px solid #d8d6d0;box-shadow:0 12px 28px #0003;border-radius:14px;display:flex;flex-direction:column;gap:8px;}
     .moreToolsPanel button{font-size:14px;min-height:44px;text-align:left;}
     .moreToolsPanel button[hidden]{display:none;}
@@ -1046,7 +1046,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.61</div>
+    <div class="title">AtelierAI · iPad 3.62</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3758,7 +3758,7 @@
       }else{
         const first=planBook.samples.find(s=>s.id===multiIsolatedIds[0]&&Array.isArray(s.target)&&s.target.length===3)
           || planBook.samples.find(s=>multiIsolatedIds.includes(s.id)&&Array.isArray(s.target)&&s.target.length===3);
-        if(first)isolateColorAcrossImage(first.target,'Ausgewählte Farben');
+        if(first)isolatePlanSampleAreas('Ausgewählte Farben');
         else cancelIsolation();
       }
     }
@@ -7141,11 +7141,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(message.pixels){
         pixels=new Uint8ClampedArray(message.pixels);
         width=message.width;height=message.height;
-        distances=new Float32Array(width*height);
-        projections=new Float32Array(width*height*2);
-        // Für jede gewählte Farbnummer werden die Lab-Abstände separat berechnet.
-        // Das kleinste Ergebnis bestimmt, ob der Bildpunkt sichtbar ist.
-        const targets=(message.targets&&message.targets.length?message.targets:[message.target]).map(t=>lab(...t));
+        // Im normalen Modus werden nur die sichtbaren Ziele geprüft.
+        // Im Bereichs-Mischmodul kann zusätzlich eine vollständige Zuordnung
+        // über alle gespeicherten Farbnummern angefordert werden.
+        const rawTargets=(message.partition&&message.allTargets&&message.allTargets.length?message.allTargets:(message.targets&&message.targets.length?message.targets:[message.target]));
+        const targets=rawTargets.map(t=>lab(...t));
         distances=new Float32Array(width*height*targets.length);
         projections=new Float32Array(width*height*targets.length*2);
         whiteLength=new Float32Array(targets.length);
@@ -7169,10 +7169,24 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(!pixels)throw new Error('Keine Bilddaten');
       const output=new Uint8ClampedArray(pixels.length);
       const limit=message.tolerance**2,background=message.gray?[128,128,128]:(message.backgroundColor||[247,247,247]);
-      const count=(message.targets&&message.targets.length)||1;
+      const count=(message.partition&&message.allTargets&&message.allTargets.length?message.allTargets.length:((message.targets&&message.targets.length)||1));
+      const selectedSet=message.partition?new Set(message.selectedIndices||[]):null;
       const mask=new Uint8Array(width*height);
       for(let n=0;n<mask.length;n++){
         const extension=Number(message.lightness)||0;
+        if(selectedSet){
+          let bestIndex=-1,bestDistance=Infinity;
+          for(let j=0;j<count;j++){
+            const d=n*count+j;
+            const length=extension>=0?whiteLength[j]:blackLength[j];
+            const dot=projections[d*2+(extension>=0?0:1)];
+            const fraction=length>0?Math.max(0,Math.min(Math.abs(extension)/100,dot/length)):0;
+            const adjusted=extension===0?distances[d]:Math.max(0,distances[d]-2*fraction*dot+fraction*fraction*length);
+            if(adjusted<=limit && adjusted<bestDistance){bestDistance=adjusted;bestIndex=j;}
+          }
+          if(bestIndex>=0 && selectedSet.has(bestIndex))mask[n]=1;
+          continue;
+        }
         for(let j=0;j<count;j++){
           const d=n*count+j;
           const length=extension>=0?whiteLength[j]:blackLength[j];
@@ -7233,7 +7247,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }catch(e){isolationFailed=true;}
     }
     const request=isolationRequest;
-    const message={id:request.id,target:request.target,targets:request.targets,tolerance:request.tolerance,gray:request.gray,backgroundColor:request.backgroundColor,lightness:request.lightness};
+    const message={id:request.id,target:request.target,targets:request.targets,tolerance:request.tolerance,gray:request.gray,backgroundColor:request.backgroundColor,lightness:request.lightness,partition:!!request.partition,allTargets:request.allTargets,selectedIndices:request.selectedIndices};
     // Jede neue Auswahl vollständig berechnen. Sonst kann der Worker
     // die Abstandskarte der vorherigen (einzelnen) Zielfarbe verwenden.
     const c=request.context.canvas;
@@ -7267,6 +7281,26 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const targets=multiIsolatedIds.length?multiIsolatedIds.map(id=>planBook.samples.find(s=>s.id===id)?.target).filter(t=>Array.isArray(t)&&t.length===3):[[...target]];
     const key=[isolationRevision,context===sourceCtx?'original':'processed',...targets.flat()].join(':');
     isolationRequest={id:++isolationSerial,key,context,target:[...target],targets,tolerance:currentColorTolerance(),gray:isolationGray,backgroundColor:[...isolationBackgroundColor],lightness:isolationLightness};
+    dispatchIsolation();
+  }
+
+  function isolatePlanSampleAreas(label='Ausgewählte Farben'){
+    if(!loaded){cancelIsolation();draw();return;}
+    const samples=planBook.samples.filter(s=>Array.isArray(s.target)&&s.target.length===3);
+    if(!samples.length){cancelIsolation();draw();return;}
+    let selectedIds=multiIsolatedIds.length?multiIsolatedIds.slice():(planActiveId?[planActiveId]:[]);
+    if(!selectedIds.length){cancelIsolation();draw();return;}
+    const selectedIndexSet=new Set();
+    samples.forEach((s,i)=>{if(selectedIds.includes(s.id))selectedIndexSet.add(i);});
+    const selectedIndices=[...selectedIndexSet];
+    if(!selectedIndices.length){cancelIsolation();draw();return;}
+    const first=samples[selectedIndices[0]];
+    activeIsolatedColor=[...first.target];
+    activeIsolatedLabel=label;
+    const context=sourceContextForPicker();
+    const allTargets=samples.map(s=>[...s.target]);
+    const key=[isolationRevision,context===sourceCtx?'original':'processed','partition',...selectedIndices,...allTargets.flat(),currentColorTolerance(),isolationLightness,isolationGray?1:0,...isolationBackgroundColor].join(':');
+    isolationRequest={id:++isolationSerial,key,context,target:[...first.target],targets:selectedIndices.map(i=>allTargets[i]),allTargets,selectedIndices,partition:true,tolerance:currentColorTolerance(),gray:isolationGray,backgroundColor:[...isolationBackgroundColor],lightness:isolationLightness};
     dispatchIsolation();
   }
 
@@ -8532,7 +8566,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const sample=planBook.samples.find(s=>s.id===planActiveId);
     multiIsolatedIds=sample?[sample.id]:[];
     const t=sample?.target||targetArray();
-    if(t) isolateColorAcrossImage(t,sample?'Farbe '+(planBook.samples.indexOf(sample)+1):'Pipettenfarbe');
+    if(sample&&t)isolatePlanSampleAreas('Farbe '+(planBook.samples.indexOf(sample)+1));
+    else if(t)isolateColorAcrossImage(t,'Pipettenfarbe');
     renderPalettePlan();
   });
   pickerShowAllBtn.addEventListener('click',()=>{
