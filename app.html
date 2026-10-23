@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.77</title>
+  <title>AtelierAI iPad 3.78</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -10929,6 +10929,17 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     ];
     const sliders=by('artSliders');
     sliders.innerHTML=effects.map(([id,name,desc],i)=>`<div style="padding:9px 0;border-bottom:1px solid #ddd"><label for="art_${id}" style="display:flex;justify-content:space-between;gap:8px;font-weight:650;font-size:14px"><span>${i+1}. ${name}</span><output id="art_${id}_val">0 %</output></label><div style="font-size:12px;color:#666">${desc}</div><input id="art_${id}" type="range" min="0" max="100" step="5" value="0" style="width:100%;min-height:36px"></div>`).join('');
+    const presets=[
+      ['Natürlich malerisch',{edge:65,tonal:35,shift:25,broken:50,light:25,depth:0}],
+      ['Stimmungsvolle Landschaft',{edge:50,tonal:40,shift:45,broken:55,light:45,depth:35}],
+      ['Licht & Schatten',{edge:25,tonal:25,shift:35,broken:20,light:75,depth:0}],
+      ['Zurückhaltendes Porträt',{edge:35,tonal:35,shift:15,broken:15,light:20,depth:0}]
+    ];
+    const presetBar=document.createElement('div');
+    presetBar.style.cssText='display:flex;flex-wrap:wrap;gap:7px;margin:5px 0 16px';
+    presetBar.innerHTML='<div style="width:100%;font-weight:650;font-size:14px">Gestaltungsrezepte (danach einzeln anpassen)</div>'+presets.map((p,i)=>'<button type="button" data-art-preset="'+i+'" style="padding:8px;border:1px solid #aaa;border-radius:8px;background:#f5f5f5">'+p[0]+'</button>').join('');
+    sliders.prepend(presetBar);
+    presetBar.addEventListener('click',e=>{const b=e.target.closest('[data-art-preset]');if(!b)return;const values=presets[+b.dataset.artPreset][1];effects.forEach(([id])=>{by('art_'+id).value=values[id]||0;by('art_'+id+'_val').textContent=by('art_'+id).value+' %';});render();});
     let base=null, originalW=0,originalH=0, timer=null,revision=0,previewOriginal=false, busy=false;
     const clamp=v=>Math.max(0,Math.min(255,v));
     function workCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
@@ -10937,66 +10948,80 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       for(let y=0;y<h;y++)for(let x=0;x<w;x++){let sums=[0,0,0],n=0;for(let k=-radius;k<=radius;k++){let xx=Math.min(w-1,Math.max(0,x+k)),idx=(y*w+xx)*4;for(let j=0;j<3;j++)sums[j]+=im[idx+j];n++;}let q=(y*w+x)*4;for(let j=0;j<3;j++)temp[q+j]=sums[j]/n;temp[q+3]=255;}
       for(let y=0;y<h;y++)for(let x=0;x<w;x++){let sums=[0,0,0],n=0;for(let k=-radius;k<=radius;k++){let yy=Math.min(h-1,Math.max(0,y+k)),idx=(yy*w+x)*4;for(let j=0;j<3;j++)sums[j]+=temp[idx+j];n++;}let q=(y*w+x)*4;for(let j=0;j<3;j++)out[q+j]=sums[j]/n;out[q+3]=255;}return out;}
     const mix=(a,b,t)=>a*(1-t)+b*t;
-    // Alle Effekte arbeiten mit lokaler Bildinformation, statt festen Wellen- oder Kachelmustern.
+    // Bewahrt Formgrenzen: Farbliche Nachbarn zählen stärker als kontrastfremde Pixel.
+    function guidedSmooth(src,w,h,r,threshold){
+      const out=new Uint8ClampedArray(src.length),step=Math.max(1,Math.floor(r/3));
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+        const p=(y*w+x)*4,cr=src[p],cg=src[p+1],cb=src[p+2];let wr=0,rr=0,gg=0,bb=0;
+        for(let dy=-r;dy<=r;dy+=step)for(let dx=-r;dx<=r;dx+=step){
+          const xx=Math.max(0,Math.min(w-1,x+dx)),yy=Math.max(0,Math.min(h-1,y+dy)),q=(yy*w+xx)*4;
+          const dr=src[q]-cr,dg=src[q+1]-cg,db=src[q+2]-cb;
+          const difference=(dr*dr+dg*dg+db*db)/(3*threshold*threshold);
+          const weight=Math.exp(-difference*2-(dx*dx+dy*dy)/(r*r*1.7));
+          wr+=weight;rr+=src[q]*weight;gg+=src[q+1]*weight;bb+=src[q+2]*weight;
+        }
+        out[p]=rr/wr;out[p+1]=gg/wr;out[p+2]=bb/wr;out[p+3]=src[p+3];
+      }return out;
+    }
     function transform(data,w,h,id,t){
-      const src=data.slice(), blurred=blurImage(src,w,h,id==='depth'?Math.round(1+5*t):id==='edge'?Math.round(1+4*t):Math.round(2+4*t));
-      const n=w*h, lum=new Float32Array(n), local=new Float32Array(n);
-      let sum=0;
-      for(let i=0;i<n;i++){const p=i*4;lum[i]=.2126*src[p]+.7152*src[p+1]+.0722*src[p+2];sum+=lum[i];local[i]=.2126*blurred[p]+.7152*blurred[p+1]+.0722*blurred[p+2];}
+      const src=data.slice(),n=w*h;
+      const radius=id==='edge'?Math.round(2+6*t):id==='depth'?Math.round(2+5*t):Math.round(3+7*t);
+      const soft=(id==='edge'||id==='broken')?guidedSmooth(src,w,h,radius,id==='edge'?34:45):blurImage(src,w,h,radius);
+      const big=(id==='light'||id==='tonal')?blurImage(src,w,h,Math.round(8+10*t)):soft;
+      const lum=new Float32Array(n),near=new Float32Array(n),broad=new Float32Array(n);let sum=0;
+      for(let i=0;i<n;i++){const p=i*4;lum[i]=.2126*src[p]+.7152*src[p+1]+.0722*src[p+2];near[i]=.2126*soft[p]+.7152*soft[p+1]+.0722*soft[p+2];broad[i]=.2126*big[p]+.7152*big[p+1]+.0722*big[p+2];sum+=lum[i];}
       const average=sum/n;
       const smooth=(a,b,v)=>{const z=Math.max(0,Math.min(1,(v-a)/(b-a)));return z*z*(3-2*z);};
-      const hash=(x,y)=>{let z=Math.sin(x*127.1+y*311.7+39.13)*43758.5453;return z-Math.floor(z);};
-      const cell=Math.max(12,Math.round(Math.min(w,h)*(.024+.018*t)));
+      const hash=(x,y)=>{const z=Math.sin(x*127.1+y*311.7+39.13)*43758.5453;return z-Math.floor(z);};
+      const field=(x,y,cell)=>{const gx=x/cell,gy=y/cell,ix=Math.floor(gx),iy=Math.floor(gy),fx=smooth(0,1,gx-ix),fy=smooth(0,1,gy-iy);return (mix(mix(hash(ix,iy),hash(ix+1,iy),fx),mix(hash(ix,iy+1),hash(ix+1,iy+1),fx),fy)-.5)*2;};
       for(let y=0;y<h;y++)for(let x=0;x<w;x++){
         const i=y*w+x,p=i*4,r=src[p],g=src[p+1],b=src[p+2],l=lum[i];
         const xx=Math.min(w-1,x+2),yy=Math.min(h-1,y+2),x0=Math.max(0,x-2),y0=Math.max(0,y-2);
         const grad=Math.hypot(lum[y*w+xx]-lum[y*w+x0],lum[yy*w+x]-lum[y0*w+x]);
-        const edge=smooth(12,78,grad), protect=1-edge*.93;
+        const edge=smooth(10,80,grad),protect=1-edge*.85;
         let R=r,G=g,B=b;
         if(id==='edge'){
-          const a=t*.95*protect;
-          R=mix(r,blurred[p],a);G=mix(g,blurred[p+1],a);B=mix(b,blurred[p+2],a);
-        }else if(id==='tonal'){
-          // Sättigung sanft reduzieren, Tonwert nicht mit einem RGB-Mittelwert verwechseln.
-          const muted=1-.65*t;
-          R=mix(l,r,muted);G=mix(l,g,muted);B=mix(l,b,muted);
-          const target=average+(l-average)*(1-.15*t);
-          const delta=(target-l)*t;
+          // Formflächen beruhigen, ohne an Kanten über benachbarte Farben zu schmieren.
+          const strength=t*(.6+.35*t)*(1-.55*edge);
+          R=mix(r,soft[p],strength);G=mix(g,soft[p+1],strength);B=mix(b,soft[p+2],strength);
+          const band=10+10*t,delta=(Math.round(near[i]/band)*band-near[i])*t*.22*protect;
           R+=delta;G+=delta;B+=delta;
+        }else if(id==='tonal'){
+          // Farbharmonie: je stärker der Regler, desto ruhiger die Mitteltöne; Tiefe bleibt.
+          const muted=1-.63*t;
+          const baseL=broad[i];const contrast=(l-baseL)*(.95-.18*t);
+          const target=baseL+contrast;
+          R=mix(l,r,muted)+target-l;G=mix(l,g,muted)+target-l;B=mix(l,b,muted)+target-l;
+          const warmth=4*t*(1-smooth(125,230,l));R+=warmth;B-=warmth*.8;
         }else if(id==='shift'){
-          // Warmes Licht und kühle Schatten; mittlere Tonwerte nur wenig verschieben.
-          const warm=smooth(105,220,l), cool=1-smooth(30,155,l);
-          const neutral=1-Math.abs(l-127.5)/127.5;
-          R+=t*(24*warm-8*cool+3*neutral);
-          G+=t*(6*warm+3*cool);
-          B+=t*(-17*warm+20*cool);
-          // Grobe Helligkeit erhalten, damit die Farbverschiebung keine Fotobelichtung wird.
-          const now=.2126*R+.7152*G+.0722*B,cor=(now-l)*.8;
-          R-=cor;G-=cor;B-=cor;
+          const light=smooth(110,225,broad[i]),shade=1-smooth(38,150,broad[i]);
+          const amt=t*(.7+.6*t);
+          R+=amt*(33*light-9*shade);G+=amt*(8*light+2*shade);B+=amt*(-27*light+29*shade);
+          const offset=(.2126*R+.7152*G+.0722*B-l)*.78;R-=offset;G-=offset;B-=offset;
         }else if(id==='broken'){
-          // Keine Schachbrettstruktur: organische, weich überblendete Farbtemperaturfelder.
-          const gx=x/cell,gy=y/cell,ix=Math.floor(gx),iy=Math.floor(gy),fx=smooth(0,1,gx-ix),fy=smooth(0,1,gy-iy);
-          const a=mix(hash(ix,iy),hash(ix+1,iy),fx),bb=mix(hash(ix,iy+1),hash(ix+1,iy+1),fx);
-          const variation=(mix(a,bb,fy)-.5)*2;
-          const strength=t*(10+18*t)*variation*protect;
-          const chroma=Math.min(1,Math.hypot(r-g,g-b,b-r)/100);
-          R+=strength*(.75+.25*chroma);G+=strength*.12;B-=strength*.82;
-          const now=.2126*R+.7152*G+.0722*B,cor=now-l;
-          R-=cor;G-=cor;B-=cor;
+          // Zwei Größen organischer Farbgruppen, an Konturen stark reduziert.
+          const scale=Math.max(12,Math.min(w,h)*.055),variation=.65*field(x,y,scale)+.35*field(x+120,y+55,scale*.34);
+          const v=variation*32*t*(.65+.35*t)*protect;
+          const luminance=(l+near[i])*.5;
+          R=mix(r,soft[p],.28*t*protect)+v*.88;
+          G=mix(g,soft[p+1],.28*t*protect)+v*.12;
+          B=mix(b,soft[p+2],.28*t*protect)-v*.92;
+          const correction=(.2126*R+.7152*G+.0722*B-l)*.90;R-=correction;G-=correction;B-=correction;
         }else if(id==='light'){
-          // Fotobasierte Lichtführung, statt eines künstlichen Spots an fester Position.
-          const normalized=Math.max(-1,Math.min(1,(local[i]-average)/95));
-          const dodge=Math.max(0,normalized),burn=Math.max(0,-normalized);
-          const delta=t*(28*dodge+10*smooth(175,245,l)-30*burn);
-          const contrast=1+.24*t;
-          R=(r-127)*contrast+127+delta;G=(g-127)*contrast+127+delta;B=(b-127)*contrast+127+delta;
+          // Lokale Lichtinseln statt gleichmäßiger globaler Kontrastanhebung.
+          const relative=Math.max(-1,Math.min(1,(broad[i]-average)/92));
+          const highlight=Math.max(0,relative),shadow=Math.max(0,-relative);
+          const delta=t*(35*highlight-39*shadow)+t*13*(smooth(170,245,l)-.20);
+          const localContrast=1+t*.13;
+          R=soft[p]+(r-soft[p])*localContrast+delta+(r-l)*.07*t;
+          G=soft[p+1]+(g-soft[p+1])*localContrast+delta+(g-l)*.07*t;
+          B=soft[p+2]+(b-soft[p+2])*localContrast+delta+(b-l)*.07*t;
         }else if(id==='depth'){
-          // Obere Bildregion als anpassbare Näherung für Ferne; keine Motiverkennung.
-          const far=smooth(.78,.05,y/Math.max(1,h-1));
-          const amt=t*far*(.15+.64*(1-edge));
-          R=mix(r,blurred[p],amt);G=mix(g,blurred[p+1],amt);B=mix(b,blurred[p+2],amt);
-          const haze=t*far*.30;
-          R=mix(R,193,haze);G=mix(G,207,haze);B=mix(B,223,haze);
+          // Bildhöhe als FERNE-Näherung; kein Anspruch auf motivsichere Tiefenerkennung.
+          const far=1-smooth(.12,.79,y/Math.max(1,h-1));
+          const haze=t*far*(.12+.30*(1-edge));
+          R=mix(r,soft[p],t*far*.38*protect);G=mix(g,soft[p+1],t*far*.38*protect);B=mix(b,soft[p+2],t*far*.38*protect);
+          R=mix(R,192,haze);G=mix(G,205,haze);B=mix(B,217,haze);
         }
         data[p]=clamp(R);data[p+1]=clamp(G);data[p+2]=clamp(B);
       }
