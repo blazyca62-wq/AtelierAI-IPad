@@ -9,3 +9,5 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 3.70: GitHub-Neupaketierung; korrigierter Versionslink 3.70 in Startdateien, aktualisierter Offline-Cache. Funktionen aus 3.69 unverändert.
 
 3.71: Posterize im Modul Großformen, 3–8 Tonwertstufen, farbig/Schwarz-Weiß; bisherige Großformen bleiben erhalten.
+
+3.72: Neues separates Modul „Künstlerische Gestaltung“ mit zehn kombinierbaren Reglern, Vorschau, Originalvergleich, PNG-Export und Übernahme als gemeinsame Bildvorlage. Verarbeitung lokal und offline. Hinweis: Vorschau und Übernahme werden auf max. 1000 Pixel an der längsten Seite berechnet.

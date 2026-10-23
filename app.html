@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.71</title>
+  <title>AtelierAI iPad 3.72</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1046,11 +1046,12 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.71</div>
+    <div class="title">AtelierAI · iPad 3.72</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="applyAllModulesBtn" type="button" class="secondary" disabled title="Aktuelle Farbdarstellung ohne Raster als gemeinsame Bildvorlage verwenden">Für alle Module übernehmen</button>
+    <button id="artOpenBtn" class="secondary" type="button">Künstlerische Gestaltung</button>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="visibleCropBack" type="button" class="secondary" hidden>Zum Gesamtbild</button>
     <button id="gridCellCropApply" type="button" hidden disabled>Als Malvorlage übernehmen</button>
@@ -1806,6 +1807,21 @@
   </div>
 </div>
 
+
+
+<div id="artStudio" style="display:none;position:fixed;inset:0;z-index:1500;background:#f2f1ed;overflow:auto;padding:12px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#222">
+  <div style="max-width:1100px;margin:auto">
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><strong style="font-size:19px;margin-right:auto">Künstlerische Gestaltung · 10 Effekte</strong><button id="artBefore" class="secondary">Original halten / vergleichen</button><button id="artClose" class="secondary">Schließen</button></div>
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:12px" id="artLayout">
+    <div style="background:#dedbd4;border-radius:14px;display:flex;align-items:center;justify-content:center;min-height:260px;max-height:78vh;overflow:hidden"><canvas id="artCanvas" style="max-width:100%;max-height:76vh;object-fit:contain;touch-action:pinch-zoom"></canvas></div>
+    <div style="background:#fff;border-radius:14px;padding:13px;max-height:80vh;overflow:auto" id="artControls">
+      <p style="font-size:13px;color:#555">Jeder Regler ist unabhängig. Mehrere Effekte lassen sich kombinieren. 0 = aus.</p>
+      <div id="artSliders"></div>
+      <div style="display:grid;gap:8px;margin-top:12px"><button id="artReset" class="secondary">Alle Effekte zurücksetzen</button><button id="artSave">Bild als PNG speichern</button><button id="artApply">Für alle Module übernehmen</button><p id="artStatus" style="font-size:13px;color:#555" role="status"></p></div>
+    </div>
+  </div></div>
+</div>
+<style>@media(max-width:740px){#artLayout{grid-template-columns:1fr!important}#artControls{max-height:none!important}#artCanvas{max-height:45vh!important}}</style>
 
   <div id="glazeFullscreen" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(20,20,20,.97);padding:14px;box-sizing:border-box;">
     <div style="height:100%;display:flex;flex-direction:column;gap:10px;">
@@ -10850,6 +10866,63 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
   if(advisorBrightnessVal) advisorBrightnessVal.textContent='0';
   advReset();
+
+
+  // 3.72 — separater Gestaltungs-Arbeitsplatz, greift nur lesend auf sourceCanvas zu.
+  (()=>{
+    const by=id=>document.getElementById(id), overlay=by('artStudio'),cv=by('artCanvas'),ctx=cv.getContext('2d',{willReadFrequently:true});
+    const effects=[
+      ['brush','Pinselstriche','Malerische, gerichtete Striche'],
+      ['edge','Kantensteuerung','Unwichtige Details weichzeichnen'],
+      ['tonal','Tonalismus','Ruhigere, harmonisierte Tonwerte'],
+      ['shift','Künstlerische Farbverschiebung','Warme und kühle Farbkontraste'],
+      ['water','Aquarell','Transparenz und sanfte Pigmentränder'],
+      ['knife','Spachtelmalerei','Kantige Farbflächen'],
+      ['broken','Gebrochene Farben','Variationen verwandter Farbtöne'],
+      ['light','Dramatische Lichtführung','Licht und Schatten verstärken'],
+      ['abstract','Künstlerische Abstraktion','Größere, vereinfachte Farbflächen'],
+      ['depth','Atmosphärische Perspektive','Ferne heller, kühler und weicher']
+    ];
+    const sliders=by('artSliders');
+    sliders.innerHTML=effects.map(([id,name,desc],i)=>`<div style="padding:9px 0;border-bottom:1px solid #ddd"><label for="art_${id}" style="display:flex;justify-content:space-between;gap:8px;font-weight:650;font-size:14px"><span>${i+1}. ${name}</span><output id="art_${id}_val">0 %</output></label><div style="font-size:12px;color:#666">${desc}</div><input id="art_${id}" type="range" min="0" max="100" step="5" value="0" style="width:100%;min-height:36px"></div>`).join('');
+    let base=null, originalW=0,originalH=0, timer=null,revision=0,previewOriginal=false, busy=false;
+    const clamp=v=>Math.max(0,Math.min(255,v));
+    function workCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
+    function pixels(c){return c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height);}
+    function blurImage(im,w,h,r){if(r<=0)return im;let out=new Uint8ClampedArray(im.length),temp=new Float32Array(im.length),radius=Math.max(1,Math.round(r));
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){let sums=[0,0,0],n=0;for(let k=-radius;k<=radius;k++){let xx=Math.min(w-1,Math.max(0,x+k)),idx=(y*w+xx)*4;for(let j=0;j<3;j++)sums[j]+=im[idx+j];n++;}let q=(y*w+x)*4;for(let j=0;j<3;j++)temp[q+j]=sums[j]/n;temp[q+3]=255;}
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){let sums=[0,0,0],n=0;for(let k=-radius;k<=radius;k++){let yy=Math.min(h-1,Math.max(0,y+k)),idx=(yy*w+x)*4;for(let j=0;j<3;j++)sums[j]+=temp[idx+j];n++;}let q=(y*w+x)*4;for(let j=0;j<3;j++)out[q+j]=sums[j]/n;out[q+3]=255;}return out;}
+    const mix=(a,b,t)=>a*(1-t)+b*t;
+    function transform(data,w,h,id,t){const src=data.slice(),out=data;
+      if(id==='edge'||id==='water'||id==='depth'){const blurred=blurImage(src,w,h,id==='edge'?1+3*t:id==='water'?1+2*t:1+4*t);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let p=(y*w+x)*4,mid=y/h;let a=id==='depth'?t*(.08+.76*(1-mid)**2):id==='water'?t*.48:t*.70;
+        if(id==='edge'){const xx=Math.min(w-1,x+1),yy=Math.min(h-1,y+1),q=(y*w+xx)*4,z=(yy*w+x)*4;let d=0;for(let j=0;j<3;j++)d+=Math.abs(src[p+j]-src[q+j])+Math.abs(src[p+j]-src[z+j]);a*=1-Math.min(.95,d/150);}
+        for(let j=0;j<3;j++)out[p+j]=clamp(mix(src[p+j],blurred[p+j],a));if(id==='depth'){out[p]=clamp(mix(out[p],194,t*(1-mid)*.28));out[p+1]=clamp(mix(out[p+1],207,t*(1-mid)*.33));out[p+2]=clamp(mix(out[p+2],218,t*(1-mid)*.48));}if(id==='water'){let l=(out[p]+out[p+1]+out[p+2])/3;for(let j=0;j<3;j++)out[p+j]=clamp(mix(out[p+j],Math.min(255,out[p+j]*1.12+8),t*.35)+((l<90)?-2*t:0));}
+      }return;}
+      if(id==='abstract'||id==='knife'||id==='brush'){let cell=id==='abstract'?Math.round(2+20*t):id==='knife'?Math.round(2+12*t):Math.round(2+10*t);if(id==='brush')cell=Math.max(2,Math.round(cell*.7));if(id==='abstract'||id==='knife'){
+         for(let y=0;y<h;y+=cell)for(let x=0;x<w;x+=cell){let sr=0,sg=0,sb=0,n=0;for(let yy=y;yy<Math.min(h,y+cell);yy+=2)for(let xx=x;xx<Math.min(w,x+cell);xx+=2){let p=(yy*w+xx)*4;sr+=src[p];sg+=src[p+1];sb+=src[p+2];n++;}let avg=[sr/n,sg/n,sb/n];for(let yy=y;yy<Math.min(h,y+cell);yy++)for(let xx=x;xx<Math.min(w,x+cell);xx++){let p=(yy*w+xx)*4;for(let j=0;j<3;j++)out[p+j]=clamp(mix(src[p+j],avg[j]*(id==='knife'?(1+.07*Math.sin(x*2+y)):1),id==='knife'?t*.75:t*.95));}}
+        } else {for(let y=0;y<h;y++)for(let x=0;x<w;x++){let p=(y*w+x)*4,xx=Math.max(0,Math.min(w-1,x-Math.round(cell*.65))),yy=Math.max(0,Math.min(h-1,y-Math.round(cell*.25))),q=(yy*w+xx)*4,stroke=.3+.7*Math.abs(Math.sin((x+y*.38)*Math.PI/cell));for(let j=0;j<3;j++)out[p+j]=clamp(mix(src[p+j],src[q+j]*(.94+.1*stroke),t*.68));}}
+        return;}
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){let p=(y*w+x)*4,r=src[p],g=src[p+1],b=src[p+2],lum=.2126*r+.7152*g+.0722*b;
+        if(id==='tonal'){let neutral=(r+g+b)/3;let muted=(lum-128)*(.93-.26*t)+128;out[p]=clamp(mix(r,mix(neutral,muted,.25),t*.58));out[p+1]=clamp(mix(g,mix(neutral,muted,.25),t*.58));out[p+2]=clamp(mix(b,mix(neutral,muted,.25),t*.58));}
+        if(id==='shift'){let wave=Math.sin((x/w*2+y/h)*3.14);out[p]=clamp(r+t*(9+16*wave));out[p+1]=clamp(g-t*5);out[p+2]=clamp(b+t*(12-19*wave));}
+        if(id==='broken'){let wave=Math.sin(x*.53+y*.37)*Math.cos(y*.19-x*.31);out[p]=clamp(r+wave*25*t);out[p+1]=clamp(g-wave*10*t);out[p+2]=clamp(b-wave*22*t);}
+        if(id==='light'){let spot=Math.max(0,1-Math.hypot(x/w-.4,y/h-.32)*1.5);let gain=1+t*(.68*spot-.36*(1-spot));for(let j=0;j<3;j++)out[p+j]=clamp((src[p+j]-105)*(1+.22*t)+105+(gain-1)*76);}
+      }
+    }
+    function render(){if(!base||previewOriginal)return;const token=++revision;by('artStatus').textContent='Vorschau wird berechnet …';
+      setTimeout(()=>{if(token!==revision)return;let im=new Uint8ClampedArray(base.data),w=base.width,h=base.height;for(const [id] of effects){const t=+by('art_'+id).value/100;if(t>0)transform(im,w,h,id,t);}if(token!==revision)return;let out=new ImageData(im,w,h);ctx.putImageData(out,0,0);by('artStatus').textContent='Vorschau bereit · Reihenfolge der Effekte ist fest.';},20);
+    }
+    function start(){if(!loaded||!sourceCanvas.width){alert('Bitte zuerst ein Foto öffnen.');return;}originalW=sourceCanvas.width;originalH=sourceCanvas.height;let k=Math.min(1,1000/Math.max(originalW,originalH));cv.width=Math.max(1,Math.round(originalW*k));cv.height=Math.max(1,Math.round(originalH*k));let c=workCanvas(cv.width,cv.height);c.getContext('2d').drawImage(sourceCanvas,0,0,cv.width,cv.height);base=pixels(c);overlay.style.display='block';previewOriginal=false;render();}
+    by('artOpenBtn').addEventListener('click',start);
+    by('artClose').addEventListener('click',()=>{overlay.style.display='none';revision++;});
+    effects.forEach(([id])=>by('art_'+id).addEventListener('input',()=>{by('art_'+id+'_val').textContent=by('art_'+id).value+' %';clearTimeout(timer);timer=setTimeout(render,120);}));
+    by('artReset').addEventListener('click',()=>{effects.forEach(([id])=>{by('art_'+id).value='0';by('art_'+id+'_val').textContent='0 %';});render();});
+    function originalPreview(on){if(!base)return;previewOriginal=on;revision++;if(on)ctx.putImageData(base,0,0);else render();}
+    by('artBefore').addEventListener('pointerdown',()=>originalPreview(true));['pointerup','pointercancel','pointerleave'].forEach(ev=>by('artBefore').addEventListener(ev,()=>originalPreview(false)));
+    async function fileFromCanvas(){return new Promise((resolve,reject)=>cv.toBlob(blob=>blob?resolve(blob):reject(new Error('PNG konnte nicht erzeugt werden')),'image/png'));}
+    by('artSave').addEventListener('click',async()=>{if(!base)return;try{if(previewOriginal)originalPreview(false);await new Promise(r=>setTimeout(r,180));let blob=await fileFromCanvas(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_Kuenstlerische_Gestaltung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}catch(e){by('artStatus').textContent=e.message;}});
+    by('artApply').addEventListener('click',async()=>{if(!base||busy)return;busy=true;by('artApply').disabled=true;try{if(previewOriginal)originalPreview(false);render();await new Promise(r=>setTimeout(r,350));let blob=await fileFromCanvas();await new Promise((resolve,reject)=>loadPhoto(blob,true,err=>err?reject(err):resolve()));overlay.style.display='none';by('artStatus').textContent='Gestaltetes Bild in alle Module übernommen.';}catch(e){by('artStatus').textContent='Übernahme fehlgeschlagen: '+e.message;}finally{busy=false;by('artApply').disabled=false;}});
+  })();
 
 </script>
 
