@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.69</title>
+  <title>AtelierAI iPad 3.71</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1046,7 +1046,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.69</div>
+    <div class="title">AtelierAI · iPad 3.71</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1210,6 +1210,13 @@
       </div>
       <div class="section" id="formsPanel">
         <h3>Großformen</h3>
+        <div style="border:1px solid #bbb;border-radius:10px;padding:10px;margin:8px 0 12px">
+          <label style="display:block;margin-bottom:8px"><input type="checkbox" id="formsPosterize"> <strong>Posterize (Tontrennung) einschalten</strong></label>
+          <label for="formsPosterizeSteps">Tonwertstufen: <span id="formsPosterizeStepsVal">5</span></label>
+          <input id="formsPosterizeSteps" type="range" min="3" max="8" step="1" value="5" style="width:100%;min-height:44px">
+          <label style="display:block;margin-top:8px"><input id="formsPosterizeGray" type="checkbox"> Schwarz-Weiß statt Farbe</label>
+          <p class="tiny">Posterize teilt das Foto in 3–8 klar getrennte Helligkeitsstufen. Farbig bleiben die ursprünglichen Farbtöne möglichst erhalten. Ausschalten zeigt wieder die gewohnten Großformen. Die Darstellung kann als Malvorlage übernommen werden.</p>
+        </div>
         <button id="formsApply" type="button" style="width:100%;margin-bottom:8px" disabled>Als Malvorlage übernehmen</button>
         <p class="tiny">Hält die Großformen als neue Arbeitsvorlage für alle anderen Module fest. Das ursprüngliche Foto bleibt über „Zurücksetzen“ erreichbar.</p>
         <p id="formsApplyStatus" class="tiny" role="status" aria-live="polite"></p>
@@ -8069,7 +8076,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     return {level:formLevel,squint:document.getElementById('formsSquint').checked,
       blur:document.getElementById('formsSquintBlur').value,
       light:document.getElementById('formsSquintLight').value,
-      spots:document.getElementById('formsSpots').value,soft:formsSquintPreview};
+      spots:document.getElementById('formsSpots').value,soft:formsSquintPreview,poster:document.getElementById('formsPosterize').checked,posterSteps:document.getElementById('formsPosterizeSteps').value,posterGray:document.getElementById('formsPosterizeGray').checked};
   }
   function captureCroppedForms(cell){
     if(!formLevel)return null;
@@ -8088,9 +8095,55 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     document.getElementById('formsSquintBlur').value=settings.blur;
     document.getElementById('formsSquintLight').value=settings.light;
     document.getElementById('formsSpots').value=settings.spots;
+    document.getElementById('formsPosterize').checked=!!settings.poster;
+    document.getElementById('formsPosterizeSteps').value=settings.posterSteps||5;
+    document.getElementById('formsPosterizeStepsVal').textContent=settings.posterSteps||5;
+    document.getElementById('formsPosterizeGray').checked=!!settings.posterGray;
     formsSquintPreview=settings.soft;syncSquintPreview();
     setFormLevel(settings.level);
     if(snapshot.preview)toggleFormsOriginal();
+  }
+  function rebuildPosterizeForms(){
+    // Analyze at a bounded size for responsive iPad/Safari rendering.
+    const w=sourceCanvas.width,h=sourceCanvas.height;
+    const scale=Math.min(1,1200/Math.max(w,h));
+    const ww=Math.max(1,Math.round(w*scale)),wh=Math.max(1,Math.round(h*scale));
+    const work=document.createElement('canvas');work.width=ww;work.height=wh;
+    const cx=work.getContext('2d',{willReadFrequently:true});
+    cx.imageSmoothingEnabled=true;cx.imageSmoothingQuality='high';
+    cx.drawImage(sourceCanvas,0,0,ww,wh);
+    const src=cx.getImageData(0,0,ww,wh);
+    const steps=Math.max(3,Math.min(8,Number(document.getElementById('formsPosterizeSteps').value)||5));
+    const gray=document.getElementById('formsPosterizeGray').checked;
+    const data=src.data;
+    // sRGB lightness representation: equal bins in perceptual Lab L*.
+    const toLinear=v=>{v/=255;return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);};
+    const toSrgb=v=>{v=Math.max(0,Math.min(1,v));return Math.round(255*(v<=0.0031308?12.92*v:1.055*Math.pow(v,1/2.4)-0.055));};
+    const levels=Array.from({length:steps},(_,i)=>{
+      const L=(i+.5)*100/steps;
+      const y=L>8?Math.pow((L+16)/116,3):L/903.2963;
+      return toSrgb(y);
+    });
+    for(let i=0;i<data.length;i+=4){
+      const r=data[i],g=data[i+1],b=data[i+2];
+      const Y=.2126*toLinear(r)+.7152*toLinear(g)+.0722*toLinear(b);
+      const L=Y>0.0088564517?116*Math.cbrt(Y)-16:903.2963*Y;
+      const bin=Math.min(steps-1,Math.floor(L*steps/100));
+      const target=levels[bin];
+      if(gray){data[i]=target;data[i+1]=target;data[i+2]=target;}
+      else{
+        // Retain each pixel's hue/saturation while snapping overall brightness.
+        const current=toSrgb(Y),ratio=target/Math.max(1,current);
+        data[i]=Math.min(255,Math.round(r*ratio));
+        data[i+1]=Math.min(255,Math.round(g*ratio));
+        data[i+2]=Math.min(255,Math.round(b*ratio));
+      }
+    }
+    // Posterize has sharp boundaries, not blurred or merged color regions.
+    cx.putImageData(src,0,0);
+    formCtx.imageSmoothingEnabled=true;formCtx.imageSmoothingQuality='high';
+    formCtx.drawImage(work,0,0,w,h);
+    formsBasePixels=null;formsRankData=null;renderedFormSpots=0;
   }
   function rebuildForms(){
     if(!loaded) return;
@@ -8103,7 +8156,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }
       croppedFormsSnapshot=null;renderedFormLevel=null;
     }
-    const mode=formsOriginalPreview?'original':document.getElementById('formsSquint').checked?'squint:'+document.getElementById('formsSquintBlur').value+':'+formsSquintPreview+':'+document.getElementById('formsSquintLight').value:'classic';
+    const mode=formsOriginalPreview?'original':document.getElementById('formsPosterize').checked?'posterize:'+document.getElementById('formsPosterizeSteps').value+':'+document.getElementById('formsPosterizeGray').checked:document.getElementById('formsSquint').checked?'squint:'+document.getElementById('formsSquintBlur').value+':'+formsSquintPreview+':'+document.getElementById('formsSquintLight').value:'classic';
     if(renderedFormLevel===formLevel && renderedFormMode===mode){
       if(formLevel && renderedFormSpots!==Number(document.getElementById('formsSpots').value))renderFormsFilled();
       return;
@@ -8121,6 +8174,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       return;
     }
 
+    if(mode.startsWith('posterize:')){rebuildPosterizeForms();return;}
     if(mode.startsWith('squint:')){ rebuildSquintForms(); return; }
 
     // Schnellere Großformen:
@@ -8544,6 +8598,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   document.getElementById('formsSquintLight').addEventListener('input',e=>{document.getElementById('formsSquintLightVal').textContent=e.target.value+' %';});
   document.getElementById('formsSquintLight').addEventListener('change',()=>{if(document.getElementById('formsSquint').checked&&!formsSquintPreview)setFormLevel(formLevel||3);});
   syncSquintPreview();
+  document.getElementById('formsPosterize').addEventListener('change',()=>setFormLevel(formLevel||3));
+  document.getElementById('formsPosterizeSteps').addEventListener('input',e=>{document.getElementById('formsPosterizeStepsVal').textContent=e.target.value;});
+  document.getElementById('formsPosterizeSteps').addEventListener('change',()=>{if(document.getElementById('formsPosterize').checked)setFormLevel(formLevel||3);});
+  document.getElementById('formsPosterizeGray').addEventListener('change',()=>{if(document.getElementById('formsPosterize').checked)setFormLevel(formLevel||3);});
   formsOriginal.addEventListener('click',toggleFormsOriginal);
   syncFormsOriginal();
   formsSlider.addEventListener('input',()=>setFormLevel(formsSlider.value));
