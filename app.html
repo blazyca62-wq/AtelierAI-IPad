@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.75</title>
+  <title>AtelierAI iPad 3.76</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -10886,7 +10886,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
 
 <script>
-  // 3.72 — separater Gestaltungs-Arbeitsplatz, greift nur lesend auf sourceCanvas zu.
+  // 3.76 — separater Gestaltungs-Arbeitsplatz, greift nur lesend auf sourceCanvas zu.
   (()=>{
     const by=id=>document.getElementById(id), overlay=by('artStudio'),cv=by('artCanvas'),ctx=cv.getContext('2d',{willReadFrequently:true});
     // 3.75: eigene Transform-Ansicht, die Bilddaten/Export unberührt lässt.
@@ -10942,14 +10942,86 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       for(let y=0;y<h;y++)for(let x=0;x<w;x++){let sums=[0,0,0],n=0;for(let k=-radius;k<=radius;k++){let yy=Math.min(h-1,Math.max(0,y+k)),idx=(yy*w+x)*4;for(let j=0;j<3;j++)sums[j]+=temp[idx+j];n++;}let q=(y*w+x)*4;for(let j=0;j<3;j++)out[q+j]=sums[j]/n;out[q+3]=255;}return out;}
     const mix=(a,b,t)=>a*(1-t)+b*t;
     function transform(data,w,h,id,t){const src=data.slice(),out=data;
-      if(id==='edge'||id==='water'||id==='depth'){const blurred=blurImage(src,w,h,id==='edge'?1+3*t:id==='water'?1+2*t:1+4*t);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let p=(y*w+x)*4,mid=y/h;let a=id==='depth'?t*(.08+.76*(1-mid)**2):id==='water'?t*.48:t*.70;
+      if(id==='edge'||id==='depth'){const blurred=blurImage(src,w,h,id==='edge'?1+3*t:id==='water'?1+2*t:1+4*t);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let p=(y*w+x)*4,mid=y/h;let a=id==='depth'?t*(.08+.76*(1-mid)**2):id==='water'?t*.48:t*.70;
         if(id==='edge'){const xx=Math.min(w-1,x+1),yy=Math.min(h-1,y+1),q=(y*w+xx)*4,z=(yy*w+x)*4;let d=0;for(let j=0;j<3;j++)d+=Math.abs(src[p+j]-src[q+j])+Math.abs(src[p+j]-src[z+j]);a*=1-Math.min(.95,d/150);}
         for(let j=0;j<3;j++)out[p+j]=clamp(mix(src[p+j],blurred[p+j],a));if(id==='depth'){out[p]=clamp(mix(out[p],194,t*(1-mid)*.28));out[p+1]=clamp(mix(out[p+1],207,t*(1-mid)*.33));out[p+2]=clamp(mix(out[p+2],218,t*(1-mid)*.48));}if(id==='water'){let l=(out[p]+out[p+1]+out[p+2])/3;for(let j=0;j<3;j++)out[p+j]=clamp(mix(out[p+j],Math.min(255,out[p+j]*1.12+8),t*.35)+((l<90)?-2*t:0));}
       }return;}
-      if(id==='abstract'||id==='knife'||id==='brush'){let cell=id==='abstract'?Math.round(2+20*t):id==='knife'?Math.round(2+12*t):Math.round(2+10*t);if(id==='brush')cell=Math.max(2,Math.round(cell*.7));if(id==='abstract'||id==='knife'){
-         for(let y=0;y<h;y+=cell)for(let x=0;x<w;x+=cell){let sr=0,sg=0,sb=0,n=0;for(let yy=y;yy<Math.min(h,y+cell);yy+=2)for(let xx=x;xx<Math.min(w,x+cell);xx+=2){let p=(yy*w+xx)*4;sr+=src[p];sg+=src[p+1];sb+=src[p+2];n++;}let avg=[sr/n,sg/n,sb/n];for(let yy=y;yy<Math.min(h,y+cell);yy++)for(let xx=x;xx<Math.min(w,x+cell);xx++){let p=(yy*w+xx)*4;for(let j=0;j<3;j++)out[p+j]=clamp(mix(src[p+j],avg[j]*(id==='knife'?(1+.07*Math.sin(x*2+y)):1),id==='knife'?t*.75:t*.95));}}
-        } else {for(let y=0;y<h;y++)for(let x=0;x<w;x++){let p=(y*w+x)*4,xx=Math.max(0,Math.min(w-1,x-Math.round(cell*.65))),yy=Math.max(0,Math.min(h-1,y-Math.round(cell*.25))),q=(yy*w+xx)*4,stroke=.3+.7*Math.abs(Math.sin((x+y*.38)*Math.PI/cell));for(let j=0;j<3;j++)out[p+j]=clamp(mix(src[p+j],src[q+j]*(.94+.1*stroke),t*.68));}}
-        return;}
+      if(id==='brush'||id==='broken'||id==='abstract'||id==='water'){
+        // Deterministische, vom Foto geführte Flächenbildung statt Pixelmuster.
+        const lum=new Float32Array(w*h);
+        for(let i=0;i<w*h;i++){let p=i*4;lum[i]=.2126*src[p]+.7152*src[p+1]+.0722*src[p+2];}
+        const sample=(x,y)=>{x=Math.max(0,Math.min(w-1,Math.round(x)));y=Math.max(0,Math.min(h-1,Math.round(y)));return (y*w+x)*4;};
+        const hash=(x,y)=>{let v=Math.sin(x*127.1+y*311.7+19.17)*43758.5453;return v-Math.floor(v);};
+        if(id==='brush'){
+          const step=Math.max(3,Math.round(4+8*t)),length=step*(1.5+2*t);
+          const layer=workCanvas(w,h),lc=layer.getContext('2d');lc.putImageData(new ImageData(new Uint8ClampedArray(src),w,h),0,0);
+          lc.lineCap='round';
+          for(let gy=0;gy<h;gy+=step)for(let gx=0;gx<w;gx+=step){
+            const x=Math.min(w-1,gx+(hash(gx,gy)-.5)*step),y=Math.min(h-1,gy+(hash(gy,gx)-.5)*step);
+            const xl=Math.max(0,Math.round(x-2)),xr=Math.min(w-1,Math.round(x+2)),yu=Math.max(0,Math.round(y-2)),yd=Math.min(h-1,Math.round(y+2));
+            let dx=lum[Math.round(y)*w+xr]-lum[Math.round(y)*w+xl],dy=lum[yd*w+Math.round(x)]-lum[yu*w+Math.round(x)];
+            let angle=Math.atan2(dy,dx)+Math.PI/2;
+            if(Math.abs(dx)+Math.abs(dy)<8)angle=hash(gx+23,gy+11)*Math.PI;
+            const p=sample(x,y),bright=(hash(gx+3,gy+9)-.5)*20*t;
+            lc.strokeStyle=`rgba(${clamp(src[p]+bright)|0},${clamp(src[p+1]+bright)|0},${clamp(src[p+2]+bright)|0},${.35+.6*t})`;
+            lc.lineWidth=Math.max(1,step*(.35+.28*hash(gy,gx+4)));
+            const half=length*(.32+.45*hash(gx+5,gy))*.5;
+            lc.beginPath();lc.moveTo(x-Math.cos(angle)*half,y-Math.sin(angle)*half);lc.lineTo(x+Math.cos(angle)*half,y+Math.sin(angle)*half);lc.stroke();
+          }
+          const painted=lc.getImageData(0,0,w,h).data;
+          for(let i=0;i<out.length;i+=4)for(let j=0;j<3;j++)out[i+j]=mix(src[i+j],painted[i+j],Math.min(1,.4+t*.6));
+          return;
+        }
+        if(id==='broken'){
+          const radius=Math.round(3+9*t),blur=blurImage(src,w,h,Math.max(1,Math.round(radius*.35)));
+          for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+            const p=(y*w+x)*4,fx=Math.floor(x/radius),fy=Math.floor(y/radius);
+            const n=hash(fx,fy),n2=hash(fx+31,fy+8),sign=n>.5?1:-1;
+            const local=[blur[p],blur[p+1],blur[p+2]],l=.2126*local[0]+.7152*local[1]+.0722*local[2];
+            // Warm/kalt verschobene Farbflecken bei ungefähr gleichbleibendem Tonwert.
+            const amount=t*(10+23*n2),edge=Math.min(1,Math.abs(lum[y*w+x]-l)/40);
+            const a=t*(.35+.48*(1-edge));
+            out[p]=clamp(mix(src[p],local[0]+sign*amount,a));
+            out[p+1]=clamp(mix(src[p+1],local[1]+sign*amount*.12,a));
+            out[p+2]=clamp(mix(src[p+2],local[2]-sign*amount*.75,a));
+          }return;
+        }
+        if(id==='abstract'){
+          const radius=Math.round(2+9*t),flat=blurImage(src,w,h,radius);
+          const levels=Math.max(5,Math.round(24-15*t));
+          for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+            const p=(y*w+x)*4,idx=y*w+x;
+            const gx=lum[y*w+Math.min(w-1,x+2)]-lum[y*w+Math.max(0,x-2)];
+            const gy=lum[Math.min(h-1,y+2)*w+x]-lum[Math.max(0,y-2)*w+x];
+            const structure=Math.min(1,Math.hypot(gx,gy)/65);
+            const strength=t*(.95-.8*structure);
+            for(let j=0;j<3;j++){
+              const simplified=Math.round(flat[p+j]/255*levels)/levels*255;
+              out[p+j]=clamp(mix(src[p+j],simplified,strength));
+            }
+          }return;
+        }
+        if(id==='water'){
+          const soft=blurImage(src,w,h,Math.round(1+4*t));
+          for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+            const p=(y*w+x)*4,localLum=.2126*soft[p]+.7152*soft[p+1]+.0722*soft[p+2];
+            const x2=Math.min(w-1,x+2),y2=Math.min(h-1,y+2);
+            const grad=Math.min(1,(Math.abs(lum[y*w+x]-lum[y*w+x2])+Math.abs(lum[y*w+x]-lum[y2*w+x]))/65);
+            const pigment=Math.max(0,Math.min(1,(245-localLum)/215));
+            const edge=grad*t*.18*pigment;
+            const grain=(hash(Math.floor(x/3),Math.floor(y/3))-.5)*t*7*pigment;
+            for(let j=0;j<3;j++){
+              let wash=mix(255,soft[p+j],Math.max(0,Math.min(1,(.86-.15*t)*pigment+.12)));
+              out[p+j]=clamp(mix(src[p+j],wash,t*.95)-edge*24+grain);
+            }
+          }return;
+        }
+      }
+      if(id==='knife'){
+        const cell=Math.round(2+12*t);
+        for(let y=0;y<h;y+=cell)for(let x=0;x<w;x+=cell){let sr=0,sg=0,sb=0,n=0;for(let yy=y;yy<Math.min(h,y+cell);yy+=2)for(let xx=x;xx<Math.min(w,x+cell);xx+=2){let p=(yy*w+xx)*4;sr+=src[p];sg+=src[p+1];sb+=src[p+2];n++;}let avg=[sr/n,sg/n,sb/n];for(let yy=y;yy<Math.min(h,y+cell);yy++)for(let xx=x;xx<Math.min(w,x+cell);xx++){let p=(yy*w+xx)*4;for(let j=0;j<3;j++)out[p+j]=clamp(mix(src[p+j],avg[j]*(1+.07*Math.sin(x*2+y)),t*.75));}}
+        return;
+      }
       for(let y=0;y<h;y++)for(let x=0;x<w;x++){let p=(y*w+x)*4,r=src[p],g=src[p+1],b=src[p+2],lum=.2126*r+.7152*g+.0722*b;
         if(id==='tonal'){let neutral=(r+g+b)/3;let muted=(lum-128)*(.93-.26*t)+128;out[p]=clamp(mix(r,mix(neutral,muted,.25),t*.58));out[p+1]=clamp(mix(g,mix(neutral,muted,.25),t*.58));out[p+2]=clamp(mix(b,mix(neutral,muted,.25),t*.58));}
         if(id==='shift'){let wave=Math.sin((x/w*2+y/h)*3.14);out[p]=clamp(r+t*(9+16*wave));out[p+1]=clamp(g-t*5);out[p+2]=clamp(b+t*(12-19*wave));}
