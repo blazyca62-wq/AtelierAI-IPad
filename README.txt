@@ -15,3 +15,5 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 3.73: Künstlerische Gestaltung als eigenständig startendes Skript; korrigierter Öffnen-Knopf und eigene Fehleranzeige.
 
 3.74: Vorschau-Canvas aus globaler absoluter Positionierung ausgenommen; iPad-Layout, sichtbare Regler und getrenntes Scrollen repariert.
+
+3.75: Künstlerische Gestaltung: Pinch-Zoom, Ein-Finger-Verschieben, +/- und Einpassen; Export bleibt unverändert.

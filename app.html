@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.74</title>
+  <title>AtelierAI iPad 3.75</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1811,7 +1811,7 @@
 
 <div id="artStudio" style="display:none;position:fixed;inset:0;z-index:1500;background:#f2f1ed;overflow:auto;padding:12px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#222">
   <div style="max-width:1100px;margin:auto">
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><strong style="font-size:19px;margin-right:auto">Künstlerische Gestaltung · 10 Effekte</strong><button id="artBefore" class="secondary">Original halten / vergleichen</button><button id="artClose" class="secondary">Schließen</button></div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><strong style="font-size:19px;margin-right:auto">Künstlerische Gestaltung · 10 Effekte</strong><button id="artZoomOut" class="secondary" type="button">−</button><span id="artZoomLabel" style="min-width:45px;text-align:center">100 %</span><button id="artZoomIn" class="secondary" type="button">+</button><button id="artZoomFit" class="secondary" type="button">Einpassen</button><button id="artBefore" class="secondary">Original halten / vergleichen</button><button id="artClose" class="secondary">Schließen</button></div>
   <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:12px" id="artLayout">
     <div style="background:#dedbd4;border-radius:14px;display:flex;align-items:center;justify-content:center;min-height:260px;max-height:78vh;overflow:hidden"><canvas id="artCanvas" style="max-width:100%;max-height:76vh;object-fit:contain;touch-action:pinch-zoom"></canvas></div>
     <div style="background:#fff;border-radius:14px;padding:13px;max-height:80vh;overflow:auto" id="artControls">
@@ -1826,7 +1826,8 @@
 #artStudio{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 #artLayout{min-width:0;align-items:stretch;}
 #artLayout > div:first-child{position:relative;min-width:0;min-height:260px;max-height:calc(100dvh - 116px);overflow:hidden;}
-#artCanvas{position:static!important;inset:auto!important;left:auto!important;top:auto!important;right:auto!important;bottom:auto!important;width:auto!important;height:auto!important;display:block!important;max-width:100%!important;max-height:calc(100dvh - 140px)!important;object-fit:contain!important;touch-action:pan-x pan-y!important;flex:0 1 auto;}
+#artCanvas{position:static!important;inset:auto!important;left:auto!important;top:auto!important;right:auto!important;bottom:auto!important;width:auto!important;height:auto!important;display:block!important;max-width:100%!important;max-height:calc(100dvh - 140px)!important;object-fit:contain!important;touch-action:none!important;transform-origin:center center!important;will-change:transform;flex:0 1 auto;}
+#artLayout > div:first-child{touch-action:none!important;user-select:none;-webkit-user-select:none;}
 #artControls{min-width:0;min-height:0;max-height:calc(100dvh - 116px)!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 @media(max-width:740px){#artLayout{grid-template-columns:minmax(0,1fr)!important}#artLayout > div:first-child{height:min(52dvh,500px);min-height:180px;max-height:none}#artCanvas{max-height:50dvh!important}#artControls{max-height:none!important;overflow:visible!important}}
 </style>
@@ -10888,6 +10889,36 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   // 3.72 — separater Gestaltungs-Arbeitsplatz, greift nur lesend auf sourceCanvas zu.
   (()=>{
     const by=id=>document.getElementById(id), overlay=by('artStudio'),cv=by('artCanvas'),ctx=cv.getContext('2d',{willReadFrequently:true});
+    // 3.75: eigene Transform-Ansicht, die Bilddaten/Export unberührt lässt.
+    const stage=cv.parentElement;
+    let zoom=1,panX=0,panY=0;const active=new Map();let gesture=null;
+    const zoomLabel=by('artZoomLabel');
+    function showView(){cv.style.transform=`translate(${panX}px,${panY}px) scale(${zoom})`;zoomLabel.textContent=Math.round(zoom*100)+' %';}
+    function fitView(){zoom=1;panX=0;panY=0;active.clear();gesture=null;showView();}
+    function setZoom(next){next=Math.max(1,Math.min(12,next));zoom=next;if(zoom===1){panX=0;panY=0;}showView();}
+    function mid(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};}
+    function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+    stage.addEventListener('pointerdown',e=>{
+      if(overlay.style.display==='none')return;
+      e.preventDefault();stage.setPointerCapture(e.pointerId);
+      active.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(active.size===1){gesture={kind:'pan',x:e.clientX,y:e.clientY,px:panX,py:panY};}
+      else if(active.size>=2){const [a,b]=[...active.values()];gesture={kind:'pinch',distance:Math.max(1,dist(a,b)),zoom,center:mid(a,b),px:panX,py:panY};}
+    });
+    stage.addEventListener('pointermove',e=>{
+      if(!active.has(e.pointerId))return;e.preventDefault();active.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(active.size>=2){const [a,b]=[...active.values()];if(!gesture||gesture.kind!=='pinch'){gesture={kind:'pinch',distance:Math.max(1,dist(a,b)),zoom,center:mid(a,b),px:panX,py:panY};}
+        const c=mid(a,b),newZoom=Math.max(1,Math.min(12,gesture.zoom*dist(a,b)/gesture.distance)),ratio=newZoom/gesture.zoom;
+        const rect=stage.getBoundingClientRect(),ox=gesture.center.x-rect.left-rect.width/2,oy=gesture.center.y-rect.top-rect.height/2;
+        zoom=newZoom;panX=gesture.px+(c.x-gesture.center.x)+(1-ratio)*(ox-gesture.px);panY=gesture.py+(c.y-gesture.center.y)+(1-ratio)*(oy-gesture.py);showView();
+      }else if(gesture?.kind==='pan'){panX=gesture.px+e.clientX-gesture.x;panY=gesture.py+e.clientY-gesture.y;showView();}
+    });
+    function endPointer(e){if(!active.has(e.pointerId))return;active.delete(e.pointerId);if(active.size===1){const a=[...active.values()][0];gesture={kind:'pan',x:a.x,y:a.y,px:panX,py:panY};}else gesture=null;}
+    ['pointerup','pointercancel','lostpointercapture'].forEach(t=>stage.addEventListener(t,endPointer));
+    by('artZoomIn').addEventListener('click',()=>setZoom(zoom*1.5));
+    by('artZoomOut').addEventListener('click',()=>setZoom(zoom/1.5));
+    by('artZoomFit').addEventListener('click',fitView);
+    stage.addEventListener('wheel',e=>{if(!e.ctrlKey)return;e.preventDefault();setZoom(zoom*(e.deltaY<0?1.2:1/1.2));},{passive:false});
     const effects=[
       ['brush','Pinselstriche','Malerische, gerichtete Striche'],
       ['edge','Kantensteuerung','Unwichtige Details weichzeichnen'],
@@ -10929,7 +10960,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     function render(){if(!base||previewOriginal)return;const token=++revision;by('artStatus').textContent='Vorschau wird berechnet …';
       setTimeout(()=>{if(token!==revision)return;let im=new Uint8ClampedArray(base.data),w=base.width,h=base.height;for(const [id] of effects){const t=+by('art_'+id).value/100;if(t>0)transform(im,w,h,id,t);}if(token!==revision)return;let out=new ImageData(im,w,h);ctx.putImageData(out,0,0);by('artStatus').textContent='Vorschau bereit · Reihenfolge der Effekte ist fest.';},20);
     }
-    function start(){const photo=window.__atelierArtBridge?.photo?.();const sourceCanvas=photo?.canvas;if(!photo?.loaded||!sourceCanvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}originalW=sourceCanvas.width;originalH=sourceCanvas.height;let k=Math.min(1,1000/Math.max(originalW,originalH));cv.width=Math.max(1,Math.round(originalW*k));cv.height=Math.max(1,Math.round(originalH*k));let c=workCanvas(cv.width,cv.height);c.getContext('2d').drawImage(sourceCanvas,0,0,cv.width,cv.height);base=pixels(c);overlay.style.display='block';previewOriginal=false;render();}
+    function start(){const photo=window.__atelierArtBridge?.photo?.();const sourceCanvas=photo?.canvas;if(!photo?.loaded||!sourceCanvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}originalW=sourceCanvas.width;originalH=sourceCanvas.height;let k=Math.min(1,1000/Math.max(originalW,originalH));cv.width=Math.max(1,Math.round(originalW*k));cv.height=Math.max(1,Math.round(originalH*k));let c=workCanvas(cv.width,cv.height);c.getContext('2d').drawImage(sourceCanvas,0,0,cv.width,cv.height);base=pixels(c);overlay.style.display='block';previewOriginal=false;fitView();render();}
     by('artOpenBtn').addEventListener('click',()=>{try{start()}catch(e){console.error('Gestaltung:',e);overlay.style.display='block';by('artStatus').textContent='Fehler beim Öffnen: '+e.message;}});
     by('artClose').addEventListener('click',()=>{overlay.style.display='none';revision++;});
     effects.forEach(([id])=>by('art_'+id).addEventListener('input',()=>{by('art_'+id+'_val').textContent=by('art_'+id).value+' %';clearTimeout(timer);timer=setTimeout(render,120);}));
