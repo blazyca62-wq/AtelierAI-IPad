@@ -24,4 +24,4 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 
 3.78: Sechs Kunstfilter neu abgestimmt (kantenerhaltende Glättung, mehrstufige Farbgruppen, tonwertorientierte Lichtführung) und vier Gestaltungsrezepte.
 
-3.79: Rezeptschaltflächen mit kontrastreicher dunkler Schrift, 14 Rezepte, Zurücksetzen als AN/AUS-Vergleich mit Wiederherstellung der vorherigen Reglerwerte.
+3.80: Zweistufige Wirk-Kennlinie für die künstlerische Gestaltung: 0–50 % entspricht ungefähr dem bisherigen Gesamtbereich, 50–100 % steigert die Effekte deutlich weiter bis zur Verfremdung. Rezepte bleiben erhalten.
