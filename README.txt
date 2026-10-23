@@ -23,3 +23,5 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 3.77: Vier wenig brauchbare Filter (Pinselstriche, Aquarell, Spachtel, Abstraktion) entfernt. Sechs verbleibende Gestaltungsfilter gezielter verbessert.
 
 3.78: Sechs Kunstfilter neu abgestimmt (kantenerhaltende Glättung, mehrstufige Farbgruppen, tonwertorientierte Lichtführung) und vier Gestaltungsrezepte.
+
+3.79: Rezeptschaltflächen mit kontrastreicher dunkler Schrift, 14 Rezepte, Zurücksetzen als AN/AUS-Vergleich mit Wiederherstellung der vorherigen Reglerwerte.
