@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.80</title>
+  <title>AtelierAI iPad 3.81</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -10925,29 +10925,33 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       ['shift','Künstlerische Farbverschiebung','Lichter wärmer, Schatten kühler – ohne Farbstich'],
       ['broken','Gebrochene Farben','Sanfte Nachbarfarben innerhalb ähnlicher Bildflächen'],
       ['light','Dramatische Lichtführung','Lichter betonen, Schatten vertiefen – ohne festen Lichtfleck'],
-      ['depth','Atmosphärische Perspektive','Ferne weicher, heller, etwas kühler']
+      ['depth','Atmosphärische Perspektive','Ferne weicher, heller, etwas kühler'],
+      ['bright','Helligkeit','Gesamtes Bild heller oder dunkler'],
+      ['sat','Sättigung','Farben kräftiger oder gedämpfter'],
+      ['temp','Warm / Kalt','Gesamte Farbtemperatur wärmer oder kühler']
     ];
     const sliders=by('artSliders');
-    sliders.innerHTML=effects.map(([id,name,desc],i)=>`<div style="padding:9px 0;border-bottom:1px solid #ddd"><label for="art_${id}" style="display:flex;justify-content:space-between;gap:8px;font-weight:650;font-size:14px"><span>${i+1}. ${name}</span><output id="art_${id}_val">0 %</output></label><div style="font-size:12px;color:#666">${desc}</div><input id="art_${id}" type="range" min="0" max="100" step="5" value="0" style="width:100%;min-height:36px"></div>`).join('');
+    sliders.innerHTML=effects.map(([id,name,desc],i)=>{const signed=(id==='bright'||id==='sat'||id==='temp');return `<div style="padding:9px 0;border-bottom:1px solid #ddd"><label for="art_${id}" style="display:flex;justify-content:space-between;gap:8px;font-weight:650;font-size:14px"><span>${i+1}. ${name}</span><output id="art_${id}_val">0 %</output></label><div style="font-size:12px;color:#666">${desc}</div><input id="art_${id}" type="range" min="${signed?-100:0}" max="100" step="5" value="0" style="width:100%;min-height:36px"></div>`;}).join('');
     const presets=[
-      ['Natürlich malerisch',{edge:65,tonal:35,shift:25,broken:50,light:25,depth:0}],
-      ['Stimmungsvolle Landschaft',{edge:50,tonal:40,shift:45,broken:55,light:45,depth:35}],
-      ['Licht & Schatten',{edge:25,tonal:25,shift:35,broken:20,light:75,depth:0}],
-      ['Zurückhaltendes Porträt',{edge:35,tonal:35,shift:15,broken:15,light:20,depth:0}],
-      ['Goldene Stunde',{edge:35,tonal:25,shift:65,broken:30,light:60,depth:20}],
-      ['Nebeliger Morgen',{edge:35,tonal:65,shift:15,broken:15,light:10,depth:85}],
-      ['Leuchtende Farben',{edge:25,tonal:10,shift:50,broken:65,light:35,depth:0}],
-      ['Ruhige Farbflächen',{edge:85,tonal:50,shift:10,broken:10,light:10,depth:10}],
-      ['Dramatische Landschaft',{edge:55,tonal:45,shift:45,broken:35,light:85,depth:50}],
-      ['Sanftes Pastell',{edge:50,tonal:80,shift:20,broken:15,light:15,depth:30}],
-      ['Herbstliche Wärme',{edge:50,tonal:35,shift:75,broken:55,light:40,depth:15}],
-      ['Klare Formen',{edge:90,tonal:15,shift:5,broken:5,light:30,depth:0}],
-      ['Kühle Ferne',{edge:40,tonal:30,shift:20,broken:20,light:25,depth:75}],
-      ['Feine Farbschwingung',{edge:30,tonal:20,shift:30,broken:80,light:15,depth:0}]
+      ['Natürlich malerisch',{edge:32,tonal:18,shift:12,broken:24,light:12,depth:0,bright:2,sat:8,temp:4}],
+      ['Stimmungsvolle Landschaft',{edge:25,tonal:20,shift:22,broken:26,light:22,depth:18,bright:4,sat:10,temp:8}],
+      ['Licht & Schatten',{edge:12,tonal:12,shift:18,broken:10,light:38,depth:0,bright:-2,sat:6,temp:2}],
+      ['Zurückhaltendes Porträt',{edge:18,tonal:18,shift:8,broken:8,light:12,depth:0,bright:3,sat:-4,temp:4}],
+      ['Goldene Stunde',{edge:18,tonal:12,shift:30,broken:15,light:28,depth:10,bright:8,sat:10,temp:20}],
+      ['Nebeliger Morgen',{edge:18,tonal:30,shift:8,broken:8,light:5,depth:36,bright:10,sat:-12,temp:-4}],
+      ['Leuchtende Farben',{edge:12,tonal:5,shift:25,broken:30,light:18,depth:0,bright:5,sat:24,temp:8}],
+      ['Ruhige Farbflächen',{edge:42,tonal:25,shift:5,broken:5,light:5,depth:5,bright:2,sat:-10,temp:0}],
+      ['Dramatische Landschaft',{edge:28,tonal:22,shift:22,broken:18,light:42,depth:25,bright:-4,sat:14,temp:10}],
+      ['Sanftes Pastell',{edge:25,tonal:40,shift:10,broken:8,light:8,depth:15,bright:12,sat:-18,temp:4}],
+      ['Herbstliche Wärme',{edge:25,tonal:18,shift:36,broken:26,light:20,depth:8,bright:4,sat:12,temp:22}],
+      ['Klare Formen',{edge:45,tonal:8,shift:2,broken:2,light:15,depth:0,bright:0,sat:0,temp:0}],
+      ['Kühle Ferne',{edge:20,tonal:15,shift:10,broken:10,light:12,depth:34,bright:4,sat:-6,temp:-18}],
+      ['Feine Farbschwingung',{edge:15,tonal:10,shift:15,broken:40,light:8,depth:0,bright:2,sat:6,temp:2}]
     ];
     let resetSnapshot=null;
     const readArtValues=()=>Object.fromEntries(effects.map(([id])=>[id,+by('art_'+id).value]));
-    function setArtValues(values){effects.forEach(([id])=>{by('art_'+id).value=values[id]||0;by('art_'+id+'_val').textContent=by('art_'+id).value+' %';});}
+    function formatArtValue(id,val){const v=+val||0;return (v>0&&(['bright','sat','temp'].includes(id))?'+':'')+v+' %';}
+    function setArtValues(values){effects.forEach(([id])=>{const v=Object.prototype.hasOwnProperty.call(values,id)?values[id]:0;by('art_'+id).value=v;by('art_'+id+'_val').textContent=formatArtValue(id,v);});}
     function syncArtReset(){const b=by('artReset');b.textContent=resetSnapshot?'Alles zurücksetzen: AUS · wieder AN':'Alles zurücksetzen: AN · Effekte AUS';b.setAttribute('aria-pressed',String(!!resetSnapshot));b.style.background=resetSnapshot?'#f0d5a0':'#eee';b.style.color='#222';b.style.border='1px solid #777';}
     const presetBar=document.createElement('div');
     presetBar.style.cssText='display:flex;flex-wrap:wrap;gap:7px;margin:5px 0 16px;color:#202020';
@@ -10965,6 +10969,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(v<=0.5)return v*2;
       const extra=(v-0.5)/0.5;
       return 1+Math.pow(extra,1.18)*0.85;
+    }
+    function artAmountSigned(raw){
+      const v=Math.max(-100,Math.min(100,+raw||0));
+      if(v===0)return 0;
+      const sign=v<0?-1:1,mag=Math.abs(v);
+      return sign*artAmount(mag);
     }
     function workCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
     function pixels(c){return c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height);}
@@ -11046,17 +11056,27 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           const haze=t*far*(.12+.30*(1-edge));
           R=mix(r,soft[p],t*far*.38*protect);G=mix(g,soft[p+1],t*far*.38*protect);B=mix(b,soft[p+2],t*far*.38*protect);
           R=mix(R,192,haze);G=mix(G,205,haze);B=mix(B,217,haze);
+        }else if(id==='bright'){
+          const delta=30*t+18*t*Math.abs(t);
+          R=r+delta;G=g+delta;B=b+delta;
+        }else if(id==='sat'){
+          const gray=.2126*r+.7152*g+.0722*b;
+          const factor=t>=0 ? (1+.55*t) : Math.max(0,1+.75*t);
+          R=gray+(r-gray)*factor;G=gray+(g-gray)*factor;B=gray+(b-gray)*factor;
+        }else if(id==='temp'){
+          const amt=t*(24+10*Math.abs(t));
+          R=r+amt;G=g+amt*0.18;B=b-amt;
         }
         data[p]=clamp(R);data[p+1]=clamp(G);data[p+2]=clamp(B);
       }
     }
     function render(){if(!base||previewOriginal)return;const token=++revision;by('artStatus').textContent='Vorschau wird berechnet …';
-      setTimeout(()=>{if(token!==revision)return;let im=new Uint8ClampedArray(base.data),w=base.width,h=base.height;for(const [id] of effects){const raw=+by('art_'+id).value;const t=artAmount(raw);if(t>0)transform(im,w,h,id,t);}if(token!==revision)return;let out=new ImageData(im,w,h);ctx.putImageData(out,0,0);by('artStatus').textContent='Vorschau bereit · 0–50 % = bisheriger Bereich, darüber zunehmend stärkere Verfremdung.';},20);
+      setTimeout(()=>{if(token!==revision)return;let im=new Uint8ClampedArray(base.data),w=base.width,h=base.height;for(const [id] of effects){const raw=+by('art_'+id).value;const t=(id==='bright'||id==='sat'||id==='temp')?artAmountSigned(raw):artAmount(raw);if(t!==0)transform(im,w,h,id,t);}if(token!==revision)return;let out=new ImageData(im,w,h);ctx.putImageData(out,0,0);by('artStatus').textContent='Vorschau bereit · 0–50 % = bisheriger Bereich, darüber zunehmend stärkere Verfremdung. Helligkeit, Sättigung und Warm/Kalt sind jetzt zusätzlich verfügbar.';},20);
     }
     function start(){const photo=window.__atelierArtBridge?.photo?.();const sourceCanvas=photo?.canvas;if(!photo?.loaded||!sourceCanvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}originalW=sourceCanvas.width;originalH=sourceCanvas.height;let k=Math.min(1,1000/Math.max(originalW,originalH));cv.width=Math.max(1,Math.round(originalW*k));cv.height=Math.max(1,Math.round(originalH*k));let c=workCanvas(cv.width,cv.height);c.getContext('2d').drawImage(sourceCanvas,0,0,cv.width,cv.height);base=pixels(c);overlay.style.display='block';previewOriginal=false;fitView();render();}
     by('artOpenBtn').addEventListener('click',()=>{try{start()}catch(e){console.error('Gestaltung:',e);overlay.style.display='block';by('artStatus').textContent='Fehler beim Öffnen: '+e.message;}});
     by('artClose').addEventListener('click',()=>{overlay.style.display='none';revision++;});
-    effects.forEach(([id])=>by('art_'+id).addEventListener('input',()=>{resetSnapshot=null;syncArtReset();by('art_'+id+'_val').textContent=by('art_'+id).value+' %';clearTimeout(timer);timer=setTimeout(render,120);}));
+    effects.forEach(([id])=>by('art_'+id).addEventListener('input',()=>{resetSnapshot=null;syncArtReset();by('art_'+id+'_val').textContent=formatArtValue(id,by('art_'+id).value);clearTimeout(timer);timer=setTimeout(render,120);}));
     by('artReset').addEventListener('click',()=>{if(resetSnapshot){setArtValues(resetSnapshot);resetSnapshot=null;}else{resetSnapshot=readArtValues();setArtValues({});}syncArtReset();render();});
     function originalPreview(on){if(!base)return;previewOriginal=on;revision++;if(on)ctx.putImageData(base,0,0);else render();}
     by('artBefore').addEventListener('pointerdown',()=>originalPreview(true));['pointerup','pointercancel','pointerleave'].forEach(ev=>by('artBefore').addEventListener(ev,()=>originalPreview(false)));
