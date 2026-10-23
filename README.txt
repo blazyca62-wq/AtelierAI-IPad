@@ -19,3 +19,5 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 3.75: Künstlerische Gestaltung: Pinch-Zoom, Ein-Finger-Verschieben, +/- und Einpassen; Export bleibt unverändert.
 
 3.76: Vier Gestaltungsfilter überarbeitet: strukturgeführte Pinselstriche, gebrochene Farbflächen, transparente Aquarellanmutung, kantenbewusste Abstraktion.
+
+3.77: Vier wenig brauchbare Filter (Pinselstriche, Aquarell, Spachtel, Abstraktion) entfernt. Sechs verbleibende Gestaltungsfilter gezielter verbessert.

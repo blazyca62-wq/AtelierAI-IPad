@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.76</title>
+  <title>AtelierAI iPad 3.77</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1811,7 +1811,7 @@
 
 <div id="artStudio" style="display:none;position:fixed;inset:0;z-index:1500;background:#f2f1ed;overflow:auto;padding:12px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#222">
   <div style="max-width:1100px;margin:auto">
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><strong style="font-size:19px;margin-right:auto">Künstlerische Gestaltung · 10 Effekte</strong><button id="artZoomOut" class="secondary" type="button">−</button><span id="artZoomLabel" style="min-width:45px;text-align:center">100 %</span><button id="artZoomIn" class="secondary" type="button">+</button><button id="artZoomFit" class="secondary" type="button">Einpassen</button><button id="artBefore" class="secondary">Original halten / vergleichen</button><button id="artClose" class="secondary">Schließen</button></div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><strong style="font-size:19px;margin-right:auto">Künstlerische Gestaltung · 6 Effekte</strong><button id="artZoomOut" class="secondary" type="button">−</button><span id="artZoomLabel" style="min-width:45px;text-align:center">100 %</span><button id="artZoomIn" class="secondary" type="button">+</button><button id="artZoomFit" class="secondary" type="button">Einpassen</button><button id="artBefore" class="secondary">Original halten / vergleichen</button><button id="artClose" class="secondary">Schließen</button></div>
   <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:12px" id="artLayout">
     <div style="background:#dedbd4;border-radius:14px;display:flex;align-items:center;justify-content:center;min-height:260px;max-height:78vh;overflow:hidden"><canvas id="artCanvas" style="max-width:100%;max-height:76vh;object-fit:contain;touch-action:pinch-zoom"></canvas></div>
     <div style="background:#fff;border-radius:14px;padding:13px;max-height:80vh;overflow:auto" id="artControls">
@@ -10920,16 +10920,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     by('artZoomFit').addEventListener('click',fitView);
     stage.addEventListener('wheel',e=>{if(!e.ctrlKey)return;e.preventDefault();setZoom(zoom*(e.deltaY<0?1.2:1/1.2));},{passive:false});
     const effects=[
-      ['brush','Pinselstriche','Malerische, gerichtete Striche'],
-      ['edge','Kantensteuerung','Unwichtige Details weichzeichnen'],
-      ['tonal','Tonalismus','Ruhigere, harmonisierte Tonwerte'],
-      ['shift','Künstlerische Farbverschiebung','Warme und kühle Farbkontraste'],
-      ['water','Aquarell','Transparenz und sanfte Pigmentränder'],
-      ['knife','Spachtelmalerei','Kantige Farbflächen'],
-      ['broken','Gebrochene Farben','Variationen verwandter Farbtöne'],
-      ['light','Dramatische Lichtführung','Licht und Schatten verstärken'],
-      ['abstract','Künstlerische Abstraktion','Größere, vereinfachte Farbflächen'],
-      ['depth','Atmosphärische Perspektive','Ferne heller, kühler und weicher']
+      ['edge','Kantensteuerung','Ruhigere Flächen, klare wichtige Konturen'],
+      ['tonal','Tonalismus','Farben beruhigen, Licht und Schatten erhalten'],
+      ['shift','Künstlerische Farbverschiebung','Lichter wärmer, Schatten kühler – ohne Farbstich'],
+      ['broken','Gebrochene Farben','Sanfte Nachbarfarben innerhalb ähnlicher Bildflächen'],
+      ['light','Dramatische Lichtführung','Lichter betonen, Schatten vertiefen – ohne festen Lichtfleck'],
+      ['depth','Atmosphärische Perspektive','Ferne weicher, heller, etwas kühler']
     ];
     const sliders=by('artSliders');
     sliders.innerHTML=effects.map(([id,name,desc],i)=>`<div style="padding:9px 0;border-bottom:1px solid #ddd"><label for="art_${id}" style="display:flex;justify-content:space-between;gap:8px;font-weight:650;font-size:14px"><span>${i+1}. ${name}</span><output id="art_${id}_val">0 %</output></label><div style="font-size:12px;color:#666">${desc}</div><input id="art_${id}" type="range" min="0" max="100" step="5" value="0" style="width:100%;min-height:36px"></div>`).join('');
@@ -10941,92 +10937,68 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       for(let y=0;y<h;y++)for(let x=0;x<w;x++){let sums=[0,0,0],n=0;for(let k=-radius;k<=radius;k++){let xx=Math.min(w-1,Math.max(0,x+k)),idx=(y*w+xx)*4;for(let j=0;j<3;j++)sums[j]+=im[idx+j];n++;}let q=(y*w+x)*4;for(let j=0;j<3;j++)temp[q+j]=sums[j]/n;temp[q+3]=255;}
       for(let y=0;y<h;y++)for(let x=0;x<w;x++){let sums=[0,0,0],n=0;for(let k=-radius;k<=radius;k++){let yy=Math.min(h-1,Math.max(0,y+k)),idx=(yy*w+x)*4;for(let j=0;j<3;j++)sums[j]+=temp[idx+j];n++;}let q=(y*w+x)*4;for(let j=0;j<3;j++)out[q+j]=sums[j]/n;out[q+3]=255;}return out;}
     const mix=(a,b,t)=>a*(1-t)+b*t;
-    function transform(data,w,h,id,t){const src=data.slice(),out=data;
-      if(id==='edge'||id==='depth'){const blurred=blurImage(src,w,h,id==='edge'?1+3*t:id==='water'?1+2*t:1+4*t);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let p=(y*w+x)*4,mid=y/h;let a=id==='depth'?t*(.08+.76*(1-mid)**2):id==='water'?t*.48:t*.70;
-        if(id==='edge'){const xx=Math.min(w-1,x+1),yy=Math.min(h-1,y+1),q=(y*w+xx)*4,z=(yy*w+x)*4;let d=0;for(let j=0;j<3;j++)d+=Math.abs(src[p+j]-src[q+j])+Math.abs(src[p+j]-src[z+j]);a*=1-Math.min(.95,d/150);}
-        for(let j=0;j<3;j++)out[p+j]=clamp(mix(src[p+j],blurred[p+j],a));if(id==='depth'){out[p]=clamp(mix(out[p],194,t*(1-mid)*.28));out[p+1]=clamp(mix(out[p+1],207,t*(1-mid)*.33));out[p+2]=clamp(mix(out[p+2],218,t*(1-mid)*.48));}if(id==='water'){let l=(out[p]+out[p+1]+out[p+2])/3;for(let j=0;j<3;j++)out[p+j]=clamp(mix(out[p+j],Math.min(255,out[p+j]*1.12+8),t*.35)+((l<90)?-2*t:0));}
-      }return;}
-      if(id==='brush'||id==='broken'||id==='abstract'||id==='water'){
-        // Deterministische, vom Foto geführte Flächenbildung statt Pixelmuster.
-        const lum=new Float32Array(w*h);
-        for(let i=0;i<w*h;i++){let p=i*4;lum[i]=.2126*src[p]+.7152*src[p+1]+.0722*src[p+2];}
-        const sample=(x,y)=>{x=Math.max(0,Math.min(w-1,Math.round(x)));y=Math.max(0,Math.min(h-1,Math.round(y)));return (y*w+x)*4;};
-        const hash=(x,y)=>{let v=Math.sin(x*127.1+y*311.7+19.17)*43758.5453;return v-Math.floor(v);};
-        if(id==='brush'){
-          const step=Math.max(3,Math.round(4+8*t)),length=step*(1.5+2*t);
-          const layer=workCanvas(w,h),lc=layer.getContext('2d');lc.putImageData(new ImageData(new Uint8ClampedArray(src),w,h),0,0);
-          lc.lineCap='round';
-          for(let gy=0;gy<h;gy+=step)for(let gx=0;gx<w;gx+=step){
-            const x=Math.min(w-1,gx+(hash(gx,gy)-.5)*step),y=Math.min(h-1,gy+(hash(gy,gx)-.5)*step);
-            const xl=Math.max(0,Math.round(x-2)),xr=Math.min(w-1,Math.round(x+2)),yu=Math.max(0,Math.round(y-2)),yd=Math.min(h-1,Math.round(y+2));
-            let dx=lum[Math.round(y)*w+xr]-lum[Math.round(y)*w+xl],dy=lum[yd*w+Math.round(x)]-lum[yu*w+Math.round(x)];
-            let angle=Math.atan2(dy,dx)+Math.PI/2;
-            if(Math.abs(dx)+Math.abs(dy)<8)angle=hash(gx+23,gy+11)*Math.PI;
-            const p=sample(x,y),bright=(hash(gx+3,gy+9)-.5)*20*t;
-            lc.strokeStyle=`rgba(${clamp(src[p]+bright)|0},${clamp(src[p+1]+bright)|0},${clamp(src[p+2]+bright)|0},${.35+.6*t})`;
-            lc.lineWidth=Math.max(1,step*(.35+.28*hash(gy,gx+4)));
-            const half=length*(.32+.45*hash(gx+5,gy))*.5;
-            lc.beginPath();lc.moveTo(x-Math.cos(angle)*half,y-Math.sin(angle)*half);lc.lineTo(x+Math.cos(angle)*half,y+Math.sin(angle)*half);lc.stroke();
-          }
-          const painted=lc.getImageData(0,0,w,h).data;
-          for(let i=0;i<out.length;i+=4)for(let j=0;j<3;j++)out[i+j]=mix(src[i+j],painted[i+j],Math.min(1,.4+t*.6));
-          return;
+    // Alle Effekte arbeiten mit lokaler Bildinformation, statt festen Wellen- oder Kachelmustern.
+    function transform(data,w,h,id,t){
+      const src=data.slice(), blurred=blurImage(src,w,h,id==='depth'?Math.round(1+5*t):id==='edge'?Math.round(1+4*t):Math.round(2+4*t));
+      const n=w*h, lum=new Float32Array(n), local=new Float32Array(n);
+      let sum=0;
+      for(let i=0;i<n;i++){const p=i*4;lum[i]=.2126*src[p]+.7152*src[p+1]+.0722*src[p+2];sum+=lum[i];local[i]=.2126*blurred[p]+.7152*blurred[p+1]+.0722*blurred[p+2];}
+      const average=sum/n;
+      const smooth=(a,b,v)=>{const z=Math.max(0,Math.min(1,(v-a)/(b-a)));return z*z*(3-2*z);};
+      const hash=(x,y)=>{let z=Math.sin(x*127.1+y*311.7+39.13)*43758.5453;return z-Math.floor(z);};
+      const cell=Math.max(12,Math.round(Math.min(w,h)*(.024+.018*t)));
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+        const i=y*w+x,p=i*4,r=src[p],g=src[p+1],b=src[p+2],l=lum[i];
+        const xx=Math.min(w-1,x+2),yy=Math.min(h-1,y+2),x0=Math.max(0,x-2),y0=Math.max(0,y-2);
+        const grad=Math.hypot(lum[y*w+xx]-lum[y*w+x0],lum[yy*w+x]-lum[y0*w+x]);
+        const edge=smooth(12,78,grad), protect=1-edge*.93;
+        let R=r,G=g,B=b;
+        if(id==='edge'){
+          const a=t*.95*protect;
+          R=mix(r,blurred[p],a);G=mix(g,blurred[p+1],a);B=mix(b,blurred[p+2],a);
+        }else if(id==='tonal'){
+          // Sättigung sanft reduzieren, Tonwert nicht mit einem RGB-Mittelwert verwechseln.
+          const muted=1-.65*t;
+          R=mix(l,r,muted);G=mix(l,g,muted);B=mix(l,b,muted);
+          const target=average+(l-average)*(1-.15*t);
+          const delta=(target-l)*t;
+          R+=delta;G+=delta;B+=delta;
+        }else if(id==='shift'){
+          // Warmes Licht und kühle Schatten; mittlere Tonwerte nur wenig verschieben.
+          const warm=smooth(105,220,l), cool=1-smooth(30,155,l);
+          const neutral=1-Math.abs(l-127.5)/127.5;
+          R+=t*(24*warm-8*cool+3*neutral);
+          G+=t*(6*warm+3*cool);
+          B+=t*(-17*warm+20*cool);
+          // Grobe Helligkeit erhalten, damit die Farbverschiebung keine Fotobelichtung wird.
+          const now=.2126*R+.7152*G+.0722*B,cor=(now-l)*.8;
+          R-=cor;G-=cor;B-=cor;
+        }else if(id==='broken'){
+          // Keine Schachbrettstruktur: organische, weich überblendete Farbtemperaturfelder.
+          const gx=x/cell,gy=y/cell,ix=Math.floor(gx),iy=Math.floor(gy),fx=smooth(0,1,gx-ix),fy=smooth(0,1,gy-iy);
+          const a=mix(hash(ix,iy),hash(ix+1,iy),fx),bb=mix(hash(ix,iy+1),hash(ix+1,iy+1),fx);
+          const variation=(mix(a,bb,fy)-.5)*2;
+          const strength=t*(10+18*t)*variation*protect;
+          const chroma=Math.min(1,Math.hypot(r-g,g-b,b-r)/100);
+          R+=strength*(.75+.25*chroma);G+=strength*.12;B-=strength*.82;
+          const now=.2126*R+.7152*G+.0722*B,cor=now-l;
+          R-=cor;G-=cor;B-=cor;
+        }else if(id==='light'){
+          // Fotobasierte Lichtführung, statt eines künstlichen Spots an fester Position.
+          const normalized=Math.max(-1,Math.min(1,(local[i]-average)/95));
+          const dodge=Math.max(0,normalized),burn=Math.max(0,-normalized);
+          const delta=t*(28*dodge+10*smooth(175,245,l)-30*burn);
+          const contrast=1+.24*t;
+          R=(r-127)*contrast+127+delta;G=(g-127)*contrast+127+delta;B=(b-127)*contrast+127+delta;
+        }else if(id==='depth'){
+          // Obere Bildregion als anpassbare Näherung für Ferne; keine Motiverkennung.
+          const far=smooth(.78,.05,y/Math.max(1,h-1));
+          const amt=t*far*(.15+.64*(1-edge));
+          R=mix(r,blurred[p],amt);G=mix(g,blurred[p+1],amt);B=mix(b,blurred[p+2],amt);
+          const haze=t*far*.30;
+          R=mix(R,193,haze);G=mix(G,207,haze);B=mix(B,223,haze);
         }
-        if(id==='broken'){
-          const radius=Math.round(3+9*t),blur=blurImage(src,w,h,Math.max(1,Math.round(radius*.35)));
-          for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-            const p=(y*w+x)*4,fx=Math.floor(x/radius),fy=Math.floor(y/radius);
-            const n=hash(fx,fy),n2=hash(fx+31,fy+8),sign=n>.5?1:-1;
-            const local=[blur[p],blur[p+1],blur[p+2]],l=.2126*local[0]+.7152*local[1]+.0722*local[2];
-            // Warm/kalt verschobene Farbflecken bei ungefähr gleichbleibendem Tonwert.
-            const amount=t*(10+23*n2),edge=Math.min(1,Math.abs(lum[y*w+x]-l)/40);
-            const a=t*(.35+.48*(1-edge));
-            out[p]=clamp(mix(src[p],local[0]+sign*amount,a));
-            out[p+1]=clamp(mix(src[p+1],local[1]+sign*amount*.12,a));
-            out[p+2]=clamp(mix(src[p+2],local[2]-sign*amount*.75,a));
-          }return;
-        }
-        if(id==='abstract'){
-          const radius=Math.round(2+9*t),flat=blurImage(src,w,h,radius);
-          const levels=Math.max(5,Math.round(24-15*t));
-          for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-            const p=(y*w+x)*4,idx=y*w+x;
-            const gx=lum[y*w+Math.min(w-1,x+2)]-lum[y*w+Math.max(0,x-2)];
-            const gy=lum[Math.min(h-1,y+2)*w+x]-lum[Math.max(0,y-2)*w+x];
-            const structure=Math.min(1,Math.hypot(gx,gy)/65);
-            const strength=t*(.95-.8*structure);
-            for(let j=0;j<3;j++){
-              const simplified=Math.round(flat[p+j]/255*levels)/levels*255;
-              out[p+j]=clamp(mix(src[p+j],simplified,strength));
-            }
-          }return;
-        }
-        if(id==='water'){
-          const soft=blurImage(src,w,h,Math.round(1+4*t));
-          for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-            const p=(y*w+x)*4,localLum=.2126*soft[p]+.7152*soft[p+1]+.0722*soft[p+2];
-            const x2=Math.min(w-1,x+2),y2=Math.min(h-1,y+2);
-            const grad=Math.min(1,(Math.abs(lum[y*w+x]-lum[y*w+x2])+Math.abs(lum[y*w+x]-lum[y2*w+x]))/65);
-            const pigment=Math.max(0,Math.min(1,(245-localLum)/215));
-            const edge=grad*t*.18*pigment;
-            const grain=(hash(Math.floor(x/3),Math.floor(y/3))-.5)*t*7*pigment;
-            for(let j=0;j<3;j++){
-              let wash=mix(255,soft[p+j],Math.max(0,Math.min(1,(.86-.15*t)*pigment+.12)));
-              out[p+j]=clamp(mix(src[p+j],wash,t*.95)-edge*24+grain);
-            }
-          }return;
-        }
-      }
-      if(id==='knife'){
-        const cell=Math.round(2+12*t);
-        for(let y=0;y<h;y+=cell)for(let x=0;x<w;x+=cell){let sr=0,sg=0,sb=0,n=0;for(let yy=y;yy<Math.min(h,y+cell);yy+=2)for(let xx=x;xx<Math.min(w,x+cell);xx+=2){let p=(yy*w+xx)*4;sr+=src[p];sg+=src[p+1];sb+=src[p+2];n++;}let avg=[sr/n,sg/n,sb/n];for(let yy=y;yy<Math.min(h,y+cell);yy++)for(let xx=x;xx<Math.min(w,x+cell);xx++){let p=(yy*w+xx)*4;for(let j=0;j<3;j++)out[p+j]=clamp(mix(src[p+j],avg[j]*(1+.07*Math.sin(x*2+y)),t*.75));}}
-        return;
-      }
-      for(let y=0;y<h;y++)for(let x=0;x<w;x++){let p=(y*w+x)*4,r=src[p],g=src[p+1],b=src[p+2],lum=.2126*r+.7152*g+.0722*b;
-        if(id==='tonal'){let neutral=(r+g+b)/3;let muted=(lum-128)*(.93-.26*t)+128;out[p]=clamp(mix(r,mix(neutral,muted,.25),t*.58));out[p+1]=clamp(mix(g,mix(neutral,muted,.25),t*.58));out[p+2]=clamp(mix(b,mix(neutral,muted,.25),t*.58));}
-        if(id==='shift'){let wave=Math.sin((x/w*2+y/h)*3.14);out[p]=clamp(r+t*(9+16*wave));out[p+1]=clamp(g-t*5);out[p+2]=clamp(b+t*(12-19*wave));}
-        if(id==='broken'){let wave=Math.sin(x*.53+y*.37)*Math.cos(y*.19-x*.31);out[p]=clamp(r+wave*25*t);out[p+1]=clamp(g-wave*10*t);out[p+2]=clamp(b-wave*22*t);}
-        if(id==='light'){let spot=Math.max(0,1-Math.hypot(x/w-.4,y/h-.32)*1.5);let gain=1+t*(.68*spot-.36*(1-spot));for(let j=0;j<3;j++)out[p+j]=clamp((src[p+j]-105)*(1+.22*t)+105+(gain-1)*76);}
+        data[p]=clamp(R);data[p+1]=clamp(G);data[p+2]=clamp(B);
       }
     }
     function render(){if(!base||previewOriginal)return;const token=++revision;by('artStatus').textContent='Vorschau wird berechnet …';
