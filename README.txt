@@ -33,3 +33,5 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 3.84: Graustufen umgekehrt (1 = hell, 10 = dunkel) und wahrnehmungsbezogen gleichmaessig abgestuft; Bildumgebung und Neutralgrau unveraendert.
 
 3.85: Mischmodul – 12 automatische Graustufen; Stufe 1 = reines Weiss, Stufe 12 = Schwarz; gleichmaessig von Weiss bis Schwarz verteilt.
+
+3.86: Graustufe 1 nur fuer neutrales (fast) Weiss, gesaettigte helle Farben wie Gelb werden mindestens Stufe 3.
