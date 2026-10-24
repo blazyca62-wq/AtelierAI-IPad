@@ -29,3 +29,5 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 3.82: Motiv hervorheben (Schwerpunkt einstellbar), gerichtete Lichtstimmung (Richtung), Farbkontraste, Schattenfarben (warm/kalt) und sechs zusätzliche Rezepte.
 
 3.83: Mischmodul – automatische Graustufen 1–10 nach wahrgenommener Helligkeit; Umgebung aus Foto und Neutralgrau weiterhin verfügbar.
+
+3.84: Graustufen umgekehrt (1 = hell, 10 = dunkel) und wahrnehmungsbezogen gleichmaessig abgestuft; Bildumgebung und Neutralgrau unveraendert.

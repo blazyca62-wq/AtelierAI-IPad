@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.83</title>
+  <title>AtelierAI iPad 3.84</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1456,7 +1456,7 @@
             <input id="mixSurroundColor" type="color" value="#808080" aria-label="Umgebungsfarbe der Mischvorschläge" style="width:48px;height:44px;padding:2px">
             <button id="mixSurroundGray" class="secondary" type="button">Neutralgrau</button>
           </div>
-          <div id="mixSurroundHint" class="tiny" style="margin-top:6px">Automatische Helligkeitsstufe der Zielfarbe · 1 = Schwarz, 10 = Weiß.</div>
+          <div id="mixSurroundHint" class="tiny" style="margin-top:6px">Automatische Helligkeitsstufe der Zielfarbe · 1 = sehr hell, 10 = sehr dunkel.</div>
         </div><div id="mixResults"></div><details data-picture-palette="paintPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details>
       </div>
 
@@ -1942,7 +1942,7 @@
     const linear=rgb.map(v=>{const c=Math.max(0,Math.min(255,v))/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;});
     const Y=.2126*linear[0]+.7152*linear[1]+.0722*linear[2];
     const light=Y<=.008856?903.3*Y:116*Math.cbrt(Y)-16;
-    return Math.max(1,Math.min(10,1+Math.round(light*9/100)));
+    return Math.max(1,Math.min(10,1+Math.floor((100-light)/10)));
   }
   function updateMixSurroundButtons(){
     const auto=document.getElementById('mixSurroundAuto'),pick=document.getElementById('mixSurroundPick'),neutral=document.getElementById('mixSurroundGray');
@@ -1971,7 +1971,12 @@
   function updateAutoMixSurround(target){
     if(mixSurroundMode!=='auto'||!target)return;
     mixGrayLevel=targetGrayStage(target);
-    const v=Math.round((mixGrayLevel-1)*255/9);
+    // Gleichmässige visuelle Tonwertschritte, statt linearer RGB-Stufen.
+    // L*-Bandmitten: 95, 85, ... 5. Dadurch bleiben auch 1 und 2 klar getrennt.
+    const grayL=105-10*mixGrayLevel;
+    const y=grayL>8?Math.pow((grayL+16)/116,3):grayL/903.3;
+    const srgb=y<=0.0031308?12.92*y:1.055*Math.pow(y,1/2.4)-0.055;
+    const v=Math.max(0,Math.min(255,Math.round(srgb*255)));
     setMixSurround(rgbHex([v,v,v]),'auto');
   }
   function armMixSurround(active){
