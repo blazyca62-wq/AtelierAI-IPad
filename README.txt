@@ -37,3 +37,5 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 3.86: Graustufe 1 nur fuer neutrales (fast) Weiss, gesaettigte helle Farben wie Gelb werden mindestens Stufe 3.
 
 3.87: Graustufe 12 nur fuer Schwarz oder fast neutrales Schwarz, dunkle Buntfarben maximal Stufe 11.
+
+3.88: Schwarz-Erkennung für Graustufe 12 erweitert; fast neutrales Schwarz RGB 11/14/17 wird Stufe 12, Dunkelbraun RGB 59/30/17 bleibt Stufe 11.
