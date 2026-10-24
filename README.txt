@@ -27,3 +27,5 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 3.81: Rezepte an die stärkere Reglerkennlinie angepasst. Zusätzlich drei neue Grundregler in der künstlerischen Gestaltung: Helligkeit, Sättigung sowie Warm/Kalt. Helligkeit, Sättigung und Warm/Kalt arbeiten mit negativem und positivem Bereich.
 
 3.82: Motiv hervorheben (Schwerpunkt einstellbar), gerichtete Lichtstimmung (Richtung), Farbkontraste, Schattenfarben (warm/kalt) und sechs zusätzliche Rezepte.
+
+3.83: Mischmodul – automatische Graustufen 1–10 nach wahrgenommener Helligkeit; Umgebung aus Foto und Neutralgrau weiterhin verfügbar.

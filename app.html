@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.82</title>
+  <title>AtelierAI iPad 3.83</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -115,6 +115,8 @@
     #mixResults .mix-swatches{background:var(--mix-surround,#808080);padding:20px;gap:20px;border-radius:10px;margin:12px 0;box-sizing:border-box}
     #mixResults .mix-swatches>div{min-width:0}
     #mixResults .mix-swatches .tiny{color:var(--mix-surround-text,#fff);opacity:1;margin-bottom:12px}
+    #mixResults .mix-swatches[data-gray-level]::before{content:'Graustufe ' attr(data-gray-level) ' / 10';grid-column:1/-1;color:var(--mix-surround-text,#fff);font-size:13px;font-weight:700;margin-bottom:-8px}
+    #mixResults .mix-swatches .mix-swatch{outline:1px solid var(--mix-swatch-outline,transparent);outline-offset:2px}
     #mixResults .mix-swatch{height:64px;border:0;border-radius:0;box-shadow:none}
 
     .mix-lines{font-size:13px;line-height:1.4;margin-top:8px}
@@ -1449,11 +1451,12 @@
         <div class="tiny" style="margin-top:6px;">Mischvorschläge · einfache Mischung zuerst</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Punkt)</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Punkt- und Maler-Pipette berechnen die Studio-Mischung automatisch.</div><div style="margin-top:10px;padding:8px 0">
           <div class="tiny">Umgebung der Mischfarbe</div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px">
+            <button id="mixSurroundAuto" class="secondary" type="button" aria-pressed="true">Grau automatisch (1–10)</button>
             <button id="mixSurroundPick" class="secondary" type="button" aria-pressed="false">Umgebung im Bild wählen</button>
             <input id="mixSurroundColor" type="color" value="#808080" aria-label="Umgebungsfarbe der Mischvorschläge" style="width:48px;height:44px;padding:2px">
-            <button id="mixSurroundGray" class="secondary" type="button">Grau</button>
+            <button id="mixSurroundGray" class="secondary" type="button">Neutralgrau</button>
           </div>
-          <div id="mixSurroundHint" class="tiny" style="margin-top:6px">Verändert nur den Hintergrund hinter Zielfarbe und Mischung.</div>
+          <div id="mixSurroundHint" class="tiny" style="margin-top:6px">Automatische Helligkeitsstufe der Zielfarbe · 1 = Schwarz, 10 = Weiß.</div>
         </div><div id="mixResults"></div><details data-picture-palette="paintPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details>
       </div>
 
@@ -1932,35 +1935,70 @@
   const isolationOriginalBlendVal=document.getElementById('isolationOriginalBlendVal');
   const mixResults = document.getElementById('mixResults');
   let mixSurroundArmed=false;
-  function setMixSurround(hex){
-    const rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
+  let mixSurroundMode='auto'; // auto, image, neutral, manual
+  let mixGrayLevel=null;
+  function targetGrayStage(rgb){
+    // Perzeptuelle relative Leuchtdichte (sRGB / Rec.709), nicht RGB-Mittelwert.
+    const linear=rgb.map(v=>{const c=Math.max(0,Math.min(255,v))/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;});
+    const Y=.2126*linear[0]+.7152*linear[1]+.0722*linear[2];
+    const light=Y<=.008856?903.3*Y:116*Math.cbrt(Y)-16;
+    return Math.max(1,Math.min(10,1+Math.round(light*9/100)));
+  }
+  function updateMixSurroundButtons(){
+    const auto=document.getElementById('mixSurroundAuto'),pick=document.getElementById('mixSurroundPick'),neutral=document.getElementById('mixSurroundGray');
+    auto.classList.toggle('active',mixSurroundMode==='auto');auto.classList.toggle('secondary',mixSurroundMode!=='auto');
+    auto.setAttribute('aria-pressed',String(mixSurroundMode==='auto'));
+    neutral.classList.toggle('active',mixSurroundMode==='neutral');neutral.classList.toggle('secondary',mixSurroundMode!=='neutral');
+    pick.classList.toggle('active',mixSurroundMode==='image');pick.classList.toggle('secondary',mixSurroundMode!=='image');
+  }
+  function setMixSurround(hex,mode=mixSurroundMode){
     if(!/^#[0-9a-f]{6}$/i.test(hex))return;
+    mixSurroundMode=mode;
+    const rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
     mixResults.style.setProperty('--mix-surround',hex);
     mixResults.style.setProperty('--mix-surround-text',luminance(...rgb)>145?'#111':'#fff');
+    mixResults.style.setProperty('--mix-swatch-outline',luminance(...rgb)>145?'#333':'#eee');
     document.getElementById('mixSurroundColor').value=hex;
     armMixSurround(false);
-    document.getElementById('mixSurroundHint').textContent='Umgebung: '+hex.toUpperCase()+' · Zielfarbe und Mischung bleiben unverändert.';
+    updateMixSurroundButtons();
+    const hint=document.getElementById('mixSurroundHint');
+    hint.textContent=mode==='auto'?'Automatisch: Helligkeitsstufe '+mixGrayLevel+'/10 · Grau '+hex.toUpperCase()+' · Mischfarben unverändert.':mode==='image'?'Umgebung aus dem Foto: '+hex.toUpperCase():mode==='neutral'?'Neutralgrau #808080':'Eigene Hintergrundfarbe '+hex.toUpperCase();
+    mixResults.querySelectorAll('.mix-swatches').forEach(el=>{
+      if(mode==='auto' && mixGrayLevel!==null)el.dataset.grayLevel=String(mixGrayLevel);
+      else delete el.dataset.grayLevel;
+    });
+  }
+  function updateAutoMixSurround(target){
+    if(mixSurroundMode!=='auto'||!target)return;
+    mixGrayLevel=targetGrayStage(target);
+    const v=Math.round((mixGrayLevel-1)*255/9);
+    setMixSurround(rgbHex([v,v,v]),'auto');
   }
   function armMixSurround(active){
     mixSurroundArmed=active;
     const button=document.getElementById('mixSurroundPick');
     button.setAttribute('aria-pressed',String(active));
     button.textContent=active?'Auswahl abbrechen':'Umgebung im Bild wählen';
-    document.getElementById('mixSurroundHint').textContent=active?'Jetzt die gewünschte Umgebung im Foto antippen. Ziehen und zwei Finger bewegen das Bild weiterhin.':'Verändert nur den Hintergrund hinter Zielfarbe und Mischung.';
+    if(active)document.getElementById('mixSurroundHint').textContent='Jetzt die gewünschte Umgebung im Foto antippen.';
   }
   function pickMixSurround(clientX,clientY){
     const p=canvasPoint(clientX,clientY),x=Math.floor((p.x-offsetX)/scale),y=Math.floor((p.y-offsetY)/scale);
     if(x<0||y<0||x>=sourceCanvas.width||y>=sourceCanvas.height)return;
-    // Sample the working photo, never a hidden-color placeholder or grid line.
     const d=readImageDataSRGB(sourceCtx,x,y,1,1).data;
-    setMixSurround(rgbHex([d[0],d[1],d[2]]));
+    setMixSurround(rgbHex([d[0],d[1],d[2]]),'image');
   }
+  document.getElementById('mixSurroundAuto').addEventListener('click',()=>{
+    mixSurroundMode='auto';updateAutoMixSurround(lastSmartColor||lastAverageColor);
+    updateMixSurroundButtons();
+    if(!(lastSmartColor||lastAverageColor))document.getElementById('mixSurroundHint').textContent='Grau automatisch: zuerst eine Zielfarbe mit der Pipette aufnehmen.';
+  });
   document.getElementById('mixSurroundPick').addEventListener('click',()=>{
     if(!loaded){document.getElementById('mixSurroundHint').textContent='Bitte zuerst ein Foto öffnen.';return;}
     armMixSurround(!mixSurroundArmed);
   });
-  document.getElementById('mixSurroundColor').addEventListener('input',e=>setMixSurround(e.target.value));
-  document.getElementById('mixSurroundGray').addEventListener('click',()=>setMixSurround('#808080'));
+  document.getElementById('mixSurroundColor').addEventListener('input',e=>setMixSurround(e.target.value,'manual'));
+  document.getElementById('mixSurroundGray').addEventListener('click',()=>setMixSurround('#808080','neutral'));
+  updateMixSurroundButtons();
 
   const journeyTakeStartBtn=document.getElementById('journeyTakeStartBtn');
   const journeyTakeTargetBtn=document.getElementById('journeyTakeTargetBtn');
@@ -4397,6 +4435,7 @@
       targetInfo.textContent='Bitte zuerst mit Pipette, Maler-Pipette oder Flächenberater eine Farbe aufnehmen.';
       return;
     }
+    updateAutoMixSurround(target);
     const paletteKey=paintPalette.value;
 const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,paletteKey):chooseMixes(target,paletteKey);
     mixResults.innerHTML=mixes.length?'':'<p>Bitte zuerst vorhandene Farben in der Palette auswählen.</p>';
@@ -4425,6 +4464,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       mixResults.appendChild(card);
     });
     if(!correctionRecipeHint)renderPremixComparison(target,paletteKey,mixes);
+    if(mixSurroundMode==='auto'&&mixGrayLevel!==null){
+      mixResults.querySelectorAll('.mix-swatches').forEach(el=>el.dataset.grayLevel=String(mixGrayLevel));
+    }
   }
 
   function setMedium(m){
