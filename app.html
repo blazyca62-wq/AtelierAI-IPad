@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.84</title>
+  <title>AtelierAI iPad 3.85</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -115,7 +115,7 @@
     #mixResults .mix-swatches{background:var(--mix-surround,#808080);padding:20px;gap:20px;border-radius:10px;margin:12px 0;box-sizing:border-box}
     #mixResults .mix-swatches>div{min-width:0}
     #mixResults .mix-swatches .tiny{color:var(--mix-surround-text,#fff);opacity:1;margin-bottom:12px}
-    #mixResults .mix-swatches[data-gray-level]::before{content:'Graustufe ' attr(data-gray-level) ' / 10';grid-column:1/-1;color:var(--mix-surround-text,#fff);font-size:13px;font-weight:700;margin-bottom:-8px}
+    #mixResults .mix-swatches[data-gray-level]::before{content:'Graustufe ' attr(data-gray-level) ' / 12';grid-column:1/-1;color:var(--mix-surround-text,#fff);font-size:13px;font-weight:700;margin-bottom:-8px}
     #mixResults .mix-swatches .mix-swatch{outline:1px solid var(--mix-swatch-outline,transparent);outline-offset:2px}
     #mixResults .mix-swatch{height:64px;border:0;border-radius:0;box-shadow:none}
 
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.73</div>
+    <div class="title">AtelierAI · iPad 3.85</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1456,7 +1456,7 @@
             <input id="mixSurroundColor" type="color" value="#808080" aria-label="Umgebungsfarbe der Mischvorschläge" style="width:48px;height:44px;padding:2px">
             <button id="mixSurroundGray" class="secondary" type="button">Neutralgrau</button>
           </div>
-          <div id="mixSurroundHint" class="tiny" style="margin-top:6px">Automatische Helligkeitsstufe der Zielfarbe · 1 = sehr hell, 10 = sehr dunkel.</div>
+          <div id="mixSurroundHint" class="tiny" style="margin-top:6px">Automatische Helligkeitsstufe der Zielfarbe · 1 = weiß, 12 = schwarz.</div>
         </div><div id="mixResults"></div><details data-picture-palette="paintPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details>
       </div>
 
@@ -1942,7 +1942,9 @@
     const linear=rgb.map(v=>{const c=Math.max(0,Math.min(255,v))/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;});
     const Y=.2126*linear[0]+.7152*linear[1]+.0722*linear[2];
     const light=Y<=.008856?903.3*Y:116*Math.cbrt(Y)-16;
-    return Math.max(1,Math.min(10,1+Math.floor((100-light)/10)));
+    const levels=12;
+    const step=100/levels;
+    return Math.max(1,Math.min(levels,1+Math.floor((100-light)/step)));
   }
   function updateMixSurroundButtons(){
     const auto=document.getElementById('mixSurroundAuto'),pick=document.getElementById('mixSurroundPick'),neutral=document.getElementById('mixSurroundGray');
@@ -1962,7 +1964,7 @@
     armMixSurround(false);
     updateMixSurroundButtons();
     const hint=document.getElementById('mixSurroundHint');
-    hint.textContent=mode==='auto'?'Automatisch: Helligkeitsstufe '+mixGrayLevel+'/10 · Grau '+hex.toUpperCase()+' · Mischfarben unverändert.':mode==='image'?'Umgebung aus dem Foto: '+hex.toUpperCase():mode==='neutral'?'Neutralgrau #808080':'Eigene Hintergrundfarbe '+hex.toUpperCase();
+    hint.textContent=mode==='auto'?'Automatisch: Helligkeitsstufe '+mixGrayLevel+'/12 · Grau '+hex.toUpperCase()+' · Mischfarben unverändert.':mode==='image'?'Umgebung aus dem Foto: '+hex.toUpperCase():mode==='neutral'?'Neutralgrau #808080':'Eigene Hintergrundfarbe '+hex.toUpperCase();
     mixResults.querySelectorAll('.mix-swatches').forEach(el=>{
       if(mode==='auto' && mixGrayLevel!==null)el.dataset.grayLevel=String(mixGrayLevel);
       else delete el.dataset.grayLevel;
@@ -1971,9 +1973,10 @@
   function updateAutoMixSurround(target){
     if(mixSurroundMode!=='auto'||!target)return;
     mixGrayLevel=targetGrayStage(target);
-    // Gleichmässige visuelle Tonwertschritte, statt linearer RGB-Stufen.
-    // L*-Bandmitten: 95, 85, ... 5. Dadurch bleiben auch 1 und 2 klar getrennt.
-    const grayL=105-10*mixGrayLevel;
+    // 12 wahrnehmungsbezogene Tonwertstufen einschliesslich Endpunkten:
+    // Stufe 1 = reines Weiss, Stufe 12 = reines Schwarz.
+    const levels=12;
+    const grayL=100-((mixGrayLevel-1)*(100/(levels-1)));
     const y=grayL>8?Math.pow((grayL+16)/116,3):grayL/903.3;
     const srgb=y<=0.0031308?12.92*y:1.055*Math.pow(y,1/2.4)-0.055;
     const v=Math.max(0,Math.min(255,Math.round(srgb*255)));
