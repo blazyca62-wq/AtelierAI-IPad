@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.86</title>
+  <title>AtelierAI iPad 3.87</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.86</div>
+    <div class="title">AtelierAI · iPad 3.87</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1945,9 +1945,12 @@
     const light=Y<=.008856?903.3*Y:116*Math.cbrt(Y)-16;
     const chroma=Math.max(...rgb)-Math.min(...rgb);
     if(light>=96 && chroma<=12)return 1;
+    // Stufe 12 ist nur fuer Schwarz und fast neutrales Schwarz reserviert.
+    // Dunkle Buntfarben (Blau, Gruen, Braun usw.) bleiben hoechstens Stufe 11.
+    if(Math.max(...rgb)<=12 && chroma<=6)return 12;
     const levels=12;
     const step=100/levels;
-    const basic=Math.max(2,Math.min(levels,1+Math.floor((100-light)/step)));
+    const basic=Math.max(2,Math.min(11,1+Math.floor((100-light)/step)));
     // Stark bunte Lichter (z. B. Gelb) duerfen nicht als Weiss erscheinen.
     return chroma>60?Math.max(3,basic):basic;
   }
