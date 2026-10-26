@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.90</title>
+  <title>AtelierAI iPad 3.91</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.90</div>
+    <div class="title">AtelierAI · iPad 3.91</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -9819,10 +9819,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <p class="tiny">Die Ansichten lassen sich kombinieren. Zoomen und Verschieben bleiben möglich. Zum Auswählen oder Zeichnen erst zur normalen Ansicht zurückkehren. Speichern und „Als Malvorlage übernehmen“ verwenden immer das normale bearbeitete Bild.</p>
     </details>
     <details id="ceHarmonyPanel"><summary>Farbharmonie · aus</summary>
-    <p class="tiny">Einen Farbton aus dem Bild aufnehmen und sanft in die gewählten Bildstellen einfließen lassen. Die Farbharmonie selbst erhält deren Helligkeit.</p>
+    <p class="tiny">Einen Farbton aus dem Bild aufnehmen. „Mischen“ verbindet die Farben, „Ersetzen“ übernimmt den neuen Farbton und erhält Licht und Schatten.</p>
     <button id="ceTargetPick" class="secondary" aria-pressed="false">Leitfarbe aus dem Bild aufnehmen</button>
     <label>Leitfarbe <input id="ceTarget" type="color" value="#b49a45"></label>
-    <label>Verbindung zur Leitfarbe <output id="ceBlendVal">0 %</output><input id="ceBlend" type="range" min="0" max="100" step="1" value="0"></label>
+    <label>Farbänderung <select id="ceColorMode"><option value="mix">Farbe mischen</option><option value="replace">Farbton vollständig ersetzen</option></select></label>
+    <label>Stärke <output id="ceBlendVal">0 %</output><input id="ceBlend" type="range" min="0" max="100" step="1" value="0"></label>
     <div style="display:flex;gap:6px"><button id="ceHarmonySoft" class="secondary">Sanft · 15 %</button><button id="ceHarmonyClear" class="secondary">Aus</button></div>
     <p class="tiny">Zum Einstieg 5–20 %. Höhere Werte färben stärker um. Farbauswahl, Lasso und Lichtschutz gelten weiter. Für das ganze Bild „Alle Farben“ wählen und die Bereichsauswahl aufheben.</p>
     </details>
@@ -9880,7 +9881,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const linear=Array.from({length:256},(_,v)=>v/255<=.04045?v/3294.6:((v/255+.055)/1.055)**2.4);
     function lab(r,g,b){r=linear[r];g=linear[g];b=linear[b];const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);return [.2104542553*l+.793617785*m-.0040720468*s,1.9779984951*l-2.428592205*m+.4505937099*s,.0259040371*l+.7827717662*m-.808675766*s];}
     function rgb(L,a,b){const raw=(a,b)=>{const l=(L+.3963377774*a+.2158037573*b)**3,m=(L-.1055613458*a-.0638541728*b)**3,s=(L-.0894841775*a-1.291485548*b)**3;return [4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.707614701*s]};let v=raw(a,b);if(v.some(x=>x<0||x>1)){let lo=0,hi=1;for(let k=0;k<8;k++){const mid=(lo+hi)/2,t=raw(a*mid,b*mid);if(t.every(x=>x>=0&&x<=1))lo=mid;else hi=mid;}v=raw(a*lo,b*lo);}return v.map(x=>255*(x<=.0031308?12.92*clamp(x):1.055*clamp(x)**(1/2.4)-.055));}
-    function current(){const hex=el('Target').value;return {spot:currentSpot(),gradient:currentGradient(),region:region?region.map(p=>({...p})):null,strokes:brushStrokes.map(s=>({...s,points:s.points.map(p=>({...p}))})),protectTone:el('ProtectTone').checked,protectHighlights:el('ProtectHighlights').checked,family:el('Family').value,sample:sample&&sample.slice(),range:+el('Range').value,light:el('ProtectTone').checked?0:+el('Light').value/100,blend:+el('Blend').value/100,warm:+el('Warm').value/500,saturation:+el('Saturation').value/100,target:lab(...[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)))};}
+    function current(){const hex=el('Target').value;return {spot:currentSpot(),gradient:currentGradient(),region:region?region.map(p=>({...p})):null,strokes:brushStrokes.map(s=>({...s,points:s.points.map(p=>({...p}))})),protectTone:el('ProtectTone').checked,protectHighlights:el('ProtectHighlights').checked,family:el('Family').value,sample:sample&&sample.slice(),range:+el('Range').value,light:el('ProtectTone').checked?0:+el('Light').value/100,blend:+el('Blend').value/100,colorMode:el('ColorMode').value,warm:+el('Warm').value/500,saturation:+el('Saturation').value/100,target:lab(...[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)))};}
     const active=o=>o.light||o.blend||o.warm||o.saturation||(o.spot&&((!o.protectTone&&o.spot.light)||o.spot.warm||o.spot.saturation))||(o.gradient&&[o.gradient.from,o.gradient.to].some(p=>(!o.protectTone&&p.light)||p.warm||p.saturation||p.blur));
     function weight(o,rgb0,p){if(o.family==='all')return 1;if(o.family==='pick'){if(!o.sample)return 0;const ref=lab(...o.sample),d=Math.hypot((p[0]-ref[0])*.65,p[1]-ref[1],p[2]-ref[2]),radius=.018+o.range*.0025;const t=clamp((radius-d)/(radius*.55));return t*t*(3-2*t);}
       // Feather the existing AtelierAI family boundaries in colour space.
@@ -10010,7 +10011,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
             const g=gradientValues(o.gradient,steps?steps[j]/2048:0);
             if(o.spot){const v=spotSteps[j]/2048;g.light+=o.spot.light*v;g.warm+=o.spot.warm*v;g.saturation+=o.spot.saturation*v;}
             changed=true;if(!o.protectTone)L=clamp(L+(o.light+g.light)*w);
-            a+=(o.target[1]-a)*o.blend*w;b+=(o.target[2]-b)*o.blend*w;b+=(o.warm+g.warm)*w;
+            const colorStrength=o.blend*w;
+            if(o.colorMode==='replace'){const chroma=Math.hypot(o.target[1],o.target[2]);const boost=chroma>0?Math.min(1.35,Math.max(.65,1+(L-o.target[0])*.35)):1;a=a*(1-colorStrength)+o.target[1]*boost*colorStrength;b=b*(1-colorStrength)+o.target[2]*boost*colorStrength;}
+            else {a+=(o.target[1]-a)*colorStrength;b+=(o.target[2]-b)*colorStrength;}
+            b+=(o.warm+g.warm)*w;
             const sat=Math.max(0,1+((o.saturation||0)+g.saturation)*w);a*=sat;b*=sat;
           }
           c=changed?rgb(L,a,b):orig;if(cache.size<32768)cache.set(key,c);
@@ -10370,13 +10374,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if('ResizeObserver' in window)new ResizeObserver(()=>{if(!panel.hidden)fitEditor();}).observe(stage);
     function syncSections(){
       const summary=(id,text)=>el(id).querySelector('summary').textContent=text;
-      summary('HarmonyPanel','Farbharmonie · '+(+el('Blend').value?el('Blend').value+' %':'aus'));
+      summary('HarmonyPanel','Farbharmonie · '+(+el('Blend').value?(el('ColorMode').value==='replace'?'Ersetzen ':'Mischen ')+el('Blend').value+' %':'aus'));
       const protect=[el('ProtectTone').checked?'Tonwerte':'',el('ProtectHighlights').checked?'Lichter':''].filter(Boolean);
       summary('ProtectPanel','Licht und Tonwerte schützen · '+(protect.join(' + ')||'aus'));
       summary('BrushPanel','Auswahl korrigieren · '+(brushStrokes.length?brushStrokes.length+' Pinselstriche':'Pinsel'));
       summary('GradientPanel','Linienverlauf · '+(gradient?'aktiv':'aus'));
       summary('SpotPanel','Lichtfleck & Motiv hervorheben · '+(spot?(el('SpotOutside').checked?'Umgebung aktiv':'Fleck aktiv'):'aus'));
     }
+    el('ColorMode').onchange=render;
     el('HarmonySoft').onclick=()=>{el('Blend').value=15;render();};
     el('HarmonyClear').onclick=()=>{el('Blend').value=0;render();};
     // Folding a tool stops its drawing mode; saved/current visual effects stay active.
@@ -10392,7 +10397,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     el('Undo').onclick=()=>{if(active(current()))resetSliders();else layers.pop();render();};
     // Reversible full reset for comparing the untouched photo with every saved edit.
     let resetSnapshot=null;
-    const resetControlNames=['Family','Range','Light','Blend','Warm','Saturation','Target','Original','Mask','Diameter','ProtectTone','ProtectHighlights','BrushSize','GradientVisible',...gradientControls,'SpotVisible','SpotOutside',...spotControls];
+    const resetControlNames=['Family','Range','Light','Blend','ColorMode','Warm','Saturation','Target','Original','Mask','Diameter','ProtectTone','ProtectHighlights','BrushSize','GradientVisible',...gradientControls,'SpotVisible','SpotOutside',...spotControls];
     function syncResetToggle(){
       el('Reset').textContent=resetSnapshot?'Bearbeitung wieder anzeigen':'Alles zurücksetzen';
       el('Reset').setAttribute('aria-pressed',String(!!resetSnapshot));
@@ -10548,17 +10553,17 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const grad=x=>x===null||(x&&point(x.a)&&point(x.b)&&delta(x.from)&&delta(x.to));
       const spotOp=x=>x===null||(x&&point(x.center)&&num(x.width,.02,2)&&num(x.height,.02,2)&&num(x.soft,0,1)&&num(x.strength,0,1)&&typeof x.outside==='boolean'&&delta(x));
       const families=Array.from(el('Family').options,o=>o.value);
-      const layer=o=>o&&families.includes(o.family)&&polygon(o.region)&&strokes(o.strokes)&&rgb(o.sample)&&num(o.range,5,100)&&delta(o)&&num(o.blend,0,1)&&Array.isArray(o.target)&&o.target.length===3&&o.target.every(n=>num(n,-1,1))&&grad(o.gradient)&&spotOp(o.spot)&&typeof o.protectTone==='boolean'&&typeof o.protectHighlights==='boolean';
+      const layer=o=>o&&families.includes(o.family)&&polygon(o.region)&&strokes(o.strokes)&&rgb(o.sample)&&num(o.range,5,100)&&delta(o)&&num(o.blend,0,1)&&(o.colorMode===undefined||['mix','replace'].includes(o.colorMode))&&Array.isArray(o.target)&&o.target.length===3&&o.target.every(n=>num(n,-1,1))&&grad(o.gradient)&&spotOp(o.spot)&&typeof o.protectTone==='boolean'&&typeof o.protectHighlights==='boolean';
       if(!p||p.format!=='AtelierAI-Malprojekt'||p.version!==1||typeof p.name!=='string'||p.name.length>80||!Number.isInteger(p.active)||p.active<0||p.active>2||!Array.isArray(p.variants)||p.variants.length!==3||!p.variants[p.active]||typeof p.source!=='string'||!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(p.source))fail();
       for(const v of p.variants){if(v===null)continue;
         if(!v||!Array.isArray(v.layers)||v.layers.length>2000||!v.layers.every(layer)||!polygon(v.region)||!strokes(v.brushStrokes)||!rgb(v.sample)||!(v.spot===null||point(v.spot))||!(v.gradient===null||(point(v.gradient?.a)&&point(v.gradient?.b)))||typeof v.sampleText!=='string'||v.sampleText.length>1000||typeof v.sampleBorder!=='string'||v.sampleBorder.length>100||!v.controls||!Array.isArray(v.notes)||v.notes.length>1000)fail();
-        for(const n of ['GradBlurA','GradBlurB'])if(v.controls[n]===undefined)v.controls[n]='0';
+        for(const n of ['GradBlurA','GradBlurB'])if(v.controls[n]===undefined)v.controls[n]='0';if(v.controls.ColorMode===undefined)v.controls.ColorMode='mix';
         for(const n of resetControlNames){const e=el(n),value=v.controls[n];
           if(e.type==='checkbox'){if(typeof value!=='boolean')fail();}
           else if(typeof value!=='string')fail();
           else if(e.type==='range'){if(value.trim()===''||!Number.isFinite(Number(value))||+value<+e.min||+value>+e.max)fail();}
           else if(n==='Family'){if(!families.includes(value))fail();}
-          else if(n==='Target'&&!/^#[a-f0-9]{6}$/i.test(value))fail();
+          else if(n==='Target'&&!/^#[a-f0-9]{6}$/i.test(value))fail();else if(n==='ColorMode'&&!['mix','replace'].includes(value))fail();
         }
         if(!v.notes.every(n=>point(n)&&/^#[a-f0-9]{6}$/i.test(n.color)&&typeof n.text==='string'&&n.text.length<=2000))fail();
       }
