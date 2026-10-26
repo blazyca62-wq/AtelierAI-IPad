@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.91</title>
+  <title>AtelierAI iPad 3.92</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.91</div>
+    <div class="title">AtelierAI · iPad 3.92</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1427,6 +1427,13 @@
           <p class="tiny">Analysiert das aktuell geladene Foto automatisch mit einem kleinen lernenden Farbgruppen-Verfahren (k-Means). Keine Anmeldung, keine Cloud, keine Bildübertragung. Noch keine ChatGPT-Analyse.</p>
           <button id="localKiAnalyse" type="button" class="secondary" style="width:100%">Foto analysieren</button>
           <div id="localKiResult" class="tiny" aria-live="polite" style="margin-top:8px">Noch keine Analyse.</div>
+          <details style="margin-top:10px"><summary>Aus meinen Farbkorrekturen lernen</summary>
+            <p class="tiny">Wähle eine ursprüngliche Mischung und deine tatsächlich verbesserte Farbe. AtelierAI merkt sich die Korrektur nur auf diesem Gerät und berücksichtigt ähnliche Farben bei späteren KI-Analysen. Es lernt noch keine Pigmentmengen.</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center"><label>Vorher <input type="color" id="kiBefore" value="#ad8579"></label><label>Nachher <input type="color" id="kiAfter" value="#b38c7b"></label></div>
+            <button id="kiLearnSave" type="button" class="secondary">Korrektur merken</button>
+            <button id="kiLearnClear" type="button" class="secondary">Gelernte Korrekturen löschen</button>
+            <p id="kiLearnStatus" class="tiny" aria-live="polite"></p>
+          </details>
         </details>
 
         <div class="control-line" style="margin-top:8px;">
@@ -11296,7 +11303,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
 
 <script>
-/* 3.91: Rein lokale, unüberwachte Farbgruppenanalyse. Kein Remote-Dienst. */
+/* 3.92: Rein lokale, unüberwachte Farbgruppenanalyse. Kein Remote-Dienst. */
 (()=>{
   'use strict';
   const btn=document.getElementById('localKiAnalyse'),out=document.getElementById('localKiResult');
@@ -11321,6 +11328,16 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     return tone+' · '+hue;
   }
   const el=(tag,txt,parent)=>{let e=document.createElement(tag);e.textContent=txt;parent.appendChild(e);return e;};
+  const learnKey='atelierai-local-color-learning-v1';
+  const before=document.getElementById('kiBefore'),after=document.getElementById('kiAfter');
+  const status=document.getElementById('kiLearnStatus');
+  function records(){try{const x=JSON.parse(localStorage.getItem(learnKey)||'[]');return Array.isArray(x)?x.slice(-100):[]}catch(e){return []}}
+  function rgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16))}
+  function deltaName(a,b){let dl=b[0]-a[0],dc=Math.hypot(b[1],b[2])-Math.hypot(a[1],a[2]);return (Math.abs(dl)<.012?'ähnliche Helligkeit':dl>0?'heller':'dunkler')+', '+(Math.abs(dc)<.012?'ähnliche Sättigung':dc>0?'satter':'gedämpfter')}
+  function refresh(){status.textContent=records().length+' Korrekturen lokal gespeichert.'}
+  document.getElementById('kiLearnSave').addEventListener('click',()=>{try{const a=before.value,b=after.value;if(a===b){status.textContent='Bitte zwei unterschiedliche Farben wählen.';return}const x=records();x.push({a,b});localStorage.setItem(learnKey,JSON.stringify(x.slice(-100)));refresh()}catch(e){status.textContent='Speichern auf diesem Gerät nicht möglich.'}});
+  document.getElementById('kiLearnClear').addEventListener('click',()=>{try{localStorage.removeItem(learnKey);refresh()}catch(e){status.textContent='Löschen fehlgeschlagen.'}});
+  refresh();
   function analyse(){
     const photo=window.__atelierArtBridge?.photo?.();
     if(!photo?.loaded||!photo.canvas?.width){out.textContent='Bitte zuerst ein Foto in AtelierAI laden.';return;}
@@ -11368,6 +11385,16 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       el('strong','Mögliche Farbverwandtschaften',out);
       el('p',relatives.slice(0,3).map(x=>'Gruppe '+x.i+' und '+x.j).join(' · ')+' unterscheiden sich vor allem in der Helligkeit. Prüfe eine gemeinsame Grundmischung.',out);
     }else el('p','Keine eindeutige gemeinsame Farbfamilie unter den dominierenden Bildfarben erkannt.',out);
+    const learned=records();if(learned.length){
+      el('strong','Aus deinen Korrekturen gelernt',out);
+      let shown=0;
+      for(const g of active){let best=null,dd=Infinity;
+        for(const r of learned){let d=dist(g.lab,rgbToOkLab(rgb(r.a)));if(d<dd){dd=d;best=r}}
+        if(best&&dd<.0045&&shown<3){let a=rgbToOkLab(rgb(best.a)),b=rgbToOkLab(rgb(best.b));
+          el('p',describe(g.lab)+': Ähnliche frühere Korrektur gefunden ('+deltaName(a,b)+'). Prüfe diesen Schritt an deiner echten Mischung.',out);shown++}
+      }
+      if(!shown)el('p','Es sind '+learned.length+' Korrekturen gespeichert, aber keine passt ausreichend zu den aktuellen Hauptfarben.',out);
+    }
     let ls=active.map(g=>g.lab[0]);
     el('p','Tonwertspanne der Hauptgruppen: '+Math.round(Math.min(...ls)*100)+'–'+Math.round(Math.max(...ls)*100)+' von 100. Die tatsächlichen Pigmentrezepte berechnet weiterhin das Mischmodul.',out);
     el('small','Lokales maschinelles Clustering – Vorschläge können bei kleinen Details oder Schatten danebenliegen.',out);

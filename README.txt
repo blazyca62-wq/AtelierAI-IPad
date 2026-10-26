@@ -44,4 +44,4 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 
 3.90: Farbverwandtschaft erweitert: alternative gemeinsame Pigmentpaare, bevorzugte Basispigmente bei Korrekturen, einfachere Mischwege. Keine neuen Bedienelemente, kein Online-Dienst.
 
-3.91: Optional einklappbare kostenlose KI-Farbanalyse. Lokales k-Means-Clustering im OKLab-Farbraum aus dem geladenen Foto; wichtige Gruppen, Farbverwandtschaften, Tonwertspanne. Keine Cloud, kein ChatGPT-Modell, kein API-Schluessel.
+3.92: Optional einklappbare kostenlose KI-Farbanalyse. Lokales k-Means-Clustering im OKLab-Farbraum aus dem geladenen Foto; wichtige Gruppen, Farbverwandtschaften, Tonwertspanne. Keine Cloud, kein ChatGPT-Modell, kein API-Schluessel.
