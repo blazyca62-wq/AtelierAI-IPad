@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.91</title>
+  <title>AtelierAI iPad 3.92</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.91</div>
+    <div class="title">AtelierAI · iPad 3.92</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -9822,6 +9822,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <p class="tiny">Einen Farbton aus dem Bild aufnehmen. „Mischen“ verbindet die Farben, „Ersetzen“ übernimmt den neuen Farbton und erhält Licht und Schatten.</p>
     <button id="ceTargetPick" class="secondary" aria-pressed="false">Leitfarbe aus dem Bild aufnehmen</button>
     <label>Leitfarbe <input id="ceTarget" type="color" value="#b49a45"></label>
+    <label>Winsor & Newton Artisan <select id="ceArtisanPick"><option value="">Farbe auswählen …</option></select></label>
     <label>Farbänderung <select id="ceColorMode"><option value="mix">Farbe mischen</option><option value="replace">Farbton vollständig ersetzen</option></select></label>
     <label>Stärke <output id="ceBlendVal">0 %</output><input id="ceBlend" type="range" min="0" max="100" step="1" value="0"></label>
     <div style="display:flex;gap:6px"><button id="ceHarmonySoft" class="secondary">Sanft · 15 %</button><button id="ceHarmonyClear" class="secondary">Aus</button></div>
@@ -9873,6 +9874,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     document.body.append(panel);
     const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceReviewCanvas[hidden],#ceReviewBadge[hidden]{display:none}#ceReviewBadge{position:absolute;top:8px;left:8px;z-index:2;padding:5px 9px;border-radius:6px;background:#172822d9;color:white;font-size:12px;pointer-events:none}#ceCanvas,#ceReviewCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceLassoOutline{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls details{margin:12px 0;padding:10px;border:1px solid #c4ccc7;border-radius:8px}.ce-controls summary{cursor:pointer;font-weight:bold}.ce-controls>label,.ce-controls details>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceProjectPanel button[aria-pressed=true]{background:#345c4a;color:white;outline:2px solid #84a893}#ceProjectName{font:inherit;min-height:40px;padding:6px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
     const el=id=>document.getElementById('ce'+id),cv=el('Canvas'),ctx=cv.getContext('2d');
+    // Use the existing Artisan pigment swatches rather than inventing a second palette.
+    const artisanSelect=el('ArtisanPick');
+    for(const [name,values] of PALETTES.artisan){
+      const option=document.createElement('option');option.value='#'+values.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');option.textContent=name;artisanSelect.append(option);
+    }
+    artisanSelect.addEventListener('change',()=>{if(artisanSelect.value){el('Target').value=artisanSelect.value;el('Target').dispatchEvent(new Event('input',{bubbles:true}));}});
+    el('Target').addEventListener('input',()=>{if(artisanSelect.value!==el('Target').value)artisanSelect.value='';});
+
     const reviewCanvas=el('ReviewCanvas'),reviewCtx=reviewCanvas.getContext('2d');
     let editorReturnSource=null;
     let base=null,preview=null,layers=[],sample=null,picking=false,revision=0,busy=false,lastSource=null,lastCleanPreview=null;
@@ -10012,7 +10021,16 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
             if(o.spot){const v=spotSteps[j]/2048;g.light+=o.spot.light*v;g.warm+=o.spot.warm*v;g.saturation+=o.spot.saturation*v;}
             changed=true;if(!o.protectTone)L=clamp(L+(o.light+g.light)*w);
             const colorStrength=o.blend*w;
-            if(o.colorMode==='replace'){const chroma=Math.hypot(o.target[1],o.target[2]);const boost=chroma>0?Math.min(1.35,Math.max(.65,1+(L-o.target[0])*.35)):1;a=a*(1-colorStrength)+o.target[1]*boost*colorStrength;b=b*(1-colorStrength)+o.target[2]*boost*colorStrength;}
+            if(o.colorMode==='replace'){
+              // True recolouring: preserve relative luminance structure, not source hue/chroma.
+              // At full strength the source a/b coordinates contribute nothing.
+              const originalLight=L;
+              const targetLight=o.target[0];
+              const newLight=clamp(targetLight+(originalLight-.55)*.70,.04,.98);
+              L=L+(newLight-L)*colorStrength;
+              a=a*(1-colorStrength)+o.target[1]*colorStrength;
+              b=b*(1-colorStrength)+o.target[2]*colorStrength;
+            }
             else {a+=(o.target[1]-a)*colorStrength;b+=(o.target[2]-b)*colorStrength;}
             b+=(o.warm+g.warm)*w;
             const sat=Math.max(0,1+((o.saturation||0)+g.saturation)*w);a*=sat;b*=sat;
