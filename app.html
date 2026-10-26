@@ -1422,14 +1422,7 @@
           </div>
         </div>
         <div id="targetInfo" class="rgb" style="margin-top:6px;">Noch keine Bereichsfarbe aufgenommen.</div>
-        <details id="imageWorkshop" style="margin:12px 0;padding:10px;border:1px solid #8888;border-radius:10px">
-<summary>Bildwerkstatt · Gegenstand entfernen (offline)</summary>
-<p class="tiny">Foto wählen, Gegenstand mit dem Finger vollständig übermalen und „Entfernen“ drücken. Einfache Hintergründe werden aus der Umgebung ergänzt. Bei komplexen Motiven ist das keine generative KI.</p>
-<input type="file" id="bwFile" accept="image/*" style="max-width:100%">
-<div style="margin:8px 0;touch-action:none"><canvas id="bwCanvas" style="display:block;max-width:100%;width:100%;border:1px solid #aaa;border-radius:6px;touch-action:none"></canvas></div>
-<div class="mode"><button type="button" id="bwRemove">Entfernen</button><button type="button" class="secondary" id="bwReset">Original</button><button type="button" class="secondary" id="bwSave">Bild speichern</button></div>
-<div id="bwStatus" class="tiny">Noch kein Foto gewählt.</div>
-</details><details id="localKiPanel" style="margin-top:12px;padding:10px;border:1px solid #8887;border-radius:10px">
+        <details id="localKiPanel" style="margin-top:12px;padding:10px;border:1px solid #8887;border-radius:10px">
           <summary>KI-Farbanalyse · lokal &amp; kostenlos</summary>
           <p class="tiny">Analysiert das aktuell geladene Foto automatisch mit einem kleinen lernenden Farbgruppen-Verfahren (k-Means). Keine Anmeldung, keine Cloud, keine Bildübertragung. Noch keine ChatGPT-Analyse.</p>
           <button id="localKiAnalyse" type="button" class="secondary" style="width:100%">Foto analysieren</button>
@@ -1845,7 +1838,14 @@
     <div style="background:#dedbd4;border-radius:14px;display:flex;align-items:center;justify-content:center;min-height:260px;max-height:78vh;overflow:hidden"><canvas id="artCanvas" style="max-width:100%;max-height:76vh;object-fit:contain;touch-action:pinch-zoom"></canvas></div>
     <div style="background:#fff;border-radius:14px;padding:13px;max-height:80vh;overflow:auto" id="artControls">
       <p style="font-size:13px;color:#555">Jeder Regler ist unabhängig. Mehrere Effekte lassen sich kombinieren. 0 = aus.</p>
-      <div id="artSliders"></div>
+      <div id="artSliders"></div><details id="imageWorkshop" style="margin:12px 0;padding:10px;border:1px solid #8888;border-radius:10px">
+<summary>Gegenstand entfernen · offline</summary>
+<p class="tiny">Aktuelles Foto übernehmen oder eigenes Foto wählen. Gegenstand mit dem Finger vollständig übermalen und „Entfernen“ drücken. Einfache Hintergründe werden aus der Umgebung ergänzt. Bei komplexen Motiven ist das keine generative KI.</p>
+<button type="button" id="bwUseCurrent">Aktuelles AtelierAI-Foto übernehmen</button><input type="file" id="bwFile" accept="image/*" style="max-width:100%">
+<div style="margin:8px 0;touch-action:none"><canvas id="bwCanvas" style="display:block;max-width:100%;width:auto;height:auto;border:1px solid #aaa;border-radius:6px;touch-action:none;position:static"></canvas></div>
+<div class="mode"><button type="button" id="bwRemove">Entfernen</button><button type="button" class="secondary" id="bwReset">Original</button><button type="button" class="secondary" id="bwSave">Bild speichern</button></div>
+<div id="bwStatus" class="tiny">Noch kein Foto gewählt.</div>
+</details>
       <div style="display:grid;gap:8px;margin-top:12px"><button id="artReset" class="secondary">Alles zurücksetzen: AN · Effekte AUS</button><button id="artSave">Bild als PNG speichern</button><button id="artApply">Für alle Module übernehmen</button><p id="artStatus" style="font-size:13px;color:#555" role="status"></p></div>
     </div>
   </div></div>
@@ -11561,12 +11561,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 const q=id=>document.getElementById(id),c=q('bwCanvas'),ctx=c.getContext('2d',{willReadFrequently:true});
 let original=null,mask=null,painting=false,last=null;
 function redraw(){if(!original)return;ctx.putImageData(original,0,0);if(mask){ctx.fillStyle='rgba(240,50,50,.48)';for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)if(mask[y*c.width+x])ctx.fillRect(x,y,1,1);}}
+q('bwUseCurrent').addEventListener('click',()=>{const photo=window.__atelierArtBridge?.photo?.();if(!photo?.loaded||!photo.canvas?.width){q('bwStatus').textContent='Bitte zuerst ein Foto in AtelierAI öffnen.';return;}const im=photo.canvas,k=Math.min(1,900/Math.max(im.width,im.height));c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));ctx.drawImage(im,0,0,c.width,c.height);original=ctx.getImageData(0,0,c.width,c.height);mask=new Uint8Array(c.width*c.height);q('bwStatus').textContent='Jetzt den Gegenstand mit dem Finger übermalen.';});
 q('bwFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const url=URL.createObjectURL(f),im=new Image();im.onload=()=>{const scale=Math.min(1,900/Math.max(im.width,im.height));c.width=Math.round(im.width*scale);c.height=Math.round(im.height*scale);ctx.drawImage(im,0,0,c.width,c.height);original=ctx.getImageData(0,0,c.width,c.height);mask=new Uint8Array(c.width*c.height);q('bwStatus').textContent='Gegenstand vollständig übermalen.';URL.revokeObjectURL(url)};im.onerror=()=>{q('bwStatus').textContent='Foto konnte nicht geöffnet werden.';URL.revokeObjectURL(url)};im.src=url;});
-function pt(e){const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}}
+function pt(e){const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/Math.max(1,r.width),y:(e.clientY-r.top)*c.height/Math.max(1,r.height)}}
 function paint(a,b){const radius=Math.max(7,Math.round(Math.min(c.width,c.height)*.025)),d=Math.hypot(a.x-b.x,a.y-b.y),steps=Math.max(1,Math.ceil(d/3));for(let i=0;i<=steps;i++){const x=Math.round(a.x+(b.x-a.x)*i/steps),y=Math.round(a.y+(b.y-a.y)*i/steps);for(let yy=Math.max(0,y-radius);yy<Math.min(c.height,y+radius+1);yy++)for(let xx=Math.max(0,x-radius);xx<Math.min(c.width,x+radius+1);xx++)if((xx-x)**2+(yy-y)**2<=radius*radius)mask[yy*c.width+xx]=1;}redraw()}
-c.addEventListener('pointerdown',e=>{if(!original)return;painting=true;c.setPointerCapture(e.pointerId);last=pt(e);paint(last,last)});
-c.addEventListener('pointermove',e=>{if(!painting)return;const n=pt(e);paint(last,n);last=n});
-for(const ev of ['pointerup','pointercancel'])c.addEventListener(ev,()=>{painting=false;last=null});
+c.addEventListener('pointerdown',e=>{if(!original)return;e.preventDefault();e.stopPropagation();painting=true;c.setPointerCapture(e.pointerId);last=pt(e);paint(last,last)});
+c.addEventListener('pointermove',e=>{if(!painting)return;e.preventDefault();e.stopPropagation();const n=pt(e);paint(last,n);last=n});
+for(const ev of ['pointerup','pointercancel','lostpointercapture'])c.addEventListener(ev,e=>{if(painting)e.stopPropagation();painting=false;last=null});
 q('bwReset').onclick=()=>{if(!original)return;mask.fill(0);redraw();q('bwStatus').textContent='Original wiederhergestellt.'};
 q('bwRemove').onclick=()=>{
 if(!original||!mask?.some(Boolean)){q('bwStatus').textContent='Bitte zuerst einen Gegenstand markieren.';return;}
