@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.92</title>
+  <title>AtelierAI iPad 3.94</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.92</div>
+    <div class="title">AtelierAI · iPad 3.93</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1422,16 +1422,29 @@
           </div>
         </div>
         <div id="targetInfo" class="rgb" style="margin-top:6px;">Noch keine Bereichsfarbe aufgenommen.</div>
-        <details id="localKiPanel" style="margin-top:12px;padding:10px;border:1px solid #8887;border-radius:10px">
+        <details id="imageWorkshop" style="margin:12px 0;padding:10px;border:1px solid #8888;border-radius:10px">
+<summary>Bildwerkstatt · Gegenstand entfernen (offline)</summary>
+<p class="tiny">Foto wählen, Gegenstand mit dem Finger vollständig übermalen und „Entfernen“ drücken. Einfache Hintergründe werden aus der Umgebung ergänzt. Bei komplexen Motiven ist das keine generative KI.</p>
+<input type="file" id="bwFile" accept="image/*" style="max-width:100%">
+<div style="margin:8px 0;touch-action:none"><canvas id="bwCanvas" style="display:block;max-width:100%;width:100%;border:1px solid #aaa;border-radius:6px;touch-action:none"></canvas></div>
+<div class="mode"><button type="button" id="bwRemove">Entfernen</button><button type="button" class="secondary" id="bwReset">Original</button><button type="button" class="secondary" id="bwSave">Bild speichern</button></div>
+<div id="bwStatus" class="tiny">Noch kein Foto gewählt.</div>
+</details><details id="localKiPanel" style="margin-top:12px;padding:10px;border:1px solid #8887;border-radius:10px">
           <summary>KI-Farbanalyse · lokal &amp; kostenlos</summary>
           <p class="tiny">Analysiert das aktuell geladene Foto automatisch mit einem kleinen lernenden Farbgruppen-Verfahren (k-Means). Keine Anmeldung, keine Cloud, keine Bildübertragung. Noch keine ChatGPT-Analyse.</p>
           <button id="localKiAnalyse" type="button" class="secondary" style="width:100%">Foto analysieren</button>
           <div id="localKiResult" class="tiny" aria-live="polite" style="margin-top:8px">Noch keine Analyse.</div>
           <details style="margin-top:10px"><summary>Aus meinen Farbkorrekturen lernen</summary>
-            <p class="tiny">Wähle eine ursprüngliche Mischung und deine tatsächlich verbesserte Farbe. AtelierAI merkt sich die Korrektur nur auf diesem Gerät und berücksichtigt ähnliche Farben bei späteren KI-Analysen. Es lernt noch keine Pigmentmengen.</p>
+            <p class="tiny">Wähle die ursprüngliche und die verbesserte Mischung. AtelierAI lernt daraus eine übertragbare Richtung (heller/dunkler, wärmer/kühler, Sättigung) statt nur nach exakt derselben Farbe zu suchen. Die tatsächliche Pigmentwirkung kann es aus zwei Farbfeldern allein nicht bestimmen.</p>
             <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center"><label>Vorher <input type="color" id="kiBefore" value="#ad8579"></label><label>Nachher <input type="color" id="kiAfter" value="#b38c7b"></label></div>
-            <button id="kiLearnSave" type="button" class="secondary">Korrektur merken</button>
-            <button id="kiLearnClear" type="button" class="secondary">Gelernte Korrekturen löschen</button>
+            <div style="margin:8px 0;padding:8px;border:1px solid #8885;border-radius:7px">
+<p class="tiny"><b>Praxisrezept lernen</b> · Pigmente und Anteile vor und nach der Verbesserung eingeben, z. B. „Titanweiß: 4, Ocker: 2“. Die Zahlen sind relative Teile, keine Gramm.</p>
+<label style="display:block">Mischung vorher <input id="kiRecipeBefore" type="text" maxlength="300" placeholder="Titanweiß: 4, Ocker: 2, Rosa: 1" style="width:100%"></label>
+<label style="display:block;margin-top:5px">Mischung nachher <input id="kiRecipeAfter" type="text" maxlength="300" placeholder="Titanweiß: 4, Ocker: 2, Rosa: 1, Neapelgelb: 0.5" style="width:100%"></label>
+<p class="tiny">Optional: Wenn beide Rezepte ausgefüllt sind, wird die Pigmentänderung als Regel gespeichert. Ohne Rezepte bleibt das bisherige Farblernen erhalten.</p>
+</div>
+<label style="display:block;margin:8px 0">Verwendete Pigmentkorrektur (optional) <input id="kiPigmentNote" type="text" maxlength="120" placeholder="z. B. etwas Neapelgelb ergänzt" style="width:100%"></label><button id="kiLearnSave" type="button" class="secondary">Korrektur merken</button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button id="kiMemoryExport" type="button" class="secondary">KI-Gedächtnis sichern</button><button id="kiMemoryImport" type="button" class="secondary">KI-Gedächtnis laden</button><input id="kiMemoryFile" type="file" accept=".json,application/json" hidden></div><button id="kiLearnClear" type="button" class="secondary">Gelernte Korrekturen löschen</button><p class="tiny">Das Gedächtnis gilt für alle Projekte in dieser Installation. Sichere es als Datei, besonders vor Browserdaten-Löschungen oder beim Wechsel zwischen Online- und Offline-Version.</p>
             <p id="kiLearnStatus" class="tiny" aria-live="polite"></p>
           </details>
         </details>
@@ -11329,14 +11342,71 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   const el=(tag,txt,parent)=>{let e=document.createElement(tag);e.textContent=txt;parent.appendChild(e);return e;};
   const learnKey='atelierai-local-color-learning-v1';
+  const recipeKey='atelierai-pigment-rules-v1';
   const before=document.getElementById('kiBefore'),after=document.getElementById('kiAfter');
   const status=document.getElementById('kiLearnStatus');
-  function records(){try{const x=JSON.parse(localStorage.getItem(learnKey)||'[]');return Array.isArray(x)?x.slice(-100):[]}catch(e){return []}}
+  const validRecord=r=>r&&typeof r.a==='string'&&typeof r.b==='string'&&/^#[0-9a-f]{6}$/i.test(r.a)&&/^#[0-9a-f]{6}$/i.test(r.b)&&(r.note===undefined||(typeof r.note==='string'&&r.note.length<=120));
+  function records(){try{const x=JSON.parse(localStorage.getItem(learnKey)||'[]');return Array.isArray(x)?x.filter(validRecord).slice(-2000):[]}catch(e){return []}}
+  function parseRecipe(raw){
+    const out={};
+    for(const part of raw.split(/[,;\n]+/)){
+      if(!part.trim())continue;
+      const m=part.trim().match(/^(.+?)\s*:\s*(\d+(?:[.,]\d+)?)\s*$/);
+      if(!m)throw Error('Rezeptformat: Pigment: Anzahl, Pigment: Anzahl');
+      const name=m[1].trim().replace(/\s+/g,' ');
+      const val=Number(m[2].replace(',','.'));
+      if(!name||name.length>70||!Number.isFinite(val)||val<=0||val>10000)throw Error('Ungültiger Pigmentanteil.');
+      out[name]=(out[name]||0)+val;
+    }
+    return out;
+  }
+  function rules(){try{const v=JSON.parse(localStorage.getItem(recipeKey)||'[]');return Array.isArray(v)?v.filter(x=>x&&validRecord(x)&&x.before&&x.after&&typeof x.before==='object'&&typeof x.after==='object').slice(-500):[]}catch{return []}}
+  function recipeDiff(rule){
+    const a=rule.before,b=rule.after;
+    const sa=Object.values(a).reduce((x,y)=>x+y,0),sb=Object.values(b).reduce((x,y)=>x+y,0);
+    if(!sa||!sb)return [];
+    return [...new Set([...Object.keys(a),...Object.keys(b)])].map(n=>({n,d:((b[n]||0)/sb-(a[n]||0)/sa)*100})).filter(x=>Math.abs(x.d)>=1).sort((x,y)=>Math.abs(y.d)-Math.abs(x.d));
+  }
   function rgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16))}
   function deltaName(a,b){let dl=b[0]-a[0],dc=Math.hypot(b[1],b[2])-Math.hypot(a[1],a[2]);return (Math.abs(dl)<.012?'ähnliche Helligkeit':dl>0?'heller':'dunkler')+', '+(Math.abs(dc)<.012?'ähnliche Sättigung':dc>0?'satter':'gedämpfter')}
-  function refresh(){status.textContent=records().length+' Korrekturen lokal gespeichert.'}
-  document.getElementById('kiLearnSave').addEventListener('click',()=>{try{const a=before.value,b=after.value;if(a===b){status.textContent='Bitte zwei unterschiedliche Farben wählen.';return}const x=records();x.push({a,b});localStorage.setItem(learnKey,JSON.stringify(x.slice(-100)));refresh()}catch(e){status.textContent='Speichern auf diesem Gerät nicht möglich.'}});
-  document.getElementById('kiLearnClear').addEventListener('click',()=>{try{localStorage.removeItem(learnKey);refresh()}catch(e){status.textContent='Löschen fehlgeschlagen.'}});
+  function refresh(){status.textContent=records().length+' Farbkorrekturen und '+rules().length+' Pigmentregeln lokal gespeichert.'}
+  document.getElementById('kiLearnSave').addEventListener('click',()=>{try{const a=before.value,b=after.value;if(a===b){status.textContent='Bitte zwei unterschiedliche Farben wählen.';return}const x=records();const note=document.getElementById('kiPigmentNote').value.trim();
+    const rawA=document.getElementById('kiRecipeBefore').value.trim(),rawB=document.getElementById('kiRecipeAfter').value.trim();
+    if(Boolean(rawA)!==Boolean(rawB))throw Error('Bitte beide Pigmentrezepte ausfüllen oder beide leer lassen.');
+    let ra=null,rb=null;
+    if(rawA){ra=parseRecipe(rawA);rb=parseRecipe(rawB);if(!Object.keys(ra).length||!Object.keys(rb).length)throw Error('Beide Rezepte brauchen Pigmente.');}
+    x.push({a,b,note});localStorage.setItem(learnKey,JSON.stringify(x.slice(-2000)));
+    if(ra){const all=rules();all.push({a,b,note,before:ra,after:rb});localStorage.setItem(recipeKey,JSON.stringify(all.slice(-500)));}
+    refresh()}catch(e){status.textContent='Speichern fehlgeschlagen: '+e.message}});
+  document.getElementById('kiLearnClear').addEventListener('click',()=>{try{if(!confirm('Alle gelernten Farbkorrekturen wirklich löschen? Bitte vorher das KI-Gedächtnis sichern.'))return;localStorage.removeItem(learnKey);localStorage.removeItem(recipeKey);refresh()}catch(e){status.textContent='Löschen fehlgeschlagen.'}});
+  const memoryFile=document.getElementById('kiMemoryFile');
+  document.getElementById('kiMemoryExport').addEventListener('click',()=>{
+    try{
+      const payload={format:'AtelierAI-KI-Gedaechtnis',version:3,exportedAt:new Date().toISOString(),corrections:records(),pigmentRules:rules()};
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_KI_Gedaechtnis.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);
+      status.textContent=payload.corrections.length+' Korrekturen als Sicherungsdatei ausgegeben. Datei bitte in „Dateien“ aufbewahren.';
+    }catch(e){status.textContent='Sicherung fehlgeschlagen: '+e.message;}
+  });
+  document.getElementById('kiMemoryImport').addEventListener('click',()=>memoryFile.click());
+  memoryFile.addEventListener('change',async()=>{
+    const f=memoryFile.files?.[0];if(!f)return;
+    try{
+      if(f.size>2000000)throw new Error('Datei ist zu groß.');
+      const payload=JSON.parse(await f.text());
+      if(payload?.format!=='AtelierAI-KI-Gedaechtnis'||![1,2,3].includes(payload.version)||!Array.isArray(payload.corrections)||payload.corrections.length>2000||!payload.corrections.every(validRecord))throw new Error('Keine gültige AtelierAI-KI-Sicherung.');
+      const existing=records(),unique=new Map();
+      for(const r of [...existing,...payload.corrections])unique.set(r.a.toLowerCase()+'|'+r.b.toLowerCase()+'|'+(r.note||'').toLowerCase(),{a:r.a,b:r.b,note:r.note||''});
+      const merged=[...unique.values()].slice(-2000);
+      localStorage.setItem(learnKey,JSON.stringify(merged));
+      if(Array.isArray(payload.pigmentRules)){
+        const combined=[...rules(),...payload.pigmentRules.filter(r=>validRecord(r)&&r.before&&r.after&&typeof r.before==='object'&&typeof r.after==='object')];
+        const uniq=new Map(combined.map(r=>[JSON.stringify([r.a,r.b,r.before,r.after]),r]));
+        localStorage.setItem(recipeKey,JSON.stringify([...uniq.values()].slice(-500)));
+      }
+      status.textContent='Sicherung eingelesen: '+payload.corrections.length+' Korrekturen; insgesamt '+merged.length+' gespeichert (Duplikate zusammengeführt).';
+    }catch(e){status.textContent='Import nicht durchgeführt: '+e.message;}finally{memoryFile.value='';}
+  });
   refresh();
   function analyse(){
     const photo=window.__atelierArtBridge?.photo?.();
@@ -11367,7 +11437,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const active=groups.map((g,i)=>({...g,lab:seeds[i],rgb:g.rgb.map(x=>clamp(x/Math.max(1,g.n)))}))
       .filter(g=>g.n>pts.length*.015).sort((a,b)=>b.n-a.n);
     out.replaceChildren();el('strong','Erkannte Hauptfarbgruppen',out);
-    el('p','Die Gruppen wurden aus dem Foto gelernt, nicht aus einer festen Farbpalette.',out);
+    el('p','Die Farbgruppen werden aus dem Foto berechnet. Korrektur-Erfahrungen werden als allgemeine Tendenzen auf verwandte Farbtöne übertragen.',out);
     for(let i=0;i<active.length;i++){
       let g=active[i],r=el('div','',out);r.style.cssText='display:flex;align-items:center;gap:8px;margin:6px 0';
       let sw=el('span','',r);sw.style.cssText='background:'+rgbCss(g.rgb)+';width:36px;height:25px;flex-shrink:0;border:1px solid #777;border-radius:4px';
@@ -11386,14 +11456,57 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       el('p',relatives.slice(0,3).map(x=>'Gruppe '+x.i+' und '+x.j).join(' · ')+' unterscheiden sich vor allem in der Helligkeit. Prüfe eine gemeinsame Grundmischung.',out);
     }else el('p','Keine eindeutige gemeinsame Farbfamilie unter den dominierenden Bildfarben erkannt.',out);
     const learned=records();if(learned.length){
-      el('strong','Aus deinen Korrekturen gelernt',out);
+      el('strong','Übertragbare Misch-Erfahrungen',out);
+      // Generalize color correction directions across a wider neighborhood in OKLab.
+      // Hue/chroma proximity matters more than exact RGB; distance and consistency weight evidence.
       let shown=0;
-      for(const g of active){let best=null,dd=Infinity;
-        for(const r of learned){let d=dist(g.lab,rgbToOkLab(rgb(r.a)));if(d<dd){dd=d;best=r}}
-        if(best&&dd<.0045&&shown<3){let a=rgbToOkLab(rgb(best.a)),b=rgbToOkLab(rgb(best.b));
-          el('p',describe(g.lab)+': Ähnliche frühere Korrektur gefunden ('+deltaName(a,b)+'). Prüfe diesen Schritt an deiner echten Mischung.',out);shown++}
+      for(const g of active){
+        const candidates=[];
+        for(const r of learned){
+          const a=rgbToOkLab(rgb(r.a)),b=rgbToOkLab(rgb(r.b));
+          const chromaDistance=Math.hypot(g.lab[1]-a[1],g.lab[2]-a[2]);
+          const lightDistance=Math.abs(g.lab[0]-a[0]);
+          if(chromaDistance>.095||lightDistance>.30)continue;
+          const weight=1/(.015+chromaDistance*2+lightDistance*.35);
+          candidates.push({r,a,b,weight});
+        }
+        if(!candidates.length||shown>=3)continue;
+        let v=[0,0,0],sum=0;
+        for(const c of candidates){for(let j=0;j<3;j++)v[j]+=(c.b[j]-c.a[j])*c.weight;sum+=c.weight;}
+        v=v.map(x=>x/sum);
+        const deltaL=v[0],deltaC=Math.hypot(g.lab[1]+v[1],g.lab[2]+v[2])-Math.hypot(g.lab[1],g.lab[2]);
+        const originalHue=Math.atan2(g.lab[2],g.lab[1]),newHue=Math.atan2(g.lab[2]+v[2],g.lab[1]+v[1]);
+        const hueShift=Math.atan2(Math.sin(newHue-originalHue),Math.cos(newHue-originalHue))*180/Math.PI;
+        let advice=[];
+        if(Math.abs(deltaL)>.009)advice.push(deltaL>0?'etwas heller':'etwas dunkler');
+        if(Math.abs(deltaC)>.009)advice.push(deltaC>0?'etwas satter':'etwas gedämpfter');
+        if(Math.abs(hueShift)>5)advice.push('Farbton leicht verschieben');
+        if(!advice.length)continue;
+        const notes=candidates.map(x=>x.r.note).filter(Boolean);
+        let note='';if(notes.length){const freq=new Map();for(const n of notes)freq.set(n,(freq.get(n)||0)+1);note=' · Frühere praktische Zugabe: '+[...freq].sort((a,b)=>b[1]-a[1])[0][0];}
+        el('p',describe(g.lab)+': Aus '+candidates.length+' verwandten Erfahrungen: '+advice.join(', ')+'.'+note+' (als Versuch prüfen, kein automatisch validiertes Pigmentrezept).',out);shown++;
       }
-      if(!shown)el('p','Es sind '+learned.length+' Korrekturen gespeichert, aber keine passt ausreichend zu den aktuellen Hauptfarben.',out);
+      if(!shown)el('p',learned.length+' Erfahrungen gespeichert; für diese Hauptfarben noch keine ausreichend ähnliche Farbfamilie gefunden.',out);
+    }
+    const learnedRules=rules();
+    if(learnedRules.length){
+      el('strong','Gelernte Pigmentregeln · praktische Erfahrungen',out);
+      let hits=0;
+      for(const g of active){
+        const relevant=learnedRules.map(r=>({r,d:dist(g.lab,rgbToOkLab(rgb(r.a)))})).filter(x=>x.d<.025).sort((a,b)=>a.d-b.d).slice(0,4);
+        if(!relevant.length)continue;
+        const changes=new Map();
+        for(const item of relevant)for(const c of recipeDiff(item.r)){
+          const key=c.n.toLocaleLowerCase('de');
+          const entry=changes.get(key)||{n:c.n,total:0,count:0};
+          entry.total+=c.d/(1+item.d*70);entry.count++;changes.set(key,entry);
+        }
+        const ranked=[...changes.values()].filter(x=>x.count>0).sort((a,b)=>Math.abs(b.total)-Math.abs(a.total)).slice(0,3);
+        if(!ranked.length)continue;
+        el('p',describe(g.lab)+': Bei ähnlichen Ausgangsfarben wurde '+ranked.map(x=>(x.total>0?'mehr ':'weniger ')+x.n).join(', ')+' verwendet. Das ist eine Erfahrungsregel, keine geprüfte Rezeptberechnung.',out);
+        if(++hits>=3)break;
+      }
+      if(!hits)el('p','Pigmentregeln gespeichert; zu diesen Bildfarben noch keine verwandten Ausgangsmischungen.',out);
     }
     let ls=active.map(g=>g.lab[0]);
     el('p','Tonwertspanne der Hauptgruppen: '+Math.round(Math.min(...ls)*100)+'–'+Math.round(Math.max(...ls)*100)+' von 100. Die tatsächlichen Pigmentrezepte berechnet weiterhin das Mischmodul.',out);
@@ -11443,5 +11556,32 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 })();
 </script>
 
+<script>
+(()=>{
+const q=id=>document.getElementById(id),c=q('bwCanvas'),ctx=c.getContext('2d',{willReadFrequently:true});
+let original=null,mask=null,painting=false,last=null;
+function redraw(){if(!original)return;ctx.putImageData(original,0,0);if(mask){ctx.fillStyle='rgba(240,50,50,.48)';for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++)if(mask[y*c.width+x])ctx.fillRect(x,y,1,1);}}
+q('bwFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const url=URL.createObjectURL(f),im=new Image();im.onload=()=>{const scale=Math.min(1,900/Math.max(im.width,im.height));c.width=Math.round(im.width*scale);c.height=Math.round(im.height*scale);ctx.drawImage(im,0,0,c.width,c.height);original=ctx.getImageData(0,0,c.width,c.height);mask=new Uint8Array(c.width*c.height);q('bwStatus').textContent='Gegenstand vollständig übermalen.';URL.revokeObjectURL(url)};im.onerror=()=>{q('bwStatus').textContent='Foto konnte nicht geöffnet werden.';URL.revokeObjectURL(url)};im.src=url;});
+function pt(e){const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}}
+function paint(a,b){const radius=Math.max(7,Math.round(Math.min(c.width,c.height)*.025)),d=Math.hypot(a.x-b.x,a.y-b.y),steps=Math.max(1,Math.ceil(d/3));for(let i=0;i<=steps;i++){const x=Math.round(a.x+(b.x-a.x)*i/steps),y=Math.round(a.y+(b.y-a.y)*i/steps);for(let yy=Math.max(0,y-radius);yy<Math.min(c.height,y+radius+1);yy++)for(let xx=Math.max(0,x-radius);xx<Math.min(c.width,x+radius+1);xx++)if((xx-x)**2+(yy-y)**2<=radius*radius)mask[yy*c.width+xx]=1;}redraw()}
+c.addEventListener('pointerdown',e=>{if(!original)return;painting=true;c.setPointerCapture(e.pointerId);last=pt(e);paint(last,last)});
+c.addEventListener('pointermove',e=>{if(!painting)return;const n=pt(e);paint(last,n);last=n});
+for(const ev of ['pointerup','pointercancel'])c.addEventListener(ev,()=>{painting=false;last=null});
+q('bwReset').onclick=()=>{if(!original)return;mask.fill(0);redraw();q('bwStatus').textContent='Original wiederhergestellt.'};
+q('bwRemove').onclick=()=>{
+if(!original||!mask?.some(Boolean)){q('bwStatus').textContent='Bitte zuerst einen Gegenstand markieren.';return;}
+q('bwStatus').textContent='Hintergrund wird rekonstruiert …';
+setTimeout(()=>{
+const w=c.width,h=c.height,n=w*h,src=original.data,unknown=mask.slice(),data=new Float32Array(n*3),dist=new Int32Array(n),queue=new Int32Array(n);let head=0,tail=0;
+for(let i=0;i<n;i++){data[i*3]=src[i*4];data[i*3+1]=src[i*4+1];data[i*3+2]=src[i*4+2];if(!unknown[i])continue;const x=i%w,y=(i/w)|0;const neighbors=[x>0?i-1:-1,x<w-1?i+1:-1,y>0?i-w:-1,y<h-1?i+w:-1];if(neighbors.some(j=>j>=0&&!unknown[j])){queue[tail++]=i;dist[i]=1;}}
+while(head<tail){const i=queue[head++],x=i%w,y=(i/w)|0,adj=[x>0?i-1:-1,x<w-1?i+1:-1,y>0?i-w:-1,y<h-1?i+w:-1];let count=0;const sum=[0,0,0];for(const j of adj){if(j<0||unknown[j]&&dist[j]>=dist[i])continue;count++;for(let k=0;k<3;k++)sum[k]+=data[j*3+k];}if(count)for(let k=0;k<3;k++)data[i*3+k]=sum[k]/count;for(const j of adj)if(j>=0&&unknown[j]&&!dist[j]){dist[j]=dist[i]+1;queue[tail++]=j;}}
+const out=new ImageData(new Uint8ClampedArray(src),w,h);
+for(let i=0;i<n;i++)if(unknown[i])for(let k=0;k<3;k++)out.data[i*4+k]=data[i*3+k];
+original=out;mask.fill(0);redraw();q('bwStatus').textContent='Fertig. Bei schwierigen Hintergründen können sichtbare Unschärfen entstehen.';
+},30);
+};
+q('bwSave').onclick=()=>{if(!original)return;const tmp=document.createElement('canvas');tmp.width=c.width;tmp.height=c.height;tmp.getContext('2d').putImageData(original,0,0);tmp.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_Bildwerkstatt.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000)},'image/png')};
+})();
+</script>
 </body>
 </html>
