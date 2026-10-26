@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.88</title>
+  <title>AtelierAI iPad 3.89</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.88</div>
+    <div class="title">AtelierAI · iPad 3.89</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -8125,6 +8125,51 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     return current;
   }
+  // Remove tiny *connected* color islands rather than voting over square blocks.
+  // Four-neighbour regions retain contours; only areas below an adaptive size
+  // are assigned to the closest touching color, with strong light/dark boundaries protected.
+  function formsMergeSmallRegions(image,w,h,minSize){
+    if(minSize<2)return image;
+    const data=image.data,n=w*h,seen=new Uint8Array(n),queue=new Int32Array(n);
+    const result=new Uint8ClampedArray(data),min=Math.max(2,Math.round(minSize));
+    for(let start=0;start<n;start++){
+      if(seen[start])continue;
+      const k=start*4,r=data[k],g=data[k+1],b=data[k+2];
+      let head=0,tail=1;queue[0]=start;seen[start]=1;
+      const neighbors=new Map();
+      while(head<tail){
+        const at=queue[head++],y=(at/w)|0,x=at-y*w;
+        const check=q=>{
+          const j=q*4;
+          if(data[j]===r&&data[j+1]===g&&data[j+2]===b){
+            if(!seen[q]){seen[q]=1;queue[tail++]=q;}
+          }else{
+            const key=(data[j]<<16)|(data[j+1]<<8)|data[j+2];
+            neighbors.set(key,(neighbors.get(key)||0)+1);
+          }
+        };
+        if(x>0)check(at-1);if(x<w-1)check(at+1);
+        if(y>0)check(at-w);if(y<h-1)check(at+w);
+      }
+      if(tail>=min||!neighbors.size)continue;
+      let winner=-1,score=Infinity;
+      const ownL=.2126*r+.7152*g+.0722*b;
+      for(const [key,contacts] of neighbors){
+        const nr=(key>>>16)&255,ng=(key>>>8)&255,nb=key&255;
+        const L=.2126*nr+.7152*ng+.0722*nb;
+        if(Math.abs(L-ownL)>48)continue;
+        const dr=nr-r,dg=ng-g,db=nb-b;
+        const cost=(dr*dr+dg*dg+db*db)/(1+Math.sqrt(contacts));
+        if(cost<score){score=cost;winner=key;}
+      }
+      if(winner<0)continue;
+      for(let j=0;j<tail;j++){
+        const k=queue[j]*4;result[k]=(winner>>>16)&255;
+        result[k+1]=(winner>>>8)&255;result[k+2]=winner&255;
+      }
+    }
+    image.data.set(result);return image;
+  }
   function rebuildSquintForms(){
     // Higher working resolution keeps curved and diagonal boundaries clean on iPad.
     // Blur radius already scales with dimensions, preserving the squint strength.
@@ -8154,6 +8199,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const rgb=palette[joined[i]],k=i*4;
       pixels.data[k]=rgb[0];pixels.data[k+1]=rgb[1];pixels.data[k+2]=rgb[2];
     }
+    formsMergeSmallRegions(pixels,work.width,work.height,Math.max(9,Math.round(work.width*work.height/17000)));
     status.textContent=amount ? 'Farbgruppen: '+initial.length+' → '+palette.length+' · ähnliche Nachbarflächen beruhigt' : 'Farbgruppen: '+initial.length+' · ursprüngliche Erkennung';
     finishForms(pixels);
   }
@@ -8287,10 +8333,27 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const src = wctx.getImageData(0,0,ww,wh);
     const out = wctx.createImageData(ww,wh);
 
+    // Small edge-aware color averaging before quantization: avoid random
+    // neighboring pixels falling in different RGB bins, without washing out edges.
+    const smooth=new Uint8ClampedArray(src.data);
+    const radiusSmooth=formLevel<=2?2:1;
+    for(let y=0;y<wh;y++)for(let x=0;x<ww;x++){
+      const k=(y*ww+x)*4,r=src.data[k],g=src.data[k+1],b=src.data[k+2];
+      let sr=0,sg=0,sb=0,total=0;
+      for(let dy=-radiusSmooth;dy<=radiusSmooth;dy++)for(let dx=-radiusSmooth;dx<=radiusSmooth;dx++){
+        const xx=x+dx,yy=y+dy;if(xx<0||xx>=ww||yy<0||yy>=wh)continue;
+        const j=(yy*ww+xx)*4,dr=r-src.data[j],dg=g-src.data[j+1],db=b-src.data[j+2];
+        const d=dr*dr+dg*dg+db*db;
+        if(d>3400)continue;
+        const weight=1/(1+.35*(dx*dx+dy*dy));
+        sr+=src.data[j]*weight;sg+=src.data[j+1]*weight;sb+=src.data[j+2]*weight;total+=weight;
+      }
+      smooth[k]=sr/total;smooth[k+1]=sg/total;smooth[k+2]=sb/total;
+    }
     // 1) Farbquantisierung: ähnliche Farben zu Malflächen bündeln.
     const q = cfg.step;
     for(let i=0;i<src.data.length;i+=4){
-      const r=src.data[i], g=src.data[i+1], b=src.data[i+2];
+      const r=smooth[i], g=smooth[i+1], b=smooth[i+2];
       out.data[i]   = Math.max(0,Math.min(255,Math.round(r/q)*q));
       out.data[i+1] = Math.max(0,Math.min(255,Math.round(g/q)*q));
       out.data[i+2] = Math.max(0,Math.min(255,Math.round(b/q)*q));
@@ -8309,6 +8372,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     // Stufe 1: extrem grob und sehr schnell.
     // Keine große Nachbarschaftssuche; nur Farbflächen quantisieren.
     if(formLevel===1){
+      formsMergeSmallRegions(cur,ww,wh,Math.max(6,Math.round(ww*wh/10000)));
       finishForms(cur);
       return;
     }
@@ -8372,6 +8436,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       cur=next;
     }
 
+    formsMergeSmallRegions(cur,ww,wh,Math.max(6,Math.round(ww*wh/14500)));
     finishForms(cur);
   }
   let toneUpdateFrame=0;
