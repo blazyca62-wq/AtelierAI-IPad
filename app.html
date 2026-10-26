@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.92</title>
+  <title>AtelierAI iPad 3.93</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.92</div>
+    <div class="title">AtelierAI · iPad 3.93</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -10024,12 +10024,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
             if(o.colorMode==='replace'){
               // True recolouring: preserve relative luminance structure, not source hue/chroma.
               // At full strength the source a/b coordinates contribute nothing.
-              const originalLight=L;
-              const targetLight=o.target[0];
-              const newLight=clamp(targetLight+(originalLight-.55)*.70,.04,.98);
-              L=L+(newLight-L)*colorStrength;
-              a=a*(1-colorStrength)+o.target[1]*colorStrength;
-              b=b*(1-colorStrength)+o.target[2]*colorStrength;
+              // Keep the source lightness EXACTLY: shadows and highlights
+              // must not be lifted toward the target pigment's lightness.
+              // Reduce chroma in dark regions to avoid RGB gamut clipping,
+              // which otherwise crushes detail in deep folds.
+              const chromaLimit=Math.min(1,Math.max(0.12,L*2.1));
+              a=a*(1-colorStrength)+o.target[1]*chromaLimit*colorStrength;
+              b=b*(1-colorStrength)+o.target[2]*chromaLimit*colorStrength;
             }
             else {a+=(o.target[1]-a)*colorStrength;b+=(o.target[2]-b)*colorStrength;}
             b+=(o.warm+g.warm)*w;
