@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.89</title>
+  <title>AtelierAI iPad 3.91</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.89</div>
+    <div class="title">AtelierAI · iPad 3.91</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1422,6 +1422,12 @@
           </div>
         </div>
         <div id="targetInfo" class="rgb" style="margin-top:6px;">Noch keine Bereichsfarbe aufgenommen.</div>
+        <details id="localKiPanel" style="margin-top:12px;padding:10px;border:1px solid #8887;border-radius:10px">
+          <summary>KI-Farbanalyse · lokal &amp; kostenlos</summary>
+          <p class="tiny">Analysiert das aktuell geladene Foto automatisch mit einem kleinen lernenden Farbgruppen-Verfahren (k-Means). Keine Anmeldung, keine Cloud, keine Bildübertragung. Noch keine ChatGPT-Analyse.</p>
+          <button id="localKiAnalyse" type="button" class="secondary" style="width:100%">Foto analysieren</button>
+          <div id="localKiResult" class="tiny" aria-live="polite" style="margin-top:8px">Noch keine Analyse.</div>
+        </details>
 
         <div class="control-line" style="margin-top:8px;">
           <label>Farbähnlichkeit</label>
@@ -3968,8 +3974,13 @@
       const start=similarityPct(target,base.recipe.rgb);
       let best={score:start,rgb:base.recipe.rgb,adds:[],amount:0};
       if(start>=limit)return {...best,usable:true};
-      const ranked=colors.map(c=>({c,d:colorDistance(c[1],target)}))
-        .sort((a,b)=>a.d-b.d).slice(0,20).map(x=>x.c);
+      // Neben farblich nahen Tuben auch die Pigmente der gemeinsamen Basis
+      // pruefen. Ein Korrekturweg bleibt dadurch bei wenigen Tubenfarben.
+      const nearest=colors.map(c=>({c,d:colorDistance(c[1],target)}))
+        .sort((a,b)=>a.d-b.d).slice(0,14).map(x=>x.c);
+      const preferred=base.ingredients.map(x=>x.c);
+      const ranked=[...preferred,...nearest].filter((c,i,a)=>
+        a.findIndex(x=>x[0]===c[0])===i);
       const amounts=[1,2,3,4,5,6,8,10,12,15,18,22,26,30,36,45];
       // Zwei oder drei nacheinander zugegebene Tubenfarben erlauben, auch
       // hellere, dunklere und waermere/kuehlere Abwandlungen zu erreichen.
@@ -4024,18 +4035,42 @@
             candidates.push({ingredients,parts,rgb});
         }
       }
+      // 3.90: Nicht nur die haeufigsten 2/3/4 Tuben kombinieren.
+      // Alternative Paare und Dreiergruppen erfassen Farbverwandtschaft
+      // auch dann, wenn einzelne Zielrezepte andere Pigmente benutzen.
+      const top=ranked.slice(0,6);
+      const seen=new Set(candidates.map(x=>x.ingredients.map(e=>e.id).join('|')+':'+x.parts.join(',')));
+      const register=(ingredients,parts)=>{
+        const signature=ingredients.map(e=>e.id).join('|')+':'+parts.join(',');
+        if(seen.has(signature))return;
+        seen.add(signature);
+        candidates.push({ingredients,parts,rgb:pigmentMix(ingredients.map(e=>e.c[1]),parts,key)});
+      };
+      for(let i=0;i<top.length;i++)for(let j=i+1;j<top.length;j++){
+        const pair=[top[i],top[j]];
+        // Unterschiedliche Mischungsverhaeltnisse statt nur gleichem Anteil.
+        register(pair,[1,1]);
+        register(pair,[2,1]);
+        register(pair,[1,2]);
+      }
+      // Kandidaten zunaechst auf Naehe zu den tatsaechlich gewaelten
+      // Farbproben pruefen. Dadurch bleibt die Suche auf dem iPad begrenzt.
+      const plausible=candidates.map(base=>({base,proximity:remaining.reduce((sum,s)=>
+        sum+Math.max(0,100-colorDistance(base.rgb,s.target)*1.2),0)}))
+        .sort((a,b)=>b.proximity-a.proximity)
+        .slice(0,18).map(x=>x.base);
       let winner=null;
-      for(const base of candidates){
+      for(const base of plausible){
         const pseudo={recipe:{rgb:base.rgb}};
         const members=[];let penalty=0;
         for(const sample of remaining){
           const adjustment=findCorrection(pseudo,sample);
           if(!adjustment.usable)continue;
           members.push({sample,...adjustment});
-          penalty+=100-adjustment.score+adjustment.adds.length*2+adjustment.amount*.12;
+          penalty+=100-adjustment.score+adjustment.adds.length*3+adjustment.amount*.16;
         }
         if(members.length<2)continue;
-        const rank=members.length*1000-penalty-base.ingredients.length*3;
+        const rank=members.length*1000-penalty-base.ingredients.length*5;
         if(!winner||rank>winner.rank)winner={base,members,rank};
       }
       if(!winner)break;
@@ -11257,6 +11292,91 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     by('artApply').addEventListener('click',async()=>{if(!base||busy)return;busy=true;by('artApply').disabled=true;try{if(previewOriginal)originalPreview(false);render();await new Promise(r=>setTimeout(r,350));let blob=await fileFromCanvas();await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));overlay.style.display='none';by('artStatus').textContent='Gestaltetes Bild in alle Module übernommen.';}catch(e){by('artStatus').textContent='Übernahme fehlgeschlagen: '+e.message;}finally{busy=false;by('artApply').disabled=false;}});
   })();
 
+</script>
+
+
+<script>
+/* 3.91: Rein lokale, unüberwachte Farbgruppenanalyse. Kein Remote-Dienst. */
+(()=>{
+  'use strict';
+  const btn=document.getElementById('localKiAnalyse'),out=document.getElementById('localKiResult');
+  if(!btn||!out)return;
+  const clamp=x=>Math.max(0,Math.min(255,Math.round(x)));
+  const rgbCss=v=>'rgb('+v.map(clamp).join(',')+')';
+  function rgbToOkLab(v){
+    let [r,g,b]=v.map(x=>{x=x/255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;});
+    let l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),
+        m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),
+        ss=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
+    return [.2104542553*l+.793617785*m-.0040720468*ss,
+      1.9779984951*l-2.428592205*m+.4505937099*ss,
+      .0259040371*l+.7827717662*m-.808675766*ss];
+  }
+  function dist(a,b){return (a[0]-b[0])**2*1.4+(a[1]-b[1])**2*2.3+(a[2]-b[2])**2*2.3;}
+  function describe(lab){
+    const [l,a,b]=lab,c=Math.hypot(a,b),h=(Math.atan2(b,a)*180/Math.PI+360)%360;
+    const tone=l<.32?'dunkel':l>.77?'hell':'mittelhell';
+    if(c<.025)return tone+' · neutral';
+    let hue=h<35||h>=345?'Rosa/Rot':h<77?'Orange/Ocker':h<112?'Gelb':h<170?'Grün':h<235?'Türkis':h<285?'Blau':'Violett';
+    return tone+' · '+hue;
+  }
+  const el=(tag,txt,parent)=>{let e=document.createElement(tag);e.textContent=txt;parent.appendChild(e);return e;};
+  function analyse(){
+    const photo=window.__atelierArtBridge?.photo?.();
+    if(!photo?.loaded||!photo.canvas?.width){out.textContent='Bitte zuerst ein Foto in AtelierAI laden.';return;}
+    const cv=document.createElement('canvas'),orig=photo.canvas,side=90;
+    const scale=Math.min(1,side/Math.max(orig.width,orig.height));
+    cv.width=Math.max(1,Math.round(orig.width*scale));cv.height=Math.max(1,Math.round(orig.height*scale));
+    const ctx=cv.getContext('2d',{willReadFrequently:true});ctx.drawImage(orig,0,0,cv.width,cv.height);
+    const data=ctx.getImageData(0,0,cv.width,cv.height).data,pts=[];
+    for(let i=0;i<data.length;i+=4){if(data[i+3]<160)continue;
+      let rgb=[data[i],data[i+1],data[i+2]];pts.push({rgb,lab:rgbToOkLab(rgb)});
+    }
+    if(pts.length<2){out.textContent='Zu wenig Bilddaten für eine Analyse.';return;}
+    const k=Math.min(7,Math.max(2,Math.round(Math.sqrt(pts.length/180))));
+    // Deterministic farthest-first seeds; no network, no random model downloads.
+    let seeds=[pts.reduce((a,b)=>a.lab[0]<b.lab[0]?a:b).lab.slice()];
+    while(seeds.length<k){let best=null,score=-1;
+      for(let i=0;i<pts.length;i+=3){let p=pts[i],d=Math.min(...seeds.map(c=>dist(p.lab,c)));if(d>score){score=d;best=p.lab;}}
+      seeds.push(best.slice());
+    }
+    let groups=Array.from({length:k},()=>({n:0,s:[0,0,0],rgb:[0,0,0]}));
+    for(let iter=0;iter<11;iter++){
+      groups=Array.from({length:k},()=>({n:0,s:[0,0,0],rgb:[0,0,0]}));
+      for(let p of pts){let ci=0,d=Infinity;for(let j=0;j<k;j++){let x=dist(p.lab,seeds[j]);if(x<d){d=x;ci=j;}}
+        let g=groups[ci];g.n++;for(let j=0;j<3;j++){g.s[j]+=p.lab[j];g.rgb[j]+=p.rgb[j];}}
+      for(let j=0;j<k;j++)if(groups[j].n)seeds[j]=groups[j].s.map(x=>x/groups[j].n);
+    }
+    const active=groups.map((g,i)=>({...g,lab:seeds[i],rgb:g.rgb.map(x=>clamp(x/Math.max(1,g.n)))}))
+      .filter(g=>g.n>pts.length*.015).sort((a,b)=>b.n-a.n);
+    out.replaceChildren();el('strong','Erkannte Hauptfarbgruppen',out);
+    el('p','Die Gruppen wurden aus dem Foto gelernt, nicht aus einer festen Farbpalette.',out);
+    for(let i=0;i<active.length;i++){
+      let g=active[i],r=el('div','',out);r.style.cssText='display:flex;align-items:center;gap:8px;margin:6px 0';
+      let sw=el('span','',r);sw.style.cssText='background:'+rgbCss(g.rgb)+';width:36px;height:25px;flex-shrink:0;border:1px solid #777;border-radius:4px';
+      el('span',Math.round(g.n/pts.length*100)+' % · '+describe(g.lab),r);
+    }
+    let relatives=[];
+    for(let i=0;i<active.length;i++)for(let j=i+1;j<active.length;j++){
+      let a=active[i],b=active[j],chromaA=Math.hypot(a.lab[1],a.lab[2]),chromaB=Math.hypot(b.lab[1],b.lab[2]);
+      let dab=Math.hypot(a.lab[1]-b.lab[1],a.lab[2]-b.lab[2]);
+      if(dab<.065&&Math.abs(a.lab[0]-b.lab[0])>.08&&(chromaA>.03||chromaB>.03))
+        relatives.push({i:i+1,j:j+1,d:dab});
+    }
+    relatives.sort((a,b)=>a.d-b.d);
+    if(relatives.length){
+      el('strong','Mögliche Farbverwandtschaften',out);
+      el('p',relatives.slice(0,3).map(x=>'Gruppe '+x.i+' und '+x.j).join(' · ')+' unterscheiden sich vor allem in der Helligkeit. Prüfe eine gemeinsame Grundmischung.',out);
+    }else el('p','Keine eindeutige gemeinsame Farbfamilie unter den dominierenden Bildfarben erkannt.',out);
+    let ls=active.map(g=>g.lab[0]);
+    el('p','Tonwertspanne der Hauptgruppen: '+Math.round(Math.min(...ls)*100)+'–'+Math.round(Math.max(...ls)*100)+' von 100. Die tatsächlichen Pigmentrezepte berechnet weiterhin das Mischmodul.',out);
+    el('small','Lokales maschinelles Clustering – Vorschläge können bei kleinen Details oder Schatten danebenliegen.',out);
+  }
+  btn.addEventListener('click',()=>{
+    btn.disabled=true;out.textContent='Foto wird lokal analysiert …';
+    setTimeout(()=>{try{analyse()}catch(err){console.error('KI-Farbanalyse',err);out.textContent='Analyse fehlgeschlagen: '+err.message;}finally{btn.disabled=false;}},30);
+  });
+})();
 </script>
 
 <script>
