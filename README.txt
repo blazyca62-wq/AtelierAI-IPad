@@ -1,3 +1,5 @@
+AtelierAI 4.05 – Neues Lasso aktiviert die Ausgangs-Pipette automatisch, löscht die vorherige Farbprobe und wartet auf die neue Probe. Die Zielfarbe bleibt unabhängig. Punktprobe verkleinert, Farbtoleranz 12 %. Manuelle Familienauswahl bleibt möglich.
+
 AtelierAI 4.04 – Farbharmonie: Pipettenmaske enger nach Farbton und Helligkeit, neuer Startwert 12 % Ähnlichkeit, keine Farbauswahl ohne gültige Pipettenprobe.
 
 AtelierAI 4.03 – Klare Trennung Ausgangsfarbe (nur angetippte Farbe) und Zielfarbe; Quelle muss bei aktivem Lasso innen liegen; Farbbereich-Regler bleibt unter Erweitert. Update-Kennung 4.03.
