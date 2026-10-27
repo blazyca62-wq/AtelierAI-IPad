@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.96</title>
+  <title>AtelierAI iPad 3.97</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.96</div>
+    <div class="title">AtelierAI · iPad 3.97</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -9830,19 +9830,23 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     </details>
     <details id="ceGradientPanel"><summary>Verlauf entlang einer Linie</summary>
     <button id="ceGradientDraw" class="secondary" aria-pressed="false">Verlaufslinie zeichnen</button><p id="ceGradientStatus" class="tiny" role="status">Mit einem Finger von A nach B ziehen.</p>
+    <label><input id="ceGradientHarmony" type="checkbox"> Farbharmonie entlang der Linie steuern (Mischen / Ersetzen)</label>
+    <p class="tiny">Die Leitfarbe und der Modus kommen aus „Farbharmonie“. A und B bestimmen, wie viel der eingestellten Stärke am jeweiligen Ende wirkt. Funktioniert mit allen Farben. Die übrigen Verlaufseinstellungen bleiben unabhängig.</p>
     <strong>Anfang A</strong>
+    <label>Farbharmonie A <output id="ceGradHarmonyAVal">0 %</output><input id="ceGradHarmonyA" type="range" min="0" max="100" step="1" value="0"></label>
     <label>Heller / dunkler <output id="ceGradLightAVal">0</output><input id="ceGradLightA" type="range" min="-40" max="40" step="0.5" value="0"></label>
     <label>Kühler / wärmer <output id="ceGradWarmAVal">0</output><input id="ceGradWarmA" type="range" min="-30" max="30" step="0.5" value="0"></label>
     <label>Sättigung <output id="ceGradSatAVal">0 %</output><input id="ceGradSatA" type="range" min="-100" max="100" step="1" value="0"></label>
     <label>Unschärfe <output id="ceGradBlurAVal">0 %</output><input id="ceGradBlurA" type="range" min="0" max="100" step="1" value="0"></label>
     <strong>Ende B</strong>
+    <label>Farbharmonie B <output id="ceGradHarmonyBVal">100 %</output><input id="ceGradHarmonyB" type="range" min="0" max="100" step="1" value="100"></label>
     <label>Heller / dunkler <output id="ceGradLightBVal">0</output><input id="ceGradLightB" type="range" min="-40" max="40" step="0.5" value="0"></label>
     <label>Kühler / wärmer <output id="ceGradWarmBVal">0</output><input id="ceGradWarmB" type="range" min="-30" max="30" step="0.5" value="0"></label>
     <label>Sättigung <output id="ceGradSatBVal">0 %</output><input id="ceGradSatB" type="range" min="-100" max="100" step="1" value="0"></label>
     <label>Unschärfe <output id="ceGradBlurBVal">0 %</output><input id="ceGradBlurB" type="range" min="0" max="100" step="1" value="0"></label>
     <button id="ceGradientReverse" class="secondary">Richtung umkehren</button><button id="ceGradientClear" class="secondary">Verlauf entfernen</button>
     <label><input id="ceGradientVisible" type="checkbox" checked> Linie anzeigen</label>
-    <p class="tiny">Unschärfe: 0 % = scharf, 100 % = stark weichgezeichnet. A = 0 und B = 50 ergibt zunehmende Unschärfe. Der Tonwertschutz gilt für Farbregler, nicht für die Unschärfe. 0 bedeutet unverändert. Der Verlauf ergänzt die normalen Farbregler und wirkt auf die gewählte Farbe bzw. Auswahl. Vor A und hinter B bleibt der jeweilige Endwert konstant. „Änderung merken“ speichert den Verlauf.</p></details>
+    <p class="tiny">Unschärfe: 0 % = scharf, 100 % = stark weichgezeichnet. A = 0 und B = 50 ergibt zunehmende Unschärfe. Der Tonwertschutz gilt für Farbregler, nicht für die Unschärfe. 0 bedeutet unverändert. Der Verlauf ergänzt die normalen Farbregler und wirkt auf die gewählte Farbe bzw. Auswahl. Vor A und hinter B bleibt der jeweilige Endwert konstant. Bei aktivierter Farbharmonie steuern A/B die Wirkung der ausgewählten Zielfarbe von 0–100 % der eingestellten Stärke. „Änderung merken“ speichert den Verlauf.</p></details>
     <details id="ceSpotPanel"><summary>Lichtfleck &amp; Motiv hervorheben</summary>
     <button id="ceFocusPreset">Motiv hervorheben · Umgebung beruhigen</button><p class="tiny">Setzt ein geschütztes Oval und nimmt die Farben außen sanft zurück. Ersetzt die Einstellungen des aktuellen Flecks.</p>
     <button id="ceSpotPlace" class="secondary" aria-pressed="false">Fleck im Bild setzen</button><p id="ceSpotStatus" class="tiny" role="status">Mittelpunkt antippen oder mit einem Finger verschieben.</p>
@@ -10020,7 +10024,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
             const g=gradientValues(o.gradient,steps?steps[j]/2048:0);
             if(o.spot){const v=spotSteps[j]/2048;g.light+=o.spot.light*v;g.warm+=o.spot.warm*v;g.saturation+=o.spot.saturation*v;}
             changed=true;if(!o.protectTone)L=clamp(L+(o.light+g.light)*w);
-            const colorStrength=Math.max(0,Math.min(1,o.blend*w));
+            const harmonyFactor=o.gradient?.harmony ? (o.gradient.harmonyA??0)+((o.gradient.harmonyB??1)-(o.gradient.harmonyA??0))*(steps?steps[j]/2048:0) : 1;
+            const colorStrength=Math.max(0,Math.min(1,o.blend*w*harmonyFactor));
             if(colorStrength>0){
               // OKLab L is 0..1 (not 0..100). Keep each pixel's
               // lightness: the fabric's folds and shadows remain intact.
@@ -10056,7 +10061,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     function labels(){for(const name of ['Range','Light','Blend','Warm','Saturation','Original'])el(name+'Val').textContent=el(name).value+(name==='Light'||name==='Warm'?'':' %');el('Range').disabled=busy;syncResetToggle();}
     async function render(){if(!preview||busy)return;labels();const token=++revision;el('Status').textContent='Vorschau wird aktualisiert …';const o=current(),ops=[...layers,...(active(o)?[o]:[])];const out=await process(preview,ops,null,token);if(!out)return;const f=+el('Original').value/100;if(f)for(let i=0;i<out.data.length;i+=4)for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*(1-f)+preview.data[i+j]*f;lastCleanPreview=new ImageData(new Uint8ClampedArray(out.data),out.width,out.height);if(el('Mask').checked){const area=spatialMask(o.region,out.width,out.height),brush=brushMask(o.strokes,out.width,out.height);for(let i=0;i<out.data.length;i+=4){const c=Array.from(preview.data.slice(i,i+3)),w=selectedWeight(o,c,lab(...c),spatialAlpha(area,(i/4)%out.width,Math.floor(i/4/out.width)),brush?.[i/2]||0,brush?.[i/2+1]||0);for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*.3+(j===0?255:j===2?190:30)*w*.7;}}ctx.putImageData(out,0,0);drawReview();el('Status').textContent=resetSnapshot?'Originalansicht · alle Bearbeitungen bleiben zum Wiederanzeigen gespeichert.':layers.length+' gemerkte Änderungen · Vorschau';}
-    function resetSliders(){el('SpotOutside').checked=false;el('SpotStrength').value=100;spot=null;spotDraft=null;spotArmed=false;for(const n of ['SpotLight','SpotWarm','SpotSat'])el(n).value=0;gradient=null;gradientDraft=null;gradientArmed=false;for(const n of gradientControls)el(n).value=0;for(const n of ['Light','Blend','Warm','Saturation','Original'])el(n).value=0;el('Mask').checked=false;}
+    function resetSliders(){el('SpotOutside').checked=false;el('SpotStrength').value=100;spot=null;spotDraft=null;spotArmed=false;for(const n of ['SpotLight','SpotWarm','SpotSat'])el(n).value=0;gradient=null;gradientDraft=null;gradientArmed=false;el('GradientHarmony').checked=false;el('GradHarmonyA').value=0;el('GradHarmonyB').value=100;for(const n of gradientControls)el(n).value=0;for(const n of ['Light','Blend','Warm','Saturation','Original'])el(n).value=0;el('Mask').checked=false;}
     function reviewActive(){return ['ReviewSquint','ReviewGray','ReviewMirror'].some(n=>el(n).checked);}
     function syncReviewControls(){
       const names=[el('ReviewSquint').checked?'Zusammenkneifen':'',el('ReviewGray').checked?'S/W':'',el('ReviewMirror').checked?'Gespiegelt':''].filter(Boolean);
@@ -10192,9 +10197,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     function currentGradient(){
       if(!gradient)return null;
       const values=end=>({light:+el('GradLight'+end).value/100,warm:+el('GradWarm'+end).value/500,saturation:+el('GradSat'+end).value/100,blur:+el('GradBlur'+end).value/100});
-      return {a:{...gradient.a},b:{...gradient.b},from:values('A'),to:values('B')};
+      return {a:{...gradient.a},b:{...gradient.b},from:values('A'),to:values('B'),harmony:el('GradientHarmony').checked,harmonyA:+el('GradHarmonyA').value/100,harmonyB:+el('GradHarmonyB').value/100};
     }
     function syncGradient(){
+      for(const end of ['A','B']){el('GradHarmony'+end+'Val').textContent=el('GradHarmony'+end).value+' %';el('GradHarmony'+end).disabled=busy||!gradient||!el('GradientHarmony').checked;}
+      el('GradientHarmony').disabled=busy||!gradient;
       for(const n of gradientControls)el(n+'Val').textContent=el(n).value+((n.includes('Sat')||n.includes('Blur'))?' %':'');
       for(const n of gradientControls)el(n).disabled=busy||(!gradient)||n.includes('Light')&&el('ProtectTone').checked;
       el('GradientDraw').setAttribute('aria-pressed',String(gradientArmed));
@@ -10258,6 +10265,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     el('GradientClear').onclick=()=>{clearGesture();gradient=null;gradientArmed=false;syncGradient();render();};
     el('GradientVisible').onchange=drawRegion;
     for(const n of gradientControls)el(n).addEventListener('input',render);
+    for(const n of ['GradientHarmony','GradHarmonyA','GradHarmonyB'])el(n).addEventListener('input',()=>{syncGradient();render();});
     function drawBrushDraft(){
       if(!brushDraft?.points.length)return;
       const path=document.createElementNS('http://www.w3.org/2000/svg','polyline');
@@ -10427,7 +10435,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     el('Undo').onclick=()=>{if(active(current()))resetSliders();else layers.pop();render();};
     // Reversible full reset for comparing the untouched photo with every saved edit.
     let resetSnapshot=null;
-    const resetControlNames=['Family','Range','Light','Blend','ColorMode','Warm','Saturation','Target','Original','Mask','Diameter','ProtectTone','ProtectHighlights','BrushSize','GradientVisible',...gradientControls,'SpotVisible','SpotOutside',...spotControls];
+    const resetControlNames=['Family','Range','Light','Blend','ColorMode','Warm','Saturation','Target','Original','Mask','Diameter','ProtectTone','ProtectHighlights','BrushSize','GradientVisible','GradientHarmony','GradHarmonyA','GradHarmonyB',...gradientControls,'SpotVisible','SpotOutside',...spotControls];
     function syncResetToggle(){
       el('Reset').textContent=resetSnapshot?'Bearbeitung wieder anzeigen':'Alles zurücksetzen';
       el('Reset').setAttribute('aria-pressed',String(!!resetSnapshot));
@@ -10580,14 +10588,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const strokes=x=>Array.isArray(x)&&x.length<=2000&&x.every(s=>s&&['add','remove'].includes(s.mode)&&num(s.size,0,10)&&Array.isArray(s.points)&&s.points.length<=50000&&s.points.every(point));
       const rgb=x=>x===null||(Array.isArray(x)&&x.length===3&&x.every(n=>num(n,0,255)));
       const delta=x=>x&&num(x.light,-.4,.4)&&num(x.warm,-.06,.06)&&num(x.saturation,-1,1)&&(x.blur===undefined||num(x.blur,0,1));
-      const grad=x=>x===null||(x&&point(x.a)&&point(x.b)&&delta(x.from)&&delta(x.to));
+      const grad=x=>x===null||(x&&point(x.a)&&point(x.b)&&delta(x.from)&&delta(x.to)&&(x.harmony===undefined||typeof x.harmony==='boolean')&&(x.harmonyA===undefined||num(x.harmonyA,0,1))&&(x.harmonyB===undefined||num(x.harmonyB,0,1)));
       const spotOp=x=>x===null||(x&&point(x.center)&&num(x.width,.02,2)&&num(x.height,.02,2)&&num(x.soft,0,1)&&num(x.strength,0,1)&&typeof x.outside==='boolean'&&delta(x));
       const families=Array.from(el('Family').options,o=>o.value);
       const layer=o=>o&&families.includes(o.family)&&polygon(o.region)&&strokes(o.strokes)&&rgb(o.sample)&&num(o.range,5,100)&&delta(o)&&num(o.blend,0,1)&&(o.colorMode===undefined||['mix','replace'].includes(o.colorMode))&&Array.isArray(o.target)&&o.target.length===3&&o.target.every(n=>num(n,-1,1))&&grad(o.gradient)&&spotOp(o.spot)&&typeof o.protectTone==='boolean'&&typeof o.protectHighlights==='boolean';
       if(!p||p.format!=='AtelierAI-Malprojekt'||p.version!==1||typeof p.name!=='string'||p.name.length>80||!Number.isInteger(p.active)||p.active<0||p.active>2||!Array.isArray(p.variants)||p.variants.length!==3||!p.variants[p.active]||typeof p.source!=='string'||!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(p.source))fail();
       for(const v of p.variants){if(v===null)continue;
         if(!v||!Array.isArray(v.layers)||v.layers.length>2000||!v.layers.every(layer)||!polygon(v.region)||!strokes(v.brushStrokes)||!rgb(v.sample)||!(v.spot===null||point(v.spot))||!(v.gradient===null||(point(v.gradient?.a)&&point(v.gradient?.b)))||typeof v.sampleText!=='string'||v.sampleText.length>1000||typeof v.sampleBorder!=='string'||v.sampleBorder.length>100||!v.controls||!Array.isArray(v.notes)||v.notes.length>1000)fail();
-        for(const n of ['GradBlurA','GradBlurB'])if(v.controls[n]===undefined)v.controls[n]='0';if(v.controls.ColorMode===undefined)v.controls.ColorMode='mix';
+        for(const n of ['GradBlurA','GradBlurB'])if(v.controls[n]===undefined)v.controls[n]='0';if(v.controls.ColorMode===undefined)v.controls.ColorMode='mix';if(v.controls.GradientHarmony===undefined)v.controls.GradientHarmony=false;if(v.controls.GradHarmonyA===undefined)v.controls.GradHarmonyA='0';if(v.controls.GradHarmonyB===undefined)v.controls.GradHarmonyB='100';
         for(const n of resetControlNames){const e=el(n),value=v.controls[n];
           if(e.type==='checkbox'){if(typeof value!=='boolean')fail();}
           else if(typeof value!=='string')fail();
