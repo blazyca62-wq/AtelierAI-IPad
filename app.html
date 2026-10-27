@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.08</title>
+  <title>AtelierAI iPad 4.09</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.08</div>
+    <div class="title">AtelierAI · iPad 4.09</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -9815,6 +9815,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <p class="tiny">Unschärfe: 0 % = scharf, 100 % = stark weichgezeichnet. A = 0 und B = 50 ergibt zunehmende Unschärfe. Der Tonwertschutz gilt für Farbregler, nicht für die Unschärfe. 0 bedeutet unverändert. Der Verlauf ergänzt die normalen Farbregler. Ohne Lasso wirkt er auf das ganze Bild, mit Lasso nur innerhalb der Auswahl. Vor A und hinter B bleibt der jeweilige Endwert konstant. Bei aktivierter Farbharmonie steuern A/B die Wirkung der ausgewählten Zielfarbe von 0–100 % der eingestellten Stärke. „Änderung merken“ speichert den Verlauf.</p></details><details id="ceColorPanel" open><summary>Farbänderung · direkt</summary>
     <label>Betroffene Ausgangsfarben<select id="ceFamily"><option value="all">Alle Farben (bewusst gesamtes Bild / Lasso)</option><option value="green">Grün / Oliv</option><option value="yellow">Gelb</option><option value="ochre">Ocker</option><option value="orange">Orange</option><option value="red">Rot / Rosa</option><option value="brown">Braun / Siena / Umbra</option><option value="turquoise">Türkis</option><option value="blue">Blau</option><option value="violet">Violett</option><option value="neutral">Weiß / Grau / Schwarz</option><option value="pick" selected>Einzelne Farbe · Pipette</option></select></label>
     <button id="cePick" class="secondary">Nur angetippte Ausgangsfarbe ändern</button><p class="tiny">Nach dem Zeichnen eines Lassos wird die Ausgangs-Pipette automatisch aktiviert. Dieser Knopf begrenzt die Farbänderung auf ähnliche Stellen der aufgenommenen Ausgangsfarbe. „Leitfarbe aus dem Bild“ wählt dagegen die NEUE Zielfarbe.</p><label>Kreisgröße <output id="ceDiameterVal">32 px</output><input id="ceDiameter" type="range" min="8" max="80" step="2" value="32"></label><div id="ceSample">Noch keine Ausgangsfarbe gewählt · keine Farbänderung</div>
+    <label>Ähnlichkeit der angetippten Farbe <output id="ceRangeVal"></output><input id="ceRange" type="range" min="5" max="100" value="30"></label>
+    <label><input id="ceMask" type="checkbox"> Betroffene Stellen anzeigen (Vorschau)</label><p class="tiny">Ähnlichkeit kleiner: nur nahe Farbtöne. Größer: mehr ähnliche Stellen. Die Vorschau markiert die betroffenen Stellen; beim Speichern wird die Markierung nicht übernommen. Ohne Pipettenfarbe ist keine Farbauswahl möglich.</p>
     <details id="ceHarmonyPanel" open><summary>Farbharmonie · aus</summary>
     <p class="tiny">Einen Farbton aus dem Bild aufnehmen. „Mischen“ simuliert eine transparente Lasur und lässt etwas Ursprungsfarbe sichtbar. „Ersetzen“ tauscht den Farbton vollständig aus. Beide bewahren die Licht- und Schattenstruktur. Bei aktiviertem Tonwertschutz bleiben die Tonwerte in beiden Modi erhalten.</p>
     <button id="ceTargetPick" class="secondary" aria-pressed="false">Neue Zielfarbe aus dem Bild aufnehmen</button>
@@ -9827,7 +9829,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <p class="tiny">Zum Einstieg 5–20 %. Bei neuem Lasso wartet die Farbharmonie auf deine Ausgangsfarbe. „Alle Farben“ ist nur bewusst wählbar und verändert die ganze Lasso-Fläche bzw. das ganze Bild. Für nur eine Farbe oben „Nur angetippte Ausgangsfarbe ändern“ verwenden.</p>
     </details>
     <details id="ceAdvancedPanel"><summary>Erweitert · Auswahl und Feineinstellung</summary>
-    <label>Farbbereich <output id="ceRangeVal"></output><input id="ceRange" type="range" min="5" max="100" value="30"></label>
+    
     <label>Heller / dunkler <output id="ceLightVal"></output><input id="ceLight" type="range" min="-40" max="40" step="0.5" value="0"></label>
     <label>Kühler / wärmer <output id="ceWarmVal"></output><input id="ceWarm" type="range" min="-30" max="30" step="0.5" value="0"></label>
     <label>Sättigung <output id="ceSaturationVal">0 %</output><input id="ceSaturation" type="range" min="-100" max="100" step="1" value="0"></label>
@@ -9853,7 +9855,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <label>Sättigung <output id="ceSpotSatVal">0 %</output><input id="ceSpotSat" type="range" min="-100" max="100" value="0"></label>
     <label><input id="ceSpotVisible" type="checkbox" checked> Umriss anzeigen</label><button id="ceSpotClear" class="secondary">Fleck entfernen</button>
     <p class="tiny">Der Fleck ergänzt die normalen Farbregler innerhalb deiner Auswahl.</p></details>
-    <label><input id="ceMask" type="checkbox"> Auswahl hervorheben</label>
+    
     <label>Original einblenden <output id="ceOriginalVal"></output><input id="ceOriginal" type="range" min="0" max="100" value="0"></label>
     <p class="tiny">Gemerkte Änderungen behalten ihren eigenen Bereich. Noch nicht gemerkte Regler gelten nur für die aktuelle Auswahl.</p>
     </details>

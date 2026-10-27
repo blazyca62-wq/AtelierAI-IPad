@@ -1,3 +1,5 @@
+AtelierAI 4.09: Ähnlichkeit der Pipettenfarbe direkt unter der Ausgangs-Pipette; betroffene Stellen im Bild anzeigen (Vorschau). Alle bisherigen Berechnungen unverändert.
+
 AtelierAI 4.08 – Neue integrierte, offline verfügbare Hilfe mit Suche, Anleitungen nach Aufgabe und Werkzeugverzeichnis. Bildalgorithmen unverändert gegenüber 4.07.
 
 4.06: Pipetten-Farbtoleranz neu abgestimmt; Maske kombiniert Farbaehnlichkeit mit Lasso. Anzeige bestaetigt Probe.
