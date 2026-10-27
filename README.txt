@@ -1,3 +1,4 @@
+AtelierAI 4.11: Korrektur der iPad-Kopfleiste: alle Schaltflächen werden jetzt in weitere Zeilen umgebrochen statt rechts abgeschnitten. Bildexport mit/ohne Raster aus 4.10 bleibt erhalten. Sonstige Funktionen unverändert.
 AtelierAI 4.10: Bildexport direkt im Hauptfenster (standardmäßig ohne Raster). Export im Raster-und-Speichern-Menü mit wählbarem Raster. PNG/JPEG, Vollbild oder Ausschnitt, Teilen oder Herunterladen. Restliche Funktionen aus 4.09 unverändert.
 
 AtelierAI 4.09: Ähnlichkeit der Pipettenfarbe direkt unter der Ausgangs-Pipette; betroffene Stellen im Bild anzeigen (Vorschau). Alle bisherigen Berechnungen unverändert.
