@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.00</title>
+  <title>AtelierAI iPad 4.01</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.00</div>
+    <div class="title">AtelierAI · iPad 4.01</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -9860,7 +9860,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <label>Kühler / wärmer <output id="ceSpotWarmVal">0</output><input id="ceSpotWarm" type="range" min="-30" max="30" step="0.5" value="0"></label>
     <label>Sättigung <output id="ceSpotSatVal">0 %</output><input id="ceSpotSat" type="range" min="-100" max="100" value="0"></label>
     <label><input id="ceSpotVisible" type="checkbox" checked> Umriss anzeigen</label><button id="ceSpotClear" class="secondary">Fleck entfernen</button>
-    <p class="tiny">Gleiche Breite und Höhe ergeben einen Kreis. Größe in Prozent der kürzeren Bildseite. Negative Helligkeit erzeugt einen Schatten. Der Fleck ergänzt die normalen Farbregler innerhalb deiner Auswahl. „Änderung merken“ speichert ihn – danach kannst du einen weiteren setzen.</p></details>
+    <p class="tiny">Gleiche Breite und Höhe ergeben einen Kreis. Größe in Prozent der kürzeren Bildseite. Negative Helligkeit erzeugt einen Schatten. Der Fleck ergänzt die normalen Farbregler innerhalb deiner Auswahl. „Änderung merken“ speichert ihn – danach wird die aktuelle Auswahl aufgehoben, damit du direkt den nächsten Bereich wählen kannst.</p></details>
     <details id="ceProtectPanel"><summary>Licht und Tonwerte schützen · aus</summary>
     <label><input id="ceProtectTone" type="checkbox"> Tonwerte schützen</label><p class="tiny">Helligkeit bleibt erhalten; der Heller-/Dunkler-Regler pausiert.</p>
     <label><input id="ceProtectHighlights" type="checkbox"> Lichter und Papierweiß schützen</label><p class="tiny">Helle Stellen werden sanft ausgespart, sehr helle bleiben unverändert.</p>
@@ -10463,7 +10463,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(id==='SpotPanel'){spotArmed=false;syncSpot();}
       if(id==='HarmonyPanel'&&picking&&pickTarget){picking=false;pickPoint=null;positionCircle();el('TargetPick').setAttribute('aria-pressed','false');}
     });
-    el('Keep').onclick=()=>{const o=current();if(o.family==='pick'&&!sample){el('Status').textContent='Bitte zuerst eine Farbe antippen.';return;}if(active(o)){layers.push(o);brushStrokes=[];}resetSliders();syncBrush();render();};
+    el('Keep').onclick=()=>{const o=current();if(o.family==='pick'&&!sample){el('Status').textContent='Bitte zuerst eine Farbe antippen.';return;}if(active(o)){layers.push(o);brushStrokes=[];}region=null;lassoDraft=null;lassoArmed=false;resetSliders();syncRegion();syncBrush();render();};
     el('Undo').onclick=()=>{if(active(current()))resetSliders();else layers.pop();render();};
     // Reversible full reset for comparing the untouched photo with every saved edit.
     let resetSnapshot=null;
@@ -10728,10 +10728,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           el('CancelOutput').hidden=true;
           el('Status').textContent='Malvorlage wird geöffnet …';
           await new Promise((resolve,reject)=>loadPhoto(blob,true,error=>error?reject(error):resolve()));
-          // Returning from the main view must retain all editable variants and their original source.
-          lastSource=img;editorReturnSource=captureEditorSource();
+          // After applying as a painting template, continue on the new image with a fresh selection state.
+          editorReturnSource=null;lastSource=null;resetSnapshot=null;layers=[];brushStrokes=[];brushMode=null;region=null;lassoDraft=null;lassoArmed=false;sample=null;picking=false;pickPoint=null;
+          gradient=null;gradientDraft=null;gradientArmed=false;spot=null;spotDraft=null;spotArmed=false;
+          resetSliders();resetReview();syncRegion();syncBrush();syncGradient();syncSpot();syncResetToggle();
           panel.hidden=true;
-          hint.textContent='Bearbeitetes Bild als Malvorlage übernommen.';
+          hint.textContent='Bearbeitetes Bild als Malvorlage übernommen. Für weitere Bereiche startet die Farbänderung beim nächsten Öffnen mit frischer Auswahl.';
         }else{
           downloadURL=URL.createObjectURL(blob);
           const link=el('Download');link.href=downloadURL;link.hidden=false;link.click();

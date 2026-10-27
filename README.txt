@@ -1,3 +1,5 @@
+AtelierAI 4.01 – Nach „Änderung merken“ wird die aktuelle Lasso-Auswahl aufgehoben, damit direkt der nächste Bereich bearbeitet werden kann. Nach „Als Malvorlage übernehmen“ startet die Farbbearbeitung beim nächsten Öffnen mit frischer Auswahl auf der neuen Vorlage, statt die alte Bereichsauswahl weiterzuführen.
+
 AtelierAI 3.99 – Mehrere unabhängige Linien im Linienverlauf. „Weitere Linie hinzufügen“ steuert ein gemeinsames, weich kombiniertes Farbfeld; bis zu 12 Linien, einzeln beweglich; Lasso optional, Farbharmonie Mischen/Ersetzen bleibt nutzbar.
 
 AtelierAI 3.98 – Linienverlauf direkt unter Lasso-Auswahl. Ohne Lasso wirkt der Linienverlauf im ganzen Bild, mit Lasso nur innerhalb der Auswahl. Bereichsstatus und Linienverlauf zeigen den aktuellen Wirkbereich klar an.
