@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.02</title>
+  <title>AtelierAI iPad 4.03</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.02</div>
+    <div class="title">AtelierAI · iPad 4.03</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -9813,18 +9813,18 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <button id="ceGradientReverse" class="secondary">Richtung umkehren</button><button id="ceGradientClear" class="secondary">Verlauf entfernen</button>
     <label><input id="ceGradientVisible" type="checkbox" checked> Verlaufslinien anzeigen / ausblenden (alle Linien)</label>
     <p class="tiny">Unschärfe: 0 % = scharf, 100 % = stark weichgezeichnet. A = 0 und B = 50 ergibt zunehmende Unschärfe. Der Tonwertschutz gilt für Farbregler, nicht für die Unschärfe. 0 bedeutet unverändert. Der Verlauf ergänzt die normalen Farbregler. Ohne Lasso wirkt er auf das ganze Bild, mit Lasso nur innerhalb der Auswahl. Vor A und hinter B bleibt der jeweilige Endwert konstant. Bei aktivierter Farbharmonie steuern A/B die Wirkung der ausgewählten Zielfarbe von 0–100 % der eingestellten Stärke. „Änderung merken“ speichert den Verlauf.</p></details><details id="ceColorPanel" open><summary>Farbänderung · direkt</summary>
-    <label>Auswahl<select id="ceFamily"><option value="all">Alle Farben</option><option value="green" selected>Grün / Oliv</option><option value="yellow">Gelb</option><option value="ochre">Ocker</option><option value="orange">Orange</option><option value="red">Rot / Rosa</option><option value="brown">Braun / Siena / Umbra</option><option value="turquoise">Türkis</option><option value="blue">Blau</option><option value="violet">Violett</option><option value="neutral">Weiß / Grau / Schwarz</option><option value="pick">Einzelne Farbe · Pipette</option></select></label>
-    <button id="cePick" class="secondary">Farbe im Bild antippen</button><label>Kreisgröße <output id="ceDiameterVal">32 px</output><input id="ceDiameter" type="range" min="8" max="80" step="2" value="32"></label><div id="ceSample">Auswahl: Grün / Oliv</div>
+    <label>Betroffene Ausgangsfarben<select id="ceFamily"><option value="all">Alle Farben</option><option value="green" selected>Grün / Oliv</option><option value="yellow">Gelb</option><option value="ochre">Ocker</option><option value="orange">Orange</option><option value="red">Rot / Rosa</option><option value="brown">Braun / Siena / Umbra</option><option value="turquoise">Türkis</option><option value="blue">Blau</option><option value="violet">Violett</option><option value="neutral">Weiß / Grau / Schwarz</option><option value="pick">Einzelne Farbe · Pipette</option></select></label>
+    <button id="cePick" class="secondary">Nur angetippte Ausgangsfarbe ändern</button><p class="tiny">WICHTIG: Dieser Knopf begrenzt die Farbänderung auf ähnliche Stellen der aufgenommenen Ausgangsfarbe. „Leitfarbe aus dem Bild“ wählt dagegen die NEUE Zielfarbe.</p><label>Kreisgröße <output id="ceDiameterVal">32 px</output><input id="ceDiameter" type="range" min="8" max="80" step="2" value="32"></label><div id="ceSample">Auswahl: Grün / Oliv</div>
     <details id="ceHarmonyPanel" open><summary>Farbharmonie · aus</summary>
     <p class="tiny">Einen Farbton aus dem Bild aufnehmen. „Mischen“ simuliert eine transparente Lasur und lässt etwas Ursprungsfarbe sichtbar. „Ersetzen“ tauscht den Farbton vollständig aus. Beide bewahren die Licht- und Schattenstruktur. Bei aktiviertem Tonwertschutz bleiben die Tonwerte in beiden Modi erhalten.</p>
-    <button id="ceTargetPick" class="secondary" aria-pressed="false">Leitfarbe aus dem Bild aufnehmen</button>
+    <button id="ceTargetPick" class="secondary" aria-pressed="false">Neue Zielfarbe aus dem Bild aufnehmen</button>
     <label>Leitfarbe <input id="ceTarget" type="color" value="#b49a45"></label>
     <label>Winsor &amp; Newton Artisan <select id="ceArtisanPick"><option value="">Farbe auswählen …</option></select></label>
     <label><input id="ceHarmonyEnabled" type="checkbox" checked> Farbänderung AN / AUS · vergleichen</label>
     <label>Farbänderung <select id="ceColorMode"><option value="mix">Farbe mischen</option><option value="replace">Farbton vollständig ersetzen</option></select></label>
     <label>Stärke <output id="ceBlendVal">0 %</output><input id="ceBlend" type="range" min="0" max="100" step="1" value="0"></label>
     <div style="display:flex;gap:6px"><button id="ceHarmonySoft" class="secondary">Sanft · 15 %</button><button id="ceHarmonyClear" class="secondary">Aus</button></div>
-    <p class="tiny">Zum Einstieg 5–20 %. Höhere Werte färben stärker um. Für das ganze Bild „Alle Farben“ wählen und die Bereichsauswahl aufheben.</p>
+    <p class="tiny">Zum Einstieg 5–20 %. Achtung: „Alle Farben“ verändert die ganze Lasso-Fläche. Für nur eine Farbe oben „Nur angetippte Ausgangsfarbe ändern“ verwenden.</p>
     </details>
     <details id="ceAdvancedPanel"><summary>Erweitert · Auswahl und Feineinstellung</summary>
     <label>Farbbereich <output id="ceRangeVal"></output><input id="ceRange" type="range" min="5" max="100" value="30"></label>
@@ -10369,7 +10369,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     function localPoint(e){const r=stage.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
     function imagePoint(p){const x=(p.x-view.x)/view.k,y=(p.y-view.y)/view.k;return x>=0&&y>=0&&x<cv.width&&y<cv.height?{x,y}:null;}
     function armPicker(target){spotArmed=false;syncSpot();gradientArmed=false;syncGradient();brushMode=null;syncBrush();lassoArmed=false;lassoDraft=null;syncRegion();picking=true;pickTarget=target;pickPoint=null;circle.hidden=true;
-      if(!target)el('Family').value='pick';
+      if(!target){el('Family').value='pick';sample=null;}
       el('Pick').setAttribute('aria-pressed',String(!target));el('TargetPick').setAttribute('aria-pressed',String(target));
       el('Sample').textContent=(target?'Leitfarbe':'Ausgangsfarbe')+': Kreis mit einem Finger setzen · zwei Finger zum Zoomen / Verschieben.';
     }
@@ -10382,8 +10382,22 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(!count)return Array.from(context.getImageData(clamp(Math.floor(ix),0,width-1),clamp(Math.floor(iy),0,height-1),1,1).data.slice(0,3));
       return sum.map(v=>Math.round(v/count));
     }
+    function pointInCurrentLasso(q){
+      if(!region||region.length<3)return true;
+      const x=q.x/cv.width,y=q.y/cv.height;
+      let inside=false;
+      for(let i=0,j=region.length-1;i<region.length;j=i++){
+        const a=region[i],b=region[j];
+        if(((a.y>y)!==(b.y>y))&&(x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x))inside=!inside;
+      }
+      return inside;
+    }
     function chooseCircle(){
       if(!pickPoint||!picking||busy)return;
+      if(!pickTarget&&!pointInCurrentLasso(pickPoint)){
+        el('Sample').textContent='Bitte eine Ausgangsfarbe INNERHALB des Lasso-Bereichs antippen.';
+        return;
+      }
       const radius=+el('Diameter').value/2/view.k;
       if(pickTarget){
         // Read the displayed colour preview (without the selection overlay).
@@ -10395,7 +10409,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }else{
         const factor=base.width/cv.width;
         sample=meanCircle(base.getContext('2d'),base.width,base.height,pickPoint.x*factor,pickPoint.y*(base.height/cv.height),radius*factor);
-        el('Sample').textContent='Gewählt: RGB '+sample.join(', ')+' · Kreis kann weiter verschoben werden.';
+        el('Sample').textContent='Nur diese Ausgangsfarbe (+ ähnliche): RGB '+sample.join(', ')+' · Änderung bleibt auf Lasso begrenzt.';
         el('Sample').style.borderColor='rgb('+sample.join(',')+')';
       }
       render();

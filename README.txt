@@ -1,3 +1,5 @@
+AtelierAI 4.03 – Klare Trennung Ausgangsfarbe (nur angetippte Farbe) und Zielfarbe; Quelle muss bei aktivem Lasso innen liegen; Farbbereich-Regler bleibt unter Erweitert. Update-Kennung 4.03.
+
 AtelierAI 4.02 – Farbbearbeitung übersichtlicher: direkte Farbänderung im Vordergrund, seltene Regler unter „Erweitert“, Projekt/Prüfansicht separat. Versionskennungen für Offline-Update auf 4.02 angehoben.
 
 AtelierAI 4.01 – Nach „Änderung merken“ wird die aktuelle Lasso-Auswahl aufgehoben, damit direkt der nächste Bereich bearbeitet werden kann. Nach „Als Malvorlage übernehmen“ startet die Farbbearbeitung beim nächsten Öffnen mit frischer Auswahl auf der neuen Vorlage, statt die alte Bereichsauswahl weiterzuführen.
