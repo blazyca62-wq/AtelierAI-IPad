@@ -1,3 +1,5 @@
+AtelierAI 4.02 – Farbbearbeitung übersichtlicher: direkte Farbänderung im Vordergrund, seltene Regler unter „Erweitert“, Projekt/Prüfansicht separat. Versionskennungen für Offline-Update auf 4.02 angehoben.
+
 AtelierAI 4.01 – Nach „Änderung merken“ wird die aktuelle Lasso-Auswahl aufgehoben, damit direkt der nächste Bereich bearbeitet werden kann. Nach „Als Malvorlage übernehmen“ startet die Farbbearbeitung beim nächsten Öffnen mit frischer Auswahl auf der neuen Vorlage, statt die alte Bereichsauswahl weiterzuführen.
 
 AtelierAI 3.99 – Mehrere unabhängige Linien im Linienverlauf. „Weitere Linie hinzufügen“ steuert ein gemeinsames, weich kombiniertes Farbfeld; bis zu 12 Linien, einzeln beweglich; Lasso optional, Farbharmonie Mischen/Ersetzen bleibt nutzbar.

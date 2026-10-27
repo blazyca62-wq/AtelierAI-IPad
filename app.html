@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.01</title>
+  <title>AtelierAI iPad 4.02</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.01</div>
+    <div class="title">AtelierAI · iPad 4.02</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -9812,42 +9812,34 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <label>Unschärfe <output id="ceGradBlurBVal">0 %</output><input id="ceGradBlurB" type="range" min="0" max="100" step="1" value="0"></label>
     <button id="ceGradientReverse" class="secondary">Richtung umkehren</button><button id="ceGradientClear" class="secondary">Verlauf entfernen</button>
     <label><input id="ceGradientVisible" type="checkbox" checked> Verlaufslinien anzeigen / ausblenden (alle Linien)</label>
-    <p class="tiny">Unschärfe: 0 % = scharf, 100 % = stark weichgezeichnet. A = 0 und B = 50 ergibt zunehmende Unschärfe. Der Tonwertschutz gilt für Farbregler, nicht für die Unschärfe. 0 bedeutet unverändert. Der Verlauf ergänzt die normalen Farbregler. Ohne Lasso wirkt er auf das ganze Bild, mit Lasso nur innerhalb der Auswahl. Vor A und hinter B bleibt der jeweilige Endwert konstant. Bei aktivierter Farbharmonie steuern A/B die Wirkung der ausgewählten Zielfarbe von 0–100 % der eingestellten Stärke. „Änderung merken“ speichert den Verlauf.</p></details><label>Auswahl<select id="ceFamily"><option value="all">Alle Farben</option><option value="green" selected>Grün / Oliv</option><option value="yellow">Gelb</option><option value="ochre">Ocker</option><option value="orange">Orange</option><option value="red">Rot / Rosa</option><option value="brown">Braun / Siena / Umbra</option><option value="turquoise">Türkis</option><option value="blue">Blau</option><option value="violet">Violett</option><option value="neutral">Weiß / Grau / Schwarz</option><option value="pick">Einzelne Farbe · Pipette</option></select></label>
+    <p class="tiny">Unschärfe: 0 % = scharf, 100 % = stark weichgezeichnet. A = 0 und B = 50 ergibt zunehmende Unschärfe. Der Tonwertschutz gilt für Farbregler, nicht für die Unschärfe. 0 bedeutet unverändert. Der Verlauf ergänzt die normalen Farbregler. Ohne Lasso wirkt er auf das ganze Bild, mit Lasso nur innerhalb der Auswahl. Vor A und hinter B bleibt der jeweilige Endwert konstant. Bei aktivierter Farbharmonie steuern A/B die Wirkung der ausgewählten Zielfarbe von 0–100 % der eingestellten Stärke. „Änderung merken“ speichert den Verlauf.</p></details><details id="ceColorPanel" open><summary>Farbänderung · direkt</summary>
+    <label>Auswahl<select id="ceFamily"><option value="all">Alle Farben</option><option value="green" selected>Grün / Oliv</option><option value="yellow">Gelb</option><option value="ochre">Ocker</option><option value="orange">Orange</option><option value="red">Rot / Rosa</option><option value="brown">Braun / Siena / Umbra</option><option value="turquoise">Türkis</option><option value="blue">Blau</option><option value="violet">Violett</option><option value="neutral">Weiß / Grau / Schwarz</option><option value="pick">Einzelne Farbe · Pipette</option></select></label>
     <button id="cePick" class="secondary">Farbe im Bild antippen</button><label>Kreisgröße <output id="ceDiameterVal">32 px</output><input id="ceDiameter" type="range" min="8" max="80" step="2" value="32"></label><div id="ceSample">Auswahl: Grün / Oliv</div>
+    <details id="ceHarmonyPanel" open><summary>Farbharmonie · aus</summary>
+    <p class="tiny">Einen Farbton aus dem Bild aufnehmen. „Mischen“ simuliert eine transparente Lasur und lässt etwas Ursprungsfarbe sichtbar. „Ersetzen“ tauscht den Farbton vollständig aus. Beide bewahren die Licht- und Schattenstruktur. Bei aktiviertem Tonwertschutz bleiben die Tonwerte in beiden Modi erhalten.</p>
+    <button id="ceTargetPick" class="secondary" aria-pressed="false">Leitfarbe aus dem Bild aufnehmen</button>
+    <label>Leitfarbe <input id="ceTarget" type="color" value="#b49a45"></label>
+    <label>Winsor &amp; Newton Artisan <select id="ceArtisanPick"><option value="">Farbe auswählen …</option></select></label>
+    <label><input id="ceHarmonyEnabled" type="checkbox" checked> Farbänderung AN / AUS · vergleichen</label>
+    <label>Farbänderung <select id="ceColorMode"><option value="mix">Farbe mischen</option><option value="replace">Farbton vollständig ersetzen</option></select></label>
+    <label>Stärke <output id="ceBlendVal">0 %</output><input id="ceBlend" type="range" min="0" max="100" step="1" value="0"></label>
+    <div style="display:flex;gap:6px"><button id="ceHarmonySoft" class="secondary">Sanft · 15 %</button><button id="ceHarmonyClear" class="secondary">Aus</button></div>
+    <p class="tiny">Zum Einstieg 5–20 %. Höhere Werte färben stärker um. Für das ganze Bild „Alle Farben“ wählen und die Bereichsauswahl aufheben.</p>
+    </details>
+    <details id="ceAdvancedPanel"><summary>Erweitert · Auswahl und Feineinstellung</summary>
     <label>Farbbereich <output id="ceRangeVal"></output><input id="ceRange" type="range" min="5" max="100" value="30"></label>
     <label>Heller / dunkler <output id="ceLightVal"></output><input id="ceLight" type="range" min="-40" max="40" step="0.5" value="0"></label>
     <label>Kühler / wärmer <output id="ceWarmVal"></output><input id="ceWarm" type="range" min="-30" max="30" step="0.5" value="0"></label>
     <label>Sättigung <output id="ceSaturationVal">0 %</output><input id="ceSaturation" type="range" min="-100" max="100" step="1" value="0"></label>
-    <details id="ceProjectPanel"><summary>Mein Malprojekt · Varianten &amp; Notizen</summary>
-    <label hidden>Projektname <input id="ceProjectName" type="text" maxlength="80" value="Mein Malprojekt" style="width:100%;box-sizing:border-box"></label>
-    <strong>Bildvarianten · direkt umschalten</strong><div style="display:flex;gap:8px" role="group" aria-label="Bildvarianten"><button id="ceVariantA" aria-pressed="true">A</button><button id="ceVariantB" aria-pressed="false">B</button><button id="ceVariantC" aria-pressed="false">C</button></div>
-    <p id="ceVariantStatus" class="tiny">Variante A aktiv. Ein freier Platz startet mit dem unbearbeiteten Ausgangsbild. Beim Wechsel bleibt jede Variante erhalten.</p>
-    <button id="ceNoteAdd" class="secondary" aria-pressed="false">Farbnotiz im Bild setzen</button>
-    <label><input id="ceNotesVisible" type="checkbox" checked> Nummern im Bild anzeigen</label>
-    <div id="ceNotesList"></div><p class="tiny">Notizen gehören zur jeweiligen Variante. Die Farbe wird beim Setzen aufgenommen. Mischungen und Malhinweise kannst du dazuschreiben. Im gespeicherten Foto erscheinen keine Nummern.</p>
-    <div hidden><button id="ceProjectSave">Projekt als Datei speichern</button><button id="ceProjectOpen" class="secondary">Projektdatei öffnen …</button>
-    <input id="ceProjectFile" type="file" hidden>
-    <a id="ceProjectDownload" hidden>Projekt herunterladen</a><p id="ceProjectStatus" class="tiny" role="status">Speichert das Ausgangsbild, alle drei Varianten und ihre Notizen als Projektdatei. Vor dem Laden eines anderen Fotos oder Schließen der App bitte speichern.</p></div>
-    </details><details id="ceReviewPanel"><summary>Bildwirkung prüfen · aus</summary>
-    <label><input id="ceReviewSquint" type="checkbox"> Augen zusammenkneifen</label>
-    <label>Details ausblenden <output id="ceReviewBlurVal">5</output><input id="ceReviewBlur" type="range" min="1" max="12" step="1" value="5"></label>
-    <label><input id="ceReviewGray" type="checkbox"> Schwarz-Weiß</label>
-    <label><input id="ceReviewMirror" type="checkbox"> Horizontal spiegeln</label>
-    <button id="ceReviewNormal" class="secondary">Zur normalen Ansicht</button>
-    <p class="tiny">Die Ansichten lassen sich kombinieren. Zoomen und Verschieben bleiben möglich. Zum Auswählen oder Zeichnen erst zur normalen Ansicht zurückkehren. Speichern und „Als Malvorlage übernehmen“ verwenden immer das normale bearbeitete Bild.</p>
+    <details id="ceProtectPanel"><summary>Licht und Tonwerte schützen · aus</summary>
+    <label><input id="ceProtectTone" type="checkbox"> Tonwerte schützen</label><p class="tiny">Helligkeit bleibt erhalten; der Heller-/Dunkler-Regler pausiert.</p>
+    <label><input id="ceProtectHighlights" type="checkbox"> Lichter und Papierweiß schützen</label><p class="tiny">Helle Stellen werden sanft ausgespart, sehr helle bleiben unverändert.</p>
     </details>
-    <details id="ceHarmonyPanel"><summary>Farbharmonie · aus</summary>
-    <p class="tiny">Einen Farbton aus dem Bild aufnehmen. „Mischen“ simuliert eine transparente Lasur und lässt etwas Ursprungsfarbe sichtbar. „Ersetzen“ tauscht den Farbton vollständig aus. Beide bewahren die Licht- und Schattenstruktur. Bei aktiviertem Tonwertschutz bleiben die Tonwerte in beiden Modi erhalten.</p>
-    <button id="ceTargetPick" class="secondary" aria-pressed="false">Leitfarbe aus dem Bild aufnehmen</button>
-    <label>Leitfarbe <input id="ceTarget" type="color" value="#b49a45"></label>
-    <label>Winsor & Newton Artisan <select id="ceArtisanPick"><option value="">Farbe auswählen …</option></select></label>
-    <label><input id="ceHarmonyEnabled" type="checkbox" checked> Farbänderung AN / AUS · vergleichen (Einstellungen bleiben erhalten)</label>
-    <label>Farbänderung <select id="ceColorMode"><option value="mix">Farbe mischen</option><option value="replace">Farbton vollständig ersetzen</option></select></label>
-    <label>Stärke <output id="ceBlendVal">0 %</output><input id="ceBlend" type="range" min="0" max="100" step="1" value="0"></label>
-    <div style="display:flex;gap:6px"><button id="ceHarmonySoft" class="secondary">Sanft · 15 %</button><button id="ceHarmonyClear" class="secondary">Aus</button></div>
-    <p class="tiny">Zum Einstieg 5–20 %. Höhere Werte färben stärker um. Farbauswahl, Lasso und Lichtschutz gelten weiter. Für das ganze Bild „Alle Farben“ wählen und die Bereichsauswahl aufheben.</p>
+    <details id="ceBrushPanel"><summary>Auswahl korrigieren · Pinsel</summary>
+    <button id="ceBrushAdd" class="secondary" aria-pressed="false">Pinsel + · Stellen hinzufügen</button><button id="ceBrushRemove" class="secondary" aria-pressed="false">Pinsel − · Stellen ausschließen</button>
+    <label>Pinselgröße <output id="ceBrushSizeVal">32 px</output><input id="ceBrushSize" type="range" min="6" max="120" step="2" value="32"></label>
+    <button id="ceBrushUndo" class="secondary">Letzten Pinselstrich zurück</button><button id="ceBrushClear" class="secondary">Pinselkorrekturen löschen</button><p id="ceBrushStatus" class="tiny">Pinsel aus · zwei Finger zum Zoomen. Erneut auf den aktiven Pinsel tippen beendet ihn.</p>
     </details>
-    
     <details id="ceSpotPanel"><summary>Lichtfleck &amp; Motiv hervorheben</summary>
     <button id="ceFocusPreset">Motiv hervorheben · Umgebung beruhigen</button><p class="tiny">Setzt ein geschütztes Oval und nimmt die Farben außen sanft zurück. Ersetzt die Einstellungen des aktuellen Flecks.</p>
     <button id="ceSpotPlace" class="secondary" aria-pressed="false">Fleck im Bild setzen</button><p id="ceSpotStatus" class="tiny" role="status">Mittelpunkt antippen oder mit einem Finger verschieben.</p>
@@ -9860,24 +9852,37 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <label>Kühler / wärmer <output id="ceSpotWarmVal">0</output><input id="ceSpotWarm" type="range" min="-30" max="30" step="0.5" value="0"></label>
     <label>Sättigung <output id="ceSpotSatVal">0 %</output><input id="ceSpotSat" type="range" min="-100" max="100" value="0"></label>
     <label><input id="ceSpotVisible" type="checkbox" checked> Umriss anzeigen</label><button id="ceSpotClear" class="secondary">Fleck entfernen</button>
-    <p class="tiny">Gleiche Breite und Höhe ergeben einen Kreis. Größe in Prozent der kürzeren Bildseite. Negative Helligkeit erzeugt einen Schatten. Der Fleck ergänzt die normalen Farbregler innerhalb deiner Auswahl. „Änderung merken“ speichert ihn – danach wird die aktuelle Auswahl aufgehoben, damit du direkt den nächsten Bereich wählen kannst.</p></details>
-    <details id="ceProtectPanel"><summary>Licht und Tonwerte schützen · aus</summary>
-    <label><input id="ceProtectTone" type="checkbox"> Tonwerte schützen</label><p class="tiny">Helligkeit bleibt erhalten; der Heller-/Dunkler-Regler pausiert.</p>
-    <label><input id="ceProtectHighlights" type="checkbox"> Lichter und Papierweiß schützen</label><p class="tiny">Helle Stellen werden sanft ausgespart, sehr helle bleiben unverändert.</p>
-    </details>
-    <details id="ceBrushPanel"><summary>Auswahl korrigieren · Pinsel</summary>
-    <button id="ceBrushAdd" class="secondary" aria-pressed="false">Pinsel + · Stellen hinzufügen</button><button id="ceBrushRemove" class="secondary" aria-pressed="false">Pinsel − · Stellen ausschließen</button>
-    <label>Pinselgröße <output id="ceBrushSizeVal">32 px</output><input id="ceBrushSize" type="range" min="6" max="120" step="2" value="32"></label>
-    <button id="ceBrushUndo" class="secondary">Letzten Pinselstrich zurück</button><button id="ceBrushClear" class="secondary">Pinselkorrekturen löschen</button><p id="ceBrushStatus" class="tiny">Pinsel aus · zwei Finger zum Zoomen. Erneut auf den aktiven Pinsel tippen beendet ihn.</p>
-    </details>
+    <p class="tiny">Der Fleck ergänzt die normalen Farbregler innerhalb deiner Auswahl.</p></details>
     <label><input id="ceMask" type="checkbox"> Auswahl hervorheben</label>
     <label>Original einblenden <output id="ceOriginalVal"></output><input id="ceOriginal" type="range" min="0" max="100" value="0"></label>
-    <button id="ceKeep">Änderung merken · nächste Farbe</button><button id="ceUndo" class="secondary">Letzte Änderung zurück</button><button id="ceReset" class="secondary">Alles zurücksetzen</button>
+    <p class="tiny">Gemerkte Änderungen behalten ihren eigenen Bereich. Noch nicht gemerkte Regler gelten nur für die aktuelle Auswahl.</p>
+    </details>
+    </details>
+    <p class="tiny">Oben: Bereich wählen. Mitte: Farbänderung. „Erweitert“ nur bei Bedarf öffnen.</p><button id="ceKeep">Änderung merken · nächste Farbe</button><button id="ceUndo" class="secondary">Letzte Änderung zurück</button><button id="ceReset" class="secondary">Alles zurücksetzen</button>
     <p class="tiny">Ohne Lasso gilt die Farbauswahl im ganzen Bild. Mit Lasso wird nur der umrandete Bereich bearbeitet. „Alle Farben“ bearbeitet dort sämtliche Farben. Gemerkte Änderungen behalten ihren eigenen Bereich. Licht und Schatten bleiben beim Umfärben weitgehend erhalten. „Farbbereich“ erweitert die Auswahl mit weichen Übergängen. Noch nicht gemerkte Regler gelten für die aktuelle Auswahl.</p>
+        <details id="ceProjectPanel"><summary>Mein Malprojekt · Varianten &amp; Notizen</summary>
+    <label hidden>Projektname <input id="ceProjectName" type="text" maxlength="80" value="Mein Malprojekt" style="width:100%;box-sizing:border-box"></label>
+    <strong>Bildvarianten · direkt umschalten</strong><div style="display:flex;gap:8px" role="group" aria-label="Bildvarianten"><button id="ceVariantA" aria-pressed="true">A</button><button id="ceVariantB" aria-pressed="false">B</button><button id="ceVariantC" aria-pressed="false">C</button></div>
+    <p id="ceVariantStatus" class="tiny">Variante A aktiv. Ein freier Platz startet mit dem unbearbeiteten Ausgangsbild. Beim Wechsel bleibt jede Variante erhalten.</p>
+    <button id="ceNoteAdd" class="secondary" aria-pressed="false">Farbnotiz im Bild setzen</button>
+    <label><input id="ceNotesVisible" type="checkbox" checked> Nummern im Bild anzeigen</label>
+    <div id="ceNotesList"></div><p class="tiny">Notizen gehören zur jeweiligen Variante. Die Farbe wird beim Setzen aufgenommen. Mischungen und Malhinweise kannst du dazuschreiben. Im gespeicherten Foto erscheinen keine Nummern.</p>
+    <div hidden><button id="ceProjectSave">Projekt als Datei speichern</button><button id="ceProjectOpen" class="secondary">Projektdatei öffnen …</button>
+    <input id="ceProjectFile" type="file" hidden>
+    <a id="ceProjectDownload" hidden>Projekt herunterladen</a><p id="ceProjectStatus" class="tiny" role="status">Speichert das Ausgangsbild, alle drei Varianten und ihre Notizen als Projektdatei. Vor dem Laden eines anderen Fotos oder Schließen der App bitte speichern.</p></div>
+    </details>
+    <details id="ceReviewPanel"><summary>Bildwirkung prüfen · aus</summary>
+    <label><input id="ceReviewSquint" type="checkbox"> Augen zusammenkneifen</label>
+    <label>Details ausblenden <output id="ceReviewBlurVal">5</output><input id="ceReviewBlur" type="range" min="1" max="12" step="1" value="5"></label>
+    <label><input id="ceReviewGray" type="checkbox"> Schwarz-Weiß</label>
+    <label><input id="ceReviewMirror" type="checkbox"> Horizontal spiegeln</label>
+    <button id="ceReviewNormal" class="secondary">Zur normalen Ansicht</button>
+    <p class="tiny">Die Ansichten lassen sich kombinieren. Zoomen und Verschieben bleiben möglich. Zum Auswählen oder Zeichnen erst zur normalen Ansicht zurückkehren. Speichern und „Als Malvorlage übernehmen“ verwenden immer das normale bearbeitete Bild.</p>
+    </details>
     <button id="ceSave">Bearbeitetes Foto speichern</button><button id="ceApply">Als Malvorlage übernehmen</button><button id="ceCancelOutput" class="secondary" hidden>Berechnung abbrechen</button><a id="ceDownload" hidden download="AtelierAI_Farbvorlage.png">PNG herunterladen</a><p id="ceStatus" role="status" aria-live="polite"></p>
     </div></div>`;
     document.body.append(panel);
-    const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceReviewCanvas[hidden],#ceReviewBadge[hidden]{display:none}#ceReviewBadge{position:absolute;top:8px;left:8px;z-index:2;padding:5px 9px;border-radius:6px;background:#172822d9;color:white;font-size:12px;pointer-events:none}#ceCanvas,#ceReviewCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceLassoOutline{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls details{margin:12px 0;padding:10px;border:1px solid #c4ccc7;border-radius:8px}.ce-controls summary{cursor:pointer;font-weight:bold}.ce-controls>label,.ce-controls details>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceProjectPanel button[aria-pressed=true]{background:#345c4a;color:white;outline:2px solid #84a893}#ceProjectName{font:inherit;min-height:40px;padding:6px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
+    const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceReviewCanvas[hidden],#ceReviewBadge[hidden]{display:none}#ceReviewBadge{position:absolute;top:8px;left:8px;z-index:2;padding:5px 9px;border-radius:6px;background:#172822d9;color:white;font-size:12px;pointer-events:none}#ceCanvas,#ceReviewCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceLassoOutline{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls details{margin:12px 0;padding:10px;border:1px solid #c4ccc7;border-radius:8px}.ce-controls summary{cursor:pointer;font-weight:bold}.ce-controls>label,.ce-controls details>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceProjectPanel button[aria-pressed=true]{background:#345c4a;color:white;outline:2px solid #84a893}#ceProjectName{font:inherit;min-height:40px;padding:6px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}.ce-controls details details{margin:10px 0 0}.ce-controls details details summary{font-weight:600}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
     const el=id=>document.getElementById('ce'+id),cv=el('Canvas'),ctx=cv.getContext('2d');
     // Use the existing Artisan pigment swatches rather than inventing a second palette.
     const artisanSelect=el('ArtisanPick');
