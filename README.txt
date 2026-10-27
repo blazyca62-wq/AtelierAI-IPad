@@ -1,3 +1,4 @@
+4.06: Pipetten-Farbtoleranz neu abgestimmt; Maske kombiniert Farbaehnlichkeit mit Lasso. Anzeige bestaetigt Probe.
 AtelierAI 4.05 – Neues Lasso aktiviert die Ausgangs-Pipette automatisch, löscht die vorherige Farbprobe und wartet auf die neue Probe. Die Zielfarbe bleibt unabhängig. Punktprobe verkleinert, Farbtoleranz 12 %. Manuelle Familienauswahl bleibt möglich.
 
 AtelierAI 4.04 – Farbharmonie: Pipettenmaske enger nach Farbton und Helligkeit, neuer Startwert 12 % Ähnlichkeit, keine Farbauswahl ohne gültige Pipettenprobe.
