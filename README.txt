@@ -1,3 +1,5 @@
+AtelierAI 3.98 – Linienverlauf direkt unter Lasso-Auswahl. Ohne Lasso wirkt der Linienverlauf im ganzen Bild, mit Lasso nur innerhalb der Auswahl. Bereichsstatus und Linienverlauf zeigen den aktuellen Wirkbereich klar an.
+
 AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte statt über den Werkzeugreitern rechts. Die Bildfläche bleibt unverändert groß. Alle Mischfunktionen aus 3.45 erhalten.
 
 3.67: Regler Farbaehnlichkeit und Helligkeitsbereich rechnen stets vom unveraenderten Bild neu. Dadurch koennen entfernte Flaechen beim Erhoehen wieder erscheinen.

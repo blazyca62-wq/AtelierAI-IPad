@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 3.97</title>
+  <title>AtelierAI iPad 3.98</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,7 +1048,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 3.97</div>
+    <div class="title">AtelierAI · iPad 3.98</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -9794,7 +9794,25 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const panel=document.createElement('div');panel.id='colorEditor';panel.hidden=true;
     panel.innerHTML=`<div class="ce-head"><strong>Farben gezielt bearbeiten</strong><button id="ceClose" class="secondary">Menü schließen</button></div>
     <div class="ce-body"><div class="ce-stage"><canvas id="ceCanvas"></canvas><canvas id="ceReviewCanvas" hidden aria-hidden="true"></canvas><span id="ceReviewBadge" hidden>Prüfansicht</span><svg id="ceLassoOutline" aria-hidden="true"></svg><div id="ceCircle" hidden aria-hidden="true"></div></div><div class="ce-controls">
-    <button id="ceFit" class="secondary">Bild einpassen · <span id="ceZoomVal">100 %</span></button><p class="tiny">Zwei Finger: vergrößern und verschieben. Bei aktiver Pipette: Kreis mit einem Finger setzen oder verschieben.</p><button id="ceLasso" class="secondary" aria-pressed="false">Bereich mit Lasso auswählen</button><button id="ceLassoClear" class="secondary" disabled>Bereichsauswahl aufheben</button><p id="ceRegionStatus" class="tiny" role="status">Kein Lasso: Änderungen gelten im ganzen Bild.</p><label>Auswahl<select id="ceFamily"><option value="all">Alle Farben</option><option value="green" selected>Grün / Oliv</option><option value="yellow">Gelb</option><option value="ochre">Ocker</option><option value="orange">Orange</option><option value="red">Rot / Rosa</option><option value="brown">Braun / Siena / Umbra</option><option value="turquoise">Türkis</option><option value="blue">Blau</option><option value="violet">Violett</option><option value="neutral">Weiß / Grau / Schwarz</option><option value="pick">Einzelne Farbe · Pipette</option></select></label>
+    <button id="ceFit" class="secondary">Bild einpassen · <span id="ceZoomVal">100 %</span></button><p class="tiny">Zwei Finger: vergrößern und verschieben. Bei aktiver Pipette: Kreis mit einem Finger setzen oder verschieben.</p><button id="ceLasso" class="secondary" aria-pressed="false">Bereich mit Lasso auswählen</button><button id="ceLassoClear" class="secondary" disabled>Bereichsauswahl aufheben</button><p id="ceRegionStatus" class="tiny" role="status">Kein Lasso: Farbharmonie und Linienverlauf gelten im ganzen Bild.</p><details id="ceGradientPanel" open><summary>Linienverlauf · ganzes Bild</summary>
+    <button id="ceGradientDraw" class="secondary" aria-pressed="false">Verlaufslinie zeichnen</button><p id="ceGradientStatus" class="tiny" role="status">Mit einem Finger von A nach B ziehen.</p>
+    <label><input id="ceGradientHarmony" type="checkbox"> Farbharmonie im Linienverlauf steuern (Mischen / Ersetzen)</label>
+    <p class="tiny">Die Leitfarbe und der Modus kommen aus „Farbharmonie“. Ohne Lasso wirkt der Linienverlauf im ganzen Bild. Mit Lasso wirkt er nur innerhalb der Auswahl. A und B bestimmen, wie viel der eingestellten Stärke am jeweiligen Ende wirkt. Funktioniert mit allen Farben. Die übrigen Verlaufseinstellungen bleiben unabhängig.</p>
+    <strong>Anfang A</strong>
+    <label>Farbharmonie A <output id="ceGradHarmonyAVal">0 %</output><input id="ceGradHarmonyA" type="range" min="0" max="100" step="1" value="0"></label>
+    <label>Heller / dunkler <output id="ceGradLightAVal">0</output><input id="ceGradLightA" type="range" min="-40" max="40" step="0.5" value="0"></label>
+    <label>Kühler / wärmer <output id="ceGradWarmAVal">0</output><input id="ceGradWarmA" type="range" min="-30" max="30" step="0.5" value="0"></label>
+    <label>Sättigung <output id="ceGradSatAVal">0 %</output><input id="ceGradSatA" type="range" min="-100" max="100" step="1" value="0"></label>
+    <label>Unschärfe <output id="ceGradBlurAVal">0 %</output><input id="ceGradBlurA" type="range" min="0" max="100" step="1" value="0"></label>
+    <strong>Ende B</strong>
+    <label>Farbharmonie B <output id="ceGradHarmonyBVal">100 %</output><input id="ceGradHarmonyB" type="range" min="0" max="100" step="1" value="100"></label>
+    <label>Heller / dunkler <output id="ceGradLightBVal">0</output><input id="ceGradLightB" type="range" min="-40" max="40" step="0.5" value="0"></label>
+    <label>Kühler / wärmer <output id="ceGradWarmBVal">0</output><input id="ceGradWarmB" type="range" min="-30" max="30" step="0.5" value="0"></label>
+    <label>Sättigung <output id="ceGradSatBVal">0 %</output><input id="ceGradSatB" type="range" min="-100" max="100" step="1" value="0"></label>
+    <label>Unschärfe <output id="ceGradBlurBVal">0 %</output><input id="ceGradBlurB" type="range" min="0" max="100" step="1" value="0"></label>
+    <button id="ceGradientReverse" class="secondary">Richtung umkehren</button><button id="ceGradientClear" class="secondary">Verlauf entfernen</button>
+    <label><input id="ceGradientVisible" type="checkbox" checked> Linie anzeigen</label>
+    <p class="tiny">Unschärfe: 0 % = scharf, 100 % = stark weichgezeichnet. A = 0 und B = 50 ergibt zunehmende Unschärfe. Der Tonwertschutz gilt für Farbregler, nicht für die Unschärfe. 0 bedeutet unverändert. Der Verlauf ergänzt die normalen Farbregler. Ohne Lasso wirkt er auf das ganze Bild, mit Lasso nur innerhalb der Auswahl. Vor A und hinter B bleibt der jeweilige Endwert konstant. Bei aktivierter Farbharmonie steuern A/B die Wirkung der ausgewählten Zielfarbe von 0–100 % der eingestellten Stärke. „Änderung merken“ speichert den Verlauf.</p></details><label>Auswahl<select id="ceFamily"><option value="all">Alle Farben</option><option value="green" selected>Grün / Oliv</option><option value="yellow">Gelb</option><option value="ochre">Ocker</option><option value="orange">Orange</option><option value="red">Rot / Rosa</option><option value="brown">Braun / Siena / Umbra</option><option value="turquoise">Türkis</option><option value="blue">Blau</option><option value="violet">Violett</option><option value="neutral">Weiß / Grau / Schwarz</option><option value="pick">Einzelne Farbe · Pipette</option></select></label>
     <button id="cePick" class="secondary">Farbe im Bild antippen</button><label>Kreisgröße <output id="ceDiameterVal">32 px</output><input id="ceDiameter" type="range" min="8" max="80" step="2" value="32"></label><div id="ceSample">Auswahl: Grün / Oliv</div>
     <label>Farbbereich <output id="ceRangeVal"></output><input id="ceRange" type="range" min="5" max="100" value="30"></label>
     <label>Heller / dunkler <output id="ceLightVal"></output><input id="ceLight" type="range" min="-40" max="40" step="0.5" value="0"></label>
@@ -9828,25 +9846,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <div style="display:flex;gap:6px"><button id="ceHarmonySoft" class="secondary">Sanft · 15 %</button><button id="ceHarmonyClear" class="secondary">Aus</button></div>
     <p class="tiny">Zum Einstieg 5–20 %. Höhere Werte färben stärker um. Farbauswahl, Lasso und Lichtschutz gelten weiter. Für das ganze Bild „Alle Farben“ wählen und die Bereichsauswahl aufheben.</p>
     </details>
-    <details id="ceGradientPanel"><summary>Verlauf entlang einer Linie</summary>
-    <button id="ceGradientDraw" class="secondary" aria-pressed="false">Verlaufslinie zeichnen</button><p id="ceGradientStatus" class="tiny" role="status">Mit einem Finger von A nach B ziehen.</p>
-    <label><input id="ceGradientHarmony" type="checkbox"> Farbharmonie entlang der Linie steuern (Mischen / Ersetzen)</label>
-    <p class="tiny">Die Leitfarbe und der Modus kommen aus „Farbharmonie“. A und B bestimmen, wie viel der eingestellten Stärke am jeweiligen Ende wirkt. Funktioniert mit allen Farben. Die übrigen Verlaufseinstellungen bleiben unabhängig.</p>
-    <strong>Anfang A</strong>
-    <label>Farbharmonie A <output id="ceGradHarmonyAVal">0 %</output><input id="ceGradHarmonyA" type="range" min="0" max="100" step="1" value="0"></label>
-    <label>Heller / dunkler <output id="ceGradLightAVal">0</output><input id="ceGradLightA" type="range" min="-40" max="40" step="0.5" value="0"></label>
-    <label>Kühler / wärmer <output id="ceGradWarmAVal">0</output><input id="ceGradWarmA" type="range" min="-30" max="30" step="0.5" value="0"></label>
-    <label>Sättigung <output id="ceGradSatAVal">0 %</output><input id="ceGradSatA" type="range" min="-100" max="100" step="1" value="0"></label>
-    <label>Unschärfe <output id="ceGradBlurAVal">0 %</output><input id="ceGradBlurA" type="range" min="0" max="100" step="1" value="0"></label>
-    <strong>Ende B</strong>
-    <label>Farbharmonie B <output id="ceGradHarmonyBVal">100 %</output><input id="ceGradHarmonyB" type="range" min="0" max="100" step="1" value="100"></label>
-    <label>Heller / dunkler <output id="ceGradLightBVal">0</output><input id="ceGradLightB" type="range" min="-40" max="40" step="0.5" value="0"></label>
-    <label>Kühler / wärmer <output id="ceGradWarmBVal">0</output><input id="ceGradWarmB" type="range" min="-30" max="30" step="0.5" value="0"></label>
-    <label>Sättigung <output id="ceGradSatBVal">0 %</output><input id="ceGradSatB" type="range" min="-100" max="100" step="1" value="0"></label>
-    <label>Unschärfe <output id="ceGradBlurBVal">0 %</output><input id="ceGradBlurB" type="range" min="0" max="100" step="1" value="0"></label>
-    <button id="ceGradientReverse" class="secondary">Richtung umkehren</button><button id="ceGradientClear" class="secondary">Verlauf entfernen</button>
-    <label><input id="ceGradientVisible" type="checkbox" checked> Linie anzeigen</label>
-    <p class="tiny">Unschärfe: 0 % = scharf, 100 % = stark weichgezeichnet. A = 0 und B = 50 ergibt zunehmende Unschärfe. Der Tonwertschutz gilt für Farbregler, nicht für die Unschärfe. 0 bedeutet unverändert. Der Verlauf ergänzt die normalen Farbregler und wirkt auf die gewählte Farbe bzw. Auswahl. Vor A und hinter B bleibt der jeweilige Endwert konstant. Bei aktivierter Farbharmonie steuern A/B die Wirkung der ausgewählten Zielfarbe von 0–100 % der eingestellten Stärke. „Änderung merken“ speichert den Verlauf.</p></details>
+    
     <details id="ceSpotPanel"><summary>Lichtfleck &amp; Motiv hervorheben</summary>
     <button id="ceFocusPreset">Motiv hervorheben · Umgebung beruhigen</button><p class="tiny">Setzt ein geschütztes Oval und nimmt die Farben außen sanft zurück. Ersetzt die Einstellungen des aktuellen Flecks.</p>
     <button id="ceSpotPlace" class="secondary" aria-pressed="false">Fleck im Bild setzen</button><p id="ceSpotStatus" class="tiny" role="status">Mittelpunkt antippen oder mit einem Finger verschieben.</p>
@@ -10199,6 +10199,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const values=end=>({light:+el('GradLight'+end).value/100,warm:+el('GradWarm'+end).value/500,saturation:+el('GradSat'+end).value/100,blur:+el('GradBlur'+end).value/100});
       return {a:{...gradient.a},b:{...gradient.b},from:values('A'),to:values('B'),harmony:el('GradientHarmony').checked,harmonyA:+el('GradHarmonyA').value/100,harmonyB:+el('GradHarmonyB').value/100};
     }
+    function syncGradientSummary(){
+      const scope=region?'nur Lasso':'ganzes Bild';
+      const state=gradient?'aktiv · ':'';
+      el('GradientPanel').querySelector('summary').textContent='Linienverlauf · '+state+scope;
+    }
     function syncGradient(){
       for(const end of ['A','B']){el('GradHarmony'+end+'Val').textContent=el('GradHarmony'+end).value+' %';el('GradHarmony'+end).disabled=busy||!gradient||!el('GradientHarmony').checked;}
       el('GradientHarmony').disabled=busy||!gradient;
@@ -10207,7 +10212,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       el('GradientDraw').setAttribute('aria-pressed',String(gradientArmed));
       el('GradientDraw').textContent=gradientArmed?'Linie zeichnen: aktiv · beenden':gradient?'Verlaufslinie neu zeichnen':'Verlaufslinie zeichnen';
       el('GradientReverse').disabled=busy||!gradient;el('GradientClear').disabled=busy||!gradient;
-      el('GradientStatus').textContent=gradientArmed?'Mit einem Finger von Anfang A zu Ende B ziehen. Zwei Finger zoomen.':gradient?'A / B ziehen: Endpunkte ändern · Linie ziehen: Verlauf verschieben. Werte bleiben erhalten.':'Noch keine Linie · zuerst „Verlaufslinie zeichnen“ antippen.';
+      const scopeText=region?'Wirkbereich: nur innerhalb der Lasso-Auswahl.':'Wirkbereich: ganzes Bild.';
+      el('GradientStatus').textContent=gradientArmed?'Mit einem Finger von Anfang A zu Ende B ziehen. Zwei Finger zoomen. '+scopeText:gradient?'A / B ziehen: Endpunkte ändern · Linie ziehen: Verlauf verschieben. Werte bleiben erhalten. '+scopeText:'Noch keine Linie · zuerst „Verlaufslinie zeichnen“ antippen. '+scopeText;
+      syncGradientSummary();
       drawRegion();
     }
     function drawGradient(){
@@ -10296,7 +10303,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     el('BrushSize').oninput=syncBrush;
     el('BrushUndo').onclick=()=>{brushStrokes.pop();syncBrush();render();};
     el('BrushClear').onclick=()=>{brushStrokes=[];syncBrush();render();};
-    function syncRegion(){el('Lasso').setAttribute('aria-pressed',String(lassoArmed));el('LassoClear').disabled=!region&&!lassoDraft;el('RegionStatus').textContent=lassoArmed?'Mit einem Finger den Bereich umzeichnen. Beim Loslassen wird er geschlossen.':region?'Lasso aktiv: Änderungen nur innerhalb der Umrandung.':'Kein Lasso: Änderungen gelten im ganzen Bild.';drawRegion();}
+    function syncRegion(){el('Lasso').setAttribute('aria-pressed',String(lassoArmed));el('LassoClear').disabled=!region&&!lassoDraft;el('RegionStatus').textContent=lassoArmed?'Mit einem Finger den Bereich umzeichnen. Beim Loslassen wird er geschlossen.':region?'Lasso aktiv: Farbharmonie und Linienverlauf wirken nur innerhalb der Umrandung.':'Kein Lasso: Farbharmonie und Linienverlauf gelten im ganzen Bild.';drawRegion();syncGradientSummary();}
     function regionPoint(p){return {x:clamp((p.x-view.x)/view.k/cv.width),y:clamp((p.y-view.y)/view.k/cv.height)};}
     function addRegionPoint(p){const q=regionPoint(p),last=lassoDraft[lassoDraft.length-1];if(!last||Math.hypot((q.x-last.x)*cv.width*view.k,(q.y-last.y)*cv.height*view.k)>=1.5)lassoDraft.push(q);drawRegion();}
     function finishRegion(){
