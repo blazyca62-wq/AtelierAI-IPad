@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.09</title>
+  <title>AtelierAI iPad 4.10</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1048,11 +1048,12 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.09</div>
+    <div class="title">AtelierAI · iPad 4.10</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
     <button id="applyAllModulesBtn" type="button" class="secondary" disabled title="Aktuelle Farbdarstellung ohne Raster als gemeinsame Bildvorlage verwenden">Für alle Module übernehmen</button>
+    <button id="mainExportBtn" type="button">Bild exportieren</button>
     <button id="artOpenBtn" class="secondary" type="button">Künstlerische Gestaltung</button>
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="visibleCropBack" type="button" class="secondary" hidden>Zum Gesamtbild</button>
@@ -1786,6 +1787,7 @@
           <button id="savePngBtn">Als PNG speichern</button>
         </div>
         <button id="saveJpegBtn" class="secondary" style="width:100%;margin-top:7px;">Als JPEG speichern</button>
+        <p class="tiny">Beim Export kann das Raster unabhängig von der Bildschirmansicht ein- oder ausgeschaltet werden.</p>
         <div class="control-line"><label>Raster</label><input id="gridDensity" type="range" min="2" max="20" value="8"><span id="gridDensityVal">8</span></div>
         <details class="grid-adjust" style="margin-top:10px">
           <summary style="cursor:pointer;padding:8px 0;font-weight:bold">Raster an Ölbild anpassen</summary>
@@ -9144,6 +9146,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   exportDialog.style.cssText='width:min(680px,90vw);max-height:90dvh;overflow:auto;border:1px solid #888;border-radius:16px;padding:18px;background:#f7f5f0;color:#222;';
   exportDialog.innerHTML=`<h3 id="exportTitle" style="margin-top:0">Aktuelle Ansicht speichern</h3>
     <label id="exportScopeLabel">Bildbereich <select id="exportScope"><option value="full">Ganzes Bild mit aktuellen Einstellungen</option><option value="viewport">Sichtbarer Ausschnitt (Zoom und Position)</option></select></label>
+    <label id="exportGridLabel" style="display:flex;align-items:center;gap:8px;margin:10px 0"><input id="exportIncludeGrid" type="checkbox"> Raster in gespeichertes Bild übernehmen</label>
     <p id="exportInfo" style="font-size:14px">Sichtbare Farben, Hintergrund, Überblendungen und Raster werden übernommen.</p>
     <img id="exportPreview" alt="Vorschau des zu speichernden Bildes" style="display:block;max-width:100%;max-height:48dvh;margin:12px auto;object-fit:contain">
     <p id="exportStatus" role="status" style="font-size:14px"></p>
@@ -9151,6 +9154,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <p style="font-size:13px">Auf dem iPad: „Teilen“ → „Bild sichern“ oder „In Dateien sichern“. Alternativ die Vorschau länger berühren.</p>`;
   document.body.appendChild(exportDialog);
   const exportScope=document.getElementById('exportScope');
+  const exportIncludeGrid=document.getElementById('exportIncludeGrid');
   const exportPreview=document.getElementById('exportPreview');
   const exportStatus=document.getElementById('exportStatus');
   const exportShare=document.getElementById('exportShare');
@@ -9172,11 +9176,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }else{
       flushToneImage();
       if(exportScope.value==='viewport'){
-        paintViewer();out.width=canvas.width;out.height=canvas.height;
+        const previousGrid=gridEnabled;
+        try{gridEnabled=exportIncludeGrid.checked;paintViewer();out.width=canvas.width;out.height=canvas.height;}
+        finally{gridEnabled=previousGrid;draw();}
         const c=out.getContext('2d');c.fillStyle=getComputedStyle(viewer).backgroundColor;c.fillRect(0,0,out.width,out.height);c.drawImage(canvas,0,0);
       }else{
         out.width=sourceCanvas.width;out.height=sourceCanvas.height;
-        const c=out.getContext('2d');c.fillStyle=getComputedStyle(viewer).backgroundColor;c.fillRect(0,0,out.width,out.height);renderCurrentArtwork(c);
+        const c=out.getContext('2d');c.fillStyle=getComputedStyle(viewer).backgroundColor;c.fillRect(0,0,out.width,out.height);renderCurrentArtwork(c,exportIncludeGrid.checked);
       }
     }
     return out;
@@ -9202,16 +9208,18 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       },exportType,0.95);
     }catch(error){exportStatus.textContent='Speichern nicht möglich: '+error.message;}
   }
-  function saveAtelierImage(type='image/png'){
+  function saveAtelierImage(type='image/png',withGrid=gridEnabled){
     exportFullscreen=glazeFullscreen.style.display!=='none';
     exportGlaze=exportFullscreen||document.getElementById('glazePanel').classList.contains('tool-page-active');
     if(exportGlaze?(!glazeOriginalImg&&!glazePaintingImg):!loaded){alert('Bitte zuerst ein Foto öffnen.');return;}
     exportType=type;exportReturnFocus=document.activeElement;
+    exportIncludeGrid.checked=!!withGrid;document.getElementById('exportGridLabel').hidden=exportGlaze;
     document.getElementById('exportScopeLabel').hidden=exportGlaze;
     document.getElementById('exportInfo').textContent=exportGlaze?'Beide Lasurenansichten mit aktueller Ausrichtung und Messpunkten.':'Sichtbare Farben, Hintergrund, Überblendungen und Raster werden übernommen.';
     exportDialog.showModal();refreshExportPreview();
   }
   exportScope.addEventListener('change',refreshExportPreview);
+  exportIncludeGrid.addEventListener('change',refreshExportPreview);
   document.getElementById('exportClose').addEventListener('click',()=>exportDialog.close());
   exportDialog.addEventListener('close',()=>{
     ++exportRequest;exportFile=null;exportPreview.removeAttribute('src');exportDownload.removeAttribute('href');
@@ -9223,6 +9231,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     try{await navigator.share({files:[exportFile]});}
     catch(error){if(error.name!=='AbortError')exportStatus.textContent='Teilen nicht möglich. Bitte „Herunterladen“ wählen oder die Vorschau länger berühren.';}
   });
+  document.getElementById('mainExportBtn').addEventListener('click',()=>saveAtelierImage('image/png',false));
   document.getElementById('saveCurrentViewBtn').addEventListener('click',()=>saveAtelierImage());
   document.getElementById('glazeFsSave').addEventListener('click',()=>saveAtelierImage());
   savePngBtn.addEventListener('click',()=>saveAtelierImage('image/png'));
