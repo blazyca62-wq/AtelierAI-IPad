@@ -1,3 +1,5 @@
+AtelierAI 4.04 – Farbharmonie: Pipettenmaske enger nach Farbton und Helligkeit, neuer Startwert 12 % Ähnlichkeit, keine Farbauswahl ohne gültige Pipettenprobe.
+
 AtelierAI 4.03 – Klare Trennung Ausgangsfarbe (nur angetippte Farbe) und Zielfarbe; Quelle muss bei aktivem Lasso innen liegen; Farbbereich-Regler bleibt unter Erweitert. Update-Kennung 4.03.
 
 AtelierAI 4.02 – Farbbearbeitung übersichtlicher: direkte Farbänderung im Vordergrund, seltene Regler unter „Erweitert“, Projekt/Prüfansicht separat. Versionskennungen für Offline-Update auf 4.02 angehoben.
