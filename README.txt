@@ -1,3 +1,7 @@
+AtelierAI iPad 4.15 – Farbtransfer
+Neu: Farbtransfer unter „Werkzeuge“: Referenzbild laden, Farben/Tonwerte übertragen, Regler, Vergleich, PNG-Export und Übernahme für alle Module. Bestehende Funktionen bleiben erhalten.
+Hinweis: Transfer ist eine farbstatistische Annäherung, keine semantische Motiv-Erkennung.
+
 AtelierAI 4.13: Einheitliche 5-Punkte-Toleranz bei Farbkorrekturen, Wiederverwendung gespeicherter Mischungen und Bevorzugung weniger Tuben in gemeinsamen Basismischungen. Sonstige Funktionen aus 4.12 unverändert.
 AtelierAI 4.12: Einfache Farbmischungen werden innerhalb von 5 Prozentpunkten Farbtreue bevorzugt (auch bei praktisch gerundeten Mischrezepten). Sonstige Funktionen von 4.11 bleiben erhalten.
 AtelierAI 4.11: Korrektur der iPad-Kopfleiste: alle Schaltflächen werden jetzt in weitere Zeilen umgebrochen statt rechts abgeschnitten. Bildexport mit/ohne Raster aus 4.10 bleibt erhalten. Sonstige Funktionen unverändert.

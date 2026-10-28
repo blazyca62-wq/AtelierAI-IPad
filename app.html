@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.14</title>
+  <title>AtelierAI iPad 4.15</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1055,7 +1055,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.14</div>
+    <div class="title">AtelierAI · iPad 4.15</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1067,6 +1067,7 @@
     <button id="gridCellCropApply" type="button" hidden disabled>Als Malvorlage übernehmen</button>
     <details class="moreTools" id="moreTools"><summary aria-label="Weitere Werkzeuge">Werkzeuge ▾</summary>
       <div class="moreToolsPanel">
+        <button id="transferOpenBtn" type="button">Farbtransfer · Referenzbild</button>
         <button id="saveCurrentViewBtn" type="button">Ansicht speichern</button>
         <button id="visibleCropBtn" type="button" class="secondary" disabled>Sichtbaren Ausschnitt als Malvorlage übernehmen</button>
         <button id="gridCellCropBtn" type="button" class="secondary" disabled aria-pressed="false">Rasterkästchen als Malvorlage auswählen</button>
@@ -11568,5 +11569,76 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  const close=()=>{modal.hidden=true;previousFocus?.focus?.()};launch.onclick=()=>{previousFocus=document.activeElement;modal.hidden=false;tab='guides';search.value='';modal.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===tab));render();search.focus();};modal.querySelector('#atelierHelpClose').onclick=close;modal.addEventListener('click',e=>{if(e.target===modal)close()});modal.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;modal.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('selected',x===b));render()});search.addEventListener('input',render);document.addEventListener('keydown',e=>{if(!modal.hidden&&e.key==='Escape')close()});
 })();
 </script>
+
+<style>
+#transferStudio[hidden]{display:none!important}#transferStudio{position:fixed;inset:0;z-index:45000;background:#f2f2ee;color:#182c25;display:flex;flex-direction:column;font-family:system-ui,sans-serif;padding:10px;gap:10px;box-sizing:border-box}
+#transferStudio *{box-sizing:border-box}#transferStudio .tf-head{display:flex;justify-content:space-between;align-items:center;gap:8px}#transferStudio button,#transferStudio select,#transferStudio input{font:inherit;min-height:40px}#transferStudio button{border:1px solid #a5b4a9;background:white;color:#17382e;border-radius:8px;padding:7px 11px}#transferStudio button.primary{background:#225d46;color:white}#transferStudio button:disabled{opacity:.4}
+.tf-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,310px);gap:12px;flex:1;min-height:0}.tf-stage{min-height:0;background:#777;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:9px}.tf-stage canvas{max-width:100%;max-height:100%;object-fit:contain}.tf-panel{background:#fff;border-radius:9px;padding:12px;overflow:auto;min-height:0}.tf-panel label{display:block;margin:10px 0}.tf-panel input[type=range]{width:100%;min-height:30px}.tf-panel select{width:100%}.tf-panel .tf-actions{display:grid;gap:7px}.tf-small{font-size:12px;color:#53645c;line-height:1.4}.tf-panel output{float:right}@media(max-width:700px){.tf-main{grid-template-columns:1fr;grid-template-rows:minmax(150px,1fr) minmax(230px,47%)}.tf-panel{padding:10px}}
+</style>
+<div id="transferStudio" hidden role="dialog" aria-modal="true" aria-label="Farbtransfer">
+ <div class="tf-head"><strong>Farbtransfer · Referenzbild</strong><button id="tfClose" type="button">Schließen ✕</button></div>
+ <div class="tf-main"><div class="tf-stage"><canvas id="tfCanvas"></canvas></div><div class="tf-panel">
+ <label><b>Referenzbild</b><input id="tfFile" type="file" accept="image/*" style="width:100%"></label>
+ <canvas id="tfReference" width="240" height="110" style="width:100%;height:110px;object-fit:contain;background:#dededb;border-radius:6px"></canvas>
+ <label>Übertragung <select id="tfMode"><option value="color">Nur Farben · Tonwerte erhalten</option><option value="mood" selected>Farben + Helligkeitscharakter</option><option value="full">Farben + Tonwerte + Sättigung</option></select></label>
+ <label>Stärke <output id="tfStrengthLabel">75 %</output><input id="tfStrength" type="range" min="0" max="100" value="75"></label>
+ <label>Sättigung <output id="tfSatLabel">100 %</output><input id="tfSat" type="range" min="0" max="160" value="100"></label>
+ <label>Warm / Kalt <output id="tfWarmLabel">0</output><input id="tfWarm" type="range" min="-50" max="50" value="0"></label>
+ <label><input id="tfProtect" type="checkbox" checked> Tonwerte schützen</label>
+ <div class="tf-actions"><button id="tfCompare" type="button">Original anzeigen (halten)</button><button id="tfExport" type="button" disabled>Ergebnis als PNG speichern</button><button id="tfApply" class="primary" type="button" disabled>Für alle Module übernehmen</button></div>
+ <p class="tf-small">Die Formen und Positionen bleiben unverändert. Die Farben werden nach Helligkeitsgruppen aus dem Referenzbild zugeordnet. Die Übertragung ist eine berechnete Annäherung, keine Motiv- oder Stil-KI.</p><p id="tfStatus" class="tf-small" role="status">Bitte Referenzbild auswählen.</p>
+ </div></div>
+</div>
+<script>
+(()=>{
+const by=id=>document.getElementById(id),layer=by('transferStudio'),cv=by('tfCanvas'),cx=cv.getContext('2d',{willReadFrequently:true}),preview=document.createElement('canvas');
+let original=null,ref=null,refStats=null,busy=false,request=0;
+const clamp=(v,a=0,b=255)=>Math.max(a,Math.min(b,v));
+const lum=(r,g,b)=>.2126*r+.7152*g+.0722*b;
+function stats(data){
+  const bins=Array.from({length:12},()=>({colors:new Map(),sum:0,n:0}));
+  let allL=0,allL2=0,count=0;
+  for(let i=0;i<data.length;i+=4){if(data[i+3]<120)continue;
+    let r=data[i],g=data[i+1],b=data[i+2],L=lum(r,g,b),t=Math.min(11,Math.floor(L/256*12)),bin=bins[t];
+    let key=(r>>5)<<6|(g>>5)<<3|(b>>5),v=bin.colors.get(key);if(!v){v=[0,0,0,0];bin.colors.set(key,v)}v[0]+=r;v[1]+=g;v[2]+=b;v[3]++;bin.sum+=L;bin.n++;allL+=L;allL2+=L*L;count++;
+  }
+  const palette=bins.map(bin=>[...bin.colors.values()].sort((a,b)=>b[3]-a[3]).slice(0,18).map(a=>[a[0]/a[3],a[1]/a[3],a[2]/a[3],a[3]]));
+  return {palette,mean:allL/Math.max(1,count),sd:Math.sqrt(Math.max(1,allL2/Math.max(1,count)-Math.pow(allL/Math.max(1,count),2)))};
+}
+function render(){if(!original)return;let token=++request,mode=by('tfMode').value,str=+by('tfStrength').value/100,sat=+by('tfSat').value/100,warm=+by('tfWarm').value;
+  const out=new ImageData(new Uint8ClampedArray(original.data),original.width,original.height),src=original.data,dst=out.data,protect=by('tfProtect').checked;
+  if(!refStats){cx.putImageData(original,0,0);return;}
+  const sourceStats=stats(src),weight=mode==='color'?.0:mode==='mood'?.32:.7;
+  for(let i=0;i<src.length;i+=4){if(src[i+3]===0)continue;
+    const r=src[i],g=src[i+1],b=src[i+2],L=lum(r,g,b),bin=Math.min(11,Math.floor(L/256*12));
+    let palette=refStats.palette[bin];if(!palette.length){for(let d=1;d<12;d++){palette=refStats.palette[Math.max(0,bin-d)];if(palette.length)break;palette=refStats.palette[Math.min(11,bin+d)];if(palette.length)break;}}
+    if(!palette.length)continue;
+    // Preserve chromatic relationships: choose the nearest reference hue/chroma after normalising lightness.
+    let best=palette[0],bestD=Infinity,dr=r-L,dg=g-L,db=b-L;
+    for(const p of palette){let pl=lum(p[0],p[1],p[2]),pr=p[0]-pl,pg=p[1]-pl,pb=p[2]-pl;
+      let norm=Math.sqrt(pr*pr+pg*pg+pb*pb)+1,srcNorm=Math.sqrt(dr*dr+dg*dg+db*db)+1;
+      let d=((dr/srcNorm-pr/norm)**2+(dg/srcNorm-pg/norm)**2+(db/srcNorm-pb/norm)**2)*4500+Math.abs(norm-srcNorm)*.28;
+      if(d<bestD){bestD=d;best=p;}}
+    const pl=lum(best[0],best[1],best[2]);const targetL=protect?L:clamp(L+(refStats.mean-sourceStats.mean)*weight+(L-sourceStats.mean)*(refStats.sd/sourceStats.sd-1)*weight*.5);
+    let f=mode==='full'?1.1:mode==='color'?.85:1,rr=targetL+(best[0]-pl)*sat*f+warm*.6,gg=targetL+(best[1]-pl)*sat*f+warm*.06,bb=targetL+(best[2]-pl)*sat*f-warm*.6;
+    // In preserve mode compensate after gamut clipping to reduce accidental luminance shift.
+    if(protect){let d=L-lum(clamp(rr),clamp(gg),clamp(bb));rr+=d;gg+=d;bb+=d;}
+    dst[i]=clamp(r+(rr-r)*str);dst[i+1]=clamp(g+(gg-g)*str);dst[i+2]=clamp(b+(bb-b)*str);
+  }
+  if(token===request)cx.putImageData(out,0,0);
+}
+function open(){let photo=window.__atelierArtBridge?.photo?.();if(!photo?.loaded||!photo.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}
+ const sc=photo.canvas,max=1400,k=Math.min(1,max/Math.max(sc.width,sc.height));cv.width=Math.max(1,Math.round(sc.width*k));cv.height=Math.max(1,Math.round(sc.height*k));cx.drawImage(sc,0,0,cv.width,cv.height);original=cx.getImageData(0,0,cv.width,cv.height);layer.hidden=false;render();}
+by('transferOpenBtn').addEventListener('click',open);by('tfClose').addEventListener('click',()=>layer.hidden=true);
+by('tfFile').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{let bmp=await createImageBitmap(f),rctx=by('tfReference').getContext('2d');const refCv=document.createElement('canvas'),k=Math.min(1,700/Math.max(bmp.width,bmp.height));refCv.width=Math.max(1,Math.round(bmp.width*k));refCv.height=Math.max(1,Math.round(bmp.height*k));let rc=refCv.getContext('2d',{willReadFrequently:true});rc.drawImage(bmp,0,0,refCv.width,refCv.height);refStats=stats(rc.getImageData(0,0,refCv.width,refCv.height).data);rctx.clearRect(0,0,240,110);let scale=Math.min(240/bmp.width,110/bmp.height);rctx.drawImage(bmp,(240-bmp.width*scale)/2,(110-bmp.height*scale)/2,bmp.width*scale,bmp.height*scale);bmp.close?.();by('tfStatus').textContent='Referenz geladen. Regler verändern die Vorschau.';by('tfExport').disabled=false;by('tfApply').disabled=false;render();}catch(err){by('tfStatus').textContent='Referenzbild nicht lesbar: '+err.message;}});
+for(const [id,out] of [['tfStrength','tfStrengthLabel'],['tfSat','tfSatLabel'],['tfWarm','tfWarmLabel']])by(id).addEventListener('input',()=>{by(out).textContent=by(id).value+(id==='tfWarm'?'':' %');render();});
+by('tfMode').addEventListener('change',render);by('tfProtect').addEventListener('change',render);
+const compare=by('tfCompare');function before(){if(original)cx.putImageData(original,0,0)}function after(){render()}compare.addEventListener('pointerdown',before);for(const x of ['pointerup','pointercancel','pointerleave'])compare.addEventListener(x,after);
+function blob(){return new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(Error('PNG-Erzeugung fehlgeschlagen')),'image/png'))}
+by('tfExport').addEventListener('click',async()=>{try{let b=await blob(),url=URL.createObjectURL(b),a=document.createElement('a');a.href=url;a.download='AtelierAI_Farbtransfer.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000)}catch(e){by('tfStatus').textContent=e.message}});
+by('tfApply').addEventListener('click',async()=>{if(busy||!refStats)return;busy=true;by('tfApply').disabled=true;try{render();let b=await blob();await new Promise((resolve,reject)=>window.__atelierArtBridge.load(b,e=>e?reject(e):resolve()));layer.hidden=true;by('tfStatus').textContent='Bild in alle Module übernommen.';}catch(e){by('tfStatus').textContent='Übernahme fehlgeschlagen: '+e.message;}finally{busy=false;by('tfApply').disabled=false;}});
+})();
+</script>
+
 </body>
 </html>
