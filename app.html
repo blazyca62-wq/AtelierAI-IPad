@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.33</title>
+  <title>AtelierAI iPad 4.36</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1055,7 +1055,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.33</div>
+    <div class="title">AtelierAI · iPad 4.36</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -11592,7 +11592,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  #transferDialog #transferPreview{position:static!important;inset:auto!important;transform:none!important;touch-action:auto;display:block;max-width:100%;width:auto;height:auto;max-height:30dvh;margin:8px auto;background:#ddd;border:1px solid #ddd;object-fit:contain}
  #transferDialog #transferActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
  #transferDialog #transferReferenceThumb{display:none;max-height:115px;max-width:100%;margin:6px 0 0;object-fit:contain;border:1px solid #ccc;border-radius:5px}
- </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.33</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:block">Pastelllicht der Vorlage <input id="transferPastel" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferPastelLabel">75 %</output></label><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label><canvas id="transferPreview" ></canvas><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><details id="transferPairDetails" style="margin:8px 0;font-size:12px"><summary>Alle 128 Farbpaare ansehen</summary><div id="transferPairSwatches" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0;max-height:240px;overflow:auto"></div></details><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></section>`;
+ </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.36</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:block">Selektive Pastellfarben <input id="transferPastel" type="range" min="0" max="100" value="60" style="width:100%;min-height:36px"><output id="transferPastelLabel">60 %</output></label><label style="display:block">Nur Farbgrenzen glätten <input id="transferEdges" type="range" min="0" max="100" value="0" style="width:100%;min-height:36px"><output id="transferEdgesLabel">0 % (aus)</output></label><p style="font-size:12px;margin:2px 0 8px;color:#555">0 %: reine 1-zu-1-Farbpaare. Der Regler glättet ausschließlich Farbwechsel an benachbarten Flächen – nicht die Bilddetails.</p><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label><canvas id="transferPreview" ></canvas><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><details id="transferPairDetails" style="margin:8px 0;font-size:12px"><summary>Alle 128 Farbpaare ansehen</summary><div id="transferPairSwatches" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0;max-height:240px;overflow:auto"></div></details><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></section>`;
  document.body.append(wrap);
  const get=id=>shadow.querySelector('#'+id), preview=get('transferPreview'), ctx=preview.getContext('2d',{willReadFrequently:true});
  // A real, visible native file input receives the user's tap directly.
@@ -11692,27 +11692,69 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  };
  const matchOneToOne=(src,dst)=>{
    const sumS=src.weights.reduce((a,b)=>a+b,0),sumT=dst.weights.reduce((a,b)=>a+b,0);
-   // Match tonal position, not absolute source brightness: the Monet original
-   // is much brighter than an ordinary backlit photograph.
-   const srcMean=src.colors.reduce((v,c,i)=>v+c[0]*src.weights[i],0)/sumS;
-   const dstMean=dst.colors.reduce((v,c,i)=>v+c[0]*dst.weights[i],0)/sumT;
-   const brightnessShift=clamp(dstMean-srcMean,-.02,.24);
+   const stat=(pal,sum)=>{
+     let ml=0,mc=0;
+     for(let i=0;i<128;i++){const w=pal.weights[i]/sum,c=pal.colors[i];ml+=w*c[0];mc+=w*Math.hypot(c[1],c[2])}
+     return {ml,mc};
+   };
+   const sStat=stat(src,sumS),tStat=stat(dst,sumT);
+   // Normalize lightness and chroma to the style reference; strong photographic
+   // saturation must not force saturated targets when the painting is pastel.
+   const shift=clamp(tStat.ml-sStat.ml,-.09,.24);
+   const chromaScale=clamp(tStat.mc/Math.max(.015,sStat.mc),.50,1.32);
+   const colorCost=(s,d)=>{
+     const dl=(s[0]+shift)-d[0];
+     const a=s[1]*chromaScale,b=s[2]*chromaScale;
+     const cs=Math.hypot(a,b),cd=Math.hypot(d[1],d[2]);
+     const dot=a*d[1]+b*d[2];
+     const hue=cs>.008&&cd>.008?clamp(dot/(cs*cd),-1,1):1;
+     // Soft family preference, never a rigid rule: burgundy may become rosy.
+     return 1.85*dl*dl+2.65*((a-d[1])**2+(b-d[2])**2)
+           +.22*(cs-cd)**2+.010*(1-hue);
+   };
    const cost=src.colors.map((s,i)=>dst.colors.map((d,j)=>{
-     const dl=s[0]-d[0],da=s[1]-d[1],db=s[2]-d[2];
-     const cs=Math.hypot(s[1],s[2]),ct=Math.hypot(d[1],d[2]);
-     // Relative brightness, hue family and saturation. Family matching is flexible:
-     // e.g. dark burgundy may be mapped to Monet's lighter pink when necessary.
-     let score=1.10*(dl+brightnessShift)**2+4.2*(da*da+db*db)+.45*(cs-ct)**2;
-     if(cs>.027&&ct>.027){
-       const hue=(s[1]*d[1]+s[2]*d[2])/(cs*ct);
-       score+=.019*(1-clamp(hue,-1,1));
-     }
      const fs=Math.max(.0002,src.weights[i]/sumS),ft=Math.max(.0002,dst.weights[j]/sumT);
-     // Avoid using a rare reference accent for a dominant source region.
-     score+=.015*Math.min(4,Math.abs(Math.log(fs/ft)));
-     return score;
+     // Discourage assigning dominant source masses to tiny isolated accents.
+     const prominence=.013*Math.min(3.2,Math.abs(Math.log(fs/ft)));
+     return colorCost(s,d)+prominence;
    }));
-   return uniqueAssignment(cost);
+   let mapping=uniqueAssignment(cost);
+   // Refine the bijection: neighboring source colors should move to neighboring
+   // target colors. Pair swaps never duplicate a reference color.
+   const neighbors=src.colors.map((s,i)=>{
+     const ranked=src.colors.map((other,j)=>({j,d:i===j?Infinity:colorDistance(s,other)}))
+       .sort((a,b)=>a.d-b.d).slice(0,5);
+     return ranked.map(v=>v.j);
+   });
+   const continuity=(i,ti,otherI,otherTi)=>{
+     let sum=0;
+     for(const n of neighbors[i]){
+       const j=n===otherI?otherTi:mapping[n];
+       const da=colorDistance(src.colors[i],src.colors[n]);
+       const db=colorDistance(dst.colors[ti],dst.colors[j]);
+       // Penalize excessive color jumps, not natural compressed pastel palettes.
+       sum+=Math.max(0,db-.95*da);
+     }
+     return sum;
+   };
+   for(let pass=0;pass<3;pass++){
+     let changed=0;
+     for(let i=0;i<128;i++){
+       let bestJ=-1,bestGain=0;
+       for(let j=i+1;j<128;j++){
+         const a=mapping[i],b=mapping[j];
+         const base=cost[i][b]+cost[j][a]-cost[i][a]-cost[j][b];
+         if(base>.030)continue;
+         const prev=continuity(i,a,j,b)+continuity(j,b,i,a);
+         const next=continuity(i,b,j,a)+continuity(j,a,i,b);
+         const gain=base+.16*(next-prev);
+         if(gain<bestGain-.0000001){bestGain=gain;bestJ=j}
+       }
+       if(bestJ>=0){[mapping[i],mapping[bestJ]]=[mapping[bestJ],mapping[i]];changed++}
+     }
+     if(!changed)break;
+   }
+   return mapping;
  };
  let model=null,pixelDelta=0;
  const buildModel=async(source,reference,job)=>{
@@ -11744,31 +11786,15 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    setStatus('128 Farben: nach Helligkeit, Farbfamilie und Sättigung 1 zu 1 zuordnen …');await frame();
    const mapping=matchOneToOne(src,dst);
    if(new Set(mapping).size!==128)throw Error('128 eindeutige Farbpaare konnten nicht gebildet werden.');
-   // Apply the 128 pairs to the original pixel colors with a continuous 3D color LUT.
-   // The LUT softens palette boundaries only; it does NOT recolor a reduced image.
-   const size=29,lut=new Float32Array(size*size*size*3),sc=src.colors,tc=dst.colors;
-   setStatus('128 Farbpaare auf die Originalfarben übertragen …');await frame();
+   // True 1:1 palette transfer: hard identity for each source color.
+   // No four-palette mixing and NO global 3D color-field smoothing.
+   // Edge softening, when requested, happens only at spatial boundaries.
+   const size=33,nearestIndex=new Uint8Array(size*size*size);
+   setStatus('128 Farbpaare direkt zuordnen (ohne Farbglättung) …');await frame();
    for(let r=0;r<size;r++){
      if(job!==revision)throw Error('abgebrochen');
      for(let g=0;g<size;g++)for(let b=0;b<size;b++){
-       const x=lab(r*255/(size-1),g*255/(size-1),b*255/(size-1));
-       let one=0,two=0,d1=Infinity,d2=Infinity;
-       for(let k=0;k<128;k++){
-         const dist=colorDistance(x,sc[k]);
-         if(dist<d1){d2=d1;two=one;d1=dist;one=k}
-         else if(dist<d2){d2=dist;two=k}
-       }
-       // Light interpolation *only* along palette borders, avoiding harsh banding.
-       const w2=clamp((.0045-(d2-d1))/.009,0,.42),w1=1-w2;
-       const index=3*((r*size+g)*size+b);
-       for(const [k,w] of [[one,w1],[two,w2]]){
-         if(!w)continue;
-         const sourceC=sc[k],targetC=tc[mapping[k]];
-         // Keep local light-shadow variation; directly use reference hue/chroma.
-         lut[index]   +=w*.79*(targetC[0]-sourceC[0]);
-         lut[index+1] +=w*(targetC[1]-.15*sourceC[1]);
-         lut[index+2] +=w*(targetC[2]-.15*sourceC[2]);
-       }
+       nearestIndex[(r*size+g)*size+b]=closest(lab(r*255/(size-1),g*255/(size-1),b*255/(size-1)),src.colors);
      }
      if(r%6===0)await frame();
    }
@@ -11776,50 +11802,130 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    const order=src.colors.map((_,i)=>i).sort((a,b)=>src.weights[b]-src.weights[a]);
    const swatch=c=>'background:rgb('+rgb(...c).join(',')+');width:24px;height:24px;display:inline-block;border-radius:4px;border:1px solid #7775';
    pairBox.innerHTML=order.map((i,j)=>'<div title="Farbpaar '+(j+1)+'" style="display:flex;align-items:center;justify-content:center;gap:3px"><span style="'+swatch(src.colors[i])+'"></span>→<span style="'+swatch(dst.colors[mapping[i]])+'"></span></div>').join('');
-   return {src,dst,mapping,lut,size,toneCurve:smoothCurve};
+   return {src,dst,mapping,nearestIndex,size,toneCurve:smoothCurve};
  };
- const transform=async(im,ref,strength,chroma,pastel,job)=>{
+ const transform=async(im,ref,strength,chroma,pastel,edges,job,scale=1)=>{
    if(!model)throw Error('Farbmodell fehlt');
-   const d=im.data,out=new Uint8ClampedArray(d),f=clamp(strength/100),sat=clamp(chroma/100,0,1.5);
-   const N=model.size,lut=model.lut,curve=model.toneCurve,pastelWeight=clamp(pastel/100)*.92;
+   const d=im.data,w=im.width,h=im.height,out=new Uint8ClampedArray(d),f=clamp(strength/100),sat=clamp(chroma/100,0,1.5);
+   const N=model.size,indexLut=model.nearestIndex,curve=model.toneCurve,pastelWeight=clamp(pastel/100);
+   const edgeStrength=clamp(edges/100),doEdges=edgeStrength>0 && f>0;
+   const pixelCount=w*h;
+   const labels=doEdges?new Uint8Array(pixelCount).fill(255):null;
+   const sourceL=doEdges?new Float32Array(pixelCount):null;
+   const sourceA=doEdges?new Float32Array(pixelCount):null;
+   const sourceB=doEdges?new Float32Array(pixelCount):null;
+   const resultL=doEdges?new Float32Array(pixelCount):null;
+   const resultA=doEdges?new Float32Array(pixelCount):null;
+   const resultB=doEdges?new Float32Array(pixelCount):null;
    let differences=0,visited=0;
-   const interpolate=(r,g,b)=>{
+   // The eight enclosing color-LUT corners provide a shortlist of source
+   // swatches. The final choice is made against the actual unrounded pixel
+   // color in perceptual OKLab, so no palette colors are blended together.
+   const choosePair=(r,g,b,x)=>{
      const R=r*(N-1)/255,G=g*(N-1)/255,B=b*(N-1)/255;
      const r0=Math.min(N-2,R|0),g0=Math.min(N-2,G|0),b0=Math.min(N-2,B|0);
-     const rt=R-r0,gt=G-g0,bt=B-b0;
-     let dl=0,aa=0,bb=0;
-     for(let dr=0;dr<2;dr++)for(let dg=0;dg<2;dg++)for(let db=0;db<2;db++){
-       const w=(dr?rt:1-rt)*(dg?gt:1-gt)*(db?bt:1-bt);
-       const ix=3*(((r0+dr)*N+(g0+dg))*N+(b0+db));
-       dl+=w*lut[ix];aa+=w*lut[ix+1];bb+=w*lut[ix+2];
+     let id=0,best=Infinity;
+     for(let dr=0;dr<=1;dr++)for(let dg=0;dg<=1;dg++)for(let db=0;db<=1;db++){
+       const k=indexLut[((r0+dr)*N+(g0+dg))*N+(b0+db)];
+       const dist=colorDistance(x,model.src.colors[k]);
+       if(dist<best){best=dist;id=k}
      }
-     return [dl,aa,bb];
+     return id;
    };
    for(let i=0;i<d.length;i+=4){
      if(i%300000===0){await frame();if(job!==revision)throw Error('abgebrochen')}
      if(d[i+3]<128)continue;
      if(f===0){visited++;continue}
      const x=lab(d[i],d[i+1],d[i+2]);
-     const [dl,aa,bb]=interpolate(d[i],d[i+1],d[i+2]);
-     // The reference's luminosity histogram becomes visible at full transfer.
-     // A controlled blend retains local modeling/shadows from the photograph.
+     const id=choosePair(d[i],d[i+1],d[i+2],x);
+     const sourceC=model.src.colors[id],targetC=model.dst.colors[model.mapping[id]];
+     const dl=.79*(targetC[0]-sourceC[0]);
+     const aa=targetC[1]-.15*sourceC[1];
+     const bb=targetC[2]-.15*sourceC[2];
+     // Preserve the photograph's original tonal micro-variations.
      const q=x[0]*512,qi=Math.min(511,Math.floor(q)),qt=q-qi;
      const referenceL=curve[qi]*(1-qt)+curve[qi+1]*qt;
      const pairedL=clamp(x[0]+dl);
-     const newL=pairedL*(1-pastelWeight)+referenceL*pastelWeight;
-     const L=clamp(x[0]*(1-f)+newL*f);
-     const a=x[1]*(1-f)+f*sat*(aa+.15*x[1]);
-     const b=x[2]*(1-f)+f*sat*(bb+.15*x[2]);
+     const middleMask=clamp((x[0]-.27)/.27)*clamp((.94-x[0])/.22);
+     const referenceDelta=clamp(referenceL-x[0],-.11,.14);
+     const pairDelta=clamp(pairedL-x[0],-.12,.14);
+     const targetChroma=Math.hypot(aa,bb);
+     const targetPastel=clamp((pairedL-.47)/.23)*clamp((.16-targetChroma)/.13);
+     const warmSource=clamp((x[1]+x[2]+.015)/.13);
+     const extraLight=pastelWeight*.075*middleMask*targetPastel*warmSource;
+     const maxBright=.025+.105*middleMask+extraLight;
+     const maxDark=.025+.075*middleMask;
+     const deltaL=clamp(.76*pairDelta+pastelWeight*.24*middleMask*referenceDelta,-maxDark,maxBright);
+     const L=clamp(x[0]+f*deltaL);
+     let a=x[1]*(1-f)+f*sat*(aa+.15*x[1]);
+     let b=x[2]*(1-f)+f*sat*(bb+.15*x[2]);
+     const mixedChroma=Math.hypot(a,b);
+     const pastelMask=clamp((L-.48)/.22)*clamp((.96-L)/.16);
+     const soften=pastelWeight*.23*pastelMask*clamp((mixedChroma-.065)/.13);
+     a*=1-soften;b*=1-soften;
      const mapped=rgb(L,a,b);
      out[i]=mapped[0];out[i+1]=mapped[1];out[i+2]=mapped[2];
      if(Math.abs(mapped[0]-d[i])+Math.abs(mapped[1]-d[i+1])+Math.abs(mapped[2]-d[i+2])>18)differences++;
      visited++;
+     if(doEdges){
+       const k=i>>2;labels[k]=id;
+       sourceL[k]=x[0];sourceA[k]=x[1];sourceB[k]=x[2];
+       resultL[k]=L;resultA[k]=a;resultB[k]=b;
+     }
+   }
+   // Optional boundary-only correction smoothing. Interior pixels keep their
+   // exact 1:1 pair. Neighbors are considered ONLY when their pair ID differs
+   // AND their original perceptual colors are close: object contours remain sharp.
+   // Lightness is never smoothed; fine texture/geometry are left untouched.
+   if(doEdges){
+     // Only soften an interface between coherent regions, not every little
+     // change of source swatch in fine texture (grass, hair, flowers).
+     const stable=new Uint8Array(pixelCount);
+     for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+       const i=y*w+x,id=labels[i];if(id===255)continue;
+       const n=(labels[i-1]===id)+(labels[i+1]===id)+(labels[i-w]===id)+(labels[i+w]===id);
+       if(n>=2)stable[i]=1;
+     }
+     const radius=Math.max(1,Math.min(6,Math.round((1+2*edgeStrength)*scale)));
+     const sigma=Math.max(.7,radius*.65),denom=2*sigma*sigma;
+     const kernel=[];
+     for(let dy=-radius;dy<=radius;dy++)for(let dx=-radius;dx<=radius;dx++){
+       if(dx===0&&dy===0||dx*dx+dy*dy>radius*radius)continue;
+       kernel.push([dx,dy,Math.exp(-(dx*dx+dy*dy)/denom)]);
+     }
+     for(let y=0;y<h;y++){
+       if(y%40===0){await frame();if(job!==revision)throw Error('abgebrochen')}
+       for(let x=0;x<w;x++){
+         const i=y*w+x,id=labels[i];if(id===255||!stable[i])continue;
+         let weight=0,da=0,db=0;
+         const origA=sourceA[i],origB=sourceB[i],origL=sourceL[i];
+         for(let z=0;z<kernel.length;z++){
+           const [dx,dy,kernelWeight]=kernel[z],xx=x+dx,yy=y+dy;
+           if(xx<0||xx>=w||yy<0||yy>=h)continue;
+           const j=yy*w+xx;
+           if(labels[j]===255||labels[j]===id||!stable[j])continue;
+           const targetJump=Math.hypot(resultA[j]-resultA[i],resultB[j]-resultB[i]);
+           if(targetJump<.045)continue;
+           const lDiff=origL-sourceL[j],aDiff=origA-sourceA[j],bDiff=origB-sourceB[j];
+           const proximity=Math.exp(-(2.25*lDiff*lDiff+2.7*(aDiff*aDiff+bDiff*bDiff))/.008);
+           const v=kernelWeight*proximity;
+           if(proximity<.24||v<.005)continue;
+           da+=v*((resultA[j]-sourceA[j])-(resultA[i]-origA));
+           db+=v*((resultB[j]-sourceB[j])-(resultB[i]-origB));
+           weight+=v;
+         }
+         if(weight<.0001)continue;
+         const blend=edgeStrength*Math.min(.78,weight/(.65+weight));
+         const mapped=rgb(resultL[i],resultA[i]+blend*da/weight,resultB[i]+blend*db/weight);
+         const k=i*4;out[k]=mapped[0];out[k+1]=mapped[1];out[k+2]=mapped[2];
+       }
+     }
    }
    pixelDelta=visited?Math.round(100*differences/visited):0;
-   return new ImageData(out,im.width,im.height);
+   return new ImageData(out,w,h);
  };
  const setStatus=t=>get('transferStatus').textContent=t;
- async function render(){if(!original)return;if(!reference){ctx.putImageData(original,0,0);setStatus('Bitte Referenzbild auswählen.');return}if(!model){setStatus('128 Farbpaare werden noch berechnet …');return;}const job=++revision;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Farbübertragung wird berechnet …');try{const result=await transform(original,reference,+get('transferStrength').value,+get('transferChroma').value,+get('transferPastel').value,job);if(job!==revision)return;painted=result;ctx.putImageData(get('transferOriginal').checked?original:result,0,0);setStatus('128 Farben · 128 eindeutige Farbpaare · Vorschau fertig · '+pixelDelta+' % der Pixel sichtbar verändert (Farbdifferenz-Schwelle).');}catch(e){if(job===revision)setStatus('Fehler: '+e.message)}finally{if(job===revision){get('transferSave').disabled=false;get('transferApply').disabled=false}}}
+ async function render(){if(!original)return;if(!reference){ctx.putImageData(original,0,0);setStatus('Bitte Referenzbild auswählen.');return}if(!model){setStatus('128 Farbpaare werden noch berechnet …');return;}const job=++revision;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Farbübertragung wird berechnet …');try{const result=await transform(original,reference,+get('transferStrength').value,+get('transferChroma').value,+get('transferPastel').value,+get('transferEdges').value,job);if(job!==revision)return;painted=result;ctx.putImageData(get('transferOriginal').checked?original:result,0,0);setStatus('128 Farben · 128 eindeutige Farbpaare · Vorschau fertig · '+pixelDelta+' % der Pixel sichtbar verändert (Farbdifferenz-Schwelle).');}catch(e){if(job===revision)setStatus('Fehler: '+e.message)}finally{if(job===revision){get('transferSave').disabled=false;get('transferApply').disabled=false}}}
  function open(){try{const photo=window.__atelierArtBridge?.photo?.();if(!photo?.loaded||!photo.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return}const source=photo.canvas,k=Math.min(1,1200/Math.max(source.width,source.height));preview.width=Math.max(1,Math.round(source.width*k));preview.height=Math.max(1,Math.round(source.height*k));ctx.drawImage(source,0,0,preview.width,preview.height);original=ctx.getImageData(0,0,preview.width,preview.height);painted=null;model=null;get('transferOriginal').checked=false;nativeReferenceInput.value='';get('transferSelectedFile').textContent='Noch kein Referenzbild ausgewählt';get('transferPairSwatches').innerHTML='';get('transferPairDetails').open=false;const thumb=get('transferReferenceThumb');if(thumb.dataset.objectUrl)URL.revokeObjectURL(thumb.dataset.objectUrl);delete thumb.dataset.objectUrl;thumb.removeAttribute('src');thumb.style.display='none';reference=null;wrap.hidden=false;get('transferContent').scrollTop=0;render()}catch(e){wrap.hidden=true;alert('Farbübertragung konnte nicht geöffnet werden: '+e.message)}}
  button.addEventListener('click',open);get('transferClose').addEventListener('click',()=>{revision++;wrap.hidden=true});wrap.addEventListener('click',e=>{if(e.target===wrap){revision++;wrap.hidden=true}});
  async function handleReferenceSelection(){const f=nativeReferenceInput.files?.[0];if(!f){setStatus('Keine Datei übernommen. Bitte erneut auswählen.');return;}get('transferSelectedFile').textContent='Ausgewählt: '+f.name;const job=++revision;model=null;painted=null;get('transferSave').disabled=true;get('transferApply').disabled=true;
@@ -11829,11 +11935,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  nativeReferenceInput.addEventListener('change',handleReferenceSelection);
  // Native change event suffices; avoid duplicate expensive analysis on iPad.
  // If iOS fires only a trusted native change, the file is still processed.
- for(const [id,label] of [['transferStrength','transferStrengthLabel'],['transferChroma','transferChromaLabel'],['transferPastel','transferPastelLabel']])get(id).addEventListener('input',e=>{get(label).textContent=e.target.value+' %';clearTimeout(get(id)._timer);get(id)._timer=setTimeout(render,100)});
+ for(const [id,label] of [['transferStrength','transferStrengthLabel'],['transferChroma','transferChromaLabel'],['transferPastel','transferPastelLabel'],['transferEdges','transferEdgesLabel']])get(id).addEventListener('input',e=>{get(label).textContent=e.target.value+' %'+(id==='transferEdges'&&e.target.value==='0'?' (aus)':'');clearTimeout(get(id)._timer);get(id)._timer=setTimeout(render,100)});
  get('transferOriginal').addEventListener('change',()=>{if(original)ctx.putImageData(get('transferOriginal').checked?original:(painted||original),0,0)});
- async function fullCanvas(){const photo=window.__atelierArtBridge.photo(),source=photo.canvas;if(!reference)throw Error('Bitte zuerst ein Referenzbild auswählen.');if(!source?.width)throw Error('Foto fehlt.');const c=makeCanvas(source.width,source.height),out=c.getContext('2d',{willReadFrequently:true}),job=revision;const stripe=Math.max(1,Math.min(96,Math.floor(750000/source.width)));for(let y=0;y<source.height;y+=stripe){if(job!==revision)throw Error('abgebrochen');const h=Math.min(stripe,source.height-y),tile=photo.canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,y,source.width,h),res=await transform(tile,reference,+get('transferStrength').value,+get('transferChroma').value,+get('transferPastel').value,job);out.putImageData(res,0,y)}return c}
+ async function fullCanvas(){const photo=window.__atelierArtBridge.photo(),source=photo.canvas;if(!reference)throw Error('Bitte zuerst ein Referenzbild auswählen.');if(!source?.width)throw Error('Foto fehlt.');const c=makeCanvas(source.width,source.height),out=c.getContext('2d',{willReadFrequently:true}),job=revision;const stripe=Math.max(1,Math.min(96,Math.floor(750000/source.width))),sourceContext=source.getContext('2d',{willReadFrequently:true});for(let y=0;y<source.height;y+=stripe){if(job!==revision)throw Error('abgebrochen');const h=Math.min(stripe,source.height-y),radius=(+get('transferEdges').value>0?Math.min(6,Math.round((1+2*(+get('transferEdges').value)/100)*source.width/Math.max(1,preview.width))):0),top=Math.min(radius,y),bottom=Math.min(radius,source.height-(y+h)),tile=sourceContext.getImageData(0,y-top,source.width,h+top+bottom),res=await transform(tile,reference,+get('transferStrength').value,+get('transferChroma').value,+get('transferPastel').value,+get('transferEdges').value,job,source.width/Math.max(1,preview.width));out.putImageData(res,0,y-top,0,top,source.width,h)}return c}
  const blobFrom=c=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG-Export fehlgeschlagen')),'image/png'));
- async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.33_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
+ async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.36_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
  get('transferSave').addEventListener('click',()=>save(false));get('transferApply').addEventListener('click',()=>save(true));
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wrap.hidden){revision++;wrap.hidden=true}});
 })();

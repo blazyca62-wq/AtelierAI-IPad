@@ -69,3 +69,5 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 3.90: Farbverwandtschaft erweitert: alternative gemeinsame Pigmentpaare, bevorzugte Basispigmente bei Korrekturen, einfachere Mischwege. Keine neuen Bedienelemente, kein Online-Dienst.
 
 4.21: Farbuebertragung korrigiert: Farbbalance und Pastell-Saettigungsverteilung der Referenz statt Naechste-Farbe-Suche.
+
+4.36: Farbübertragung: 128 echte 1:1-Farbpaare ohne globale Farb-LUT-Glättung. Neuer Regler „Nur Farbgrenzen glätten“ (Standard 0 %). Nur räumliche Grenzen kohärenter Farbflächen werden optional gemildert; keine Helligkeits- oder Bildgeometrieglättung.
