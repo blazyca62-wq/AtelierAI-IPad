@@ -70,6 +70,6 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 
 4.21: Farbuebertragung korrigiert: Farbbalance und Pastell-Saettigungsverteilung der Referenz statt Naechste-Farbe-Suche.
 
-4.37: Farbübertragung: 128 echte 1:1-Farbpaare ohne globale Farb-LUT-Glättung. Neuer Regler „Nur Farbgrenzen glätten“ (Standard 0 %). Nur räumliche Grenzen kohärenter Farbflächen werden optional gemildert; keine Helligkeits- oder Bildgeometrieglättung.
+4.38: Farbübertragung: 128 echte 1:1-Farbpaare ohne globale Farb-LUT-Glättung. Neuer Regler „Nur Farbgrenzen glätten“ (Standard 0 %). Nur räumliche Grenzen kohärenter Farbflächen werden optional gemildert; keine Helligkeits- oder Bildgeometrieglättung.
 
-4.37: Farbübertragung – Original-/Ergebnisvorschau mit Zwei-Finger-Zoom (1–12×), Verschieben und Einpassen-Knopf. Nur die Anzeige wird skaliert, Farbpaare, Pixelwerte, Export und sonstige Module bleiben unverändert. Keine automatische Bewertung der Bildähnlichkeit.
+4.38: Farbübertragung – Original-/Ergebnisvorschau mit Zwei-Finger-Zoom (1–12×), Verschieben und Einpassen-Knopf. Nur die Anzeige wird skaliert, Farbpaare, Pixelwerte, Export und sonstige Module bleiben unverändert. Keine automatische Bewertung der Bildähnlichkeit.
