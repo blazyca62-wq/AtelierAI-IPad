@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.29</title>
+  <title>AtelierAI iPad 4.31</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1055,7 +1055,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.29</div>
+    <div class="title">AtelierAI · iPad 4.31</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -11592,7 +11592,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  #transferDialog #transferPreview{position:static!important;inset:auto!important;transform:none!important;touch-action:auto;display:block;max-width:100%;width:auto;height:auto;max-height:30dvh;margin:8px auto;background:#ddd;border:1px solid #ddd;object-fit:contain}
  #transferDialog #transferActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
  #transferDialog #transferReferenceThumb{display:none;max-height:115px;max-width:100%;margin:6px 0 0;object-fit:contain;border:1px solid #ccc;border-radius:5px}
- </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.29</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label><canvas id="transferPreview" ></canvas><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></section>`;
+ </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.31</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label><canvas id="transferPreview" ></canvas><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><details id="transferPairDetails" style="margin:8px 0;font-size:12px"><summary>16 Farbpaare der ersten Stufe ansehen</summary><div id="transferPairSwatches" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0"></div></details><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></section>`;
  document.body.append(wrap);
  const get=id=>shadow.querySelector('#'+id), preview=get('transferPreview'), ctx=preview.getContext('2d',{willReadFrequently:true});
  // A real, visible native file input receives the user's tap directly.
@@ -11632,93 +11632,185 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
      return context.getImageData(0,0,w,h);
    }finally{try{bitmap?.close?.()}catch(e){}if(url)URL.revokeObjectURL(url)}
  };
- // 4.29: multi-stage reference palette alignment; each stage is based on the
- // untouched original, never on an already recolored image.
+ // 4.31: Exact one-to-one assignment of the two independent palettes.
+ // Stage 16 -> 32 -> 48 -> 64; each step refines the previous pairings.
+ // Every source and every reference swatch is used exactly once per stage.
  const samplePalette=im=>{
-   const d=im.data,count=d.length/4,step=Math.max(1,Math.floor(count/3200)),pts=[];
-   for(let i=0;i<count;i+=step){let j=i*4;if(d[j+3]<128)continue;pts.push(lab(d[j],d[j+1],d[j+2]));}
-   if(!pts.length)throw Error('Bild ohne auswertbare Farben');return pts;
+   const d=im.data,w=im.width,h=im.height,step=Math.max(1,Math.ceil(Math.sqrt(w*h/7000))),pts=[];
+   for(let y=0;y<h;y+=step)for(let x=0;x<w;x+=step){
+     const j=4*(Math.min(h-1,y+Math.floor(step*.61))*w+Math.min(w-1,x+Math.floor(step*.37)));
+     if(d[j+3]>128)pts.push(lab(d[j],d[j+1],d[j+2]));
+   }
+   if(pts.length<64)throw Error('Für die Farbzuordnung ist das Bild zu klein.');
+   return pts;
  };
- const dist=(a,b,light=1)=>light*(a[0]-b[0])**2+1.2*(a[1]-b[1])**2+1.2*(a[2]-b[2])**2;
- const closest=(p,pal)=>{let idx=0,best=Infinity;for(let i=0;i<pal.length;i++){const d=dist(p,pal[i]);if(d<best){best=d;idx=i;}}return idx};
- const cluster=(pts,n,iterations=4)=>{
-   // Deterministic farthest-point sampling gives scarce pastel colors a fair chance.
-   let centers=[pts[Math.floor(pts.length/2)].slice()];
-   const nearest=new Float32Array(pts.length).fill(Infinity);
+ const colorDistance=(a,b)=>3*(a[0]-b[0])**2+1.4*((a[1]-b[1])**2+(a[2]-b[2])**2);
+ const closest=(p,pal)=>{
+   let idx=0,best=Infinity;
+   for(let i=0;i<pal.length;i++){const d=colorDistance(p,pal[i]);if(d<best){best=d;idx=i}}
+   return idx;
+ };
+ const cluster=(pts,n)=>{
+   const centers=[pts[Math.floor(pts.length/2)].slice()];
+   const near=new Float64Array(pts.length).fill(Infinity);
    for(let j=1;j<n;j++){
      let best=-1,pick=0;
-     for(let i=0;i<pts.length;i++){const d=dist(pts[i],centers[centers.length-1]);if(d<nearest[i])nearest[i]=d;
-       const score=nearest[i]*(1+0.11*Math.sqrt(pts[i][1]**2+pts[i][2]**2));if(score>best){best=score;pick=i;}}
+     const recent=centers[centers.length-1];
+     for(let i=0;i<pts.length;i++){
+       const d=colorDistance(pts[i],recent);
+       if(d<near[i])near[i]=d;
+       const score=near[i]*(1+.22*Math.min(1,Math.hypot(pts[i][1],pts[i][2])/.16));
+       if(score>best){best=score;pick=i}
+     }
      centers.push(pts[pick].slice());
    }
-   const labels=new Uint8Array(pts.length),weights=new Float64Array(n);
-   for(let iter=0;iter<iterations;iter++){
+   const weights=new Float64Array(n);
+   for(let pass=0;pass<6;pass++){
      const sums=Array.from({length:n},()=>[0,0,0]);weights.fill(0);
-     for(let i=0;i<pts.length;i++){const idx=closest(pts[i],centers);labels[i]=idx;weights[idx]++;for(let c=0;c<3;c++)sums[idx][c]+=pts[i][c];}
+     for(const p of pts){const k=closest(p,centers);weights[k]++;sums[k][0]+=p[0];sums[k][1]+=p[1];sums[k][2]+=p[2];}
      for(let j=0;j<n;j++)if(weights[j])centers[j]=sums[j].map(v=>v/weights[j]);
    }
    return {colors:centers,weights:Array.from(weights)};
  };
- // Map source color groups to reference groups. Retain comparable lightness;
- // encourage all reference hues to appear but avoid arbitrary color inversions.
- const matchPalettes=(source,target,previous)=>{
-   const used=new Float64Array(target.colors.length),sum=Math.max(1,source.weights.reduce((a,b)=>a+b,0));
-   const order=source.colors.map((_,i)=>i).sort((i,j)=>source.colors[i][0]-source.colors[j][0]);
-   const map=new Array(source.colors.length);
-   for(const i of order){const x=source.colors[i];let best=Infinity,bestJ=0;
-     for(let j=0;j<target.colors.length;j++){
-       const y=target.colors[j];const l=Math.abs(x[0]-y[0]);
-       // Color family preference is soft: a brown can become Monet lilac.
-       const chroma=(x[1]-y[1])**2+(x[2]-y[2])**2;
-       const capacity=used[j]/Math.max(.015,target.weights[j]/Math.max(1,target.weights.reduce((a,b)=>a+b,0)));
-       const continuity=previous?.[i] ? .22*dist(previous[i],y) : 0;
-       const cost=2.5*l*l+.45*chroma+.008*capacity+continuity;
-       if(cost<best){best=cost;bestJ=j;}
-     }
-     map[i]=target.colors[bestJ];used[bestJ]+=source.weights[i]/sum;
+ // Minimum-cost full bipartite pairing (Hungarian algorithm), never greedy:
+ // a source color and a target color can participate in precisely one pair.
+ const uniqueAssignment=cost=>{
+   const n=cost.length,u=new Float64Array(n+1),v=new Float64Array(n+1),
+     p=new Int32Array(n+1),way=new Int32Array(n+1);
+   for(let i=1;i<=n;i++){
+     p[0]=i;let j0=0;
+     const minv=new Float64Array(n+1).fill(Infinity),used=new Uint8Array(n+1);
+     do{
+       used[j0]=1;const i0=p[j0];let delta=Infinity,j1=0;
+       for(let j=1;j<=n;j++)if(!used[j]){
+         const cur=cost[i0-1][j-1]-u[i0]-v[j];
+         if(cur<minv[j]){minv[j]=cur;way[j]=j0}
+         if(minv[j]<delta){delta=minv[j];j1=j}
+       }
+       for(let j=0;j<=n;j++){
+         if(used[j]){u[p[j]]+=delta;v[j]-=delta}
+         else minv[j]-=delta;
+       }
+       j0=j1;
+     }while(p[j0]!==0);
+     do{const j1=way[j0];p[j0]=p[j1];j0=j1}while(j0!==0);
    }
-   return map;
+   const result=new Int32Array(n);
+   for(let j=1;j<=n;j++)result[p[j]-1]=j-1;
+   return result;
+ };
+ const matchOneToOne=(src,dst,previous)=>{
+   const n=src.colors.length,sumS=src.weights.reduce((a,b)=>a+b,0),sumT=dst.weights.reduce((a,b)=>a+b,0);
+   const sourceParents=previous?src.colors.map(x=>closest(x,previous.src.colors)):null;
+   const targetParents=previous?dst.colors.map(x=>closest(x,previous.dst.colors)):null;
+   const cost=src.colors.map((s,i)=>dst.colors.map((d,j)=>{
+     const dl=s[0]-d[0],da=s[1]-d[1],db=s[2]-d[2];
+     const cs=Math.hypot(s[1],s[2]),cd=Math.hypot(d[1],d[2]);
+     // Luminance, perceived color/family, and chroma (also in near neutrals).
+     let c=3.3*dl*dl+1.8*(da*da+db*db)+.5*(cs-cd)**2;
+     if(cs>.028 && cd>.028){
+       const hueSimilarity=(s[1]*d[1]+s[2]*d[2])/(cs*cd);
+       c+=.012*(1-Math.max(-1,Math.min(1,hueSimilarity)));
+     }
+     // Avoid replacing a huge photo region with a tiny accent in the reference.
+     const f1=Math.max(.002,src.weights[i]/sumS),f2=Math.max(.002,dst.weights[j]/sumT);
+     c+=.005*Math.min(3,Math.abs(Math.log(f1/f2)));
+     // 32/48/64 pairs should refine earlier 16-color families, not shuffle them.
+     if(previous){
+       const expected=previous.mapping[sourceParents[i]];
+       const actual=targetParents[j];
+       if(actual!==expected){
+         c+=.02+.18*colorDistance(previous.dst.colors[actual],previous.dst.colors[expected]);
+       }
+     }
+     return c;
+   }));
+   return Array.from(uniqueAssignment(cost));
  };
  let model=null,pixelDelta=0;
  const buildModel=async(source,reference,job)=>{
    const from=samplePalette(source),to=samplePalette(reference),stages=[];
-   let prev=null;
+   let previous=null;
    for(const n of [16,32,48,64]){
      if(job!==revision)throw Error('abgebrochen');
-     setStatus('Palettenvergleich: '+n+' Farben …');await frame();
+     setStatus(n+' Farben: beide Bilder analysieren und 1 zu 1 zuordnen …');await frame();
      const src=cluster(from,n),dst=cluster(to,n);
-     // Carry the old stage's closest mapped color as an anchor into the next.
-     const anchor=prev?src.colors.map(c=>{const k=closest(c,prev.src.colors);return prev.map[k]}):null;
-     const mapping=matchPalettes(src,dst,anchor);
-     prev={src,map:mapping};stages.push({n,src,map:mapping});
+     const mapping=matchOneToOne(src,dst,previous);
+     if(new Set(mapping).size!==n)throw Error('Die Farbpaare sind nicht eindeutig.');
+     const stage={n,src,dst,mapping};stages.push(stage);previous=stage;
+     setStatus(n+' Farben: '+n+' eindeutige Farbpaare gefunden.');await frame();
    }
-   return {stages};
+   // Turn fixed swatch pairs into a smooth three-dimensional color correction.
+   // Matching remains strict 1:1, but pixels between swatches do not posterize.
+   const size=27,lut=new Float32Array(size*size*size*3),final=stages[3];
+   setStatus('64 Farbpaare mit weichen Übergängen übertragen …');await frame();
+   const sc=final.src.colors,tc=final.dst.colors,mp=final.mapping;
+   for(let r=0;r<size;r++)for(let g=0;g<size;g++)for(let b=0;b<size;b++){
+     const x=lab(r*255/(size-1),g*255/(size-1),b*255/(size-1));
+     let first=-1,second=-1,d1=Infinity,d2=Infinity;
+     for(let k=0;k<sc.length;k++){
+       const dist=colorDistance(x,sc[k]);
+       if(dist<d1){d2=d1;second=first;d1=dist;first=k}
+       else if(dist<d2){d2=dist;second=k}
+     }
+     const w2=second<0?0:clamp((.010-(d2-d1))/.020,0,.5),w1=1-w2;
+     const j=3*((r*size+g)*size+b);
+     for(const [k,w] of [[first,w1],[second,w2]])if(k>=0 && w>0){
+       const srcC=sc[k],dstC=tc[mp[k]];
+       lut[j]+=w*.54*(dstC[0]-srcC[0]);
+       lut[j+1]+=w*(dstC[1]-.22*srcC[1]);
+       lut[j+2]+=w*(dstC[2]-.22*srcC[2]);
+     }
+   }
+   // Optional proof of actual 1:1 pairs, not a mixed color histogram.
+   const pairBox=get('transferPairSwatches'),first=stages[0];
+   const order=first.src.colors.map((_,i)=>i).sort((a,b)=>first.src.colors[b][0]-first.src.colors[a][0]);
+   pairBox.innerHTML=order.map(i=>{
+     const a=rgb(...first.src.colors[i]),b=rgb(...first.dst.colors[first.mapping[i]]);
+     const style=c=>'background:rgb('+c.join(',')+');width:24px;height:24px;display:inline-block;border-radius:4px;border:1px solid #7775';
+     return '<div style="display:flex;align-items:center;justify-content:center;gap:3px"><span style="'+style(a)+'"></span>→<span style="'+style(b)+'"></span></div>';
+   }).join('');
+   return {stages,final,lut,size};
  };
  const transform=async(im,ref,strength,chroma,job)=>{
    if(!model)throw Error('Farbmodell fehlt');
    const d=im.data,out=new Uint8ClampedArray(d),f=clamp(strength/100),sat=clamp(chroma/100,0,1.5);
-   const final=model.stages[3];let differences=0,visited=0;
-   // Classify in full 64-color source palette, but use residuals to retain fine
-   // gradients, textures and edge details from the ORIGINAL photo.
+   const N=model.size,lut=model.lut;
+   let differences=0,visited=0;
+   // Trilinear interpolation between neighboring palette adjustments
+   // removes color bands while leaving original pixels, forms and texture intact.
+   const interpolate=(r,g,b)=>{
+     const R=r*(N-1)/255,G=g*(N-1)/255,B=b*(N-1)/255;
+     const r0=Math.min(N-2,R|0),g0=Math.min(N-2,G|0),b0=Math.min(N-2,B|0);
+     const rt=R-r0,gt=G-g0,bt=B-b0;
+     let dl=0,aa=0,bb=0;
+     for(let dr=0;dr<2;dr++)for(let dg=0;dg<2;dg++)for(let db=0;db<2;db++){
+       const w=(dr?rt:1-rt)*(dg?gt:1-gt)*(db?bt:1-bt);
+       const ix=3*(((r0+dr)*N+(g0+dg))*N+(b0+db));
+       dl+=w*lut[ix];aa+=w*lut[ix+1];bb+=w*lut[ix+2];
+     }
+     return [dl,aa,bb];
+   };
    for(let i=0;i<d.length;i+=4){
-     if(i%100000===0){await frame();if(job!==revision)throw Error('abgebrochen');}
+     if(i%360000===0){await frame();if(job!==revision)throw Error('abgebrochen')}
      if(d[i+3]<128)continue;
-     const x=lab(d[i],d[i+1],d[i+2]),k=closest(x,final.src.colors),src=final.src.colors[k],dst=final.map[k];
-     // Reference chromatic coordinates with gentle residuals from source.
-     // Keep per-pixel original lightness, so shape and shadow never move.
-     const a=x[1]*(1-f)+f*sat*(dst[1]+.35*(x[1]-src[1]));
-     const b=x[2]*(1-f)+f*sat*(dst[2]+.35*(x[2]-src[2]));
-     const col=rgb(x[0],a,b);
-     out[i]=col[0];out[i+1]=col[1];out[i+2]=col[2];
-     if(Math.abs(col[0]-d[i])+Math.abs(col[1]-d[i+1])+Math.abs(col[2]-d[i+2])>18)differences++;
+     if(f===0){visited++;continue;}
+     const x=lab(d[i],d[i+1],d[i+2]);
+     const [dl,aa,bb]=interpolate(d[i],d[i+1],d[i+2]);
+     const L=clamp(x[0]+f*dl);
+     const a=x[1]*(1-f)+f*sat*(aa+.22*x[1]);
+     const b=x[2]*(1-f)+f*sat*(bb+.22*x[2]);
+     const result=rgb(L,a,b);
+     out[i]=result[0];out[i+1]=result[1];out[i+2]=result[2];
+     if(Math.abs(result[0]-d[i])+Math.abs(result[1]-d[i+1])+Math.abs(result[2]-d[i+2])>18)differences++;
      visited++;
    }
    pixelDelta=visited?Math.round(differences/visited*100):0;
    return new ImageData(out,im.width,im.height);
  };
  const setStatus=t=>get('transferStatus').textContent=t;
- async function render(){const job=++revision;if(!original)return;if(!reference){ctx.putImageData(original,0,0);setStatus('Bitte Referenzbild auswählen.');return}get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Farbübertragung wird berechnet …');try{const result=await transform(original,reference,+get('transferStrength').value,+get('transferChroma').value,job);if(job!==revision)return;painted=result;ctx.putImageData(get('transferOriginal').checked?original:result,0,0);setStatus('16 → 32 → 48 → 64 Farben · Vorschau fertig · '+pixelDelta+' % der Pixel sichtbar verändert (Farbdifferenz-Schwelle).');}catch(e){if(job===revision)setStatus('Fehler: '+e.message)}finally{if(job===revision){get('transferSave').disabled=false;get('transferApply').disabled=false}}}
- function open(){try{const photo=window.__atelierArtBridge?.photo?.();if(!photo?.loaded||!photo.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return}const source=photo.canvas,k=Math.min(1,1200/Math.max(source.width,source.height));preview.width=Math.max(1,Math.round(source.width*k));preview.height=Math.max(1,Math.round(source.height*k));ctx.drawImage(source,0,0,preview.width,preview.height);original=ctx.getImageData(0,0,preview.width,preview.height);painted=null;model=null;get('transferOriginal').checked=false;nativeReferenceInput.value='';get('transferSelectedFile').textContent='Noch kein Referenzbild ausgewählt';const thumb=get('transferReferenceThumb');if(thumb.dataset.objectUrl)URL.revokeObjectURL(thumb.dataset.objectUrl);delete thumb.dataset.objectUrl;thumb.removeAttribute('src');thumb.style.display='none';reference=null;wrap.hidden=false;get('transferContent').scrollTop=0;render()}catch(e){wrap.hidden=true;alert('Farbübertragung konnte nicht geöffnet werden: '+e.message)}}
+ async function render(){const job=++revision;if(!original)return;if(!reference){ctx.putImageData(original,0,0);setStatus('Bitte Referenzbild auswählen.');return}get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Farbübertragung wird berechnet …');try{const result=await transform(original,reference,+get('transferStrength').value,+get('transferChroma').value,job);if(job!==revision)return;painted=result;ctx.putImageData(get('transferOriginal').checked?original:result,0,0);setStatus('16 → 32 → 48 → 64 Farben · jeweils 1 zu 1 zugeordnet · Vorschau fertig · '+pixelDelta+' % der Pixel sichtbar verändert (Farbdifferenz-Schwelle).');}catch(e){if(job===revision)setStatus('Fehler: '+e.message)}finally{if(job===revision){get('transferSave').disabled=false;get('transferApply').disabled=false}}}
+ function open(){try{const photo=window.__atelierArtBridge?.photo?.();if(!photo?.loaded||!photo.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return}const source=photo.canvas,k=Math.min(1,1200/Math.max(source.width,source.height));preview.width=Math.max(1,Math.round(source.width*k));preview.height=Math.max(1,Math.round(source.height*k));ctx.drawImage(source,0,0,preview.width,preview.height);original=ctx.getImageData(0,0,preview.width,preview.height);painted=null;model=null;get('transferOriginal').checked=false;nativeReferenceInput.value='';get('transferSelectedFile').textContent='Noch kein Referenzbild ausgewählt';get('transferPairSwatches').innerHTML='';get('transferPairDetails').open=false;const thumb=get('transferReferenceThumb');if(thumb.dataset.objectUrl)URL.revokeObjectURL(thumb.dataset.objectUrl);delete thumb.dataset.objectUrl;thumb.removeAttribute('src');thumb.style.display='none';reference=null;wrap.hidden=false;get('transferContent').scrollTop=0;render()}catch(e){wrap.hidden=true;alert('Farbübertragung konnte nicht geöffnet werden: '+e.message)}}
  button.addEventListener('click',open);get('transferClose').addEventListener('click',()=>{revision++;wrap.hidden=true});wrap.addEventListener('click',e=>{if(e.target===wrap){revision++;wrap.hidden=true}});
  async function handleReferenceSelection(){const f=nativeReferenceInput.files?.[0];if(!f){setStatus('Keine Datei übernommen. Bitte erneut auswählen.');return;}get('transferSelectedFile').textContent='Ausgewählt: '+f.name;const job=++revision;
  const thumb=get('transferReferenceThumb');if(thumb.dataset.objectUrl)URL.revokeObjectURL(thumb.dataset.objectUrl);
@@ -11731,7 +11823,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  get('transferOriginal').addEventListener('change',()=>{if(original)ctx.putImageData(get('transferOriginal').checked?original:(painted||original),0,0)});
  async function fullCanvas(){const photo=window.__atelierArtBridge.photo(),source=photo.canvas;if(!reference)throw Error('Bitte zuerst ein Referenzbild auswählen.');if(!source?.width)throw Error('Foto fehlt.');const c=makeCanvas(source.width,source.height),out=c.getContext('2d',{willReadFrequently:true}),job=revision;const stripe=Math.max(1,Math.min(96,Math.floor(750000/source.width)));for(let y=0;y<source.height;y+=stripe){if(job!==revision)throw Error('abgebrochen');const h=Math.min(stripe,source.height-y),tile=photo.canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,y,source.width,h),res=await transform(tile,reference,+get('transferStrength').value,+get('transferChroma').value,job);out.putImageData(res,0,y)}return c}
  const blobFrom=c=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG-Export fehlgeschlagen')),'image/png'));
- async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.29_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
+ async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.31_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
  get('transferSave').addEventListener('click',()=>save(false));get('transferApply').addEventListener('click',()=>save(true));
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wrap.hidden){revision++;wrap.hidden=true}});
 })();
