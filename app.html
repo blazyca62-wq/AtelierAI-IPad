@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.13</title>
+  <title>AtelierAI iPad 4.14</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1055,7 +1055,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.13</div>
+    <div class="title">AtelierAI · iPad 4.14</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1719,7 +1719,7 @@
 
       <div class="section" id="correctionStudioPanel">
         <h3>Korrekturatelier</h3>
-        <p>Mischvorschlag mit „Diese Mischung korrigieren“ übernehmen und die Bildschirmfarbe anpassen. Die Regler ändern noch keine Pigmentmengen. „Rezept zur Korrektur suchen“ berechnet Rezepte für die korrigierte Bildschirmfarbe. Die Nähe zur Korrektur und zur ursprünglichen Zielfarbe wird getrennt angezeigt.</p>
+        <p>Mischvorschlag mit „Diese Mischung korrigieren“ übernehmen und die Bildschirmfarbe anpassen. Die Regler ändern noch keine Pigmentmengen. „Rezept zur Korrektur suchen“ zeigt zuerst Farbzugaben zur fertigen Mischung und darunter neue Rezepte als Alternative. Die Nähe zur Korrektur und zur ursprünglichen Zielfarbe wird getrennt angezeigt.</p>
         <div id="corrCompare" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding:22px 18px;background:#808080;color:white;border-radius:10px;margin:12px 0">
           <div><div style="margin-bottom:12px;font-size:13px">Zielfarbe</div><div id="corrTargetSwatch" style="height:150px;width:100%;background:#808080"></div></div>
           <div><div style="margin-bottom:12px;font-size:13px">Ausgangsfarbe</div><div id="corrOriginal" style="height:150px;width:100%;background:#808080"></div></div>
@@ -2188,6 +2188,7 @@
   let surfaceMode=null;
   let correctionBase=null, correctionTarget=null;
   let correctionRecipeHint=null;
+  let correctionOriginalRecipe=null;
   let gridEnabled=false;
   let gridReference=null; // Original image coordinates retained through nested crops.
   const gridAdjust={size:100,x:0,y:0,width:100,height:100,locked:false};
@@ -4403,7 +4404,7 @@
       const correct=document.createElement('button');correct.type='button';correct.className='secondary';
       correct.style.marginTop='8px';correct.textContent='Diese Mischung korrigieren';
       correct.onclick=()=>{
-        takeCorrectionColor(mixRgb,reference);
+        takeCorrectionColor(mixRgb,reference,m,key);
         if(typeof window.activateToolPage==='function')window.activateToolPage('correctionStudioPanel');
         document.getElementById('corrCompare').scrollIntoView({behavior:'smooth',block:'nearest'});
       };
@@ -4485,6 +4486,83 @@
       return -delta;
     });
   }
+  // Nachmischen statt Neumischen: eine fertige Grundmischung als reale
+  // Portion behandeln. Eine RGB-Simulation ist KEINE Pigmentmessung.
+  function correctionAdditions(base,target,key){
+    const pigments=effectivePaletteColors(key);
+    if(!pigments.length)return [];
+    const portions=[0.25,0.5,1,2,3,4,6,8,10,12,15,20,25,30];
+    const options=[];
+    const originalScore=similarityPct(target,base);
+    const baseline={score:originalScore,rgb:base.slice(),adds:[],count:0};
+    options.push(baseline);
+    for(const tube of pigments){
+      for(const n of portions){
+        const rgb=pigmentMix([base,tube[1]],[30,n],key);
+        options.push({score:similarityPct(target,rgb),rgb,adds:[{name:tube[0],part:n}],count:1});
+      }
+    }
+    const firstPass=options.filter(x=>x.count===1).sort((a,b)=>b.score-a.score).slice(0,12);
+    for(const first of firstPass){
+      const firstTube=pigments.find(t=>t[0]===first.adds[0].name);
+      if(!firstTube)continue;
+      for(const second of pigments){
+        if(second[0]===firstTube[0])continue;
+        for(const n of [0.5,1,2,4,6,10,15]){
+          const p1=first.adds[0].part;
+          const rgb=pigmentMix([base,firstTube[1],second[1]],[30,p1,n],key);
+          options.push({score:similarityPct(target,rgb),rgb,adds:[first.adds[0],{name:second[0],part:n}],count:2});
+        }
+      }
+    }
+    const bestScore=Math.max(...options.map(x=>x.score));
+    return options.filter(x=>x.score>=bestScore-5).sort((a,b)=>a.count-b.count || b.score-a.score || a.adds.reduce((sum,x)=>sum+x.part,0)-b.adds.reduce((sum,x)=>sum+x.part,0)).slice(0,3);
+  }
+  function renderCorrectionAdditions(target,key){
+    if(!correctionRecipeHint||!correctionBase)return;
+    const block=document.createElement('section');block.className='mix-card';
+    const header=document.createElement('h3');header.textContent='Zuerst: vorhandene Mischung korrigieren';block.appendChild(header);
+    const intro=document.createElement('p');intro.className='tiny';
+    intro.textContent='Du hast bereits eine fertige Mischung. Diese Vorschläge geben an, was du zu 30 Teilen DEINER fertigen Farbe hinzufügen kannst. Die Mengen sind Näherungen für eine kleine Probe, keine exakte Pigmentberechnung.';block.appendChild(intro);
+    // Das ursprüngliche Rezept ist die Bezugsgröße der Zugaben.
+    const original=correctionOriginalRecipe;
+    const recipeBox=document.createElement('div');
+    recipeBox.style.cssText='padding:10px;margin:9px 0;border:1px solid #999;border-radius:8px';
+    const recipeTitle=document.createElement('strong');recipeTitle.textContent='Deine ursprüngliche Mischung';recipeBox.appendChild(recipeTitle);
+    if(original&&original.names.length&&original.parts.length){
+      const sum=original.parts.reduce((n,x)=>n+(Number(x)||0),0);
+      const recipeLine=document.createElement('p');
+      recipeLine.textContent=original.names.map((name,i)=>String(Number(original.parts[i]).toLocaleString('de-DE'))+' Teile '+name).join(' + ');
+      recipeBox.appendChild(recipeLine);
+      const amount=document.createElement('p');amount.className='tiny';
+      amount.textContent='Originalrezept: '+sum.toLocaleString('de-DE')+' Teile zusammen. Für die Korrektur wird davon eine fertige Portion von 30 Teilen als Ausgangsmenge angenommen; die Tubenanteile werden dabei proportional mitgerechnet.';
+      recipeBox.appendChild(amount);
+    }else{
+      const unknown=document.createElement('p');unknown.className='tiny';
+      unknown.textContent='Ausgangsfarbe: '+rgbHex(correctionBase)+'. Die Einzelanteile der ursprünglichen Mischung sind hier nicht gespeichert. Die Empfehlung bezieht sich auf 30 gleich große Teile der bereits fertigen Farbe.';
+      recipeBox.appendChild(unknown);
+    }
+    const explain=document.createElement('p');explain.className='tiny';
+    explain.textContent='Beispiel: ½ Teil Zugabe bedeutet 0,5 Teil auf 30 Teile fertiger Ausgangsmischung – also 1/60 der vorhandenen Menge. Du kannst etwa 30 kleine gleich große Portionen abzählen oder sämtliche Angaben im selben Verhältnis verkleinern.';
+    recipeBox.appendChild(explain);block.appendChild(recipeBox);
+    const options=correctionAdditions(correctionBase,correctionRecipeHint,key);
+    if(!options.length){const m=document.createElement('p');m.textContent='Keine Farben in der Palette verfügbar.';block.appendChild(m);mixResults.prepend(block);return;}
+    options.forEach((o,i)=>{
+      const row=document.createElement('div');row.style.cssText='border-top:1px solid #aaa;padding:9px 0';
+      const heading=document.createElement('strong');heading.textContent=i===0?'Empfehlung':'Alternative '+(i+1);row.appendChild(heading);
+      const description=document.createElement('p');
+      description.textContent=o.adds.length?'30 Teile vorhandene Mischung + '+o.adds.map(a=>a.part.toLocaleString('de-DE')+' Teile '+a.name).join(' + '):'Vorhandene Mischung nicht verändern – bereits nah genug am Korrekturziel.';
+      row.appendChild(description);
+      const swatch=document.createElement('div');swatch.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap';
+      for(const [name,rgb] of [['Vorhanden',correctionBase],['Nach Zugabe',o.rgb],['Ziel',correctionRecipeHint]]){
+        const item=document.createElement('div');item.className='tiny';item.textContent=name;
+        const square=document.createElement('div');square.style.cssText='width:65px;height:34px;border:1px solid #888;background:'+rgbHex(rgb);item.appendChild(square);swatch.appendChild(item);
+      }
+      const similarity=document.createElement('span');similarity.className='tiny';similarity.textContent=o.score+'/100 Bildschirmnähe';swatch.appendChild(similarity);row.appendChild(swatch);block.appendChild(row);
+    });
+    const warning=document.createElement('p');warning.className='tiny';warning.textContent='Erst eine kleine Probe abteilen. Simulierte RGB-/Spektralfarben ersetzen keine tatsächlichen Pigmentmessungen; bei Öl und Aquarell können die realen Mischungen deutlich abweichen. Die Zugabe bezieht sich auf 30 Teile bereits fertige Mischung, nicht auf 30 Teile Tubenfarbe.';block.appendChild(warning);
+    mixResults.prepend(block);
+  }
   function calculateCorrectionRecipe(){
     const hint=correctedColor();
     if(!hint||!correctionTarget)return;
@@ -4511,6 +4589,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const note=document.createElement('p');note.className='tiny';
       note.textContent=`Rezepte für deine Korrektur ${rgbHex(correctionRecipeHint)}. Die ursprüngliche Zielfarbe ${rgbHex(target)} bleibt als Vergleich erhalten. Beide Werte beschreiben die Bildschirmnähe der simulierten Mischung.`;
       mixResults.appendChild(note);
+      renderCorrectionAdditions(correctionRecipeHint,paletteKey);
+      const alt=document.createElement('h3');alt.textContent='Alternative: komplett neu mischen';mixResults.appendChild(alt);
     }
     mixes.forEach((m,idx)=>{
       const card=document.createElement('div');
@@ -4592,6 +4672,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const avg=linearAverageRGB(samples);
     const robust=robustSmartColor(samples);
     correctionRecipeHint=null;
+    correctionOriginalRecipe=null;
     lastAverageColor=avg;
     lastSmartColor=smart && robust ? robust.smart : avg;
     planSamplePoint={...planPointAt(ix,iy),rgb:lastSmartColor.slice()};
@@ -4629,6 +4710,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     planSamplePoint=point&&rgb?{...point,rgb:rgb.slice()}:null;
     if(!rgb) return;
     correctionRecipeHint=null;
+    correctionOriginalRecipe=null;
     lastAverageColor=[...rgb];
     lastSmartColor=[...rgb];
     const hx=rgbHex(rgb);
@@ -5743,7 +5825,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     setMixTarget(oilTintSelected.rgb,'Öl-Aufhellung '+oilTintSelected.label);
     showStudioMixPage();
   });
-  function takeCorrectionColor(rgb,target=rgb){
+  function takeCorrectionColor(rgb,target=rgb,recipe=null,paletteKey=null){
+    correctionOriginalRecipe=recipe?{rgb:rgb.slice(),names:[...(recipe.names||[])],parts:[...(recipe.parts||[])],paletteKey:paletteKey||paintPalette.value}:null;
     correctionBase=[...rgb];
     correctionTarget=[...target];
     for(const id of ['corrLight','corrWarm','corrSat','corrHue'])document.getElementById(id).value=0;
