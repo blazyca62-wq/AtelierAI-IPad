@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.19</title>
+  <title>AtelierAI iPad 4.18</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1055,7 +1055,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.19</div>
+    <div class="title">AtelierAI · iPad 4.18</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -11598,9 +11598,46 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  const rgb=(L,a,b)=>{const l=(L+.39633778*a+.21580376*b)**3,m=(L-.10556135*a-.06385417*b)**3,s=(L-.08948418*a-1.29148555*b)**3;return [encode(4.07674166*l-3.30771159*m+.23096993*s),encode(-1.268438*l+2.6097574*m-.3413194*s),encode(-.00419609*l-.7034186*m+1.7076147*s)]};
  const makeCanvas=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
  const loadBitmap=async file=>{const bmp=await createImageBitmap(file);try{const k=Math.min(1,900/Math.max(bmp.width,bmp.height)),w=Math.max(1,Math.round(bmp.width*k)),h=Math.max(1,Math.round(bmp.height*k));const c=makeCanvas(w,h);c.getContext('2d').drawImage(bmp,0,0,w,h);return c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h)}finally{bmp.close?.()}};
- const buildPalette=im=>{const BINS=24,MAXC=4,STEP=8;const bins=Array.from({length:BINS},()=>[]),d=im.data;for(let i=0;i<d.length;i+=STEP){if(d[i+3]<128)continue;const [L,a,b]=lab(d[i],d[i+1],d[i+2]),idx=Math.max(0,Math.min(BINS-1,Math.floor(L*BINS)));let bin=bins[idx],best=-1,bestDist=1e9;for(let c=0;c<bin.length;c++){const da=a-bin[c].a,db=b-bin[c].b,dist=da*da+db*db;if(dist<bestDist){bestDist=dist;best=c}}if(best>=0&&(bestDist<0.012||bin.length>=MAXC)){const item=bin[best],w=item.w+1;item.a=(item.a*item.w+a)/w;item.b=(item.b*item.w+b)/w;item.c=(item.c*item.w+Math.hypot(a,b))/w;item.w=w}else bin.push({a,b,c:Math.hypot(a,b),w:1})}for(let i=0;i<BINS;i++){if(bins[i].length)continue;let found=null;for(let span=1;span<BINS&&!found;span++){const left=i-span,right=i+span;if(left>=0&&bins[left].length)found=bins[left].map(x=>({...x}));else if(right<BINS&&bins[right].length)found=bins[right].map(x=>({...x}))}bins[i]=found||[{a:0,b:0,c:0,w:1}]}return bins.map(bin=>bin.sort((p,q)=>q.w-p.w))};
- const chooseTarget=(bin,a,b)=>{if(!bin?.length)return [0,0];const srcC=Math.hypot(a,b);if(srcC<0.015)return [bin[0].a,bin[0].b];let best=bin[0],bestScore=1e9;const srcHue=Math.atan2(b,a);for(const item of bin){const hue=Math.atan2(item.b,item.a),dh=Math.abs(Math.atan2(Math.sin(srcHue-hue),Math.cos(srcHue-hue))),dc=Math.abs(srcC-item.c),score=dh*1.6+dc*1.1-0.08*Math.log(item.w+1);if(score<bestScore){bestScore=score;best=item}}return [best.a,best.b]};
- const transform=async (im,ref,strength,chroma,job)=>{const pal=buildPalette(ref),d=im.data,out=new Uint8ClampedArray(d),BINS=pal.length;const n=d.length;for(let i=0;i<n;i+=4){if(i%240000===0){await frame();if(job!==revision)throw Error('abgebrochen')}if(d[i+3]<128)continue;const [L,a,b]=lab(d[i],d[i+1],d[i+2]),idx=Math.max(0,Math.min(BINS-1,Math.floor(L*BINS))),[ta,tb]=chooseTarget(pal[idx],a,b),f=strength/100,cf=chroma/100;let na=a*(1-f)+ta*f*cf,nb=b*(1-f)+tb*f*cf;let color=rgb(L,na,nb);for(let k=0;k<4;k++){const actual=lab(...color)[0];if(Math.abs(actual-L)<.0015)break;color=rgb(clamp(L+(L-actual)),na,nb)}out[i]=color[0];out[i+1]=color[1];out[i+2]=color[2];}return new ImageData(out,im.width,im.height)};
+ const palette=im=>{
+  // Keep distinct hues instead of averaging all pixels at the same brightness.
+  const bins=new Map(),d=im.data;
+  for(let i=0;i<d.length;i+=16){if(d[i+3]<128)continue;
+   const [L,a,b]=lab(d[i],d[i+1],d[i+2]),C=Math.hypot(a,b),h=(Math.atan2(b,a)+2*Math.PI)%(2*Math.PI);
+   const key=[Math.min(11,Math.floor(L*12)),Math.min(15,Math.floor(h*16/(2*Math.PI))),C<.035?0:C<.085?1:2].join(':');
+   let item=bins.get(key);if(!item){item={L:0,a:0,b:0,n:0};bins.set(key,item)}item.L+=L;item.a+=a;item.b+=b;item.n++;
+  }
+  return [...bins.values()].filter(v=>v.n>=2).map(v=>({L:v.L/v.n,a:v.a/v.n,b:v.b/v.n,n:v.n}));
+ };
+ const transform=async(im,ref,strength,chroma,job)=>{
+  const pal=palette(ref);if(!pal.length)throw Error('Keine Referenzfarben gefunden.');
+  const d=im.data,out=new Uint8ClampedArray(d),f=clamp(strength/100),sat=clamp(chroma/100,0,1.5);
+  // Cache a perceptual nearest-palette lookup to keep iPad processing responsive.
+  const cache=new Map();
+  for(let i=0;i<d.length;i+=4){
+   if(i%160000===0){await frame();if(job!==revision)throw Error('abgebrochen')}
+   if(d[i+3]<128)continue;
+   const [L,a,b]=lab(d[i],d[i+1],d[i+2]),C=Math.hypot(a,b);
+   const key=(Math.min(31,Math.floor(L*32))<<12)|(Math.min(63,Math.floor((a+.4)*80))<<6)|Math.min(63,Math.floor((b+.4)*80));
+   let target=cache.get(key);
+   if(!target){
+    // Lightness matching plus hue matching. Do not favour grey merely because it is common.
+    let best=Infinity,chosen=pal[0];
+    for(const v of pal){const vc=Math.hypot(v.a,v.b),dl=Math.abs(L-v.L),da=a-v.a,db=b-v.b;
+     const hueCost=C>.025&&vc>.025?Math.pow((a*v.b-b*v.a)/(C*vc),2)*.005:0;
+     const cost=dl*dl*1.8+(da*da+db*db)*(.58)+(C>.025&&vc<.025?.009:0)+hueCost-Math.min(.0015,Math.log1p(v.n)*.00019);
+     if(cost<best){best=cost;chosen=v}
+    }
+    target=chosen;cache.set(key,target);
+   }
+   // Preserve the original lightness and geometry; transfer only chromatic channels.
+   const na=a*(1-f)+target.a*f*sat,nb=b*(1-f)+target.b*f*sat;
+   let color=rgb(L,na,nb);
+   // Rebalance luminance after gamut clipping.
+   for(let k=0;k<3;k++){const actual=lab(...color)[0];if(Math.abs(actual-L)<.002)break;color=rgb(clamp(L+(L-actual)),na,nb)}
+   out[i]=color[0];out[i+1]=color[1];out[i+2]=color[2];
+  }
+  return new ImageData(out,im.width,im.height)
+ };
  const setStatus=t=>get('transferStatus').textContent=t;
  async function render(){const job=++revision;if(!original)return;if(!reference){ctx.putImageData(original,0,0);setStatus('Bitte Referenzbild auswählen.');return}get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Farbübertragung wird berechnet …');try{const result=await transform(original,reference,+get('transferStrength').value,+get('transferChroma').value,job);if(job!==revision)return;painted=result;ctx.putImageData(get('transferOriginal').checked?original:result,0,0);setStatus('Vorschau fertig · Geometrie unverändert.');}catch(e){if(job===revision)setStatus('Fehler: '+e.message)}finally{if(job===revision){get('transferSave').disabled=false;get('transferApply').disabled=false}}}
  function open(){try{const photo=window.__atelierArtBridge?.photo?.();if(!photo?.loaded||!photo.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return}const source=photo.canvas,k=Math.min(1,1200/Math.max(source.width,source.height));preview.width=Math.max(1,Math.round(source.width*k));preview.height=Math.max(1,Math.round(source.height*k));ctx.drawImage(source,0,0,preview.width,preview.height);original=ctx.getImageData(0,0,preview.width,preview.height);painted=null;wrap.hidden=false;get('transferContent').scrollTop=0;render()}catch(e){wrap.hidden=true;alert('Farbübertragung konnte nicht geöffnet werden: '+e.message)}}
