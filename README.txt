@@ -67,3 +67,5 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 3.89: Großformen mit kantenschonender Vorfilterung und zusammenhängender Inselbereinigung; keine neuen Regler.
 
 3.90: Farbverwandtschaft erweitert: alternative gemeinsame Pigmentpaare, bevorzugte Basispigmente bei Korrekturen, einfachere Mischwege. Keine neuen Bedienelemente, kein Online-Dienst.
+
+4.21: Farbuebertragung korrigiert: Farbbalance und Pastell-Saettigungsverteilung der Referenz statt Naechste-Farbe-Suche.
