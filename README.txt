@@ -1,3 +1,5 @@
+AtelierAI 4.13: Einheitliche 5-Punkte-Toleranz bei Farbkorrekturen, Wiederverwendung gespeicherter Mischungen und Bevorzugung weniger Tuben in gemeinsamen Basismischungen. Sonstige Funktionen aus 4.12 unverändert.
+AtelierAI 4.12: Einfache Farbmischungen werden innerhalb von 5 Prozentpunkten Farbtreue bevorzugt (auch bei praktisch gerundeten Mischrezepten). Sonstige Funktionen von 4.11 bleiben erhalten.
 AtelierAI 4.11: Korrektur der iPad-Kopfleiste: alle Schaltflächen werden jetzt in weitere Zeilen umgebrochen statt rechts abgeschnitten. Bildexport mit/ohne Raster aus 4.10 bleibt erhalten. Sonstige Funktionen unverändert.
 AtelierAI 4.10: Bildexport direkt im Hauptfenster (standardmäßig ohne Raster). Export im Raster-und-Speichern-Menü mit wählbarem Raster. PNG/JPEG, Vollbild oder Ausschnitt, Teilen oder Herunterladen. Restliche Funktionen aus 4.09 unverändert.
 

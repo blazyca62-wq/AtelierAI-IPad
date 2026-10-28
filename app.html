@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.11</title>
+  <title>AtelierAI iPad 4.13</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1055,7 +1055,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.11</div>
+    <div class="title">AtelierAI · iPad 4.13</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3260,21 +3260,22 @@
 
     const recipes=[...bestByRecipe.values()];
 
+    // 4.12: Eine um bis zu 5 Prozentpunkte ungenauere Mischung mit
+    // weniger Tubenfarben wird einer komplexeren Lösung vorgezogen.
     // Beste einfache Mischung bestimmen.
     const best1=Math.max(-1,...recipes.filter(x=>x.items.length===1).map(x=>x.score));
     const best2=Math.max(-1,...recipes.filter(x=>x.items.length===2).map(x=>x.score));
     const bestSimple=Math.max(best1,best2);
 
     // 3–5 Farben nur dann zulassen, wenn sie die beste 1-/2-Farben-Lösung
-    // wirklich sichtbar verbessern (mindestens +1 Prozentpunkt).
+    // wirklich sichtbar verbessern (mehr als +5 Prozentpunkte).
     const filtered=recipes.filter(x=>{
       if(x.items.length<=2)return true;
-      return x.score>=bestSimple+1;
+      return x.score>bestSimple+5;
     });
 
-    // Höhere Übereinstimmung zuerst; bei nahezu gleichem Treffer gewinnt
-    // die Mischung mit weniger Farben.
-    filtered.sort((a,b)=>(b.score-(b.items.length-1)*.5)-(a.score-(a.items.length-1)*.5)||a.cost-b.cost);
+    // Innerhalb von 5 Prozentpunkten gewinnt die Mischung mit weniger Farben.
+    filtered.sort((a,b)=>{const best=Math.max(...filtered.map(x=>x.score));const nearA=a.score>=best-5,nearB=b.score>=best-5;if(nearA!==nearB)return nearA?-1:1;if(nearA&&a.items.length!==b.items.length)return a.items.length-b.items.length;return b.score-a.score||a.cost-b.cost;});
 
 
     rankPictureRecipes(filtered,paletteKey);
@@ -3458,15 +3459,14 @@
     const bestSimple=Math.max(best1,best2);
 
     // Drei Farben nur dann zulassen, wenn sie die beste 1-/2-Farben-Lösung
-    // wirklich sichtbar verbessern (mindestens +1 Prozentpunkt).
+    // wirklich sichtbar verbessern (mehr als +5 Prozentpunkte).
     const filtered=recipes.filter(x=>{
       if(x.items.length<=2)return true;
-      return x.score>=bestSimple+1;
+      return x.score>bestSimple+5;
     });
 
-    // Höhere Übereinstimmung zuerst; bei nahezu gleichem Treffer gewinnt
-    // die Mischung mit weniger Farben.
-    filtered.sort((a,b)=>(b.score-(b.items.length-1)*.5)-(a.score-(a.items.length-1)*.5)||a.cost-b.cost);
+    // Innerhalb von 5 Prozentpunkten gewinnt die Mischung mit weniger Farben.
+    filtered.sort((a,b)=>{const best=Math.max(...filtered.map(x=>x.score));const nearA=a.score>=best-5,nearB=b.score>=best-5;if(nearA!==nearB)return nearA?-1:1;if(nearA&&a.items.length!==b.items.length)return a.items.length-b.items.length;return b.score-a.score||a.cost-b.cost;});
 
 
     rankPictureRecipes(filtered,paletteKey);
@@ -3536,8 +3536,8 @@
     for(const x of additions.sort((a,b)=>a.cost-b.cost).slice(0,16))refinePractical(x);
     const practical=[...practicalByRecipe.values()];
     const practicalSimple=Math.max(-1,...practical.filter(x=>x.items.length<=2).map(x=>x.score));
-    const printable=practical.filter(x=>x.items.length<=2||x.score>=practicalSimple+1);
-    printable.sort((a,b)=>(b.score-(b.items.length-1)*.5)-(a.score-(a.items.length-1)*.5)||a.cost-b.cost);
+    const printable=practical.filter(x=>x.items.length<=2||x.score>practicalSimple+5);
+    printable.sort((a,b)=>{const best=Math.max(...printable.map(x=>x.score));const nearA=a.score>=best-5,nearB=b.score>=best-5;if(nearA!==nearB)return nearA?-1:1;if(nearA&&a.items.length!==b.items.length)return a.items.length-b.items.length;return b.score-a.score||a.cost-b.cost;});
     rankPictureRecipes(printable,paletteKey);
     const chosen=printable.slice(0,3).map(x=>({
       sig:recipeKey(x.items),
@@ -3997,7 +3997,8 @@
               const rgb=mix(prev.rgb,c,n);
               const score=similarityPct(target,rgb);
               const candidate={score,rgb,adds:[...prev.adds,{name:nameOf(c),parts:n}],amount:prev.amount+n};
-              if(score>best.score+0.01)best=candidate;
+              // Nur bei erkennbar besserer Farbnaehe mehr Korrekturpigmente verwenden.
+              if(score>best.score+5 || (candidate.adds.length<=best.adds.length && score>best.score+0.01))best=candidate;
               next.push(candidate);
             }
           }
@@ -4073,7 +4074,7 @@
           penalty+=100-adjustment.score+adjustment.adds.length*3+adjustment.amount*.16;
         }
         if(members.length<2)continue;
-        const rank=members.length*1000-penalty-base.ingredients.length*5;
+        const rank=members.length*1000-penalty-base.ingredients.length*15;
         if(!winner||rank>winner.rank)winner={base,members,rank};
       }
       if(!winner)break;
@@ -4289,20 +4290,19 @@
     return recipe.items.map(c=>pictureTubeId(key,c));
   }
   function rankPictureRecipes(recipes,key){
+    if(!recipes.length)return recipes;
     const used=pictureUsedIds(key);
-    if(!used.size||!recipes.length)return recipes;
-    // Never trade more than 3 displayed similarity points for fewer new tubes.
-    const best=Math.max(...recipes.map(m=>Math.max(m.score,m.referenceBest||0)));
+    const best=Math.max(...recipes.map(m=>m.score));
     recipes.forEach(m=>{m.referenceBest=best;});
     const count=m=>pictureRecipeIds(m,key).filter(id=>!used.has(id)).length;
+    const colors=m=>m.color_count||m.items?.length||m.names?.length||0;
     return recipes.sort((a,b)=>{
-      // Oil: colour match takes precedence. Reuse remembered tubes only
-      // when the displayed match is tied, never hide a better red addition.
-      if(key==='artisan')return b.score-a.score||count(a)-count(b)||(a.color_count||a.items?.length||0)-(b.color_count||b.items?.length||0);
-      const nearA=a.score>=best-3,nearB=b.score>=best-3;
+      const nearA=a.score>=best-5,nearB=b.score>=best-5;
       if(nearA!==nearB)return nearA?-1:1;
-      if(nearA&&count(a)!==count(b))return count(a)-count(b);
-      return b.score-a.score||(a.color_count||a.items?.length||0)-(b.color_count||b.items?.length||0);
+      if(nearA&&colors(a)!==colors(b))return colors(a)-colors(b);
+      // At equal pigment count, prefer previously saved tubes.
+      if(nearA&&used.size&&count(a)!==count(b))return count(a)-count(b);
+      return b.score-a.score;
     });
   }
   function chooseMixes(target,key){
@@ -4369,7 +4369,14 @@
     for(let i=0;i<pool.length;i++)for(let j=i+1;j<pool.length;j++){
       for(const weights of [[12,4],[8,8],[4,12]])test([pool[i],pool[j]],weights);
     }
-    return out.sort((a,b)=>b.score-a.score||a.bases.length-b.bases.length||Number(!!a.add)-Number(!!b.add)).slice(0,5);
+    const bestScore=Math.max(...out.map(o=>o.score));
+    return out.sort((a,b)=>{
+      const nearA=a.score>=bestScore-5,nearB=b.score>=bestScore-5;
+      if(nearA!==nearB)return nearA?-1:1;
+      const complexity=o=>o.bases.length+Number(!!o.add);
+      if(nearA&&complexity(a)!==complexity(b))return complexity(a)-complexity(b);
+      return b.score-a.score;
+    }).slice(0,5);
   }
   function renderPremixComparison(target,key,normal){
     const options=savedPremixOptions(target,key);
@@ -4377,8 +4384,8 @@
     const heading=document.createElement('h3');heading.textContent='Mischungen aus anderen Bereichen · 3.40';wrap.appendChild(heading);
     const bestNormal=Math.max(0,...normal.map(x=>x.score));
     if(!options.length){const msg=document.createElement('p');msg.textContent='Keine Mischungen aus anderen Bereichen vorhanden. Die gerade aufgenommenen Zielfarben werden nicht als fertige Mischungen behandelt. Für eine gemeinsame Farbbasis bitte im Mischplan beide Farben auswählen.';wrap.appendChild(msg);mixResults.prepend(wrap);return;}
-    const best=options[0], prefer=best.score>=bestNormal-3;
-    const summary=document.createElement('p');summary.textContent='Neue Tubenmischung: '+bestNormal+'/100 · Beste Wiederverwendung: '+best.score+'/100. '+(prefer?'Vorhandene Mischung ist innerhalb von 3 Punkten und kann bevorzugt werden.':'Neue Tubenmischung ist derzeit näher am Ziel.');wrap.appendChild(summary);
+    const best=options[0], prefer=best.score>=bestNormal-5;
+    const summary=document.createElement('p');summary.textContent='Neue Tubenmischung: '+bestNormal+'/100 · Beste Wiederverwendung: '+best.score+'/100. '+(prefer?'Vorhandene Mischung ist innerhalb von 5 Punkten und kann bevorzugt werden.':'Neue Tubenmischung ist derzeit näher am Ziel.');wrap.appendChild(summary);
     for(const option of options){
       const row=document.createElement('div');row.style.cssText='border-top:1px solid #bbb;padding:8px 0';
       const label=document.createElement('strong');label.textContent=option.bases.map(x=>x.name+' ('+x.area+')').join(' + ')+' · '+option.score+'/100';row.appendChild(label);
@@ -4453,7 +4460,7 @@
       check.onchange=()=>{picturePalette.enabled=check.checked;savePicturePalette();refreshPictureRecipes();};
       label.append(check,document.createTextNode(' Bereits verwendete Farben bevorzugen'));panel.appendChild(label);
       const help=document.createElement('p');help.className='tiny';
-      help.textContent=!picturePaletteId?'Zuerst ein Foto öffnen.':!picturePaletteStorageOK?'Die Bildpalette bleibt in dieser Sitzung erhalten; dauerhaftes Speichern ist hier nicht verfügbar.':'Mit „Diese Farbe merken“ werden Farbprobe, Rezept und Tubenfarben gemeinsam gespeichert. Neue Tubenfarben nur bei besserer Farbtreue (Toleranz: 3 Punkte Bildschirmnähe).';panel.appendChild(help);
+      help.textContent=!picturePaletteId?'Zuerst ein Foto öffnen.':!picturePaletteStorageOK?'Die Bildpalette bleibt in dieser Sitzung erhalten; dauerhaftes Speichern ist hier nicht verfügbar.':'Mit „Diese Farbe merken“ werden Farbprobe, Rezept und Tubenfarben gemeinsam gespeichert. Neue Tubenfarben nur bei deutlich besserer Farbtreue (Toleranz: 5 Punkte Bildschirmnähe).';panel.appendChild(help);
       for(const id of ids){
         const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.style.margin='3px';
         const brand=id.slice(0,id.indexOf('::')),name=id.slice(id.indexOf('::')+2);
@@ -4472,7 +4479,11 @@
     return chooseMixes(hint,key).map(m=>({...m,
       score:similarityPct(target,m.rgb),
       correctionScore:similarityPct(hint,m.rgb)
-    })).sort((a,b)=>b.correctionScore-a.correctionScore||a.color_count-b.color_count);
+    } )).sort((a,b)=>{
+      const delta=a.correctionScore-b.correctionScore;
+      if(Math.abs(delta)<=5 && a.color_count!==b.color_count)return a.color_count-b.color_count;
+      return -delta;
+    });
   }
   function calculateCorrectionRecipe(){
     const hint=correctedColor();
