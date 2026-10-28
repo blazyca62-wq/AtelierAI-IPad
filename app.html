@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.14</title>
+  <title>AtelierAI iPad 4.16</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1055,7 +1055,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.14</div>
+    <div class="title">AtelierAI · iPad 4.16</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -11566,6 +11566,42 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  if(!list.length){const p=document.createElement('p');p.textContent='Nichts gefunden. Versuche einen anderen Begriff.';items.append(p);return;}
  for(const row of list){const d=document.createElement('details');const s=document.createElement('summary');s.textContent=row[0];d.append(s);if(tab==='guides'){const small=document.createElement('small');small.textContent=row[1];d.append(small);const p=document.createElement('p');p.textContent=row[2];d.append(p);}else{const p=document.createElement('p');p.textContent=row[1];d.append(p);}items.append(d);}}
  const close=()=>{modal.hidden=true;previousFocus?.focus?.()};launch.onclick=()=>{previousFocus=document.activeElement;modal.hidden=false;tab='guides';search.value='';modal.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===tab));render();search.focus();};modal.querySelector('#atelierHelpClose').onclick=close;modal.addEventListener('click',e=>{if(e.target===modal)close()});modal.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;modal.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('selected',x===b));render()});search.addEventListener('input',render);document.addEventListener('keydown',e=>{if(!modal.hidden&&e.key==='Escape')close()});
+})();
+</script>
+<script>
+/* Farbübertragung 4.16: independent dialog, no full-screen hitbox while closed. */
+(()=>{
+ const button=document.createElement('button');button.id='colorTransferOpen';button.type='button';button.className='secondary';button.textContent='Farbübertragung';
+ document.getElementById('artOpenBtn').after(button);
+ const wrap=document.createElement('div');wrap.id='transferDialog';wrap.hidden=true;
+ wrap.style.cssText='position:fixed;inset:0;z-index:9000;background:#0009;padding:12px;overflow:auto;overscroll-behavior:contain;';
+ wrap.innerHTML=`<section role="dialog" aria-modal="true" aria-label="Farbübertragung" style="background:#fff;color:#202020;max-width:850px;margin:20px auto;padding:16px;border-radius:14px;box-shadow:0 5px 24px #0005;box-sizing:border-box"><header style="display:flex;gap:10px;align-items:center;justify-content:space-between"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.16</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><label style="display:block;margin:12px 0">Referenzbild (z. B. Cézanne) <input id="transferReference" type="file" accept="image/*" style="width:100%"></label><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label><canvas id="transferPreview" style="display:block;width:100%;height:auto;max-height:52vh;object-fit:contain;background:#ddd;border:1px solid #ddd;border-radius:8px;touch-action:auto"></canvas><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></section>`;
+ document.body.append(wrap);
+ const get=id=>wrap.querySelector('#'+id), preview=get('transferPreview'), ctx=preview.getContext('2d',{willReadFrequently:true});
+ let original=null,reference=null,painted=null,revision=0,busy=false;
+ const frame=()=>new Promise(resolve=>setTimeout(resolve,0));
+ const clamp=(v,min=0,max=1)=>Math.min(max,Math.max(min,v));
+ const linear=v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4};
+ const encode=v=>{v=clamp(v);return Math.round(255*(v<=.0031308?12.92*v:1.055*v**(1/2.4)-.055))};
+ const lab=(r,g,b)=>{r=linear(r);g=linear(g);b=linear(b);const l=Math.cbrt(.41222147*r+.53633254*g+.05144599*b),m=Math.cbrt(.2119035*r+.68069955*g+.10739696*b),ss=Math.cbrt(.08830246*r+.28171884*g+.6299787*b);return [.21045426*l+.79361779*m-.00407205*ss,1.9779985*l-2.4285922*m+.4505937*ss,.02590404*l+.7827718*m-.80867577*ss]};
+ const rgb=(L,a,b)=>{const l=(L+.39633778*a+.21580376*b)**3,m=(L-.10556135*a-.06385417*b)**3,s=(L-.08948418*a-1.29148555*b)**3;return [encode(4.07674166*l-3.30771159*m+.23096993*s),encode(-1.268438*l+2.6097574*m-.3413194*s),encode(-.00419609*l-.7034186*m+1.7076147*s)]};
+ const makeCanvas=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
+ const loadBitmap=async file=>{const bmp=await createImageBitmap(file);try{const k=Math.min(1,900/Math.max(bmp.width,bmp.height)),w=Math.max(1,Math.round(bmp.width*k)),h=Math.max(1,Math.round(bmp.height*k));const c=makeCanvas(w,h);c.getContext('2d').drawImage(bmp,0,0,w,h);return c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h)}finally{bmp.close?.()}};
+ const palette=im=>{const count=new Float64Array(64),aa=new Float64Array(64),bb=new Float64Array(64);const d=im.data;for(let i=0;i<d.length;i+=16){if(d[i+3]<128)continue;const [L,a,b]=lab(d[i],d[i+1],d[i+2]),v=Math.min(63,Math.floor(L*64));count[v]++;aa[v]+=a;bb[v]+=b;}const result=[];for(let j=0;j<64;j++){let sw=0,sa=0,sb=0;for(let k=0;k<64;k++){const weight=count[k]*Math.exp(-.5*((k-j)/7)**2);sw+=weight;sa+=weight*aa[k]/(count[k]||1);sb+=weight*bb[k]/(count[k]||1)}result.push(sw?[sa/sw,sb/sw]:[0,0])}return result};
+ const transform=async (im,ref,strength,chroma,job)=>{const pal=palette(ref),d=im.data,out=new Uint8ClampedArray(d);const n=d.length;for(let i=0;i<n;i+=4){if(i%240000===0){await frame();if(job!==revision)throw Error('abgebrochen')}if(d[i+3]<128)continue;const [L,a,b]=lab(d[i],d[i+1],d[i+2]),idx=Math.min(63,Math.floor(L*64)),[ta,tb]=pal[idx],f=strength/100;let na=a*(1-f)+ta*f*chroma/100,nb=b*(1-f)+tb*f*chroma/100;let color=rgb(L,na,nb); // Iteratively compensate for out-of-gamut and preserve source lightness.
+ for(let k=0;k<3;k++){const actual=lab(...color)[0];if(Math.abs(actual-L)<.001)break;color=rgb(clamp(L+(L-actual)),na,nb)}out[i]=color[0];out[i+1]=color[1];out[i+2]=color[2];}return new ImageData(out,im.width,im.height)};
+ const setStatus=t=>get('transferStatus').textContent=t;
+ async function render(){const job=++revision;if(!original)return;if(!reference){ctx.putImageData(original,0,0);setStatus('Bitte Referenzbild auswählen.');return}get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Farbübertragung wird berechnet …');try{const result=await transform(original,reference,+get('transferStrength').value,+get('transferChroma').value,job);if(job!==revision)return;painted=result;ctx.putImageData(get('transferOriginal').checked?original:result,0,0);setStatus('Vorschau fertig · Geometrie unverändert.');}catch(e){if(job===revision)setStatus('Fehler: '+e.message)}finally{if(job===revision){get('transferSave').disabled=false;get('transferApply').disabled=false}}}
+ function open(){try{const photo=window.__atelierArtBridge?.photo?.();if(!photo?.loaded||!photo.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return}const source=photo.canvas,k=Math.min(1,1200/Math.max(source.width,source.height));preview.width=Math.max(1,Math.round(source.width*k));preview.height=Math.max(1,Math.round(source.height*k));ctx.drawImage(source,0,0,preview.width,preview.height);original=ctx.getImageData(0,0,preview.width,preview.height);painted=null;wrap.hidden=false;render()}catch(e){wrap.hidden=true;alert('Farbübertragung konnte nicht geöffnet werden: '+e.message)}}
+ button.addEventListener('click',open);get('transferClose').addEventListener('click',()=>{revision++;wrap.hidden=true});
+ get('transferReference').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;const job=++revision;try{setStatus('Referenzbild wird gelesen …');const img=await loadBitmap(f);if(job!==revision)return;reference=img;render()}catch(err){setStatus('Referenzbild konnte nicht gelesen werden: '+err.message)}});
+ for(const [id,label] of [['transferStrength','transferStrengthLabel'],['transferChroma','transferChromaLabel']])get(id).addEventListener('input',e=>{get(label).textContent=e.target.value+' %';clearTimeout(get(id)._timer);get(id)._timer=setTimeout(render,100)});
+ get('transferOriginal').addEventListener('change',()=>{if(original)ctx.putImageData(get('transferOriginal').checked?original:(painted||original),0,0)});
+ async function fullCanvas(){const photo=window.__atelierArtBridge.photo(),source=photo.canvas;if(!reference)throw Error('Bitte zuerst ein Referenzbild auswählen.');if(!source?.width)throw Error('Foto fehlt.');const c=makeCanvas(source.width,source.height),out=c.getContext('2d',{willReadFrequently:true}),job=revision;const stripe=Math.max(1,Math.min(96,Math.floor(750000/source.width)));for(let y=0;y<source.height;y+=stripe){if(job!==revision)throw Error('abgebrochen');const h=Math.min(stripe,source.height-y),tile=photo.canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,y,source.width,h),res=await transform(tile,reference,+get('transferStrength').value,+get('transferChroma').value,job);out.putImageData(res,0,y)}return c}
+ const blobFrom=c=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG-Export fehlgeschlagen')),'image/png'));
+ async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.16_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
+ get('transferSave').addEventListener('click',()=>save(false));get('transferApply').addEventListener('click',()=>save(true));
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wrap.hidden){revision++;wrap.hidden=true}});
 })();
 </script>
 </body>
