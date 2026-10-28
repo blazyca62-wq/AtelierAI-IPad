@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.32</title>
+  <title>AtelierAI iPad 4.33</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1055,7 +1055,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.32</div>
+    <div class="title">AtelierAI · iPad 4.33</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -11592,7 +11592,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  #transferDialog #transferPreview{position:static!important;inset:auto!important;transform:none!important;touch-action:auto;display:block;max-width:100%;width:auto;height:auto;max-height:30dvh;margin:8px auto;background:#ddd;border:1px solid #ddd;object-fit:contain}
  #transferDialog #transferActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
  #transferDialog #transferReferenceThumb{display:none;max-height:115px;max-width:100%;margin:6px 0 0;object-fit:contain;border:1px solid #ccc;border-radius:5px}
- </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.32</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label><canvas id="transferPreview" ></canvas><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><details id="transferPairDetails" style="margin:8px 0;font-size:12px"><summary>Alle 128 Farbpaare ansehen</summary><div id="transferPairSwatches" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0;max-height:240px;overflow:auto"></div></details><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></section>`;
+ </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.33</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:block">Pastelllicht der Vorlage <input id="transferPastel" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferPastelLabel">75 %</output></label><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label><canvas id="transferPreview" ></canvas><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><details id="transferPairDetails" style="margin:8px 0;font-size:12px"><summary>Alle 128 Farbpaare ansehen</summary><div id="transferPairSwatches" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0;max-height:240px;overflow:auto"></div></details><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></section>`;
  document.body.append(wrap);
  const get=id=>shadow.querySelector('#'+id), preview=get('transferPreview'), ctx=preview.getContext('2d',{willReadFrequently:true});
  // A real, visible native file input receives the user's tap directly.
@@ -11692,19 +11692,24 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  };
  const matchOneToOne=(src,dst)=>{
    const sumS=src.weights.reduce((a,b)=>a+b,0),sumT=dst.weights.reduce((a,b)=>a+b,0);
+   // Match tonal position, not absolute source brightness: the Monet original
+   // is much brighter than an ordinary backlit photograph.
+   const srcMean=src.colors.reduce((v,c,i)=>v+c[0]*src.weights[i],0)/sumS;
+   const dstMean=dst.colors.reduce((v,c,i)=>v+c[0]*dst.weights[i],0)/sumT;
+   const brightnessShift=clamp(dstMean-srcMean,-.02,.24);
    const cost=src.colors.map((s,i)=>dst.colors.map((d,j)=>{
      const dl=s[0]-d[0],da=s[1]-d[1],db=s[2]-d[2];
      const cs=Math.hypot(s[1],s[2]),ct=Math.hypot(d[1],d[2]);
      // Relative brightness, hue family and saturation. Family matching is flexible:
      // e.g. dark burgundy may be mapped to Monet's lighter pink when necessary.
-     let score=2.15*dl*dl+3.2*(da*da+db*db)+.65*(cs-ct)**2;
+     let score=1.10*(dl+brightnessShift)**2+4.2*(da*da+db*db)+.45*(cs-ct)**2;
      if(cs>.027&&ct>.027){
        const hue=(s[1]*d[1]+s[2]*d[2])/(cs*ct);
-       score+=.011*(1-clamp(hue,-1,1));
+       score+=.019*(1-clamp(hue,-1,1));
      }
      const fs=Math.max(.0002,src.weights[i]/sumS),ft=Math.max(.0002,dst.weights[j]/sumT);
      // Avoid using a rare reference accent for a dominant source region.
-     score+=.009*Math.min(4,Math.abs(Math.log(fs/ft)));
+     score+=.015*Math.min(4,Math.abs(Math.log(fs/ft)));
      return score;
    }));
    return uniqueAssignment(cost);
@@ -11714,6 +11719,24 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    setStatus('128 Farben: beide Originalbilder analysieren …');await frame();
    const from=samplePalette(source),to=samplePalette(reference);
    if(job!==revision)throw Error('abgebrochen');
+   // Quantile LUT: transfers reference brightness distribution while preserving
+   // Relative light/shadow ordering of ALL original source pixels.
+   const ss=from.map(x=>x[0]).sort((a,b)=>a-b),ts=to.map(x=>x[0]).sort((a,b)=>a-b);
+   const toneCurve=new Float32Array(513);
+   for(let k=0;k<toneCurve.length;k++){
+     const L=k/512;let lo=0,hi=ss.length;
+     while(lo<hi){const m=(lo+hi)>>1;if(ss[m]<L)lo=m+1;else hi=m}
+     const percentile=(lo+.5)/(ss.length+1);
+     const idx=percentile*(ts.length-1),j=Math.floor(idx),t=idx-j;
+     toneCurve[k]=ts[j]*(1-t)+ts[Math.min(j+1,ts.length-1)]*t;
+   }
+   // Smooth the finite-sample curve without destroying its monotonicity.
+   const smoothCurve=new Float32Array(513);
+   for(let k=0;k<513;k++){
+     let sum=0,count=0;
+     for(let j=Math.max(0,k-2);j<=Math.min(512,k+2);j++){sum+=toneCurve[j];count++}
+     smoothCurve[k]=sum/count;
+   }
    const src=cluster(from,128);await frame();
    if(job!==revision)throw Error('abgebrochen');
    const dst=cluster(to,128);await frame();
@@ -11729,22 +11752,23 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
      if(job!==revision)throw Error('abgebrochen');
      for(let g=0;g<size;g++)for(let b=0;b<size;b++){
        const x=lab(r*255/(size-1),g*255/(size-1),b*255/(size-1));
-       let best=Infinity;const dist=new Float64Array(128);
+       let one=0,two=0,d1=Infinity,d2=Infinity;
        for(let k=0;k<128;k++){
-         const v=colorDistance(x,sc[k]);dist[k]=v;if(v<best)best=v;
+         const dist=colorDistance(x,sc[k]);
+         if(dist<d1){d2=d1;two=one;d1=dist;one=k}
+         else if(dist<d2){d2=dist;two=k}
        }
-       let weightSum=0,dl=0,da=0,db=0;
-       for(let k=0;k<128;k++){
-         const w=Math.exp(-(dist[k]-best)/.0028);
-         if(w<.004)continue;
-         const s=sc[k],t=tc[mapping[k]];
-         weightSum+=w;
-         dl+=w*.79*(t[0]-s[0]);
-         da+=w*(t[1]-.15*s[1]);
-         db+=w*(t[2]-.15*s[2]);
-       }
+       // Light interpolation *only* along palette borders, avoiding harsh banding.
+       const w2=clamp((.0045-(d2-d1))/.009,0,.42),w1=1-w2;
        const index=3*((r*size+g)*size+b);
-       lut[index]=dl/weightSum;lut[index+1]=da/weightSum;lut[index+2]=db/weightSum;
+       for(const [k,w] of [[one,w1],[two,w2]]){
+         if(!w)continue;
+         const sourceC=sc[k],targetC=tc[mapping[k]];
+         // Keep local light-shadow variation; directly use reference hue/chroma.
+         lut[index]   +=w*.79*(targetC[0]-sourceC[0]);
+         lut[index+1] +=w*(targetC[1]-.15*sourceC[1]);
+         lut[index+2] +=w*(targetC[2]-.15*sourceC[2]);
+       }
      }
      if(r%6===0)await frame();
    }
@@ -11752,12 +11776,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    const order=src.colors.map((_,i)=>i).sort((a,b)=>src.weights[b]-src.weights[a]);
    const swatch=c=>'background:rgb('+rgb(...c).join(',')+');width:24px;height:24px;display:inline-block;border-radius:4px;border:1px solid #7775';
    pairBox.innerHTML=order.map((i,j)=>'<div title="Farbpaar '+(j+1)+'" style="display:flex;align-items:center;justify-content:center;gap:3px"><span style="'+swatch(src.colors[i])+'"></span>→<span style="'+swatch(dst.colors[mapping[i]])+'"></span></div>').join('');
-   return {src,dst,mapping,lut,size};
+   return {src,dst,mapping,lut,size,toneCurve:smoothCurve};
  };
- const transform=async(im,ref,strength,chroma,job)=>{
+ const transform=async(im,ref,strength,chroma,pastel,job)=>{
    if(!model)throw Error('Farbmodell fehlt');
    const d=im.data,out=new Uint8ClampedArray(d),f=clamp(strength/100),sat=clamp(chroma/100,0,1.5);
-   const N=model.size,lut=model.lut;
+   const N=model.size,lut=model.lut,curve=model.toneCurve,pastelWeight=clamp(pastel/100)*.92;
    let differences=0,visited=0;
    const interpolate=(r,g,b)=>{
      const R=r*(N-1)/255,G=g*(N-1)/255,B=b*(N-1)/255;
@@ -11777,7 +11801,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
      if(f===0){visited++;continue}
      const x=lab(d[i],d[i+1],d[i+2]);
      const [dl,aa,bb]=interpolate(d[i],d[i+1],d[i+2]);
-     const L=clamp(x[0]+f*dl);
+     // The reference's luminosity histogram becomes visible at full transfer.
+     // A controlled blend retains local modeling/shadows from the photograph.
+     const q=x[0]*512,qi=Math.min(511,Math.floor(q)),qt=q-qi;
+     const referenceL=curve[qi]*(1-qt)+curve[qi+1]*qt;
+     const pairedL=clamp(x[0]+dl);
+     const newL=pairedL*(1-pastelWeight)+referenceL*pastelWeight;
+     const L=clamp(x[0]*(1-f)+newL*f);
      const a=x[1]*(1-f)+f*sat*(aa+.15*x[1]);
      const b=x[2]*(1-f)+f*sat*(bb+.15*x[2]);
      const mapped=rgb(L,a,b);
@@ -11789,21 +11819,21 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    return new ImageData(out,im.width,im.height);
  };
  const setStatus=t=>get('transferStatus').textContent=t;
- async function render(){if(!original)return;if(reference&&!model){setStatus('128 Farbpaare werden noch berechnet …');return;}const job=++revision;if(!reference){ctx.putImageData(original,0,0);setStatus('Bitte Referenzbild auswählen.');return}get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Farbübertragung wird berechnet …');try{const result=await transform(original,reference,+get('transferStrength').value,+get('transferChroma').value,job);if(job!==revision)return;painted=result;ctx.putImageData(get('transferOriginal').checked?original:result,0,0);setStatus('128 Farben · 128 eindeutige Farbpaare · Vorschau fertig · '+pixelDelta+' % der Pixel sichtbar verändert (Farbdifferenz-Schwelle).');}catch(e){if(job===revision)setStatus('Fehler: '+e.message)}finally{if(job===revision){get('transferSave').disabled=false;get('transferApply').disabled=false}}}
+ async function render(){if(!original)return;if(!reference){ctx.putImageData(original,0,0);setStatus('Bitte Referenzbild auswählen.');return}if(!model){setStatus('128 Farbpaare werden noch berechnet …');return;}const job=++revision;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Farbübertragung wird berechnet …');try{const result=await transform(original,reference,+get('transferStrength').value,+get('transferChroma').value,+get('transferPastel').value,job);if(job!==revision)return;painted=result;ctx.putImageData(get('transferOriginal').checked?original:result,0,0);setStatus('128 Farben · 128 eindeutige Farbpaare · Vorschau fertig · '+pixelDelta+' % der Pixel sichtbar verändert (Farbdifferenz-Schwelle).');}catch(e){if(job===revision)setStatus('Fehler: '+e.message)}finally{if(job===revision){get('transferSave').disabled=false;get('transferApply').disabled=false}}}
  function open(){try{const photo=window.__atelierArtBridge?.photo?.();if(!photo?.loaded||!photo.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return}const source=photo.canvas,k=Math.min(1,1200/Math.max(source.width,source.height));preview.width=Math.max(1,Math.round(source.width*k));preview.height=Math.max(1,Math.round(source.height*k));ctx.drawImage(source,0,0,preview.width,preview.height);original=ctx.getImageData(0,0,preview.width,preview.height);painted=null;model=null;get('transferOriginal').checked=false;nativeReferenceInput.value='';get('transferSelectedFile').textContent='Noch kein Referenzbild ausgewählt';get('transferPairSwatches').innerHTML='';get('transferPairDetails').open=false;const thumb=get('transferReferenceThumb');if(thumb.dataset.objectUrl)URL.revokeObjectURL(thumb.dataset.objectUrl);delete thumb.dataset.objectUrl;thumb.removeAttribute('src');thumb.style.display='none';reference=null;wrap.hidden=false;get('transferContent').scrollTop=0;render()}catch(e){wrap.hidden=true;alert('Farbübertragung konnte nicht geöffnet werden: '+e.message)}}
  button.addEventListener('click',open);get('transferClose').addEventListener('click',()=>{revision++;wrap.hidden=true});wrap.addEventListener('click',e=>{if(e.target===wrap){revision++;wrap.hidden=true}});
- async function handleReferenceSelection(){const f=nativeReferenceInput.files?.[0];if(!f){setStatus('Keine Datei übernommen. Bitte erneut auswählen.');return;}get('transferSelectedFile').textContent='Ausgewählt: '+f.name;const job=++revision;model=null;painted=null;
+ async function handleReferenceSelection(){const f=nativeReferenceInput.files?.[0];if(!f){setStatus('Keine Datei übernommen. Bitte erneut auswählen.');return;}get('transferSelectedFile').textContent='Ausgewählt: '+f.name;const job=++revision;model=null;painted=null;get('transferSave').disabled=true;get('transferApply').disabled=true;
  const thumb=get('transferReferenceThumb');if(thumb.dataset.objectUrl)URL.revokeObjectURL(thumb.dataset.objectUrl);
  const localURL=URL.createObjectURL(f);thumb.dataset.objectUrl=localURL;thumb.src=localURL;thumb.style.display='block';
- try{setStatus('Referenzbild wird gelesen: '+f.name+' …');await frame();const img=await loadBitmap(f);if(job!==revision)return;reference=img;setStatus('Referenzbild geladen ('+img.width+' × '+img.height+'). Berechne Farbpaletten …');await frame();model=await buildModel(original,reference,job);if(job===revision)render()}catch(err){setStatus('Referenzbild konnte nicht gelesen werden: '+err.message)} }
+ try{setStatus('Referenzbild wird gelesen: '+f.name+' …');await frame();const img=await loadBitmap(f);if(job!==revision)return;reference=img;setStatus('Referenzbild geladen ('+img.width+' × '+img.height+'). Berechne Farbpaletten …');await frame();model=await buildModel(original,reference,job);if(job===revision)render()}catch(err){if(job===revision){setStatus('Referenzbild konnte nicht gelesen werden: '+err.message);get('transferSave').disabled=false;get('transferApply').disabled=false}} }
  nativeReferenceInput.addEventListener('change',handleReferenceSelection);
  // Native change event suffices; avoid duplicate expensive analysis on iPad.
  // If iOS fires only a trusted native change, the file is still processed.
- for(const [id,label] of [['transferStrength','transferStrengthLabel'],['transferChroma','transferChromaLabel']])get(id).addEventListener('input',e=>{get(label).textContent=e.target.value+' %';clearTimeout(get(id)._timer);get(id)._timer=setTimeout(render,100)});
+ for(const [id,label] of [['transferStrength','transferStrengthLabel'],['transferChroma','transferChromaLabel'],['transferPastel','transferPastelLabel']])get(id).addEventListener('input',e=>{get(label).textContent=e.target.value+' %';clearTimeout(get(id)._timer);get(id)._timer=setTimeout(render,100)});
  get('transferOriginal').addEventListener('change',()=>{if(original)ctx.putImageData(get('transferOriginal').checked?original:(painted||original),0,0)});
- async function fullCanvas(){const photo=window.__atelierArtBridge.photo(),source=photo.canvas;if(!reference)throw Error('Bitte zuerst ein Referenzbild auswählen.');if(!source?.width)throw Error('Foto fehlt.');const c=makeCanvas(source.width,source.height),out=c.getContext('2d',{willReadFrequently:true}),job=revision;const stripe=Math.max(1,Math.min(96,Math.floor(750000/source.width)));for(let y=0;y<source.height;y+=stripe){if(job!==revision)throw Error('abgebrochen');const h=Math.min(stripe,source.height-y),tile=photo.canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,y,source.width,h),res=await transform(tile,reference,+get('transferStrength').value,+get('transferChroma').value,job);out.putImageData(res,0,y)}return c}
+ async function fullCanvas(){const photo=window.__atelierArtBridge.photo(),source=photo.canvas;if(!reference)throw Error('Bitte zuerst ein Referenzbild auswählen.');if(!source?.width)throw Error('Foto fehlt.');const c=makeCanvas(source.width,source.height),out=c.getContext('2d',{willReadFrequently:true}),job=revision;const stripe=Math.max(1,Math.min(96,Math.floor(750000/source.width)));for(let y=0;y<source.height;y+=stripe){if(job!==revision)throw Error('abgebrochen');const h=Math.min(stripe,source.height-y),tile=photo.canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,y,source.width,h),res=await transform(tile,reference,+get('transferStrength').value,+get('transferChroma').value,+get('transferPastel').value,job);out.putImageData(res,0,y)}return c}
  const blobFrom=c=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG-Export fehlgeschlagen')),'image/png'));
- async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.32_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
+ async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.33_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
  get('transferSave').addEventListener('click',()=>save(false));get('transferApply').addEventListener('click',()=>save(true));
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wrap.hidden){revision++;wrap.hidden=true}});
 })();
