@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.28</title>
+  <title>AtelierAI iPad 4.29</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1055,7 +1055,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.28</div>
+    <div class="title">AtelierAI · iPad 4.29</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -11575,18 +11575,24 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  document.getElementById('artOpenBtn').after(button);
  const wrap=document.createElement('div');wrap.id='transferDialog';wrap.hidden=true;
  wrap.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#0009;padding:10px;box-sizing:border-box;';
- const shadow=wrap.attachShadow({mode:'open'});
+ const shadow=wrap; // iPad Safari: normal DOM, like successful GitHub diagnostic
  shadow.innerHTML=`<style>
- :host([hidden]){display:none!important} :host{font:15px -apple-system,BlinkMacSystemFont,sans-serif;color:#222}
- *,*::before,*::after{box-sizing:border-box}
- #transferPanel{display:flex;flex-direction:column;width:min(720px,100%);height:min(760px,calc(100dvh - 20px));margin:0 auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 5px 28px #0005}
- #transferHeader{flex:none;position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;background:white;padding:12px;border-bottom:1px solid #ccc;z-index:3}
- #transferContent{overflow:auto;min-height:0;padding:12px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
- button,input{font:inherit}button{min-height:42px;padding:9px 12px;border-radius:8px;border:1px solid #aaa;background:#f2f2f2;color:#222;touch-action:manipulation;cursor:pointer}button:disabled{opacity:.5}
- label{display:block;margin:10px 0}input[type=file]{display:block;width:100%;margin-top:5px}input[type=range]{width:100%;min-height:35px}
- #transferPreview{display:block;max-width:100%;width:auto;height:auto;max-height:30dvh;margin:8px auto;background:#ddd;border:1px solid #ddd;object-fit:contain}
- #transferActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
- </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.28</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label><canvas id="transferPreview" ></canvas><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></section>`;
+ #transferDialog[hidden]{display:none!important}
+ #transferDialog{font:15px -apple-system,BlinkMacSystemFont,sans-serif;color:#222}
+ #transferDialog,#transferDialog *,#transferDialog *::before,#transferDialog *::after{box-sizing:border-box}
+ #transferDialog #transferPanel{display:flex;flex-direction:column;width:min(720px,100%);height:min(760px,calc(100dvh - 20px));margin:0 auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 5px 28px #0005}
+ #transferDialog #transferHeader{flex:none;position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;background:white;padding:12px;border-bottom:1px solid #ccc;z-index:3}
+ #transferDialog #transferContent{overflow:auto;min-height:0;padding:12px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+ #transferDialog button,#transferDialog input{font:inherit}
+ #transferDialog button{min-height:42px;padding:9px 12px;border-radius:8px;border:1px solid #aaa;background:#f2f2f2;color:#222;touch-action:manipulation;cursor:pointer}
+ #transferDialog button:disabled{opacity:.5}
+ #transferDialog label{display:block;margin:10px 0}
+ #transferDialog input[type=file]{display:block;width:100%;margin-top:5px}
+ #transferDialog input[type=range]{width:100%;min-height:35px}
+ #transferDialog #transferPreview{position:static!important;inset:auto!important;transform:none!important;touch-action:auto;display:block;max-width:100%;width:auto;height:auto;max-height:30dvh;margin:8px auto;background:#ddd;border:1px solid #ddd;object-fit:contain}
+ #transferDialog #transferActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+ #transferDialog #transferReferenceThumb{display:none;max-height:115px;max-width:100%;margin:6px 0 0;object-fit:contain;border:1px solid #ccc;border-radius:5px}
+ </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.29</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label><canvas id="transferPreview" ></canvas><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></section>`;
  document.body.append(wrap);
  const get=id=>shadow.querySelector('#'+id), preview=get('transferPreview'), ctx=preview.getContext('2d',{willReadFrequently:true});
  // A real, visible native file input receives the user's tap directly.
@@ -11626,7 +11632,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
      return context.getImageData(0,0,w,h);
    }finally{try{bitmap?.close?.()}catch(e){}if(url)URL.revokeObjectURL(url)}
  };
- // 4.28: multi-stage reference palette alignment; each stage is based on the
+ // 4.29: multi-stage reference palette alignment; each stage is based on the
  // untouched original, never on an already recolored image.
  const samplePalette=im=>{
    const d=im.data,count=d.length/4,step=Math.max(1,Math.floor(count/3200)),pts=[];
@@ -11712,14 +11718,20 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  };
  const setStatus=t=>get('transferStatus').textContent=t;
  async function render(){const job=++revision;if(!original)return;if(!reference){ctx.putImageData(original,0,0);setStatus('Bitte Referenzbild auswählen.');return}get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Farbübertragung wird berechnet …');try{const result=await transform(original,reference,+get('transferStrength').value,+get('transferChroma').value,job);if(job!==revision)return;painted=result;ctx.putImageData(get('transferOriginal').checked?original:result,0,0);setStatus('16 → 32 → 48 → 64 Farben · Vorschau fertig · '+pixelDelta+' % der Pixel sichtbar verändert (Farbdifferenz-Schwelle).');}catch(e){if(job===revision)setStatus('Fehler: '+e.message)}finally{if(job===revision){get('transferSave').disabled=false;get('transferApply').disabled=false}}}
- function open(){try{const photo=window.__atelierArtBridge?.photo?.();if(!photo?.loaded||!photo.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return}const source=photo.canvas,k=Math.min(1,1200/Math.max(source.width,source.height));preview.width=Math.max(1,Math.round(source.width*k));preview.height=Math.max(1,Math.round(source.height*k));ctx.drawImage(source,0,0,preview.width,preview.height);original=ctx.getImageData(0,0,preview.width,preview.height);painted=null;model=null;get('transferOriginal').checked=false;nativeReferenceInput.value='';get('transferSelectedFile').textContent='Noch kein Referenzbild ausgewählt';reference=null;wrap.hidden=false;get('transferContent').scrollTop=0;render()}catch(e){wrap.hidden=true;alert('Farbübertragung konnte nicht geöffnet werden: '+e.message)}}
+ function open(){try{const photo=window.__atelierArtBridge?.photo?.();if(!photo?.loaded||!photo.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return}const source=photo.canvas,k=Math.min(1,1200/Math.max(source.width,source.height));preview.width=Math.max(1,Math.round(source.width*k));preview.height=Math.max(1,Math.round(source.height*k));ctx.drawImage(source,0,0,preview.width,preview.height);original=ctx.getImageData(0,0,preview.width,preview.height);painted=null;model=null;get('transferOriginal').checked=false;nativeReferenceInput.value='';get('transferSelectedFile').textContent='Noch kein Referenzbild ausgewählt';const thumb=get('transferReferenceThumb');if(thumb.dataset.objectUrl)URL.revokeObjectURL(thumb.dataset.objectUrl);delete thumb.dataset.objectUrl;thumb.removeAttribute('src');thumb.style.display='none';reference=null;wrap.hidden=false;get('transferContent').scrollTop=0;render()}catch(e){wrap.hidden=true;alert('Farbübertragung konnte nicht geöffnet werden: '+e.message)}}
  button.addEventListener('click',open);get('transferClose').addEventListener('click',()=>{revision++;wrap.hidden=true});wrap.addEventListener('click',e=>{if(e.target===wrap){revision++;wrap.hidden=true}});
- nativeReferenceInput.addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f){setStatus('Keine Datei übernommen. Bitte erneut auswählen.');return;}get('transferSelectedFile').textContent='Ausgewählt: '+f.name;const job=++revision;try{setStatus('Referenzbild wird gelesen: '+f.name+' …');await frame();const img=await loadBitmap(f);if(job!==revision)return;reference=img;setStatus('Referenzbild geladen ('+img.width+' × '+img.height+'). Berechne Farbpaletten …');await frame();model=await buildModel(original,reference,job);if(job===revision)render()}catch(err){setStatus('Referenzbild konnte nicht gelesen werden: '+err.message)}});
+ async function handleReferenceSelection(){const f=nativeReferenceInput.files?.[0];if(!f){setStatus('Keine Datei übernommen. Bitte erneut auswählen.');return;}get('transferSelectedFile').textContent='Ausgewählt: '+f.name;const job=++revision;
+ const thumb=get('transferReferenceThumb');if(thumb.dataset.objectUrl)URL.revokeObjectURL(thumb.dataset.objectUrl);
+ const localURL=URL.createObjectURL(f);thumb.dataset.objectUrl=localURL;thumb.src=localURL;thumb.style.display='block';
+ try{setStatus('Referenzbild wird gelesen: '+f.name+' …');await frame();const img=await loadBitmap(f);if(job!==revision)return;reference=img;setStatus('Referenzbild geladen ('+img.width+' × '+img.height+'). Berechne Farbpaletten …');await frame();model=await buildModel(original,reference,job);if(job===revision)render()}catch(err){setStatus('Referenzbild konnte nicht gelesen werden: '+err.message)} }
+ nativeReferenceInput.addEventListener('change',handleReferenceSelection);
+ nativeReferenceInput.addEventListener('input',handleReferenceSelection);
+ // If iOS fires only a trusted native change, the file is still processed.
  for(const [id,label] of [['transferStrength','transferStrengthLabel'],['transferChroma','transferChromaLabel']])get(id).addEventListener('input',e=>{get(label).textContent=e.target.value+' %';clearTimeout(get(id)._timer);get(id)._timer=setTimeout(render,100)});
  get('transferOriginal').addEventListener('change',()=>{if(original)ctx.putImageData(get('transferOriginal').checked?original:(painted||original),0,0)});
  async function fullCanvas(){const photo=window.__atelierArtBridge.photo(),source=photo.canvas;if(!reference)throw Error('Bitte zuerst ein Referenzbild auswählen.');if(!source?.width)throw Error('Foto fehlt.');const c=makeCanvas(source.width,source.height),out=c.getContext('2d',{willReadFrequently:true}),job=revision;const stripe=Math.max(1,Math.min(96,Math.floor(750000/source.width)));for(let y=0;y<source.height;y+=stripe){if(job!==revision)throw Error('abgebrochen');const h=Math.min(stripe,source.height-y),tile=photo.canvas.getContext('2d',{willReadFrequently:true}).getImageData(0,y,source.width,h),res=await transform(tile,reference,+get('transferStrength').value,+get('transferChroma').value,job);out.putImageData(res,0,y)}return c}
  const blobFrom=c=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG-Export fehlgeschlagen')),'image/png'));
- async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.28_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
+ async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.29_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
  get('transferSave').addEventListener('click',()=>save(false));get('transferApply').addEventListener('click',()=>save(true));
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wrap.hidden){revision++;wrap.hidden=true}});
 })();
