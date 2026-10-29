@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.40</title>
+  <title>AtelierAI iPad 4.41</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1055,7 +1055,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.40</div>
+    <div class="title">AtelierAI · iPad 4.41</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1610,7 +1610,7 @@
 
       <div class="section" id="surfaceAdvisorPanel">
         <h3>Flächenberater</h3>
-        <p>Kreis oder Rechteck wählen und im Bild antippen: bis zu fünf unterschiedliche Hauptfarben mit eigenen Mischrezepten. Bei „Nur diese Farbe zeigen“ werden bis zu fünf Nuancen dieser Farbfamilie erkannt. Einfarbige Bereiche ergeben entsprechend weniger Farben.</p>
+        <p>Kreis oder Rechteck wählen und im Bild antippen: bis zu acht unterschiedliche Hauptfarben mit eigenen Mischrezepten. Bei „Nur diese Farbe zeigen“ werden bis zu acht Nuancen dieser Farbfamilie erkannt. Einfarbige Bereiche ergeben entsprechend weniger Farben.</p>
         <div class="grid2">
           <button id="surfaceCircleBtn">Kreis analysieren</button>
           <button id="surfaceRectBtn" class="secondary">Rechteck analysieren</button>
@@ -1626,8 +1626,9 @@
         <button id="surfaceIsolationGrayBtn" class="secondary" aria-pressed="false" style="width:100%;margin-top:8px;">Mittelgrauer Hintergrund: Aus</button>
 
 
-        <details data-picture-palette="surfaceMixPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details><label for="surfaceMixPalette">Palette für alle fünf Mischungen</label><select id="surfaceMixPalette" style="width:100%;padding:9px;margin:6px 0"><option value="artisan">Winsor &amp; Newton Artisan · Öl</option><option value="watercolor">Horadam + Akademie · Aquarell</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select>
+        <details data-picture-palette="surfaceMixPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details><label for="surfaceMixPalette">Palette für alle acht Mischungen</label><select id="surfaceMixPalette" style="width:100%;padding:9px;margin:6px 0"><option value="artisan">Winsor &amp; Newton Artisan · Öl</option><option value="watercolor">Horadam + Akademie · Aquarell</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select>
         <div id="surfaceResults" class="pc-card"><span class="tiny">Noch kein Bereich analysiert.</span></div>
+        <div id="surfaceBaseResults" class="pc-card" style="margin-top:10px"><span class="tiny">Gemeinsame Basisfarbe: Nach der Analyse kann eine der Hauptfarben als Ausgangsmischung gewählt werden.</span></div>
       </div>
 
 
@@ -2060,6 +2061,7 @@
   const surfaceColorTolerance=document.getElementById('surfaceColorTolerance');
   const surfaceColorToleranceVal=document.getElementById('surfaceColorToleranceVal');
   const surfaceResults=document.getElementById('surfaceResults');
+  const surfaceBaseResults=document.getElementById('surfaceBaseResults');
   const corrOriginal=document.getElementById('corrOriginal');
   const corrResult=document.getElementById('corrResult');
   const corrInfo=document.getElementById('corrInfo');
@@ -2239,6 +2241,11 @@
   let surfaceHoverImage=null;
   let surfaceClusters=[];
   let surfaceSelectedIndex=null;
+  let surfaceBaseIndex=0;
+  let surfaceBaseRevision=0;
+  let surfaceRenderRevision=0;
+  let surfaceBaseRecipes=[];
+  let surfaceBaseSuggestionCache=new Map();
   let surfaceMarkCanvas=null;
 
   let glazeMedium='water';
@@ -3679,7 +3686,7 @@
     clearTimeout(studioTimer);studioPending=false;photoLoadRevision++;studioProject=null;studioRemember();studioManaged=true;planSamplePoint=null;planActiveId=null;planPlaceId=null;
     picturePaletteEpoch++;picturePaletteId=null;picturePalette={ids:[],enabled:true};planBook={name:'Gesamtbild',samples:[]};
     resetPhotoFilters();resetBuild32();cancelIsolation();loaded=false;img=null;originalPhoto=null;visibleCropWhole=null;visibleCropGrid=null;gridReference=null;
-    lastSmartColor=null;lastAverageColor=null;correctionRecipeHint=null;mixResultCache.clear();mixResults.replaceChildren();surfaceResults.replaceChildren();
+    lastSmartColor=null;lastAverageColor=null;correctionRecipeHint=null;mixResultCache.clear();mixResults.replaceChildren();surfaceResults.replaceChildren();surfaceBaseResults.replaceChildren();surfaceBaseRevision++;surfaceBaseIndex=0;surfaceBaseRecipes=[];surfaceBaseSuggestionCache.clear();
     sourceCanvas.width=sourceCanvas.height=1;placeholder.style.display='';fileInput.value='';
     document.dispatchEvent(new Event('atelier-reset-photo'));renderPicturePalettePanels();renderPalettePlan();studioRender();syncVisibleCrop();draw();
   }
@@ -4329,7 +4336,8 @@
       picturePaletteStorageOK=true;
     }catch(e){picturePaletteStorageOK=false;}
     loadPalettePlan();
-    mixResults.replaceChildren();surfaceResults.replaceChildren();
+    mixResults.replaceChildren();surfaceResults.replaceChildren();surfaceBaseResults.replaceChildren();
+    surfaceBaseIndex=0;surfaceBaseRevision++;surfaceBaseRecipes=[];surfaceBaseSuggestionCache.clear();
     lastSmartColor=null;lastAverageColor=null;correctionRecipeHint=null;
     renderPicturePalettePanels();
   }
@@ -5949,7 +5957,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     let first=0;
     labs.forEach((c,i)=>{if(distance(c,mean)<distance(labs[first],mean))first=i;});
     const seeds=[first];
-    while(seeds.length<5){
+    while(seeds.length<8){
       let best=-1,bestDistance=9;
       labs.forEach((c,i)=>{
         const d=Math.min(...seeds.map(j=>distance(c,labs[j])));
@@ -7767,14 +7775,90 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     draw();
   }
 
+  // Flächenberater: Eine der acht Hauptfarben als WIRKLICHES Vormischrezept
+  // zubereiten und nur sinnvolle weitere Farben daraus entwickeln. Das ist
+  // keine RGB-Zielfarbe als fertige Farbe; Grundlage ist das Tubenrezept.
+  function renderSurfaceBase(){
+    const token=++surfaceBaseRevision;
+    surfaceBaseResults.replaceChildren();
+    if(!surfaceClusters.length)return;
+    const key=document.getElementById('surfaceMixPalette').value;
+    const baseIndex=Math.min(surfaceBaseIndex,surfaceClusters.length-1);
+    const target=surfaceClusters[baseIndex].rgb;
+    const title=document.createElement('h4');title.textContent='Mischvorschläge aus Basisfarbe · '+(baseIndex+1);
+    title.style.margin='4px 0 7px';surfaceBaseResults.appendChild(title);
+    const info=document.createElement('p');info.className='tiny';
+    info.textContent='Als Basis wird das Tubenrezept der gewählten Farbe vorbereitet. Danach lassen sich verwandte Farben aus jeweils 30 Teilen der FERTIGEN Basis durch Zugaben mischen. Jede Farbkarte hat einen Knopf „Als Basisfarbe wählen“. Keine Zielfarbe wird als fertiges Pigment vorausgesetzt.';
+    surfaceBaseResults.appendChild(info);
+    const baseLine=document.createElement('div');baseLine.className='swatch-line';
+    const swatch=document.createElement('div');swatch.className='small-swatch';swatch.style.background=rgbHex(target);
+    baseLine.appendChild(swatch);
+    const recipeLabel=document.createElement('div');recipeLabel.className='tiny';recipeLabel.textContent='Basisrezept wird berechnet …';baseLine.appendChild(recipeLabel);
+    surfaceBaseResults.appendChild(baseLine);
+    const results=document.createElement('div');results.style.marginTop='8px';surfaceBaseResults.appendChild(results);
+    const caution=document.createElement('p');caution.className='tiny';
+    caution.textContent='Mengen sind Startvorschläge aus einer Bildschirm-/Pigmentsimulation. Eine Zugabe von 1 Teil bedeutet 1 Teil auf 30 Teile der fertigen Basismischung. Bei Aquarell Wasser und Papierweiß separat berücksichtigen. Erst kleine Farbproben prüfen.';
+    surfaceBaseResults.appendChild(caution);
+    // Nicht auf jeder Bildauswahl unnötig alle Korrekturen gleichzeitig rechnen.
+    setTimeout(()=>{
+      if(token!==surfaceBaseRevision||!results.isConnected)return;
+      let baseMix;
+      try{baseMix=surfaceBaseRecipes[baseIndex]||chooseMixes(target,key)[0];}
+      catch(e){recipeLabel.textContent='Basisrezept nicht verfügbar.';return;}
+      if(!baseMix){recipeLabel.textContent='Für die gewählte Palette ist keine Basisfarbe verfügbar.';return;}
+      surfaceBaseRecipes[baseIndex]=baseMix;
+      recipeLabel.textContent='Basis '+(baseIndex+1)+': '+baseMix.names.map((n,j)=>baseMix.parts[j]+' Teile '+n).join(' + ')+'.';
+      let j=0;
+      const next=()=>{
+        if(token!==surfaceBaseRevision||!results.isConnected)return;
+        if(j>=surfaceClusters.length)return;
+        const index=j++,cluster=surfaceClusters[index];
+        const line=document.createElement('div');line.style.cssText='border-top:1px solid #aaa;padding:7px 0';
+        const name=document.createElement('strong');name.textContent='Farbe '+(index+1)+(index===baseIndex?' · Basis':'');line.appendChild(name);
+        const desc=document.createElement('div');desc.className='tiny';desc.style.marginTop='4px';line.appendChild(desc);
+        results.appendChild(line);
+        if(index===baseIndex){desc.textContent='Diese fertige Basisfarbe direkt verwenden.';setTimeout(next,0);return;}
+        const baseRgb=baseMix.rgb;
+        const shadeDelta=deltaE76FromLab(rgbToLabFast(baseRgb),rgbToLabFast(cluster.rgb));
+        if(shadeDelta>75){desc.textContent='Diese Farbe liegt weit von der Basis entfernt. Eigenes Mischrezept oben verwenden.';setTimeout(next,0);return;}
+        try{
+          const cacheKey=[key,baseIndex,index,...baseRgb,...cluster.rgb].join(':');
+          let options=surfaceBaseSuggestionCache.get(cacheKey);
+          if(!options){options=correctionAdditions(baseRgb,cluster.rgb,key);surfaceBaseSuggestionCache.set(cacheKey,options);}
+          const best=options[0];
+          // 5 Punkte Farbnähe als Toleranz statt zahlloser Minimalzugaben.
+          const direct=surfaceBaseRecipes[index];
+          const directScore=direct?.score??(direct?similarityPct(cluster.rgb,direct.rgb):87);
+          const enough=best&&best.score>=75&&best.score>=directScore-5;
+          if(enough){
+            const fmt=v=>Number(v).toLocaleString('de-DE');
+            desc.textContent=best.adds.length
+              ?'30 Teile fertige Basis '+(baseIndex+1)+' + '+best.adds.map(a=>fmt(a.part)+' Teile '+a.name).join(' + ')+'. · Ca. '+best.score+'/100 Farbähnlichkeit.'
+              :'Basis '+(baseIndex+1)+' unverändert verwenden · ca. '+best.score+'/100 Farbähnlichkeit.';
+          }else{
+            desc.textContent='Aus dieser Basis keine ausreichend passende einfache Zugabe gefunden. Eigenes Mischrezept oben verwenden.';
+          }
+        }catch(e){desc.textContent='Kein belastbarer Basisvorschlag; Einzelrezept verwenden.';}
+        setTimeout(next,0);
+      };
+      next();
+    },30);
+  }
+
   function renderSurface(clusters){
     const nuanceMode=!!activeIsolatedColor;
     surfaceClusters=clusters.map(c=>({rgb:[...c.rgb],pct:c.pct}));
     surfaceSelectedIndex=null;
+    surfaceBaseRevision++;
+    surfaceBaseRecipes=[];
+    surfaceBaseSuggestionCache.clear();
+    surfaceBaseResults.innerHTML='<span class="tiny">Basisvorschläge werden nach den Mischrezepten berechnet …</span>';
+    const renderId=++surfaceRenderRevision;
     if(!nuanceMode) surfaceMarkCanvas=null;
     surfaceResults.innerHTML='';
     if(nuanceMode && !clusters.length){
       surfaceResults.innerHTML='<span class="tiny">In diesem Bereich sind zu wenige Pixel der angezeigten Farbe. Kreis etwas größer machen oder auf einen stärker sichtbaren Bereich setzen.</span>';
+      surfaceBaseResults.replaceChildren();
       return;
     }
     const paletteKey=document.getElementById('surfaceMixPalette').value;
@@ -7792,9 +7876,20 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           <button class="surfaceMarkBtn secondary">Nur diese Farbe zeigen</button>
           <button class="surfaceZoomBtn secondary">Bereich vergrößern</button>
         </div>
+        <button class="surfaceBaseBtn secondary" style="width:100%;margin-top:6px;">Als Basisfarbe wählen</button>
         <div class="surfaceRecipe" style="margin-top:8px">Mischrezept wird berechnet …</div><button class="surfaceMixBtn" style="width:100%;margin-top:6px;">Weitere Mischvorschläge</button>`;
       row.querySelector('.surfaceMarkBtn').onclick=()=>buildSurfaceMark(i);
       row.querySelector('.surfaceZoomBtn').onclick=()=>zoomSurfaceCluster(i);
+      const baseBtn=row.querySelector('.surfaceBaseBtn');
+      if(i===surfaceBaseIndex){baseBtn.textContent='Gewählte Basisfarbe ✓';baseBtn.className='surfaceBaseBtn active';}
+      baseBtn.onclick=()=>{
+        surfaceBaseIndex=i;
+        surfaceResults.querySelectorAll('.surfaceBaseBtn').forEach((b,j)=>{
+          b.textContent=j===i?'Gewählte Basisfarbe ✓':'Als Basisfarbe wählen';
+          b.className=j===i?'surfaceBaseBtn active':'surfaceBaseBtn secondary';
+        });
+        renderSurfaceBase();
+      };
       row.querySelector('.surfaceMixBtn').onclick=()=>{
         setMedium(paletteKey==='artisan'?'oil':'water');paintPalette.value=paletteKey;
         setMixTarget(c.rgb,`${nuanceMode ? 'Nuance' : 'Hauptfarbe'} ${i+1}`);
@@ -7803,11 +7898,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       };
       surfaceResults.appendChild(row);
       setTimeout(()=>{
-        if(!row.isConnected)return;
+        if(!row.isConnected||renderId!==surfaceRenderRevision)return;
         const box=row.querySelector('.surfaceRecipe');
         try{
           const m=chooseMixes(c.rgb,paletteKey)[0];
           if(!m){box.textContent='Keine passende Palettenfarbe verfügbar.';return;}
+          surfaceBaseRecipes[i]=m;
+          if(i===clusters.length-1 && !surfaceBaseResults.querySelector('h4'))renderSurfaceBase();
           box.replaceChildren();
           const recipe=document.createElement('div');
           recipe.textContent=m.names.map((n,j)=>m.parts[j].toLocaleString('de-DE')+' Teil'+(m.parts[j]!==1?'e':'')+' '+n).join(' + ');
@@ -9130,7 +9227,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(!activeIsolatedColor) surfaceMarkCanvas=null;
     if(loaded) surfacePreview={shape:'circle',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
     hint.textContent=activeIsolatedColor
-      ? 'Flächenberater: Kreis auf die sichtbare Farbe setzen – es werden bis zu 5 Nuancen dieser Farbe bestimmt'
+      ? 'Flächenberater: Kreis auf die sichtbare Farbe setzen – es werden bis zu 8 Nuancen dieser Farbe bestimmt'
       : 'Flächenberater: Kreis ist sichtbar – gewünschte Stelle antippen';
     draw();
   });
@@ -9139,14 +9236,18 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(!activeIsolatedColor) surfaceMarkCanvas=null;
     if(loaded) surfacePreview={shape:'rect',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
     hint.textContent=activeIsolatedColor
-      ? 'Flächenberater: Bereich auf die sichtbare Farbe setzen – es werden bis zu 5 Nuancen dieser Farbe bestimmt'
+      ? 'Flächenberater: Bereich auf die sichtbare Farbe setzen – es werden bis zu 8 Nuancen dieser Farbe bestimmt'
       : 'Flächenberater: Rechteck ist sichtbar – gewünschte Stelle antippen';
     draw();
   });
   surfaceClearMarkBtn.addEventListener('click',clearSurfaceMark);
   surfaceResetBtn.addEventListener('click',()=>{
     surfaceMode=null; surfacePreview=null; surfaceClusters=[]; surfaceSelectedIndex=null; cancelIsolation();
-    surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>'; draw();
+    surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';
+    surfaceBaseIndex=0;surfaceBaseRecipes=[];
+    surfaceBaseResults.innerHTML='<span class="tiny">Zuerst einen Bereich analysieren.</span>';
+    surfaceBaseRevision++;
+    draw();
   });
 
   function pickSurfaceAt(e){
@@ -9157,6 +9258,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const realSize=Number(surfaceSize.value)/Math.max(scale,.05);
     surfacePreview={shape:surfaceMode,x:ix,y:iy,size:realSize};
     const clusters=clusterArea(ix,iy,realSize,surfaceMode);
+    surfaceBaseIndex=0;
     renderSurface(clusters);
     // Keep the advisor armed for another circle instead of falling back to the average pipette.
     if(activeIsolatedColor){
@@ -9815,7 +9917,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     croppedFormsSnapshot=null;
     sketchActive=false;resetSketchImage();
     surfaceMode=null;surfacePreview=null;surfaceClusters=[];surfaceSelectedIndex=null;
+    surfaceBaseIndex=0;surfaceBaseRevision++;surfaceBaseRecipes=[];surfaceBaseSuggestionCache.clear();
     surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';
+    surfaceBaseResults.innerHTML='<span class="tiny">Zuerst einen Bereich analysieren.</span>';
     areaPickerMode=null;smartPickerArmed=false;
     smartPickerBtn.classList.remove('active');smartPickerBtn.classList.add('secondary');
     clearTimeout(formsSquintTimer);formsSquintPreview=false;
@@ -11700,7 +11804,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    #transferDialog #transferZoomStage{height:clamp(350px,58dvh,700px);min-height:350px}
  }
 
- </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.40</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><div id="transferControls"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:block">Selektive Pastellfarben <input id="transferPastel" type="range" min="0" max="100" value="60" style="width:100%;min-height:36px"><output id="transferPastelLabel">60 %</output></label><label style="display:block">Nur Farbgrenzen glätten <input id="transferEdges" type="range" min="0" max="100" value="0" style="width:100%;min-height:36px"><output id="transferEdgesLabel">0 % (aus)</output></label><p style="font-size:12px;margin:2px 0 8px;color:#555">0 %: reine 1-zu-1-Farbpaare. Der Regler glättet ausschließlich Farbwechsel an benachbarten Flächen – nicht die Bilddetails.</p><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label></div><div id="transferDisplay"><div id="transferZoomHelp"><span>Zwei Finger: Zoom · Ein Finger: Verschieben (bei Zoom)</span><button id="transferZoomReset" type="button" class="secondary">Einpassen</button></div><div id="transferZoomStage" aria-label="Foto-Vorschau mit Zwei-Finger-Zoom"><canvas id="transferPreview"></canvas></div><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><details id="transferPairDetails" style="margin:8px 0;font-size:12px"><summary>Alle 128 Farbpaare ansehen</summary><div id="transferPairSwatches" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0;max-height:240px;overflow:auto"></div></details><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></div></section>`;
+ </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.41</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><div id="transferControls"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:block">Selektive Pastellfarben <input id="transferPastel" type="range" min="0" max="100" value="60" style="width:100%;min-height:36px"><output id="transferPastelLabel">60 %</output></label><label style="display:block">Nur Farbgrenzen glätten <input id="transferEdges" type="range" min="0" max="100" value="0" style="width:100%;min-height:36px"><output id="transferEdgesLabel">0 % (aus)</output></label><p style="font-size:12px;margin:2px 0 8px;color:#555">0 %: reine 1-zu-1-Farbpaare. Der Regler glättet ausschließlich Farbwechsel an benachbarten Flächen – nicht die Bilddetails.</p><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label></div><div id="transferDisplay"><div id="transferZoomHelp"><span>Zwei Finger: Zoom · Ein Finger: Verschieben (bei Zoom)</span><button id="transferZoomReset" type="button" class="secondary">Einpassen</button></div><div id="transferZoomStage" aria-label="Foto-Vorschau mit Zwei-Finger-Zoom"><canvas id="transferPreview"></canvas></div><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><details id="transferPairDetails" style="margin:8px 0;font-size:12px"><summary>Alle 128 Farbpaare ansehen</summary><div id="transferPairSwatches" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0;max-height:240px;overflow:auto"></div></details><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></div></section>`;
  document.body.append(wrap);
  const get=id=>shadow.querySelector('#'+id), preview=get('transferPreview'), ctx=preview.getContext('2d',{willReadFrequently:true});
  // A real, visible native file input receives the user's tap directly.
@@ -12086,7 +12190,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  get('transferOriginal').addEventListener('change',()=>{if(original)ctx.putImageData(get('transferOriginal').checked?original:(painted||original),0,0)});
  async function fullCanvas(){const photo=window.__atelierArtBridge.photo(),source=photo.canvas;if(!reference)throw Error('Bitte zuerst ein Referenzbild auswählen.');if(!source?.width)throw Error('Foto fehlt.');const c=makeCanvas(source.width,source.height),out=c.getContext('2d',{willReadFrequently:true}),job=revision;const stripe=Math.max(1,Math.min(96,Math.floor(750000/source.width))),sourceContext=source.getContext('2d',{willReadFrequently:true});for(let y=0;y<source.height;y+=stripe){if(job!==revision)throw Error('abgebrochen');const h=Math.min(stripe,source.height-y),radius=(+get('transferEdges').value>0?Math.min(6,Math.round((1+2*(+get('transferEdges').value)/100)*source.width/Math.max(1,preview.width))):0),top=Math.min(radius,y),bottom=Math.min(radius,source.height-(y+h)),tile=sourceContext.getImageData(0,y-top,source.width,h+top+bottom),res=await transform(tile,reference,+get('transferStrength').value,+get('transferChroma').value,+get('transferPastel').value,+get('transferEdges').value,job,source.width/Math.max(1,preview.width));out.putImageData(res,0,y-top,0,top,source.width,h)}return c}
  const blobFrom=c=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG-Export fehlgeschlagen')),'image/png'));
- async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.40_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
+ async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.41_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
  get('transferSave').addEventListener('click',()=>save(false));get('transferApply').addEventListener('click',()=>save(true));
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wrap.hidden){revision++;wrap.hidden=true}});
 })();
