@@ -1,3 +1,5 @@
+4.40: Im Malaufbau sind jetzt fünf Stufen 8 → 16 → 32 → 48 → 64 enthalten. Die 8 Grundfarben sind eine bewusst ausgewählte Teilmenge der bestehenden 16 Farben (große Flächen, Hell/Dunkel, eigenständige Farbtöne). Die bisherigen 16/32/48/64-Farben bleiben RGB-identisch und werden sukzessive ergänzt. „Nur neue Farben“ zeigt die Ergänzungen der jeweiligen Stufe. Auch „Endgültige Farben“ beginnt mit 8 statt 16 Farben.
+
 AtelierAI 4.39: Gespeicherte Farbnummern öffnen nun die Mischvorschläge der passenden Palette. Das ursprünglich gemerkte Rezept steht an erster Stelle mit „Nur diese Farbe zeigen“. Ohne aktive Einzelfarbansicht löst ein Nummerntipp keine Isolation aus. Die übrigen Module bleiben unverändert.
 AtelierAI 4.13: Einheitliche 5-Punkte-Toleranz bei Farbkorrekturen, Wiederverwendung gespeicherter Mischungen und Bevorzugung weniger Tuben in gemeinsamen Basismischungen. Sonstige Funktionen aus 4.12 unverändert.
 AtelierAI 4.12: Einfache Farbmischungen werden innerhalb von 5 Prozentpunkten Farbtreue bevorzugt (auch bei praktisch gerundeten Mischrezepten). Sonstige Funktionen von 4.11 bleiben erhalten.

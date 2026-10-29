@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.39</title>
+  <title>AtelierAI iPad 4.40</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1055,7 +1055,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.39</div>
+    <div class="title">AtelierAI · iPad 4.40</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1137,7 +1137,7 @@
       </div>
 
       <div class="section" id="build32Panel">
-        <h3>Farbaufbau · 32 / 48 / 64 Farben</h3>
+        <h3>Farbaufbau · 8 / 16 / 32 / 48 / 64 Farben</h3>
         <p>Farbbereiche Schritt für Schritt einblenden. Der zuletzt bewegte Regler bestimmt die Ansicht.</p>
         <div class="grid2" style="margin-bottom:8px"><button id="build32Grid" class="secondary">Raster ein</button><button id="build32Pick" class="secondary">Mischung aufnehmen</button></div>
         <div class="control-line"><label for="build32GridDensity">Rastergröße</label><input id="build32GridDensity" type="range" min="2" max="20" value="8"><span id="build32GridDensityVal">8</span></div>
@@ -1162,15 +1162,15 @@
 
 
         <details id="build32StagesPanel" style="margin:12px 0" open>
-          <summary style="padding:10px 0;font-weight:bold">Malaufbau in 16er-Schritten</summary>
+          <summary style="padding:10px 0;font-weight:bold">Malaufbau · 8 bis 64 Farben</summary>
           <label for="build32StagesMode">Malweise</label><select id="build32StagesMode" style="width:100%;min-height:44px;margin-bottom:8px"><option value="layer" selected>Grundbild · danach übermalen und verfeinern</option><option value="final">Endgültige Farben · Flächen schrittweise füllen</option></select>
-          <button id="build32StagesStart" type="button" style="width:100%">16 → 32 → 48 → 64 vorbereiten</button>
+          <button id="build32StagesStart" type="button" style="width:100%">8 → 16 → 32 → 48 → 64 vorbereiten</button>
           <div id="build32StagesControls" hidden>
-            <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" class="secondary" data-paint-stage="0">16 Farben</button><button type="button" class="secondary" data-paint-stage="1">32 Farben</button><button type="button" class="secondary" data-paint-stage="2">48 Farben</button><button type="button" class="secondary" data-paint-stage="3">64 Farben</button></div>
+            <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" class="secondary" data-paint-stage="0">8 Farben</button><button type="button" class="secondary" data-paint-stage="1">16 Farben</button><button type="button" class="secondary" data-paint-stage="2">32 Farben</button><button type="button" class="secondary" data-paint-stage="3">48 Farben</button><button type="button" class="secondary" data-paint-stage="4">64 Farben</button></div>
             <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button type="button" class="secondary" data-paint-view="before">Bisher</button><button type="button" class="secondary" data-paint-view="new">Nur neue Farben</button><button type="button" data-paint-view="all">Zusammen</button></div>
             <button id="build32StagesToggle" type="button" class="secondary" style="width:100%;margin-top:8px">Neue Farben ausblenden</button>
           </div>
-          <p id="build32StagesInfo" class="tiny" role="status">Grundbild: zuerst ein vollständiges Bild mit 16 Farben malen, danach mit 32, 48 und 64 Farben übermalen und verfeinern. „Angrenzende Farben verblenden“ startet bei 0 % für klare Farbflächen. Alternativ bleibt „Endgültige Farben“ wählbar: Flächen des 64-Farben-Zielbilds schrittweise füllen. Nur Mischfarben; bei farbarmen Motiven weniger Farben.</p>
+          <p id="build32StagesInfo" class="tiny" role="status">Grundbild: zuerst ein vollständiges Bild mit 8 Hauptfarben malen, danach mit 16, 32, 48 und 64 Farben übermalen und verfeinern. Die 16-Farben-Stufe wird aus denselben ursprünglichen 16 Farben wie bisher aufgebaut. „Angrenzende Farben verblenden“ startet bei 0 % für klare Farbflächen. Alternativ bleibt „Endgültige Farben“ wählbar: Flächen des 64-Farben-Zielbilds schrittweise füllen. Nur Mischfarben; bei farbarmen Motiven weniger Farben.</p>
         </details>
         <details style="margin-top:12px"><summary style="padding:10px 0;cursor:pointer;font-weight:bold">Malflächen vereinfachen</summary>
           <label for="build32Merge">Zielfarbanzahl: <span id="build32MergeVal">32 → 32 Farben</span></label>
@@ -6180,7 +6180,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const ranks=new Uint8Array(pixels.length/4);
     for(let i=0,n=0;i<pixels.length;i+=4,n++)ranks[n]=lut[key(pixels[i],pixels[i+1],pixels[i+2])];
     if(data.finalStages){
-      // One final partition, ordered by painted area; all four masks use it.
+      // One final partition, ordered by painted area; all five masks use it.
       const counts=new Uint32Array(palette.length);
       for(const rank of ranks)counts[rank]++;
       const order=palette.map((_,i)=>i).sort((a,b)=>counts[b]-counts[a]||a-b);
@@ -6188,17 +6188,61 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       order.forEach((old,i)=>{remap[old]=i;});
       const finalRanks=Uint8Array.from(ranks,i=>remap[i]);
       return {width:data.width,height:data.height,palette:order.map(i=>palette[i]),
-        ranks:finalRanks.slice().buffer,stages:[finalRanks,finalRanks,finalRanks,finalRanks],
-        stageCounts:[16,32,48,64].map(n=>Math.min(n,palette.length)),finalStages:true};
+        ranks:finalRanks.slice().buffer,stages:[finalRanks,finalRanks,finalRanks,finalRanks,finalRanks],
+        stageCounts:[8,16,32,48,64].map(n=>Math.min(n,palette.length)),finalStages:true};
     }
     if(data.progressive){
-      // Freeze the ordinary 16-color base exactly. Append colors; never refit it.
-      const stages=[ranks.slice()], stageCounts=[palette.length];
+      // Keep the original 16-color analysis intact. Choose the 8-color
+      // beginning AS A SUBSET of those 16 colors; do not fit a second palette.
+      // This preserves the 16/32/48/64 stage colors while making every later
+      // color a real addition to the first eight.
+      const originalPalette=palette.slice(),originalLab=paletteLab.slice();
+      const counts=new Uint32Array(originalPalette.length);
+      for(const id of ranks)counts[id]++;
+      const chosen=[];
+      if(originalPalette.length){
+        chosen.push(0); // Preserve the darkest endpoint.
+        if(originalPalette.length>1)chosen.push(originalPalette.length-1); // Lightest/paper white.
+      }
+      const baseCount=Math.min(8,originalPalette.length);
+      while(chosen.length<baseCount){
+        let best=-1,bestScore=-1;
+        for(let i=0;i<originalPalette.length;i++){
+          if(chosen.includes(i))continue;
+          let nearest=Infinity;
+          for(const selected of chosen)nearest=Math.min(nearest,distance(originalLab[i],originalLab[selected]));
+          // Favor large important areas, but retain distinct accent colors.
+          const score=nearest*Math.pow(Math.max(1,counts[i]),.55);
+          if(score>bestScore){bestScore=score;best=i;}
+        }
+        if(best<0)break;
+        chosen.push(best);
+      }
+      // Reorder only indexes, NOT RGB values. All original colors are retained.
+      const order=[...chosen,...originalPalette.map((_,i)=>i).filter(i=>!chosen.includes(i))];
+      const remap=new Uint8Array(originalPalette.length);
+      order.forEach((old,i)=>{remap[old]=i;});
+      palette.splice(0,palette.length,...order.map(i=>originalPalette[i]));
+      paletteLab.splice(0,paletteLab.length,...order.map(i=>originalLab[i]));
+      const base8=new Uint8Array(ranks.length);
+      const rank16=Uint8Array.from(ranks,i=>remap[i]);
+      // Map all 16-color pixels to the nearest of the selected eight.
+      const baseMap=new Uint8Array(originalPalette.length);
+      for(let old=0;old<originalPalette.length;old++){
+        let best=0,bestDistance=Infinity;
+        for(let j=0;j<baseCount;j++){
+          const d=distance(originalLab[old],paletteLab[j]);
+          if(d<bestDistance){bestDistance=d;best=j;}
+        }
+        baseMap[old]=best;
+      }
+      for(let i=0;i<ranks.length;i++)base8[i]=baseMap[ranks[i]];
+      const stages=[base8,rank16],stageCounts=[baseCount,palette.length];
       const usedColors=new Set(palette.map(c=>c.join(",")));
       const nearest=points.map(p=>Math.min(...paletteLab.map(c=>distance(p.lab,c))));
-      const ids=points.map(p=>lut[p.key]);
-      for(let stage=1;stage<4;stage++){
-        const target=16*(stage+1);
+      const ids=points.map(p=>remap[lut[p.key]]);
+      for(let stage=2;stage<5;stage++){
+        const target=16*stage; // 32, 48, 64
         while(palette.length<target){
           let best=-1,score=0;
           points.forEach((p,i)=>{const value=nearest[i]*Math.pow(p.weight,.7);if(value>score&&nearest[i]>0.01&&!usedColors.has(p.rgb.map(Math.round).join(","))){score=value;best=i;}});
@@ -6212,7 +6256,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         for(let i=0,n=0;i<pixels.length;i+=4,n++)next[n]=lut[key(pixels[i],pixels[i+1],pixels[i+2])];
         stages.push(next);stageCounts.push(palette.length);
       }
-      return {width:data.width,height:data.height,palette,ranks:stages[3].slice().buffer,stages,stageCounts};
+      return {width:data.width,height:data.height,palette,ranks:stages[4].slice().buffer,stages,stageCounts};
     }
     return {width:data.width,height:data.height,palette,ranks:ranks.buffer};
   }
@@ -6870,7 +6914,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     for(const id of ['build32Count','build32CountSide'])document.getElementById(id).value='64';
     if(document.getElementById('build32StagesMode').value==='final'&&build32Smoothing===0){build32Smoothing=11;document.getElementById('build32Smooth').value='11';document.getElementById('build32SmoothVal').textContent='11 %';}
     syncBuild32Merge(true);document.getElementById('build32Analyze').textContent='64 Farben erkennen';build32StageRequest=document.getElementById('build32StagesMode').value;document.getElementById('build32Analyze').click();
-    build32Status.textContent='Vier feste Malstufen werden vorbereitet …';
+    build32Status.textContent='Fünf Malstufen (8 bis 64 Farben) werden vorbereitet …';
   });
   document.querySelectorAll('[data-paint-stage]').forEach(b=>b.addEventListener('click',()=>{
     if(!build32Data?.stages)return;
@@ -7120,7 +7164,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     // partial view separately: adding a group must not change painted pixels.
     const key=amount+'|'+data.palette.map(c=>c.join(',')).join(';');
     if(!data.finalSmoothCache||data.finalSmoothCache.key!==key){
-      const ranks=data.stages[3],pixels=new Uint8ClampedArray(ranks.length*4);
+      const ranks=data.stages[data.stages.length-1],pixels=new Uint8ClampedArray(ranks.length*4);
       for(let i=0;i<ranks.length;i++)pixels.set([...data.palette[ranks[i]],255],i*4);
       const fullMask=new Uint8Array(ranks.length).fill(1);
       data.finalSmoothCache={key,pixels:smoothBuild32Pixels(pixels,fullMask,data.width,data.height,amount)};
@@ -11656,7 +11700,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    #transferDialog #transferZoomStage{height:clamp(350px,58dvh,700px);min-height:350px}
  }
 
- </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.39</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><div id="transferControls"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:block">Selektive Pastellfarben <input id="transferPastel" type="range" min="0" max="100" value="60" style="width:100%;min-height:36px"><output id="transferPastelLabel">60 %</output></label><label style="display:block">Nur Farbgrenzen glätten <input id="transferEdges" type="range" min="0" max="100" value="0" style="width:100%;min-height:36px"><output id="transferEdgesLabel">0 % (aus)</output></label><p style="font-size:12px;margin:2px 0 8px;color:#555">0 %: reine 1-zu-1-Farbpaare. Der Regler glättet ausschließlich Farbwechsel an benachbarten Flächen – nicht die Bilddetails.</p><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label></div><div id="transferDisplay"><div id="transferZoomHelp"><span>Zwei Finger: Zoom · Ein Finger: Verschieben (bei Zoom)</span><button id="transferZoomReset" type="button" class="secondary">Einpassen</button></div><div id="transferZoomStage" aria-label="Foto-Vorschau mit Zwei-Finger-Zoom"><canvas id="transferPreview"></canvas></div><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><details id="transferPairDetails" style="margin:8px 0;font-size:12px"><summary>Alle 128 Farbpaare ansehen</summary><div id="transferPairSwatches" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0;max-height:240px;overflow:auto"></div></details><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></div></section>`;
+ </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.40</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><div id="transferControls"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:block">Selektive Pastellfarben <input id="transferPastel" type="range" min="0" max="100" value="60" style="width:100%;min-height:36px"><output id="transferPastelLabel">60 %</output></label><label style="display:block">Nur Farbgrenzen glätten <input id="transferEdges" type="range" min="0" max="100" value="0" style="width:100%;min-height:36px"><output id="transferEdgesLabel">0 % (aus)</output></label><p style="font-size:12px;margin:2px 0 8px;color:#555">0 %: reine 1-zu-1-Farbpaare. Der Regler glättet ausschließlich Farbwechsel an benachbarten Flächen – nicht die Bilddetails.</p><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label></div><div id="transferDisplay"><div id="transferZoomHelp"><span>Zwei Finger: Zoom · Ein Finger: Verschieben (bei Zoom)</span><button id="transferZoomReset" type="button" class="secondary">Einpassen</button></div><div id="transferZoomStage" aria-label="Foto-Vorschau mit Zwei-Finger-Zoom"><canvas id="transferPreview"></canvas></div><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><details id="transferPairDetails" style="margin:8px 0;font-size:12px"><summary>Alle 128 Farbpaare ansehen</summary><div id="transferPairSwatches" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0;max-height:240px;overflow:auto"></div></details><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></div></section>`;
  document.body.append(wrap);
  const get=id=>shadow.querySelector('#'+id), preview=get('transferPreview'), ctx=preview.getContext('2d',{willReadFrequently:true});
  // A real, visible native file input receives the user's tap directly.
@@ -12042,7 +12086,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  get('transferOriginal').addEventListener('change',()=>{if(original)ctx.putImageData(get('transferOriginal').checked?original:(painted||original),0,0)});
  async function fullCanvas(){const photo=window.__atelierArtBridge.photo(),source=photo.canvas;if(!reference)throw Error('Bitte zuerst ein Referenzbild auswählen.');if(!source?.width)throw Error('Foto fehlt.');const c=makeCanvas(source.width,source.height),out=c.getContext('2d',{willReadFrequently:true}),job=revision;const stripe=Math.max(1,Math.min(96,Math.floor(750000/source.width))),sourceContext=source.getContext('2d',{willReadFrequently:true});for(let y=0;y<source.height;y+=stripe){if(job!==revision)throw Error('abgebrochen');const h=Math.min(stripe,source.height-y),radius=(+get('transferEdges').value>0?Math.min(6,Math.round((1+2*(+get('transferEdges').value)/100)*source.width/Math.max(1,preview.width))):0),top=Math.min(radius,y),bottom=Math.min(radius,source.height-(y+h)),tile=sourceContext.getImageData(0,y-top,source.width,h+top+bottom),res=await transform(tile,reference,+get('transferStrength').value,+get('transferChroma').value,+get('transferPastel').value,+get('transferEdges').value,job,source.width/Math.max(1,preview.width));out.putImageData(res,0,y-top,0,top,source.width,h)}return c}
  const blobFrom=c=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG-Export fehlgeschlagen')),'image/png'));
- async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.39_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
+ async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.40_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
  get('transferSave').addEventListener('click',()=>save(false));get('transferApply').addEventListener('click',()=>save(true));
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wrap.hidden){revision++;wrap.hidden=true}});
 })();
