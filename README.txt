@@ -1,3 +1,4 @@
+AtelierAI 4.39: Gespeicherte Farbnummern öffnen nun die Mischvorschläge der passenden Palette. Das ursprünglich gemerkte Rezept steht an erster Stelle mit „Nur diese Farbe zeigen“. Ohne aktive Einzelfarbansicht löst ein Nummerntipp keine Isolation aus. Die übrigen Module bleiben unverändert.
 AtelierAI 4.13: Einheitliche 5-Punkte-Toleranz bei Farbkorrekturen, Wiederverwendung gespeicherter Mischungen und Bevorzugung weniger Tuben in gemeinsamen Basismischungen. Sonstige Funktionen aus 4.12 unverändert.
 AtelierAI 4.12: Einfache Farbmischungen werden innerhalb von 5 Prozentpunkten Farbtreue bevorzugt (auch bei praktisch gerundeten Mischrezepten). Sonstige Funktionen von 4.11 bleiben erhalten.
 AtelierAI 4.11: Korrektur der iPad-Kopfleiste: alle Schaltflächen werden jetzt in weitere Zeilen umgebrochen statt rechts abgeschnitten. Bildexport mit/ohne Raster aus 4.10 bleibt erhalten. Sonstige Funktionen unverändert.

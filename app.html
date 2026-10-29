@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.38</title>
+  <title>AtelierAI iPad 4.39</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1055,7 +1055,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.38</div>
+    <div class="title">AtelierAI · iPad 4.39</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3831,20 +3831,60 @@
         ctx.fillStyle='rgba(255,255,255,.95)';ctx.fillRect(p.x+17,p.y-13,w,26);ctx.textAlign='left';ctx.fillStyle='#111';ctx.fillText(text,p.x+24,p.y);ctx.textAlign='center';}
     });ctx.restore();
   }
-  function openPlanMarker(sample){
-    const previousActiveId=planActiveId;
-    planActiveId=sample.id;
-    // Die nummerierte Farbprobe ist auch die aktive Pipettenfarbe.
-    // Dadurch arbeitet „Nur diese Farbe zeigen“ mit der gewählten Nummer,
-    // nicht mit einem früher aufgenommenen Pipettenwert.
-    if(Array.isArray(sample.target)&&sample.target.length===3){
-      lastSmartColor=[...sample.target];
-      lastAverageColor=[...sample.target];
-      // Nummernwahl und Pipettenwahl verhalten sich gleich.
-      // "Nur diese Farbe zeigen" nutzt damit dieselbe Zielfarbe.
+  // Eine gemerkte Farbnummer ist eine echte Mischauswahl, nicht nur eine Markierung.
+  // Das gespeicherte Originalrezept wird über den neuen Vorschlägen angezeigt.
+  function showRememberedMix(sample){
+    const recipe=sample.recipe;
+    if(!recipe||!Array.isArray(recipe.names)||!Array.isArray(recipe.parts))return;
+    const number=planBook.samples.indexOf(sample)+1;
+    const card=document.createElement('div');card.className='mix-card';
+    card.id='rememberedMixCard';
+    const heading=document.createElement('div');heading.className='mix-head';
+    const title=document.createElement('b');title.textContent='Gemerkte Mischung · Farbe '+number+' · '+sample.name;
+    heading.appendChild(title);
+    if(Number.isFinite(Number(recipe.score))){
+      const score=document.createElement('span');score.textContent=recipe.score+'/100 Bildschirmnähe';heading.appendChild(score);
     }
-    // Im Mischmodul sollen bei aktiver Einzelfarbenansicht weitere
-    // Farbnummern direkt durch Antippen zu- oder abgeschaltet werden.
+    card.appendChild(heading);
+    const pair=document.createElement('div');pair.className='mix-swatches';
+    for(const [label,rgb] of [['Zielfarbe',sample.target],['Gespeicherte Mischung',recipe.rgb]]){
+      if(!Array.isArray(rgb)||rgb.length!==3)continue;
+      const cell=document.createElement('div');
+      const name=document.createElement('div');name.className='tiny';name.textContent=label;
+      const swatch=document.createElement('div');swatch.className='mix-swatch';swatch.style.background=rgbHex(rgb);
+      cell.append(name,swatch);pair.appendChild(cell);
+    }
+    card.appendChild(pair);
+    const lines=document.createElement('p');lines.className='mix-lines';
+    lines.textContent=recipe.names.map((name,i)=>recipe.parts[i]+' Teile '+name).join(' + ');
+    card.appendChild(lines);
+    const only=document.createElement('button');only.type='button';only.className='secondary';
+    only.textContent='Nur diese Farbe zeigen';
+    only.onclick=()=>{
+      planActiveId=sample.id;
+      multiIsolatedIds=[sample.id];
+      isolatePlanSampleAreas('Farbe '+number);
+      renderPalettePlan();draw();
+    };
+    card.appendChild(only);
+    const note=document.createElement('div');note.className='tiny';note.style.marginTop='6px';
+    note.textContent='Dein ursprünglich gemerktes Rezept. Darunter stehen weitere Mischvorschläge.';
+    card.appendChild(note);
+    mixResults.prepend(card);
+  }
+  function openPlanMarker(sample){
+    if(!sample||!Array.isArray(sample.target)||sample.target.length!==3)return;
+    const previousActiveId=planActiveId;
+    const wasIsolating=!!activeIsolatedColor||multiIsolatedIds.length>0;
+    // Auf die gespeicherte Malfarbenpalette wechseln: sonst erscheinen Rezepte
+    // aus einer anderen Palette statt aus den gespeicherten Tubenfarben.
+    const medium=sample.key==='artisan'?'oil':'water';
+    if((paintPalette.value==='artisan')!==(medium==='oil'))setMedium(medium);
+    if([...paintPalette.options].some(option=>option.value===sample.key))paintPalette.value=sample.key;
+    setMixTarget(sample.target,'Gemerkte Farbnummer '+(planBook.samples.indexOf(sample)+1)+' · '+sample.name,
+      sample.point?{...sample.point,pictureId:picturePaletteId}:null,sample.id);
+    // Bereits aktivierte Einzelfarbenansichten können wie bisher um weitere
+    // gemerkte Nummern ergänzt werden. Ohne Isolation erfolgt nur die Auswahl.
     if(activeIsolatedColor||multiIsolatedIds.length){
       const visibleIds=multiIsolatedIds.slice();
       if(!visibleIds.length){
@@ -3862,10 +3902,17 @@
         else cancelIsolation();
       }
     }
-    renderPalettePlan();draw();
     if(typeof window.activateToolPage==='function')window.activateToolPage('paintMixPanel');
+    showMixes();
+    showRememberedMix(sample);
+    renderPalettePlan();draw();
     const panel=document.getElementById('palettePlan');panel.open=true;
-    // Keine automatische Verschiebung der linken Bedienleiste.
+    // Ohne aktive Einzelfarbenansicht das gemerkte Rezept ins Blickfeld holen.
+    // Beim Zuschalten weiterer Nummern dagegen an der bisherigen Regler-/Legendenposition bleiben.
+    if(!wasIsolating)setTimeout(()=>{
+      const card=document.getElementById('rememberedMixCard');
+      if(card&&typeof card.scrollIntoView==='function')card.scrollIntoView({behavior:'auto',block:'nearest'});
+    },0);
   }
   function placePlanMarker(e){
     if(!planPlaceId)return false;
@@ -4673,6 +4720,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const robust=robustSmartColor(samples);
     correctionRecipeHint=null;
     correctionOriginalRecipe=null;
+    planActiveId=null; // Eigenständige Kreisprobe, keine alte gemerkte Nummer
     lastAverageColor=avg;
     lastSmartColor=smart && robust ? robust.smart : avg;
     planSamplePoint={...planPointAt(ix,iy),rgb:lastSmartColor.slice()};
@@ -4706,7 +4754,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     },30);
   }
 
-  function setMixTarget(rgb, label='Zielfarbe',point=null){
+  function setMixTarget(rgb, label='Zielfarbe',point=null,rememberedSampleId=null){
+    // Neues Pipettenziel hebt eine frühere Nummernwahl auf. Nur der Aufruf
+    // einer gemerkten Farbnummer behält deren Zuordnung für die Isolation.
+    planActiveId=rememberedSampleId;
     planSamplePoint=point&&rgb?{...point,rgb:rgb.slice()}:null;
     if(!rgb) return;
     correctionRecipeHint=null;
@@ -11605,7 +11656,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    #transferDialog #transferZoomStage{height:clamp(350px,58dvh,700px);min-height:350px}
  }
 
- </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.38</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><div id="transferControls"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:block">Selektive Pastellfarben <input id="transferPastel" type="range" min="0" max="100" value="60" style="width:100%;min-height:36px"><output id="transferPastelLabel">60 %</output></label><label style="display:block">Nur Farbgrenzen glätten <input id="transferEdges" type="range" min="0" max="100" value="0" style="width:100%;min-height:36px"><output id="transferEdgesLabel">0 % (aus)</output></label><p style="font-size:12px;margin:2px 0 8px;color:#555">0 %: reine 1-zu-1-Farbpaare. Der Regler glättet ausschließlich Farbwechsel an benachbarten Flächen – nicht die Bilddetails.</p><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label></div><div id="transferDisplay"><div id="transferZoomHelp"><span>Zwei Finger: Zoom · Ein Finger: Verschieben (bei Zoom)</span><button id="transferZoomReset" type="button" class="secondary">Einpassen</button></div><div id="transferZoomStage" aria-label="Foto-Vorschau mit Zwei-Finger-Zoom"><canvas id="transferPreview"></canvas></div><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><details id="transferPairDetails" style="margin:8px 0;font-size:12px"><summary>Alle 128 Farbpaare ansehen</summary><div id="transferPairSwatches" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0;max-height:240px;overflow:auto"></div></details><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></div></section>`;
+ </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.39</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><div id="transferControls"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:block">Selektive Pastellfarben <input id="transferPastel" type="range" min="0" max="100" value="60" style="width:100%;min-height:36px"><output id="transferPastelLabel">60 %</output></label><label style="display:block">Nur Farbgrenzen glätten <input id="transferEdges" type="range" min="0" max="100" value="0" style="width:100%;min-height:36px"><output id="transferEdgesLabel">0 % (aus)</output></label><p style="font-size:12px;margin:2px 0 8px;color:#555">0 %: reine 1-zu-1-Farbpaare. Der Regler glättet ausschließlich Farbwechsel an benachbarten Flächen – nicht die Bilddetails.</p><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label></div><div id="transferDisplay"><div id="transferZoomHelp"><span>Zwei Finger: Zoom · Ein Finger: Verschieben (bei Zoom)</span><button id="transferZoomReset" type="button" class="secondary">Einpassen</button></div><div id="transferZoomStage" aria-label="Foto-Vorschau mit Zwei-Finger-Zoom"><canvas id="transferPreview"></canvas></div><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><details id="transferPairDetails" style="margin:8px 0;font-size:12px"><summary>Alle 128 Farbpaare ansehen</summary><div id="transferPairSwatches" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0;max-height:240px;overflow:auto"></div></details><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></div></section>`;
  document.body.append(wrap);
  const get=id=>shadow.querySelector('#'+id), preview=get('transferPreview'), ctx=preview.getContext('2d',{willReadFrequently:true});
  // A real, visible native file input receives the user's tap directly.
@@ -11991,7 +12042,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  get('transferOriginal').addEventListener('change',()=>{if(original)ctx.putImageData(get('transferOriginal').checked?original:(painted||original),0,0)});
  async function fullCanvas(){const photo=window.__atelierArtBridge.photo(),source=photo.canvas;if(!reference)throw Error('Bitte zuerst ein Referenzbild auswählen.');if(!source?.width)throw Error('Foto fehlt.');const c=makeCanvas(source.width,source.height),out=c.getContext('2d',{willReadFrequently:true}),job=revision;const stripe=Math.max(1,Math.min(96,Math.floor(750000/source.width))),sourceContext=source.getContext('2d',{willReadFrequently:true});for(let y=0;y<source.height;y+=stripe){if(job!==revision)throw Error('abgebrochen');const h=Math.min(stripe,source.height-y),radius=(+get('transferEdges').value>0?Math.min(6,Math.round((1+2*(+get('transferEdges').value)/100)*source.width/Math.max(1,preview.width))):0),top=Math.min(radius,y),bottom=Math.min(radius,source.height-(y+h)),tile=sourceContext.getImageData(0,y-top,source.width,h+top+bottom),res=await transform(tile,reference,+get('transferStrength').value,+get('transferChroma').value,+get('transferPastel').value,+get('transferEdges').value,job,source.width/Math.max(1,preview.width));out.putImageData(res,0,y-top,0,top,source.width,h)}return c}
  const blobFrom=c=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG-Export fehlgeschlagen')),'image/png'));
- async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.38_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
+ async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.39_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
  get('transferSave').addEventListener('click',()=>save(false));get('transferApply').addEventListener('click',()=>save(true));
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wrap.hidden){revision++;wrap.hidden=true}});
 })();
