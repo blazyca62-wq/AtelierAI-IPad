@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.42</title>
+  <title>AtelierAI iPad 4.43</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1055,7 +1055,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.42</div>
+    <div class="title">AtelierAI · iPad 4.43</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1610,7 +1610,7 @@
 
       <div class="section" id="surfaceAdvisorPanel">
         <h3>Flächenberater</h3>
-        <p>Kreis oder Rechteck wählen und im Bild antippen: bis zu acht unterschiedliche Hauptfarben mit eigenen Mischrezepten – von hell nach dunkel sortiert. Bei „Nur diese Farbe zeigen“ werden bis zu acht Nuancen dieser Farbfamilie ebenfalls nach Helligkeit sortiert. Einfarbige Bereiche ergeben entsprechend weniger Farben.</p>
+        <p>Kreis oder Rechteck wählen und im Bild antippen: ausschließlich die tatsächlich sichtbaren Pixel innerhalb dieser Auswahl werden analysiert (auch bei starkem Zoom); bis zu acht Hauptfarben, von hell nach dunkel sortiert. Bei „Nur diese Farbe zeigen“ werden bis zu acht Nuancen dieser Farbfamilie ebenfalls nach Helligkeit sortiert. Einfarbige Bereiche ergeben entsprechend weniger Farben.</p>
         <div class="grid2">
           <button id="surfaceCircleBtn">Kreis analysieren</button>
           <button id="surfaceRectBtn" class="secondary">Rechteck analysieren</button>
@@ -5924,30 +5924,47 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
 
   function clusterArea(cx,cy,size,shape){
-    const srcCtx=sourceContextForPicker();
-    const w=srcCtx.canvas.width,h=srcCtx.canvas.height;
-    const half=Math.max(12,Math.round(size/2));
+    // Pixelgenau in dem Bereich messen, den der weiße Kreis auf dem iPad
+    // TATSÄCHLICH umschließt. Früher wurde mindestens ein Radius von 12
+    // BILDpixeln verwendet: bei 20x Zoom waren das 480 DISPLAYpixel
+    // Durchmesser statt der sichtbaren 84px – Farben von weit außerhalb.
+    // Die sichtbare Bildkomposition ohne Kreis/Raster liegt bereits in der
+    // hochauflösenden Picker-Anzeige (einschließlich Zoom-Interpolation).
+    const display=renderPickerDisplay();
+    const pixelRatio=Math.max(1,window.devicePixelRatio||1);
+    const centerX=(offsetX+cx*scale)*pixelRatio;
+    const centerY=(offsetY+cy*scale)*pixelRatio;
+    // 'size' ist in Bildkoordinaten übergeben; genau wie beim Zeichnen.
+    const radius=Math.max(0,size*scale*pixelRatio/2);
+    if(!(radius>0))return [];
+    const x0=Math.max(0,Math.floor(centerX-radius));
+    const x1=Math.min(display.canvas.width-1,Math.ceil(centerX+radius)-1);
+    const y0=Math.max(0,Math.floor(centerY-radius));
+    const y1=Math.min(display.canvas.height-1,Math.ceil(centerY+radius)-1);
+    if(x1<x0||y1<y0)return [];
+    const width=x1-x0+1;
+    const pixels=readImageDataSRGB(display,x0,y0,width,y1-y0+1).data;
+    // Circa 5.000 echte Anzeige-Pixel pro Auswahl, selbst auf Retina-iPads.
+    const step=Math.max(1,Math.ceil(radius/45));
     const pts=[];
-    const x0=Math.max(0,Math.floor(cx-half)),x1=Math.min(w-1,Math.ceil(cx+half));
-    const y0=Math.max(0,Math.floor(cy-half)),y1=Math.min(h-1,Math.ceil(cy+half));
-    const step=Math.max(1,Math.floor(size/40));
-
-    // Wenn „Nur diese Farbe zeigen“ aktiv ist, werden für die Flächenanalyse
-    // ausschließlich Pixel aus genau dieser sichtbaren Farbfamilie benutzt.
-    const isolatedLab=activeIsolatedColor ? rgbToLabFast(activeIsolatedColor) : null;
+    const isolatedLab=activeIsolatedColor?rgbToLabFast(activeIsolatedColor):null;
     const isolatedTolerance=currentColorTolerance();
-
-    if(x1<x0 || y1<y0) return [];
-    const regionWidth=x1-x0+1;
-    const pixels=srcCtx.getImageData(x0,y0,regionWidth,y1-y0+1).data;
     for(let y=y0;y<=y1;y+=step)for(let x=x0;x<=x1;x+=step){
-      if(shape==='circle'){const dx=x-cx,dy=y-cy;if(dx*dx+dy*dy>half*half)continue;}
-      const pixel=((y-y0)*regionWidth+x-x0)*4;
-      const rgb=[pixels[pixel],pixels[pixel+1],pixels[pixel+2]];
-      if(isolatedLab && deltaE76FromLab(rgbToLabFast(rgb),isolatedLab)>isolatedTolerance) continue;
+      const dx=x+.5-centerX,dy=y+.5-centerY;
+      if(shape==='circle' && dx*dx+dy*dy>radius*radius)continue;
+      // An den Bildrändern keine grauen/weißen Viewer-Hintergrundpixel zählen.
+      const ix=((x+.5)/pixelRatio-offsetX)/scale;
+      const iy=((y+.5)/pixelRatio-offsetY)/scale;
+      if(ix<0||iy<0||ix>=sourceCanvas.width||iy>=sourceCanvas.height)continue;
+      const k=((y-y0)*width+x-x0)*4;
+      if(pixels[k+3]<16)continue;
+      const rgb=[pixels[k],pixels[k+1],pixels[k+2]];
+      if(isolatedLab && deltaE76FromLab(rgbToLabFast(rgb),isolatedLab)>isolatedTolerance)continue;
       pts.push(rgb);
     }
-    if(pts.length<4)return[];
+    // Ein winziger Kreis kann bei starkem Zoom nur eine einzige Farbe
+    // enthalten. Niemals andere Bildstellen hinzufügen, nur um 8 zu erzwingen.
+    if(!pts.length)return [];
 
     // Seed by color separation, not pixel positions: repeated stripes must
     // not produce identical centers and collapse to a single average.
@@ -7726,7 +7743,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function surfaceInsideSelection(x,y){
     if(!surfacePreview) return false;
     const dx=x-surfacePreview.x, dy=y-surfacePreview.y;
-    const half=surfacePreview.size/2;
+    const half=Number(surfaceSize.value)/(2*Math.max(scale,.0001));
     if(surfacePreview.shape==='circle') return dx*dx+dy*dy <= half*half;
     return Math.abs(dx)<=half && Math.abs(dy)<=half;
   }
@@ -7871,7 +7888,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     const paletteKey=document.getElementById('surfaceMixPalette').value;
     const summary=document.createElement('p');summary.className='tiny';
-    summary.textContent=clusters.length+' Farben erkannt · von hell nach dunkel (auch Nuancen, nach wahrgenommener Helligkeit L*) · Anteile im ausgewählten Bereich · Mischungen sind Startrezepte, bitte auf Papier oder Palette prüfen.';
+    summary.textContent=clusters.length+' Farben ausschließlich im sichtbaren '+(surfacePreview?.shape==='circle'?'Kreis':'Rechteck')+' erkannt · hell → dunkel (L*) · Anteile nur dieser Fläche · Mischungen als Startrezepte prüfen.';
     surfaceResults.appendChild(summary);
     clusters.forEach((c,i)=>{
       const row=document.createElement('div');row.className='pc-card';
@@ -8126,6 +8143,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     scale = Math.min(r.width/img.width, r.height/img.height);
     offsetX = (r.width-img.width*scale)/2;
     offsetY = (r.height-img.height*scale)/2;
+    refreshSurfaceAfterZoom();
     draw(); syncGlobalViewControls();
   }
 
@@ -8878,9 +8896,20 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     offsetX=vr.width/2-cx*scale;
     offsetY=vr.height/2-cy*scale;
     syncGlobalViewControls();
+    // Während der Schieber gezogen wird, nur die Anzeige aktualisieren.
+    // Die kostspieligen acht Mischrezepte erst beim Loslassen neu berechnen.
     draw();
   }
 
+  let surfaceAnalyzedZoom=null;
+  function refreshSurfaceAfterZoom(){
+    if(!surfaceMode||!surfacePreview||!surfaceClusters.length||!loaded)return;
+    if(surfaceAnalyzedZoom!==null && Math.abs(scale-surfaceAnalyzedZoom)<0.000001)return;
+    const realSize=Number(surfaceSize.value)/Math.max(scale,.0001);
+    surfacePreview.size=realSize;
+    surfaceAnalyzedZoom=scale;
+    renderSurface(clusterArea(surfacePreview.x,surfacePreview.y,realSize,surfacePreview.shape));
+  }
   let drawFrame=0;
   function draw(){
     if(drawFrame) return;
@@ -8961,7 +8990,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     drawPlanMarkers();
     if(surfacePreview && !sketchActive && !build32Active){
       const sx=offsetX+surfacePreview.x*scale, sy=offsetY+surfacePreview.y*scale;
-      const sz=surfacePreview.size*scale;
+      const sz=Number(surfaceSize.value);
       ctx.save();
       ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=3;
       ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=3;
@@ -9039,6 +9068,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   globalMoveBtn.addEventListener('click',()=>setMode('move'));
   globalFitBtn.addEventListener('click',()=>fitImage());
   globalZoom.addEventListener('input',()=>setGlobalZoom(globalZoom.value));
+  globalZoom.addEventListener('change',refreshSurfaceAfterZoom);
 
   [lightSlider,midSlider,darkSlider].forEach(sl=>{
     sl.addEventListener('input',()=>{
@@ -9228,7 +9258,15 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
   surfaceSize.addEventListener('input',()=>{
     surfaceSizeVal.textContent=surfaceSize.value;
-    if(surfacePreview){surfacePreview.size=Number(surfaceSize.value)/Math.max(scale,.05);draw();}
+    if(surfacePreview){surfacePreview.size=Number(surfaceSize.value)/Math.max(scale,.0001);draw();}
+  });
+  // Bei geänderter Kreisgröße dürfen keine Ergebnisse vom alten Kreis stehen.
+  surfaceSize.addEventListener('change',()=>{
+    if(surfaceMode&&surfacePreview&&surfaceClusters.length){
+      surfaceAnalyzedZoom=scale;
+      renderSurface(clusterArea(surfacePreview.x,surfacePreview.y,
+        Number(surfaceSize.value)/Math.max(scale,.0001),surfacePreview.shape));
+    }
   });
   surfaceCircleBtn.addEventListener('click',()=>{
     surfaceMode='circle'; areaPickerMode=null; smartPickerArmed=false; surfaceSelectedIndex=null;
@@ -9250,7 +9288,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   });
   surfaceClearMarkBtn.addEventListener('click',clearSurfaceMark);
   surfaceResetBtn.addEventListener('click',()=>{
-    surfaceMode=null; surfacePreview=null; surfaceClusters=[]; surfaceSelectedIndex=null; cancelIsolation();
+    surfaceMode=null; surfacePreview=null; surfaceClusters=[]; surfaceSelectedIndex=null; surfaceAnalyzedZoom=null; cancelIsolation();
     surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';
     surfaceBaseIndex=0;surfaceBaseRecipes=[];
     surfaceBaseResults.innerHTML='<span class="tiny">Zuerst einen Bereich analysieren.</span>';
@@ -9263,9 +9301,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const p=canvasPoint(e.clientX,e.clientY);
     const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
     if(ix<0||iy<0||ix>=img.width||iy>=img.height)return true;
-    const realSize=Number(surfaceSize.value)/Math.max(scale,.05);
+    const realSize=Number(surfaceSize.value)/Math.max(scale,.0001);
     surfacePreview={shape:surfaceMode,x:ix,y:iy,size:realSize};
     const clusters=clusterArea(ix,iy,realSize,surfaceMode);
+    surfaceAnalyzedZoom=scale;
     surfaceBaseIndex=0;
     renderSurface(clusters);
     // Keep the advisor armed for another circle instead of falling back to the average pipette.
@@ -10065,6 +10104,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(touches.size===0){
       gestureStart=null;
       if(tap) selectViewerPoint(e);
+      else refreshSurfaceAfterZoom();
     }else if(touches.size===1){
       const p=[...touches.values()][0];
       // Remaining finger may pan, but may never become a new tap.
@@ -11812,7 +11852,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    #transferDialog #transferZoomStage{height:clamp(350px,58dvh,700px);min-height:350px}
  }
 
- </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.42</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><div id="transferControls"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:block">Selektive Pastellfarben <input id="transferPastel" type="range" min="0" max="100" value="60" style="width:100%;min-height:36px"><output id="transferPastelLabel">60 %</output></label><label style="display:block">Nur Farbgrenzen glätten <input id="transferEdges" type="range" min="0" max="100" value="0" style="width:100%;min-height:36px"><output id="transferEdgesLabel">0 % (aus)</output></label><p style="font-size:12px;margin:2px 0 8px;color:#555">0 %: reine 1-zu-1-Farbpaare. Der Regler glättet ausschließlich Farbwechsel an benachbarten Flächen – nicht die Bilddetails.</p><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label></div><div id="transferDisplay"><div id="transferZoomHelp"><span>Zwei Finger: Zoom · Ein Finger: Verschieben (bei Zoom)</span><button id="transferZoomReset" type="button" class="secondary">Einpassen</button></div><div id="transferZoomStage" aria-label="Foto-Vorschau mit Zwei-Finger-Zoom"><canvas id="transferPreview"></canvas></div><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><details id="transferPairDetails" style="margin:8px 0;font-size:12px"><summary>Alle 128 Farbpaare ansehen</summary><div id="transferPairSwatches" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0;max-height:240px;overflow:auto"></div></details><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></div></section>`;
+ </style><section id="transferPanel" role="dialog" aria-modal="true" aria-label="Farbübertragung"><header id="transferHeader"><h2 style="font-size:20px;margin:0">Farbübertragung · 4.43</h2><button type="button" id="transferClose" class="secondary">Schließen ✕</button></header><div id="transferContent"><div id="transferControls"><p style="font-size:13px">Übernimmt die Farbwelt eines Referenzbilds. Formen, Kanten und Bildausschnitt des Originalfotos werden nicht verschoben. Die Helligkeitsabstufungen bleiben möglichst erhalten.</p><div style="margin:12px 0"><label for="transferNativeFile" style="display:block;margin:0 0 5px;font-size:14px">Referenzbild auswählen</label><input id="transferNativeFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:block;position:relative;width:100%;min-height:56px;background:#e8f4ee;border:2px solid #226a56;border-radius:8px;padding:10px;font-size:15px;color:#174f40;opacity:1;pointer-events:auto;z-index:2"><p id="transferSelectedFile" style="font-size:13px;margin:6px 0">Noch kein Referenzbild ausgewählt</p><img id="transferReferenceThumb" alt="Vorschau Referenzbild"></div><label style="display:block">Stärke <input id="transferStrength" type="range" min="0" max="100" value="75" style="width:100%;min-height:36px"><output id="transferStrengthLabel">75 %</output></label><label style="display:block">Farbsättigung der Vorlage <input id="transferChroma" type="range" min="0" max="150" value="100" style="width:100%;min-height:36px"><output id="transferChromaLabel">100 %</output></label><label style="display:block">Selektive Pastellfarben <input id="transferPastel" type="range" min="0" max="100" value="60" style="width:100%;min-height:36px"><output id="transferPastelLabel">60 %</output></label><label style="display:block">Nur Farbgrenzen glätten <input id="transferEdges" type="range" min="0" max="100" value="0" style="width:100%;min-height:36px"><output id="transferEdgesLabel">0 % (aus)</output></label><p style="font-size:12px;margin:2px 0 8px;color:#555">0 %: reine 1-zu-1-Farbpaare. Der Regler glättet ausschließlich Farbwechsel an benachbarten Flächen – nicht die Bilddetails.</p><label style="display:flex;gap:7px;align-items:center;margin:8px 0"><input id="transferOriginal" type="checkbox"> Original vergleichen</label></div><div id="transferDisplay"><div id="transferZoomHelp"><span>Zwei Finger: Zoom · Ein Finger: Verschieben (bei Zoom)</span><button id="transferZoomReset" type="button" class="secondary">Einpassen</button></div><div id="transferZoomStage" aria-label="Foto-Vorschau mit Zwei-Finger-Zoom"><canvas id="transferPreview"></canvas></div><p id="transferStatus" role="status" style="font-size:13px">Bitte Referenzbild auswählen.</p><details id="transferPairDetails" style="margin:8px 0;font-size:12px"><summary>Alle 128 Farbpaare ansehen</summary><div id="transferPairSwatches" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0;max-height:240px;overflow:auto"></div></details><div id="transferActions"><button id="transferSave" type="button">PNG speichern</button><button id="transferApply" type="button" class="secondary">Für alle Module übernehmen</button></div></div></div></section>`;
  document.body.append(wrap);
  const get=id=>shadow.querySelector('#'+id), preview=get('transferPreview'), ctx=preview.getContext('2d',{willReadFrequently:true});
  // A real, visible native file input receives the user's tap directly.
@@ -12198,7 +12238,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  get('transferOriginal').addEventListener('change',()=>{if(original)ctx.putImageData(get('transferOriginal').checked?original:(painted||original),0,0)});
  async function fullCanvas(){const photo=window.__atelierArtBridge.photo(),source=photo.canvas;if(!reference)throw Error('Bitte zuerst ein Referenzbild auswählen.');if(!source?.width)throw Error('Foto fehlt.');const c=makeCanvas(source.width,source.height),out=c.getContext('2d',{willReadFrequently:true}),job=revision;const stripe=Math.max(1,Math.min(96,Math.floor(750000/source.width))),sourceContext=source.getContext('2d',{willReadFrequently:true});for(let y=0;y<source.height;y+=stripe){if(job!==revision)throw Error('abgebrochen');const h=Math.min(stripe,source.height-y),radius=(+get('transferEdges').value>0?Math.min(6,Math.round((1+2*(+get('transferEdges').value)/100)*source.width/Math.max(1,preview.width))):0),top=Math.min(radius,y),bottom=Math.min(radius,source.height-(y+h)),tile=sourceContext.getImageData(0,y-top,source.width,h+top+bottom),res=await transform(tile,reference,+get('transferStrength').value,+get('transferChroma').value,+get('transferPastel').value,+get('transferEdges').value,job,source.width/Math.max(1,preview.width));out.putImageData(res,0,y-top,0,top,source.width,h)}return c}
  const blobFrom=c=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG-Export fehlgeschlagen')),'image/png'));
- async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.42_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
+ async function save(apply){if(busy||!reference)return;busy=true;get('transferSave').disabled=true;get('transferApply').disabled=true;setStatus('Gesamtbild wird in Originalauflösung berechnet …');try{const c=await fullCanvas(),blob=await blobFrom(c);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));revision++;wrap.hidden=true;}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.43_Farbuebertragung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000);setStatus('PNG wurde gespeichert.')}}catch(e){setStatus('Fehler: '+e.message)}finally{busy=false;get('transferSave').disabled=false;get('transferApply').disabled=false}}
  get('transferSave').addEventListener('click',()=>save(false));get('transferApply').addEventListener('click',()=>save(true));
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wrap.hidden){revision++;wrap.hidden=true}});
 })();
