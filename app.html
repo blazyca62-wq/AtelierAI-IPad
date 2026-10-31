@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.53</title>
+  <title>AtelierAI iPad 4.54</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1061,7 +1061,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.53</div>
+    <div class="title">AtelierAI · iPad 4.54</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1138,7 +1138,7 @@
         <h3>Werkzeug</h3>
         <div class="mode">
           <button id="moveMode" class="active">Bewegen</button>
-          <button id="pickerMode" class="secondary">Pipette (Punkt)</button>
+          <button id="pickerMode" class="secondary">Pipette (Kreis)</button>
         </div>
       </div>
 
@@ -1422,8 +1422,9 @@
           <span id="pickerRadiusVal">14</span>
         </div>
 
-        <div class="mode" style="margin-bottom:8px;">
+        <div class="mode" style="margin-bottom:8px;grid-template-columns:repeat(3,minmax(0,1fr))">
           <button id="areaPickerBtn" class="secondary">Kreis-Pipette</button>
+          <button id="pointPickerMode" class="secondary">Punkt-Pipette</button>
           <button id="smartAreaPickerBtn" class="secondary">Maler-Pipette</button>
         </div>
 
@@ -1465,7 +1466,7 @@
         </div>
 
         <label class="base-suggestion-switch"><input id="showBaseMixesStudio" type="checkbox"> Gemeinsame Basismischungen anzeigen</label>
-        <div class="tiny" style="margin-top:6px;">Individuelle Mischrezepte · einfache Mischung zuerst</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Punkt)</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Punkt- und Maler-Pipette berechnen die Studio-Mischung automatisch.</div><div style="margin-top:10px;padding:8px 0">
+        <div class="tiny" style="margin-top:6px;">Individuelle Mischrezepte · einfache Mischung zuerst</div><div class="tiny" style="margin-top:5px;"><b>Pipette (Kreis, Standard)</b>: Durchschnitt im verstellbaren Kreis. <b>Punkt-Pipette</b>: einzelne Bildfarbe. <b>Maler-Pipette</b>: intelligenter Kreis für eine repräsentative Malfarbe. Punkt- und Maler-Pipette berechnen die Studio-Mischung automatisch.</div><div style="margin-top:10px;padding:8px 0">
           <div class="tiny">Umgebung der Mischfarbe</div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px">
             <button id="mixSurroundAuto" class="secondary" type="button" aria-pressed="true">Grau automatisch (1–10)</button>
@@ -1907,6 +1908,7 @@
   const resetBtn = document.getElementById('resetBtn');
   const moveMode = document.getElementById('moveMode');
   const pickerMode = document.getElementById('pickerMode');
+  const pointPickerMode = document.getElementById('pointPickerMode');
   const colorBox = document.getElementById('colorBox');
   const colorText = document.getElementById('colorText');
   const hint = document.getElementById('hint');
@@ -2208,6 +2210,9 @@
   let loaded = false;
   let scale = 1, offsetX = 0, offsetY = 0;
   let mode = 'move';
+  // 4.54: Im normalen Pipettenwerkzeug wird standardmaessig ein Kreis gemittelt.
+  // Punktaufnahme bleibt als ausdrueckliche Alternative erhalten.
+  let pickerSampleShape = 'circle';
   let paintMode = 'water';
   let toneView = 'all';
   let formLevel = 0, formsOriginalPreview = false;
@@ -4986,6 +4991,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       for(let x=0;x<w;x+=step){
         const dx=(x+x0-cx), dy=(y+y0-cy);
         if(dx*dx+dy*dy>radius*radius) continue;
+        // Im Kreis ausserhalb des Motivs niemals den grauen Viewer-Hintergrund mitmessen.
+        if(visible){
+          const imageX=((x+x0+.5)/dpr-offsetX)/scale;
+          const imageY=((y+y0+.5)/dpr-offsetY)/scale;
+          if(imageX<0||imageY<0||imageX>=img.width||imageY>=img.height)continue;
+        }
         const i=(y*w+x)*4;
         if(data[i+3]>20) samples.push([data[i],data[i+1],data[i+2]]);
       }
@@ -4999,6 +5010,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     lastAverageColor=avg;
     lastSmartColor=smart && robust ? robust.smart : avg;
     planSamplePoint={...planPointAt(ix,iy),rgb:lastSmartColor.slice()};
+    // Kreisaufnahme aktualisiert auch die normale Pipettenfarbe und verwirft alte Isolierungen.
+    surfaceSelectedIndex=null;
+    cancelIsolation();
+    colorBox.style.background=rgbHex(adaptiveDisplayColor(lastSmartColor));
+    colorText.innerHTML=`RGB: ${lastSmartColor.join(', ')}<br>HEX: ${rgbHex(lastSmartColor)} · Kreis-Durchschnitt`;
     avgTargetBox.style.background=rgbHex(adaptiveDisplayColor(avg));
     smartTargetBox.style.background=rgbHex(adaptiveDisplayColor(lastSmartColor));
     targetInfo.innerHTML=`Durchschnitt ${rgbHex(avg)} · RGB ${avg.join(', ')}<br>`+
@@ -8450,13 +8466,17 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     draw(); syncGlobalViewControls();
   }
 
-  function setMode(next){
+  function setMode(next, sampleShape='circle'){
     mode = next;
-    moveMode.classList.toggle('active', mode==='move');
-    pickerMode.classList.toggle('active', mode==='picker');
-    moveMode.classList.toggle('secondary', mode!=='move');
-    pickerMode.classList.toggle('secondary', mode!=='picker');
-    hint.textContent = mode==='move' ? 'Modus: Verschieben / Zoom' : 'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger';
+    if(mode==='picker')pickerSampleShape=sampleShape==='point'?'point':'circle';
+    moveMode.classList.toggle('active',mode==='move');
+    moveMode.classList.toggle('secondary',mode!=='move');
+    pickerMode.classList.toggle('active',mode==='picker'&&pickerSampleShape==='circle');
+    pickerMode.classList.toggle('secondary',mode!=='picker'||pickerSampleShape!=='circle');
+    pointPickerMode.classList.toggle('active',mode==='picker'&&pickerSampleShape==='point');
+    pointPickerMode.classList.toggle('secondary',mode!=='picker'||pickerSampleShape!=='point');
+    hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':
+      (pickerSampleShape==='circle'?'Kreis-Pipette: Bild antippen · Ziehen: Verschieben · Zwei Finger: Zoom':'Punkt-Pipette: Bild antippen · Ziehen: Verschieben · Zwei Finger: Zoom');
     syncGlobalViewControls();
   }
 
@@ -10318,7 +10338,16 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   resetBtn.addEventListener('click',restoreInitialPhoto);
   moveMode.addEventListener('click',()=>setMode('move'));
-  pickerMode.addEventListener('click',()=>setMode('picker'));
+  function selectNormalPipette(shape){
+    // Eine zuvor einmalig aktivierte Kreis-/Maler-Pipette soll die bewusste Auswahl nicht ueberlagern.
+    areaPickerMode=null;smartPickerArmed=false;
+    for(const b of [areaPickerBtn,smartAreaPickerBtn,smartPickerBtn]){
+      b.classList.remove('active');b.classList.add('secondary');
+    }
+    setMode('picker',shape);
+  }
+  pickerMode.addEventListener('click',()=>selectNormalPipette('circle'));
+  pointPickerMode.addEventListener('click',()=>selectNormalPipette('point'));
   waterMode.addEventListener('click',()=>setPaintMode('water'));
   oilMode.addEventListener('click',()=>setPaintMode('oil'));
   toneAll.addEventListener('click',()=>setToneView('all'));
@@ -10376,8 +10405,16 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     if(mode==='move'&&inspectBuild32ImageColor(e)){e.preventDefault();return;}
     if(mode==='picker'){
-      pickColor(e.clientX,e.clientY);
-      
+      // In der normalen Farbmischung gemittelte Kreisfarbe verwenden.
+      // Spezialwerkzeuge behalten ihre bisherige punktgenaue Auswahl.
+      const journeyOpen=document.getElementById('colorJourneyPanel')?.classList.contains('tool-page-active');
+      if(pickerSampleShape==='circle'&&!build32Active&&!journeyOpen&&!sketchActive){
+        updatePickerCircle(e.clientX,e.clientY,true);
+        sampleCircle(e.clientX,e.clientY,false);
+        setTimeout(()=>updatePickerCircle(0,0,false),500);
+      }else{
+        pickColor(e.clientX,e.clientY);
+      }
       e.preventDefault();
       return;
     }
