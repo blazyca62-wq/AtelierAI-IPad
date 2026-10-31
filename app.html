@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.50</title>
+  <title>AtelierAI iPad 4.51</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1061,7 +1061,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.50</div>
+    <div class="title">AtelierAI · iPad 4.51</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -2883,6 +2883,52 @@
     }
   }
 
+  // 4.51: Oeffentliche Herstellerangaben, nicht aus einer fremden App extrahiert.
+  // Quelle: https://uk.winsornewton.com/pages/artisan-water-mixable-oil-colour
+  // Pigmentcodes und Deckkraft sind HERSTELLERDATEN; keine gemessenen Mischspektren.
+  // Bestehende RGB-Proxies, Farbpaletten und synthetisches Spektralmodell bleiben erhalten.
+  const ARTISAN_PIGMENTS={
+    'Lemon Yellow':['PY3','T'],
+    'Cadmium Yellow Light':['PY35','O'],
+    'Cadmium Yellow Pale Hue':['PY3 PY65','T'],
+    'Cadmium Yellow Medium':['PO20 PY35','O'],
+    'Cadmium Yellow Hue':['PY65','T'],
+    'Cadmium Yellow Deep Hue':['PO43 PY65','ST'],
+    'Cadmium Orange Hue':['PO43','ST'],
+    'Cadmium Red Light':['PR108','O'],
+    'Cadmium Red Medium':['PR108','O'],
+    'Cadmium Red Hue':['PR170 PR188','ST'],
+    'Cadmium Red Dark':['PR108','O'],
+    'Cadmium Red Deep Hue':['PO36 PR170','ST'],
+    'Permanent Rose':['PV19','T'],
+    'Permanent Alizarin Crimson':['PR179 PV19','T'],
+    'Magenta':['PR122','T'],
+    'Dioxazine Purple':['PV23','T'],
+    'Cerulean Blue':['PB35','SO'],
+    'Cerulean Blue Hue':['PB36 PW4','SO'],
+    'Cobalt Blue':['PB28','ST'],
+    'Cobalt Blue Hue':['PB29 PB60','T'],
+    'French Ultramarine':['PB29','T'],
+    'Phthalo Blue (Red Shade)':['PB15','T'],
+    'Prussian Blue':['PB27','T'],
+    'Phthalo Green (Yellow Shade)':['PG36','T'],
+    'Viridian Hue':['PG7 PY42 PY43','T'],
+    'Phthalo Green (Blue Shade)':['PG7','T'],
+    'Permanent Sap Green':['PB15 PY110','T'],
+    'Olive Green':['PBk6 PY110','T'],
+    'Naples Yellow Hue':['PR101 PW6 PY42','O'],
+    'Yellow Ochre':['PY42','O'],
+    'Raw Sienna':['PBr7 PY42','T'],
+    'Indian Red':['PR101','O'],
+    'Burnt Sienna':['PR101','T'],
+    'Burnt Umber':['PBr7','T'],
+    'Raw Umber':['PBr7','T'],
+    "Payne's Gray":['PB29 PBk6','SO'],
+    'Ivory Black':['PBk9','O'],
+    'Lamp Black':['PBk6','O'],
+    'Titanium White':['PW4 PW6','O'],
+    'Zinc White (Mixing White)':['PW4 PW6','O']
+  };
   const OWNED_KEY='atelierai_owned_colors_v141';
   const CUSTOM_KEY='atelierai_custom_colors_v141';
   const STANDARD_ARTISAN_KEY='atelierai_standard_artisan_pc_v1';
@@ -3505,11 +3551,38 @@
       }
       return best;
     }
-    function studioCost(rgb,items){
-      return deltaE76FromLab(targetLab,rgbToLabFast(rgb));
+    // Farb-Familien als konservativer Plausibilitaetscheck: Aus nur Blau+Weiss
+    // kann keine rosa Tubenmischung entstehen, auch wenn ein RGB-Spektralproxy
+    // einen irrefuehrend kleinen Abstand zum Ziel ausgibt.
+    // Dies ist KEINE ermittelte Pigment-Mischgenauigkeit. Eigene Farben bleiben
+    // unveraendert, ebenso neutrale, dunkle und gering gesaettigte Ziele.
+    const targetChroma=Math.hypot(targetLab[1],targetLab[2]);
+    const needs=(paletteKey==='artisan' && targetChroma>=14 &&
+      targetLab[0]>23 && targetLab[0]<92 && targetSaturation>=.13)
+      ? (targetHue>=325||targetHue<20?'rose':
+         targetHue>=20&&targetHue<85?'warm':
+         targetHue>=85&&targetHue<190?'green':
+         targetHue>=190&&targetHue<265?'blue':'violet') : null;
+    function pigmentPlausibilityPenalty(items){
+      if(!needs || !items.length)return 0;
+      // Keine unbekannten, individuellen Pigmente falsch klassifizieren.
+      if(items.some(i=>!Object.prototype.hasOwnProperty.call(ARTISAN_PIGMENTS,i.name)))return 0;
+      const pigments=items.flatMap(i=>ARTISAN_PIGMENTS[i.name][0].split(' '));
+      const has=(re)=>pigments.some(p=>re.test(p));
+      const red=has(/^(PR|PV19$)/), yellow=has(/^(PY|PO)/),
+        blue=has(/^PB(?!k)/), green=has(/^PG/), violet=has(/^PV/);
+      const plausible=needs==='rose'?red:
+        needs==='warm'?yellow:
+        needs==='green'?(green||(blue&&yellow)):
+        needs==='blue'?(blue||(green&&violet)):
+        (violet||(red&&blue));
+      return plausible?0:36;
     }
-    function displayPct(rgb){
-      return similarityPct(target,rgb);
+    function studioCost(rgb,items){
+      return deltaE76FromLab(targetLab,rgbToLabFast(rgb))+pigmentPlausibilityPenalty(items);
+    }
+    function displayPct(rgb,items){
+      return Math.max(0,similarityPct(target,rgb)-Math.round(1.35*pigmentPlausibilityPenalty(items)));
     }
     function recipeKey(items){
       return items.map(i=>i.name+'@'+(i.series||'')).sort().join('|');
@@ -3520,7 +3593,7 @@
     // 1 Farbe: zuerst die einfachste mögliche Lösung prüfen.
     for(const c of candidates){
       const finished=finishMix(candidateRgb(c)),rgb=finished.rgb;
-      pool.push({items:[c],parts:[10],coverage:finished.coverage,rgb,cost:studioCost(rgb,[c]),score:displayPct(rgb)});
+      pool.push({items:[c],parts:[10],coverage:finished.coverage,rgb,cost:studioCost(rgb,[c]),score:displayPct(rgb,[c])});
     }
 
     // 2 Farben: ALLE Farbpaarungen und malerisch brauchbare Verhältnisse prüfen.
@@ -3532,7 +3605,7 @@
           const finished=finishMix(mixFor([candidates[i],candidates[j]],[pct,100-pct])),rgb=finished.rgb;
           const parts=[pct,100-pct];
           const items=[candidates[i],candidates[j]];
-          pool.push({items,parts,coverage:finished.coverage,rgb,cost:studioCost(rgb,items),score:displayPct(rgb)});
+          pool.push({items,parts,coverage:finished.coverage,rgb,cost:studioCost(rgb,items),score:displayPct(rgb,items)});
         }
       }
     }
@@ -3561,7 +3634,7 @@
           parts[1]=1000-add-parts[0];
           if(parts.some(p=>p<=0))continue;
           const f=finishMix(mixFor(items,parts));
-          const x={items,parts,coverage:f.coverage,rgb:f.rgb,cost:studioCost(f.rgb,items),score:displayPct(f.rgb)};
+          const x={items,parts,coverage:f.coverage,rgb:f.rgb,cost:studioCost(f.rgb,items),score:displayPct(f.rgb,items)};
           const key=recipeKey(items),old=triples.get(key);
           if(!old||x.cost<old.cost)triples.set(key,x);
         }
@@ -3576,7 +3649,7 @@
             if(i===j||x.parts[i]<=step)continue;
             const parts=x.parts.slice();parts[i]-=step;parts[j]+=step;
             const f=finishMix(mixFor(x.items,parts)),cost=studioCost(f.rgb,x.items);
-            if(cost<best.cost-1e-8)best={items:x.items,parts,rgb:f.rgb,coverage:f.coverage,cost,score:displayPct(f.rgb)};
+            if(cost<best.cost-1e-8)best={items:x.items,parts,rgb:f.rgb,coverage:f.coverage,cost,score:displayPct(f.rgb,x.items)};
           }
           if(best===x)break;
           x=best;
@@ -3622,7 +3695,7 @@
       for(const candidate of practicalOilPortions(x.items,x.parts)){
         const {items,parts}=candidate;if(!valid(items))continue;
         const finished=finishMix(mixFor(items,parts));
-        const item={...x,items,parts,rgb:finished.rgb,coverage:finished.coverage,score:displayPct(finished.rgb),cost:studioCost(finished.rgb,items)};
+        const item={...x,items,parts,rgb:finished.rgb,coverage:finished.coverage,score:displayPct(finished.rgb,items),cost:studioCost(finished.rgb,items)};
         const key=recipeKey(items),old=practicalByRecipe.get(key);
         if(!old||item.score>old.score||(item.score===old.score&&parts.reduce((a,b)=>a+b,0)<old.parts.reduce((a,b)=>a+b,0)))practicalByRecipe.set(key,item);
       }
@@ -3633,7 +3706,7 @@
       const active=items.map((item,i)=>({item,part:parts[i]})).filter(v=>v.part>0);
       items=active.map(v=>v.item);parts=active.map(v=>v.part);
       const f=finishMix(mixFor(items,parts));
-      return {items,parts,rgb:f.rgb,coverage:f.coverage,cost:studioCost(f.rgb,items),score:displayPct(f.rgb)};
+      return {items,parts,rgb:f.rgb,coverage:f.coverage,cost:studioCost(f.rgb,items),score:displayPct(f.rgb,items)};
     };
     const keepPractical=x=>{
       const key=recipeKey(x.items),old=practicalByRecipe.get(key);
