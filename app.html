@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.52</title>
+  <title>AtelierAI iPad 4.53</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1061,7 +1061,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.52</div>
+    <div class="title">AtelierAI · iPad 4.53</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3687,7 +3687,7 @@
     filtered.sort((a,b)=>{const best=Math.max(...filtered.map(x=>x.score));const nearA=a.score>=best-5,nearB=b.score>=best-5;if(nearA!==nearB)return nearA?-1:1;if(nearA&&a.items.length!==b.items.length)return a.items.length-b.items.length;return b.score-a.score||a.cost-b.cost;});
 
 
-    rankPictureRecipes(filtered,paletteKey);
+    rankPictureRecipes(filtered,paletteKey,target);
     const practicalByRecipe=new Map();
     // Re-evaluate the actual simplified recipe, including removed trace colors.
     const practicalSources=[...filtered.slice(0,100),...recipes.filter(x=>x.items.length<=2)];
@@ -3756,7 +3756,7 @@
     const practicalSimple=Math.max(-1,...practical.filter(x=>x.items.length<=2).map(x=>x.score));
     const printable=practical.filter(x=>x.items.length<=2||x.score>practicalSimple+5);
     printable.sort((a,b)=>{const best=Math.max(...printable.map(x=>x.score));const nearA=a.score>=best-5,nearB=b.score>=best-5;if(nearA!==nearB)return nearA?-1:1;if(nearA&&a.items.length!==b.items.length)return a.items.length-b.items.length;return b.score-a.score||a.cost-b.cost;});
-    rankPictureRecipes(printable,paletteKey);
+    rankPictureRecipes(printable,paletteKey,target);
     const chosen=printable.slice(0,3).map(x=>({
       sig:recipeKey(x.items),
         tubeIds:x.items.map(i=>pictureTubeId(paletteKey,i)),
@@ -4577,16 +4577,34 @@
     if(recipe.tubeIds)return recipe.tubeIds;
     return recipe.items.map(c=>pictureTubeId(key,c));
   }
-  function rankPictureRecipes(recipes,key){
+  // 4.53: Bei fast gleich guten Bildschirmmischungen muss die Helligkeit
+  // stimmen, bevor die Bevorzugung eines einfacheren Rezepts greift.
+  // Niemals die angezeigte Mischfarbe kuenstlich auf das Ziel aufhellen:
+  // nur REALE Rezept-Kandidaten der vorhandenen Palette anders sortieren.
+  function oilLightnessPreference(a,b,targetLabLightness){
+    if(targetLabLightness===null||!a.rgb||!b.rgb)return 0;
+    const da=Math.abs(rgbToLabFast(a.rgb)[0]-targetLabLightness);
+    const db=Math.abs(rgbToLabFast(b.rgb)[0]-targetLabLightness);
+    // Stabile Tonwert-Klassen: bis ±1,5 L* sehr nah, danach 1,5er-Schritte.
+    // Unter Kandidaten mit aehnlicher Gesamtnähe kommt die bessere Klasse zuerst.
+    const band=d=>d<=1.5?0:Math.ceil((d-1.5)/1.5);
+    return band(da)-band(db);
+  }
+  function rankPictureRecipes(recipes,key,target=null){
     if(!recipes.length)return recipes;
     const used=pictureUsedIds(key);
     const best=Math.max(...recipes.map(m=>m.score));
+    const targetLabLightness=key==='artisan'&&target?rgbToLabFast(target)[0]:null;
     recipes.forEach(m=>{m.referenceBest=best;});
     const count=m=>pictureRecipeIds(m,key).filter(id=>!used.has(id)).length;
     const colors=m=>m.color_count||m.items?.length||m.names?.length||0;
     return recipes.sort((a,b)=>{
       const nearA=a.score>=best-5,nearB=b.score>=best-5;
       if(nearA!==nearB)return nearA?-1:1;
+      if(nearA&&nearB){
+        const brightness=oilLightnessPreference(a,b,targetLabLightness);
+        if(brightness)return brightness;
+      }
       if(nearA&&colors(a)!==colors(b))return colors(a)-colors(b);
       // At equal pigment count, prefer previously saved tubes.
       if(nearA&&used.size&&count(a)!==count(b))return count(a)-count(b);
@@ -4604,7 +4622,7 @@
       const id=[...m.tubeIds].sort().join('|'),old=unique.get(id);
       if(!old||m.score>old.score)unique.set(id,{...m});
     }
-    return rankPictureRecipes([...unique.values()],key).slice(0,3);
+    return rankPictureRecipes([...unique.values()],key,target).slice(0,3);
   }
   // 3.29: Cross-area saved-premix comparison. A saved mixture is treated as
   // a physical premix, not silently replaced by its original tube recipe.
@@ -4770,7 +4788,11 @@
       correctionScore:similarityPct(hint,m.rgb)
     } )).sort((a,b)=>{
       const delta=a.correctionScore-b.correctionScore;
-      if(Math.abs(delta)<=5 && a.color_count!==b.color_count)return a.color_count-b.color_count;
+      if(Math.abs(delta)<=5){
+        const brightness=key==='artisan'?oilLightnessPreference(a,b,rgbToLabFast(hint)[0]):0;
+        if(brightness)return brightness;
+        if(a.color_count!==b.color_count)return a.color_count-b.color_count;
+      }
       return -delta;
     });
   }
@@ -4891,12 +4913,16 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const card=document.createElement('div');
       card.className='mix-card';
       const targetHex=rgbHex(target), mixHex=rgbHex(m.rgb);
+      const valueTarget=correctionRecipeHint||target;
+      const brightnessDelta=rgbToLabFast(m.rgb)[0]-rgbToLabFast(valueTarget)[0];
+      const brightnessText=Math.abs(brightnessDelta)<=1.5?'Helligkeit: sehr nah am Ziel':
+        'Helligkeit: '+Math.abs(brightnessDelta).toFixed(1).replace('.',',')+' L* '+(brightnessDelta<0?'zu dunkel':'zu hell')+' (Simulation)';
       card.innerHTML=`
         <div class="mix-head"><b>${correctionRecipeHint?'Korrekturrezept':'Vorschlag'} ${idx+1}</b><span>${correctionRecipeHint?`${m.correctionScore}/100 zur Korrektur<br>${m.score}/100 zur ursprünglichen Zielfarbe`:`${m.score}/100 Bildschirmnähe`}</span></div>
         <div class="mix-swatches" ${correctionRecipeHint?'style="grid-template-columns:repeat(3,minmax(0,1fr))"':''}>
           <div><div class="tiny">${correctionRecipeHint?'Ursprüngliche Zielfarbe':'Zielfarbe'}</div><div class="mix-swatch" style="background:${targetHex}"></div><div class="tiny" style="margin-top:6px">${targetHex} · RGB ${target.join(', ')}</div></div>
           ${correctionRecipeHint?`<div><div class="tiny">Deine Korrektur</div><div class="mix-swatch" style="background:${rgbHex(correctionRecipeHint)}"></div><div class="tiny" style="margin-top:6px">${rgbHex(correctionRecipeHint)}</div></div>`:''}
-          <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex}"></div></div>
+          <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex}"></div><div class="tiny" style="margin-top:6px">${brightnessText}</div></div>
         </div>
         <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i].toLocaleString('de-DE')} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)':'Öl · angenäherte Pigmentfarben, keine gemessenen Mischspektren; Mengen als Startrezept'}. Auf Papier/Palette prüfen.</span></div>
       `;

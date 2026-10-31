@@ -1,3 +1,5 @@
+4.53: Artisan-Rezeptauswahl nach Tonwert korrigiert. Bei ähnlich guten Rezepten (bis 5 Wertungspunkte) haben Rezepte mit höchstens ±1,5 CIELAB-L* Helligkeitsabweichung Vorrang vor Einfachheit. Gilt auch für Korrekturrezept-Suche. In den Mischkarten wird die tatsächliche berechnete Helligkeitsabweichung angezeigt; keine künstliche Aufhellung der Farbfelder. Farbmodell und 4.52-Mitteltonkalibrierung, Foto, Pipette und alle übrigen Module bleiben unverändert. Ohne echte Pigmentmesswerte ist das keine Garantie für die Helligkeit auf der Glaspalette.
+
 4.52: Artisan-Oelmischungen etwas heller abgestimmt. Ausschliesslich im bestehenden Kalibrierungsfaktor fuer mehrfarbige Oelmischungen die maximale interne Mittelton-Korrektur von 5,0 auf 6,5 CIELAB-L*-Punkte erhoeht. Dadurch kann die Rezeptsuche etwas mehr Weiss bzw. hellere Tubenfarben waehlen. Foto, Pipette, Einzelpigmente, Aquarell, Graustufen, Palette, Pigment-Plausibilitaetspruefung 4.51 und Bedienung unveraendert. Bitte Farbproben in Wirklichkeit vergleichen; Heuristik ohne echte Messwerte. 4.51 als Sicherung behalten.
 
 4.51: Artisan-Pigmentplausibilitaet (ohne neuen Modus, ohne Eingriff in andere Module).
