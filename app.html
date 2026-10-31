@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.54</title>
+  <title>AtelierAI iPad 4.55</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1061,7 +1061,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.54</div>
+    <div class="title">AtelierAI · iPad 4.55</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1417,9 +1417,9 @@
         </div>
 
         <div class="range-row">
-          <label>Pipettenkreis</label>
+          <label for="pickerRadius">Kreisgröße · Radius</label>
           <input id="pickerRadius" type="range" min="4" max="120" value="14">
-          <span id="pickerRadiusVal">14</span>
+          <span id="pickerRadiusVal">14 px (Ø 28)</span>
         </div>
 
         <div class="mode" style="margin-bottom:8px;grid-template-columns:repeat(3,minmax(0,1fr))">
@@ -2793,15 +2793,16 @@
     return sum.map(v=>linearToSrgb8(v/sw));
   }
 
-  // Malerische Helligkeitskorrektur für größere Messflächen.
-  // Flächenmittel wirken visuell oft dunkler als die Farbe, die man
-  // beim Malen tatsächlich ansetzen würde. Die Anhebung arbeitet
-  // luminanzabhängig: Schatten/Mitteltöne werden deutlicher angehoben,
-  // helle Farben fast gar nicht. Punkt-Pipette bleibt unverändert.
+  // 4.55: sanfte Malton-Aufhellung einer Kreisprobe, NICHT des Originalbildes.
+  // Bei realen Fotos fallen gemittelte Schattenanteile oft dunkler aus als
+  // der für die Farbmischung gesuchte lokale Malton. Den echten Messwert
+  // zeigen wir weiter separat an. Die Punkt-Pipette bleibt exakt und neutral.
   function painterAreaLift(rgb){
     const lum=luminance(rgb[0],rgb[1],rgb[2]);
-    const t=Math.max(0,Math.min(1,(220-lum)/220));
-    const gamma=1-(0.13*t); // bis ca. Gamma 0.87 in dunklen Bereichen
+    // Schatten vor allem anheben, tiefes Schwarz und Spitzlichter schonen.
+    const midFactor=Math.max(0,Math.min(1,(lum-12)/48));
+    const lightFactor=Math.max(0,Math.min(1,(224-lum)/110));
+    const gamma=1-0.13*midFactor*lightFactor;
     return rgb.map(v=>{
       const n=Math.max(0,Math.min(1,v/255));
       return Math.round(Math.pow(n,gamma)*255);
@@ -5002,24 +5003,29 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }
     }
     if(!samples.length) return;
+    // Original-Messwert und automatisch angepasster Malton bleiben getrennt.
+    // Sonst landet die Aufhellung nur als optischer Effekt im Farbfeld und
+    // nicht in den tatsächlichen Studio-Mischrezepten.
     const avg=linearAverageRGB(samples);
     const robust=robustSmartColor(samples);
+    const circleBase=smart && robust ? robust.smart : avg;
+    const paintingColor=painterAreaLift(circleBase);
     correctionRecipeHint=null;
     correctionOriginalRecipe=null;
     planActiveId=null; // Eigenständige Kreisprobe, keine alte gemerkte Nummer
     lastAverageColor=avg;
-    lastSmartColor=smart && robust ? robust.smart : avg;
+    lastSmartColor=paintingColor;
     planSamplePoint={...planPointAt(ix,iy),rgb:lastSmartColor.slice()};
     // Kreisaufnahme aktualisiert auch die normale Pipettenfarbe und verwirft alte Isolierungen.
     surfaceSelectedIndex=null;
     cancelIsolation();
     colorBox.style.background=rgbHex(adaptiveDisplayColor(lastSmartColor));
-    colorText.innerHTML=`RGB: ${lastSmartColor.join(', ')}<br>HEX: ${rgbHex(lastSmartColor)} · Kreis-Durchschnitt`;
+    colorText.innerHTML=`RGB: ${lastSmartColor.join(', ')}<br>HEX: ${rgbHex(lastSmartColor)} · Kreis-Malton`;
     avgTargetBox.style.background=rgbHex(adaptiveDisplayColor(avg));
     smartTargetBox.style.background=rgbHex(adaptiveDisplayColor(lastSmartColor));
-    targetInfo.innerHTML=`Durchschnitt ${rgbHex(avg)} · RGB ${avg.join(', ')}<br>`+
-      `Aktive Zielfarbe ${rgbHex(lastSmartColor)} · RGB ${lastSmartColor.join(', ')}<br>`+
-      `<span class="tiny">${smart ? 'Smart-Malfarbe aktiv' : 'Kreis-Durchschnitt aufgenommen'} · ${samples.length} Messpunkte</span>`;
+    targetInfo.innerHTML=`Gemessener Kreis-Durchschnitt ${rgbHex(avg)} · RGB ${avg.join(', ')}<br>`+
+      `Aktiver Malton ${rgbHex(lastSmartColor)} · RGB ${lastSmartColor.join(', ')}<br>`+
+      `<span class="tiny">${smart ? 'Maler-Pipette' : 'Kreis-Pipette'} · automatisch leicht aufgehellt · ${samples.length} Messpunkte. Die Punkt-Pipette misst unverändert.</span>`;
     // also update the existing smart color display for consistency
     if(robust) showSmartColor(robust);
     takeCorrectionColor(lastSmartColor); ideasBase=[...lastSmartColor]; refreshIdea();
@@ -9486,7 +9492,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }
     },0);
   }
-  pickerRadius.addEventListener('input',()=>{ pickerRadiusVal.textContent=pickerRadius.value; });
+  pickerRadius.addEventListener('input',()=>{ pickerRadiusVal.textContent=pickerRadius.value+' px (Ø '+(2*Number(pickerRadius.value))+')'; });
   areaPickerBtn.addEventListener('click',()=>{
     areaPickerMode = areaPickerMode==='avg' ? null : 'avg';
     areaPickerBtn.classList.toggle('active',areaPickerMode==='avg');
