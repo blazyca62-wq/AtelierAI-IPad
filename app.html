@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.46</title>
+  <title>AtelierAI iPad 4.47</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1061,7 +1061,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.46</div>
+    <div class="title">AtelierAI · iPad 4.47</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1145,7 +1145,9 @@
       <div class="section" id="build32Panel">
         <h3>Farbaufbau · 8 / 16 / 32 / 48 / 64 Farben</h3>
         <p>Farbbereiche Schritt für Schritt einblenden. Der zuletzt bewegte Regler bestimmt die Ansicht.</p>
-        <div class="grid2" style="margin-bottom:8px"><button id="build32Grid" class="secondary">Raster ein</button><button id="build32Pick" class="secondary">Mischung aufnehmen</button></div>
+        <div class="grid2" style="margin-bottom:8px"><button id="build32Grid" class="secondary">Feinraster ein</button><button id="build32Pick" class="secondary">Mischung aufnehmen</button></div>
+        <button type="button" data-original-grid-toggle class="secondary" aria-pressed="false" style="width:100%;margin-bottom:7px">Ursprungsraster ein</button>
+        <p class="tiny" style="margin:0 0 7px">Ursprungsraster: größere Kästchen als feine, etwas stärkere Orientierungslinien. Beim Übernehmen eines Ausschnitts wird die alte Einteilung festgehalten. Beide Raster unabhängig ein- und ausschaltbar.</p>
         <div class="control-line"><label for="build32GridDensity">Rastergröße</label><input id="build32GridDensity" type="range" min="2" max="20" value="8"><span id="build32GridDensityVal">8</span></div>
         <details class="grid-adjust" style="margin-top:10px">
           <summary style="cursor:pointer;padding:8px 0;font-weight:bold">Raster an Ölbild anpassen</summary>
@@ -1799,9 +1801,11 @@
 <div class="section" id="gridSavePanel">
         <h3>Raster & Speichern</h3>
         <div class="grid2">
-          <button id="gridToggleBtn" class="secondary">Raster ein</button>
+          <button id="gridToggleBtn" class="secondary">Feinraster ein</button>
           <button id="savePngBtn">Als PNG speichern</button>
         </div>
+        <button type="button" data-original-grid-toggle class="secondary" aria-pressed="false" style="width:100%;margin-top:7px">Ursprungsraster ein</button>
+        <p class="tiny">Beim Ausschnitt bleibt das bisherige große Raster erhalten. Das Feinraster kann unabhängig verändert werden. Beide liegen nur über dem Bild.</p>
         <button id="saveJpegBtn" class="secondary" style="width:100%;margin-top:7px;">Als JPEG speichern</button>
         <p class="tiny">Beim Export kann das Raster unabhängig von der Bildschirmansicht ein- oder ausgeschaltet werden.</p>
         <div class="control-line"><label>Raster</label><input id="gridDensity" type="range" min="2" max="20" value="8"><span id="gridDensityVal">8</span></div>
@@ -2229,6 +2233,10 @@
   let correctionRecipeHint=null;
   let correctionOriginalRecipe=null;
   let gridEnabled=false;
+  // Second, independent overlay. Its geometry is captured before a crop, and
+  // then translated into each descendant crop's image pixel coordinates.
+  let originalGridEnabled=false;
+  let originalGridGeometry=null;
   let gridReference=null; // Original image coordinates retained through nested crops.
   const gridAdjust={size:100,x:0,y:0,width:100,height:100,locked:false};
   let gridFine=true;
@@ -2252,6 +2260,39 @@
     const cy=(ref.height*(.5+gridAdjust.y/100)-ref.y)*sy;
     return {cellX,cellY,firstX:cx-Math.ceil(cx/cellX)*cellX,firstY:cy-Math.ceil(cy/cellY)*cellY};
   }
+  function syncOriginalGridButtons(){
+    document.querySelectorAll('[data-original-grid-toggle]').forEach(button=>{
+      button.textContent=originalGridEnabled?'Ursprungsraster aus':'Ursprungsraster ein';
+      button.setAttribute('aria-pressed',String(originalGridEnabled));
+      button.classList.toggle('active',originalGridEnabled);
+      button.classList.toggle('secondary',!originalGridEnabled);
+    });
+  }
+  // Grid lines are stored in CURRENT source-image coordinates, not viewer
+  // coordinates. Panning/zooming uses the common image transform.
+  function croppedGridGeometry(geometry,box){
+    const wrap=(v,step)=>((v%step)+step)%step;
+    return {
+      cellX:geometry.cellX,cellY:geometry.cellY,
+      firstX:wrap(geometry.firstX-box.x,geometry.cellX),
+      firstY:wrap(geometry.firstY-box.y,geometry.cellY)
+    };
+  }
+  function rememberOriginalGridForCrop(box){
+    const geometry=originalGridGeometry||gridGeometry(sourceCanvas.width,sourceCanvas.height,gridDensity.value);
+    const wasCaptured=!!originalGridGeometry;
+    originalGridGeometry=croppedGridGeometry(geometry,box);
+    // When the first crop is made, show the previous big squares by default
+    // if the normal grid was visible. Respect an existing manual off setting.
+    if(!wasCaptured)originalGridEnabled=gridEnabled;
+    syncOriginalGridButtons();
+  }
+  document.querySelectorAll('[data-original-grid-toggle]').forEach(button=>button.addEventListener('click',()=>{
+    if(!loaded)return;
+    if(!originalGridGeometry)originalGridGeometry={...gridGeometry(sourceCanvas.width,sourceCanvas.height,gridDensity.value)};
+    originalGridEnabled=!originalGridEnabled;
+    syncOriginalGridButtons();draw();studioDirty();
+  }));
   function syncGridAdjust(){
     document.querySelectorAll('[data-grid-adjust]').forEach(el=>{
       const key=el.dataset.gridAdjust,[lo,hi]=gridBounds(key);
@@ -2625,9 +2666,9 @@
     const output=document.createElement('canvas');output.width=sketchCanvas.width;output.height=sketchCanvas.height;
     const oc=output.getContext('2d');oc.drawImage(sketchCanvas,0,0);
     // Gleiche Rasterproportionen wie in der vergrößerten Ansicht.
-    if(gridEnabled){
+    if(gridEnabled||originalGridEnabled){
       oc.save();oc.scale(output.width/sourceCanvas.width,output.height/sourceCanvas.height);
-      drawGridOverlay(oc,sourceCanvas.width,sourceCanvas.height,gridDensity.value);oc.restore();
+      drawVisibleGrids(oc,sourceCanvas.width,sourceCanvas.height);oc.restore();
     }
     output.toBlob(blob=>{
       if(!blob){sketchStatus.textContent='Speichern fehlgeschlagen. Bitte erneut versuchen.';return;}
@@ -3685,7 +3726,8 @@
     area.editor=window.atelierEditorCapture?.()||null;
     area.plan=studioClone(planBook);area.name=planBook.name||area.name;area.palette=studioClone(picturePalette);area.medium=paintPalette.value;
     area.view={scale,offsetX,offsetY,width:canvas.getBoundingClientRect().width,height:canvas.getBoundingClientRect().height};
-    area.grid={enabled:gridEnabled,density:gridDensity.value,adjust:{...gridAdjust},reference:gridReference?{...gridReference}:null};
+    area.grid={enabled:gridEnabled,density:gridDensity.value,adjust:{...gridAdjust},reference:gridReference?{...gridReference}:null,
+      originalEnabled:originalGridEnabled,originalGeometry:originalGridGeometry?{...originalGridGeometry}:null};
     const [image,source]=await Promise.all([imageJob,sourceJob]);
     area.image=image;if(source===image)delete area.source;else area.source=source;
     // Das aktuelle Quellcanvas kann nach „Als Malvorlage übernehmen“ bereits
@@ -3715,7 +3757,7 @@
   });}
   function studioOpeningView(){
     gridEnabled=false;
-    gridToggleBtn.textContent='Raster ein';gridToggleBtn.classList.remove('active');gridToggleBtn.classList.add('secondary');
+    gridToggleBtn.textContent='Feinraster ein';gridToggleBtn.classList.remove('active');gridToggleBtn.classList.add('secondary');
     syncBuild32Grid();fitImage();draw();
   }
   async function studioOpenProject(project){
@@ -3745,10 +3787,13 @@
     planSamplePoint=null;planActiveId=null;planPlaceId=null;mixResultCache.clear();
     if(a.medium&&[...paintPalette.options].some(o=>o.value===a.medium)){setMedium(a.medium==='artisan'?'oil':'water');paintPalette.value=a.medium;}
     gridEnabled=!!a.grid?.enabled;if(a.grid?.density)gridDensity.value=a.grid.density;
+    originalGridEnabled=!!a.grid?.originalEnabled;
+    originalGridGeometry=a.grid?.originalGeometry?{...a.grid.originalGeometry}:null;
+    syncOriginalGridButtons();
     gridReference=a.grid?.reference?{...a.grid.reference}:null;
     Object.assign(gridAdjust,a.grid?.adjust||{size:100,x:0,y:0,width:100,height:100,locked:false});
     gridDensityVal.textContent=gridDensity.value;centerGridControls();syncGridAdjust();syncBuild32Grid();syncVisibleCrop();
-    gridToggleBtn.textContent=gridEnabled?'Raster aus':'Raster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);
+    gridToggleBtn.textContent=gridEnabled?'Feinraster aus':'Feinraster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);
     const rect=canvas.getBoundingClientRect();if(a.view&&img.width===photo.width&&Math.abs(rect.width-a.view.width)<2&&Math.abs(rect.height-a.view.height)<2){scale=a.view.scale;offsetX=a.view.offsetX;offsetY=a.view.offsetY;syncGlobalViewControls();}
     if(a.editor)await window.atelierEditorRestore?.(a.editor);
     studioRemember();renderPicturePalettePanels();renderPalettePlan();studioRender();draw();
@@ -3758,6 +3803,7 @@
     clearTimeout(studioTimer);studioPending=false;photoLoadRevision++;studioProject=null;studioRemember();studioManaged=true;planSamplePoint=null;planActiveId=null;planPlaceId=null;
     picturePaletteEpoch++;picturePaletteId=null;picturePalette={ids:[],enabled:true};planBook={name:'Gesamtbild',samples:[]};
     resetPhotoFilters();resetBuild32();cancelIsolation();loaded=false;img=null;originalPhoto=null;originalPhotoDataUrl=null;workingFromTemplate=false;visibleCropWhole=null;visibleCropGrid=null;gridReference=null;
+    originalGridGeometry=null;originalGridEnabled=false;syncOriginalGridButtons();
     lastSmartColor=null;lastAverageColor=null;correctionRecipeHint=null;mixResultCache.clear();mixResults.replaceChildren();surfaceResults.replaceChildren();surfaceBaseResults.replaceChildren();surfaceBaseRevision++;surfaceBaseIndex=0;surfaceBaseRecipes=[];surfaceBaseSuggestionCache.clear();
     sourceCanvas.width=sourceCanvas.height=1;placeholder.style.display='';fileInput.value='';
     document.dispatchEvent(new Event('atelier-reset-photo'));renderPicturePalettePanels();renderPalettePlan();studioRender();syncVisibleCrop();draw();
@@ -5131,6 +5177,33 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       strokeGridLine();
     }
     targetCtx.restore();
+  }
+
+  function drawOriginalGridOverlay(targetCtx,w,h){
+    if(!originalGridEnabled||!originalGridGeometry)return;
+    const g=originalGridGeometry;
+    if(!(g.cellX>0&&g.cellY>0))return;
+    targetCtx.save();
+    targetCtx.globalCompositeOperation='difference';
+    targetCtx.strokeStyle='rgba(255,255,255,.67)';
+    const t=targetCtx.getTransform();
+    const pixelRatio=targetCtx===ctx?Math.max(1,window.devicePixelRatio||1):1;
+    targetCtx.lineWidth=1.85*pixelRatio/(Math.hypot(t.a,t.b)||1);
+    targetCtx.beginPath();
+    for(let x=g.firstX;x<=w+.001;x+=g.cellX){
+      if(x>=-0.001&&x<=w+0.001){targetCtx.moveTo(Math.max(0,Math.min(w,x)),0);targetCtx.lineTo(Math.max(0,Math.min(w,x)),h);}
+    }
+    for(let y=g.firstY;y<=h+.001;y+=g.cellY){
+      if(y>=-0.001&&y<=h+0.001){targetCtx.moveTo(0,Math.max(0,Math.min(h,y)));targetCtx.lineTo(w,Math.max(0,Math.min(h,y)));}
+    }
+    targetCtx.stroke();targetCtx.restore();
+  }
+  function drawVisibleGrids(targetCtx,w,h,includeGrid=true,highContrast=false){
+    if(!includeGrid)return;
+    if(gridEnabled)drawGridOverlay(targetCtx,w,h,gridDensity.value,highContrast);
+    // Draw thicker original-square boundaries last. Both overlays are visual
+    // only: colour sampling and pixel data are always raster-free.
+    drawOriginalGridOverlay(targetCtx,w,h);
   }
 
   function rgbToHsv(rgb){
@@ -7531,7 +7604,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function syncBuild32Grid(){
     const button=document.getElementById('build32Grid');
-    button.textContent=gridEnabled?'Raster aus':'Raster ein';button.classList.toggle('active',gridEnabled);button.classList.toggle('secondary',!gridEnabled);
+    button.textContent=gridEnabled?'Feinraster aus':'Feinraster ein';button.classList.toggle('active',gridEnabled);button.classList.toggle('secondary',!gridEnabled);
     document.getElementById('build32GridDensity').value=gridDensity.value;
     document.getElementById('build32GridDensityVal').textContent=gridDensity.value;
   }
@@ -9053,7 +9126,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }
       ctx.restore();
     }
-    if(includeGrid && gridEnabled) drawGridOverlay(ctx,processedCanvas.width,processedCanvas.height,gridDensity.value,(build32Active || (!!surfaceMarkCanvas && isolationGray && !sketchActive)));
+    drawVisibleGrids(ctx,processedCanvas.width,processedCanvas.height,includeGrid,(build32Active || (!!surfaceMarkCanvas && isolationGray && !sketchActive)));
   }
 
   function paintArtworkAtView(targetCtx,includeGrid){
@@ -9549,7 +9622,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
   pairCalcBtn.addEventListener('click',calculatePairPalette);
 
-  gridToggleBtn.addEventListener('click',()=>{gridEnabled=!gridEnabled;gridToggleBtn.textContent=gridEnabled?'Raster aus':'Raster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);draw();});
+  gridToggleBtn.addEventListener('click',()=>{gridEnabled=!gridEnabled;gridToggleBtn.textContent=gridEnabled?'Feinraster aus':'Feinraster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);syncBuild32Grid();draw();studioDirty();});
+  syncOriginalGridButtons();
 
   gridDensity.addEventListener('input',()=>{gridDensityVal.textContent=gridDensity.value;if(build32DetailCell){clearBuild32DetailCell();build32Manual=false;build32Selection.clear();build32Selected=null;renderBuild32(build32Direction);}syncBuild32Grid();draw();});
   document.querySelectorAll('[data-grid-adjust]').forEach(el=>el.addEventListener('input',()=>{
@@ -9606,9 +9680,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }else{
       flushToneImage();
       if(exportScope.value==='viewport'){
-        const previousGrid=gridEnabled;
-        try{gridEnabled=exportIncludeGrid.checked;paintViewer();out.width=canvas.width;out.height=canvas.height;}
-        finally{gridEnabled=previousGrid;draw();}
+        const previousGrid=gridEnabled,previousOriginal=originalGridEnabled;
+        try{gridEnabled=previousGrid&&exportIncludeGrid.checked;originalGridEnabled=previousOriginal&&exportIncludeGrid.checked;paintViewer();out.width=canvas.width;out.height=canvas.height;}
+        finally{gridEnabled=previousGrid;originalGridEnabled=previousOriginal;draw();}
         const c=out.getContext('2d');c.fillStyle=getComputedStyle(viewer).backgroundColor;c.fillRect(0,0,out.width,out.height);c.drawImage(canvas,0,0);
       }else{
         out.width=sourceCanvas.width;out.height=sourceCanvas.height;
@@ -9638,7 +9712,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       },exportType,0.95);
     }catch(error){exportStatus.textContent='Speichern nicht möglich: '+error.message;}
   }
-  function saveAtelierImage(type='image/png',withGrid=gridEnabled){
+  function saveAtelierImage(type='image/png',withGrid=(gridEnabled||originalGridEnabled)){
     exportFullscreen=glazeFullscreen.style.display!=='none';
     exportGlaze=exportFullscreen||document.getElementById('glazePanel').classList.contains('tool-page-active');
     if(exportGlaze?(!glazeOriginalImg&&!glazePaintingImg):!loaded){alert('Bitte zuerst ein Foto öffnen.');return;}
@@ -9855,7 +9929,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function rememberCropWhole(){
     if(visibleCropWhole)return;
     visibleCropWhole=img;
-    visibleCropGrid={reference:gridReference?{...gridReference}:null,adjust:{...gridAdjust},density:gridDensity.value,enabled:gridEnabled};
+    visibleCropGrid={reference:gridReference?{...gridReference}:null,adjust:{...gridAdjust},density:gridDensity.value,enabled:gridEnabled,
+      originalGeometry:originalGridGeometry?{...originalGridGeometry}:null,originalEnabled:originalGridEnabled};
   }
   function selectedGridCropBounds(cells){
     if(!cells.length)return null;
@@ -9928,7 +10003,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     crop.getContext('2d').drawImage(sourceCanvas,cell.x,cell.y,cell.w,cell.h,0,0,cell.w,cell.h);
     const area=await studioBeginCrop('Rasterbereich',cell);if(!area)return;
     rememberCropWhole();
-    gridCellCropArmed=false;gridReference=null;
+    gridCellCropArmed=false;
+    rememberOriginalGridForCrop({x:cell.x,y:cell.y});
+    gridReference=null;
     Object.assign(gridAdjust,{size:100,x:0,y:0,width:100,height:100,locked:false});
     gridDensity.value='4';gridDensityVal.textContent='4';
     centerGridControls();syncGridAdjust();syncBuild32Grid();
@@ -9966,6 +10043,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     rememberCropWhole();
     const ref=gridReference||{width:sourceCanvas.width,height:sourceCanvas.height,x:0,y:0,viewWidth:sourceCanvas.width,viewHeight:sourceCanvas.height};
     const rx=ref.viewWidth/sourceCanvas.width,ry=ref.viewHeight/sourceCanvas.height;
+    rememberOriginalGridForCrop(box);
     gridReference={width:ref.width,height:ref.height,x:ref.x+box.x*rx,y:ref.y+box.y*ry,viewWidth:box.width*rx,viewHeight:box.height*ry};
     photoLoadRevision++;
     resetPhotoFilters();installPhoto(crop);
@@ -9995,6 +10073,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     gridReference=visibleCropGrid?.reference||null;
     if(visibleCropGrid){
       Object.assign(gridAdjust,visibleCropGrid.adjust);gridDensity.value=visibleCropGrid.density;gridDensityVal.textContent=gridDensity.value;
+      originalGridGeometry=visibleCropGrid.originalGeometry?{...visibleCropGrid.originalGeometry}:null;
+      originalGridEnabled=!!visibleCropGrid.originalEnabled;syncOriginalGridButtons();
       if(gridEnabled!==visibleCropGrid.enabled)gridToggleBtn.click();
       centerGridControls();syncGridAdjust();syncBuild32Grid();
     }
@@ -10026,6 +10106,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         if(!keepOriginal){
           originalPhoto=photo;originalPhotoDataUrl=null;workingFromTemplate=false;
           visibleCropWhole=null;visibleCropGrid=null;gridReference=null;
+          originalGridGeometry=null;originalGridEnabled=false;syncOriginalGridButtons();
         }else{
           workingFromTemplate=true;
         }
@@ -10078,6 +10159,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     workingFromTemplate=false;
     resetPhotoFilters();
     visibleCropWhole=null;visibleCropGrid=null;gridReference=null;
+    originalGridGeometry=null;originalGridEnabled=false;syncOriginalGridButtons();
     installPhoto(originalPhoto);
     document.dispatchEvent(new Event('atelier-reset-photo'));
     setMode('move');
