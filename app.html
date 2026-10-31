@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.48</title>
+  <title>AtelierAI iPad 4.49</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1061,7 +1061,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.48</div>
+    <div class="title">AtelierAI · iPad 4.49</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1147,7 +1147,7 @@
         <p>Farbbereiche Schritt für Schritt einblenden. Der zuletzt bewegte Regler bestimmt die Ansicht.</p>
         <div class="grid2" style="margin-bottom:8px"><button id="build32Grid" class="secondary">Feinraster ein</button><button id="build32Pick" class="secondary">Mischung aufnehmen</button></div>
         <button type="button" data-original-grid-toggle class="secondary" aria-pressed="false" style="width:100%;margin-bottom:7px">Ursprungsraster ein</button>
-        <p class="tiny" style="margin:0 0 7px">Ursprungsraster: größere Kästchen als feine, etwas stärkere Orientierungslinien. Beim Übernehmen eines Ausschnitts wird die alte Einteilung festgehalten. Beide Raster unabhängig ein- und ausschaltbar.</p>
+        <p class="tiny" style="margin:0 0 7px">Ursprungsraster: Erst nach Auswahl eines Bildausschnitts verfügbar. Die alten großen Kästchen bleiben als dezente, stärkere Orientierungslinien erhalten. Das Feinraster wird daran ausgerichtet; beide können einzeln ausgeschaltet werden.</p>
         <div class="control-line"><label for="build32GridDensity">Rastergröße</label><input id="build32GridDensity" type="range" min="2" max="20" value="8"><span id="build32GridDensityVal">8</span></div>
         <details class="grid-adjust" style="margin-top:10px">
           <summary style="cursor:pointer;padding:8px 0;font-weight:bold">Raster an Ölbild anpassen</summary>
@@ -1805,7 +1805,7 @@
           <button id="savePngBtn">Als PNG speichern</button>
         </div>
         <button type="button" data-original-grid-toggle class="secondary" aria-pressed="false" style="width:100%;margin-top:7px">Ursprungsraster ein</button>
-        <p class="tiny">Beim Ausschnitt bleibt das bisherige große Raster erhalten. Das Feinraster kann unabhängig verändert werden. Beide liegen nur über dem Bild.</p>
+        <p class="tiny">Das Ursprungsraster erscheint nur nach Übernahme eines Bildausschnitts. Das Feinraster wird daran gleichmäßig ausgerichtet. Beide können einzeln ausgeschaltet werden und liegen nur über dem Bild.</p>
         <button id="saveJpegBtn" class="secondary" style="width:100%;margin-top:7px;">Als JPEG speichern</button>
         <p class="tiny">Beim Export kann das Raster unabhängig von der Bildschirmansicht ein- oder ausgeschaltet werden.</p>
         <div class="control-line"><label>Raster</label><input id="gridDensity" type="range" min="2" max="20" value="8"><span id="gridDensityVal">8</span></div>
@@ -2258,6 +2258,20 @@
     const cellY=base*gridAdjust.size/100*gridAdjust.height/100*sy;
     const cx=(ref.width*(.5+gridAdjust.x/100)-ref.x)*sx;
     const cy=(ref.height*(.5+gridAdjust.y/100)-ref.y)*sy;
+    // In a selected/cropped image, the fine grid should divide the ORIGINAL
+    // big squares into equal parts. Two unrelated grid origins made closely
+    // spaced/doubled and uneven-looking lines, especially when zoomed.
+    // The slider still controls roughly how many fine squares appear. Manual
+    // adjustment of the fine grid remains possible without snapping.
+    if(originalGridGeometry && gridAdjust.size===100 && gridAdjust.x===0 && gridAdjust.y===0 &&
+       gridAdjust.width===100 && gridAdjust.height===100 &&
+       originalGridGeometry.cellX>0 && originalGridGeometry.cellY>0){
+      const old=originalGridGeometry;
+      const stepX=old.cellX/Math.max(1,Math.round(old.cellX/cellX));
+      const stepY=old.cellY/Math.max(1,Math.round(old.cellY/cellY));
+      const wrap=(v,step)=>((v%step)+step)%step;
+      return {cellX:stepX,cellY:stepY,firstX:wrap(old.firstX,stepX),firstY:wrap(old.firstY,stepY)};
+    }
     return {cellX,cellY,firstX:cx-Math.ceil(cx/cellX)*cellX,firstY:cy-Math.ceil(cy/cellY)*cellY};
   }
   function syncOriginalGridButtons(){
@@ -2266,6 +2280,9 @@
       button.setAttribute('aria-pressed',String(originalGridEnabled));
       button.classList.toggle('active',originalGridEnabled);
       button.classList.toggle('secondary',!originalGridEnabled);
+      // A source grid makes sense only AFTER a grid/zoom area was selected.
+      button.disabled=!originalGridGeometry;
+      button.title=originalGridGeometry?'Alte größere Rasterkästchen im Ausschnitt anzeigen oder ausblenden':'Erst einen Bildausschnitt als Malvorlage übernehmen.';
     });
   }
   // Grid lines are stored in CURRENT source-image coordinates, not viewer
@@ -2288,11 +2305,11 @@
     syncOriginalGridButtons();
   }
   document.querySelectorAll('[data-original-grid-toggle]').forEach(button=>button.addEventListener('click',()=>{
-    if(!loaded)return;
-    if(!originalGridGeometry)originalGridGeometry={...gridGeometry(sourceCanvas.width,sourceCanvas.height,gridDensity.value)};
+    if(!loaded||!originalGridGeometry)return;
     originalGridEnabled=!originalGridEnabled;
     syncOriginalGridButtons();draw();studioDirty();
   }));
+  syncOriginalGridButtons();
   function syncGridAdjust(){
     document.querySelectorAll('[data-grid-adjust]').forEach(el=>{
       const key=el.dataset.gridAdjust,[lo,hi]=gridBounds(key);
@@ -3787,8 +3804,9 @@
     planSamplePoint=null;planActiveId=null;planPlaceId=null;mixResultCache.clear();
     if(a.medium&&[...paintPalette.options].some(o=>o.value===a.medium)){setMedium(a.medium==='artisan'?'oil':'water');paintPalette.value=a.medium;}
     gridEnabled=!!a.grid?.enabled;if(a.grid?.density)gridDensity.value=a.grid.density;
-    originalGridEnabled=!!a.grid?.originalEnabled;
-    originalGridGeometry=a.grid?.originalGeometry?{...a.grid.originalGeometry}:null;
+    const isSelectedCrop=!!(a.fullView||a.returnAreaId||a.cropMap||a.grid?.reference);
+    originalGridGeometry=isSelectedCrop&&a.grid?.originalGeometry?{...a.grid.originalGeometry}:null;
+    originalGridEnabled=!!(originalGridGeometry&&a.grid?.originalEnabled);
     syncOriginalGridButtons();
     gridReference=a.grid?.reference?{...a.grid.reference}:null;
     Object.assign(gridAdjust,a.grid?.adjust||{size:100,x:0,y:0,width:100,height:100,locked:false});
