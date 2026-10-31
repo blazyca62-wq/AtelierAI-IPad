@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.51</title>
+  <title>AtelierAI iPad 4.52</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1061,7 +1061,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.51</div>
+    <div class="title">AtelierAI · iPad 4.52</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3231,14 +3231,14 @@
     }
     return oilColorCache.get(key);
   }
-  // 4.50: Artisan-Mitteltoene waren in der Praxis oft zu dunkel.
-  // Die Tuben-RGB sind keine gemessenen Spektraldaten. Das bisherige
-  // synthetische Spektralmodell war bei Mischungen in den Mitteltönen
-  // tendenziell zu optimistisch ueber ihre Helligkeit. Eine vorsichtige,
-  // glatte Mittelton-Kalibrierung senkt daher nur die PROGNOSE einer
-  // gemischten Oelfarbe um maximal 5 CIELAB-L*-Punkte. Die Rezeptsuche
-  // gleicht das mit helleren Mischanteilen (insbesondere Weiss) aus.
-  // Weder Foto/Pipette noch unverduennte Einzelfarben und Aquarell aendern sich.
+  // 4.52: Artisan-Rezepte leicht heller nach Praxisrueckmeldung.
+  // Die Tuben-RGB sind keine gemessenen Spektraldaten. Die Simulation
+  // schaetzt reale Mischungen zu hell ein. Daher nur die interne PROGNOSE
+  // gemischter Oelfarben im Mitteltonbereich um bis zu 6.5 CIELAB-L*
+  // abdunkeln (4.51: 5.0). Die Rezeptsuche setzt entsprechend etwas mehr
+  // helle Mischanteile ein. Das Foto, Pipette, unvermischte Tubenfarben,
+  // Aquarell und alle anderen Module bleiben unveraendert.
+  // Vorsichtige Heuristik, keine Messung: reale Farbprobe entscheidet.
   function calibrateOilMixedMidtone(rgb){
     const linear=rgb.map(srgb8ToLinear);
     const Y=.2126729*linear[0]+.7151522*linear[1]+.0721750*linear[2];
@@ -3246,7 +3246,7 @@
     const L=116*Math.cbrt(Y)-16;
     const rise=Math.max(0,Math.min(1,(L-33)/22));
     const fall=Math.max(0,Math.min(1,(L-88)/-18));
-    const deltaL=5*rise*fall;
+    const deltaL=6.5*rise*fall;
     if(deltaL<0.05)return rgb;
     const darkerY=Math.pow((L-deltaL+16)/116,3);
     const factor=darkerY/Y;
