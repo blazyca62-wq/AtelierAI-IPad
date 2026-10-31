@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.47</title>
+  <title>AtelierAI iPad 4.48</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1061,7 +1061,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.47</div>
+    <div class="title">AtelierAI · iPad 4.48</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -5184,11 +5184,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const g=originalGridGeometry;
     if(!(g.cellX>0&&g.cellY>0))return;
     targetCtx.save();
-    targetCtx.globalCompositeOperation='difference';
-    targetCtx.strokeStyle='rgba(255,255,255,.67)';
+    // The fine grid uses 'difference'. Drawing the original grid with the
+    // same blend operation made coinciding horizontal lines almost vanish
+    // (double inversion). Draw the original boundaries LAST in source-over,
+    // with a subtle dark outline and light center for contrast on any photo.
+    targetCtx.globalCompositeOperation='source-over';
     const t=targetCtx.getTransform();
     const pixelRatio=targetCtx===ctx?Math.max(1,window.devicePixelRatio||1):1;
-    targetCtx.lineWidth=1.85*pixelRatio/(Math.hypot(t.a,t.b)||1);
+    const screenPixel=pixelRatio/(Math.hypot(t.a,t.b)||1);
     targetCtx.beginPath();
     for(let x=g.firstX;x<=w+.001;x+=g.cellX){
       if(x>=-0.001&&x<=w+0.001){targetCtx.moveTo(Math.max(0,Math.min(w,x)),0);targetCtx.lineTo(Math.max(0,Math.min(w,x)),h);}
@@ -5196,7 +5199,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     for(let y=g.firstY;y<=h+.001;y+=g.cellY){
       if(y>=-0.001&&y<=h+0.001){targetCtx.moveTo(0,Math.max(0,Math.min(h,y)));targetCtx.lineTo(w,Math.max(0,Math.min(h,y)));}
     }
-    targetCtx.stroke();targetCtx.restore();
+    targetCtx.strokeStyle='rgba(24,24,24,.55)';
+    targetCtx.lineWidth=2.55*screenPixel;
+    targetCtx.stroke();
+    targetCtx.strokeStyle='rgba(255,255,255,.78)';
+    targetCtx.lineWidth=1.05*screenPixel;
+    targetCtx.stroke();
+    targetCtx.restore();
   }
   function drawVisibleGrids(targetCtx,w,h,includeGrid=true,highContrast=false){
     if(!includeGrid)return;
