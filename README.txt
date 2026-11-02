@@ -1,3 +1,14 @@
+AtelierAI iPad 4.62 – Lasso in Farbreduktion UND Malaufbau
+============================================================
+- Neuberechnung: aktueller Zoom und Pan bleiben unverändert.
+- Lasso aufheben: Originalbild statt Gesamtbild-Farbreduktion.
+- Malaufbau: fünf lokale Stufen (8/16/32/48/64) aus dem
+  tatsächlich ausgewählten Lasso-Inhalt. Das übrige Bild bleibt original.
+- Stufenknöpfe und vorher/neu erhalten die Lasso-Begrenzung.
+- Sonstige Module bleiben bestehen.
+
+Browser-Tests sind kein Ersatz für einen Test auf iPad/Safari.
+
 AtelierAI iPad 4.61 – Lasso zuerst wählen, Farbzahl danach ändern
 ============================================================
 Lasso ist jetzt bei geöffnetem Originalfoto unmittelbar wählbar, ohne dass

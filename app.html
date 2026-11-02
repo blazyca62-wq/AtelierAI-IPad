@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.61</title>
+  <title>AtelierAI iPad 4.62</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.61</div>
+    <div class="title">AtelierAI · iPad 4.62</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -6844,7 +6844,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         sample.set(source.subarray(i*4,i*4+4),j);j+=4;
       }
       const pixels=sample.subarray(0,j);
-      const data={colorCount:Number(document.getElementById('build32Count').value),pixels:pixels.buffer.slice(pixels.byteOffset,pixels.byteOffset+pixels.byteLength),width:j/4,height:1};
+      const hasStages=!!build32Data?.stages;
+      const data={colorCount:hasStages?(build32Data.finalStages?64:16):Number(document.getElementById('build32Count').value),
+        progressive:hasStages&&!build32Data.finalStages?'layer':null,
+        finalStages:hasStages&&!!build32Data.finalStages,
+        pixels:pixels.buffer.slice(pixels.byteOffset,pixels.byteOffset+pixels.byteLength),width:j/4,height:1};
       if(build32IsPure()){
         const key=document.getElementById('build32MixPalette').value;
         data.pureColors=build32IsSimple()?build32SimpleColors(key):build32PureColors(key);
@@ -6853,12 +6857,17 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }
       const result=build32IsPure()?quantizeBuild32Pure(data):quantizeBuild32(data);
       if(!result.palette.length)throw new Error('Keine Farben im Lasso');
-      const ranks=new Uint16Array(pixelCount);ranks.fill(65535);
-      if(sampleEvery===1){
-        const indexed=result.pure?new Uint16Array(result.ranks):new Uint8Array(result.ranks);
-        for(let i=0,k=0;i<pixelCount;i++)if(!regionMask||regionMask[i])ranks[i]=indexed[k++];
-      }else{
-        const paletteLab=result.palette.map(rgbToLabFast),cache=new Map();
+      // Convert every *local* stage to source-image coordinates. All pixels
+      // outside the Lasso get the 65535 sentinel and are never painted.
+      // For large crops, map the full-resolution colors against the local
+      // stage palette; never allow outside colors into the cluster input.
+      const mapLocalRanks=(sampleRanks,activeCount)=>{
+        const full=new Uint16Array(pixelCount);full.fill(65535);
+        if(sampleEvery===1){
+          let k=0;for(let i=0;i<pixelCount;i++)if(!regionMask||regionMask[i])full[i]=sampleRanks[k++];
+          return full;
+        }
+        const paletteLab=result.palette.slice(0,activeCount).map(rgbToLabFast),cache=new Map();
         for(let i=0;i<pixelCount;i++){
           if(regionMask&&!regionMask[i])continue;
           const r=source[i*4],g=source[i*4+1],b=source[i*4+2],key=((r>>2)<<12)|((g>>2)<<6)|(b>>2);
@@ -6871,10 +6880,16 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
             }
             cache.set(key,index);
           }
-          ranks[i]=index;
+          full[i]=index;
         }
-      }
-      build32DetailCell={...cell,kind:cell.points?'lasso':'grid',palette:result.palette,ranks,mask:regionMask,pure:!!result.pure,paintInfo:result.paintInfo||null};
+        return full;
+      };
+      const stageRanks=result.stages?(result.finalStages
+        ?(()=>{const one=mapLocalRanks(result.stages[0],result.palette.length);return [one,one,one,one,one];})()
+        :result.stages.map((stage,i)=>mapLocalRanks(stage,result.stageCounts[i]))):null;
+      const ranks=stageRanks?stageRanks[stageRanks.length-1]:mapLocalRanks(result.pure?new Uint16Array(result.ranks):new Uint8Array(result.ranks),result.palette.length);
+      build32DetailCell={...cell,kind:cell.points?'lasso':'grid',palette:result.palette,ranks,mask:regionMask,pure:!!result.pure,paintInfo:result.paintInfo||null,
+        stageRanks,stageCounts:result.stageCounts||null,finalStages:!!result.finalStages};
       build32DetailOriginalPalette=result.palette.map(rgb=>[...rgb]);
       build32DetailColorOverrides.clear();build32Selected=null;build32Selection.clear();build32Manual=false;build32MixRequest++;
       renderBuild32PaletteStrip(result.palette);
@@ -6894,8 +6909,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       build32RememberedLight=result.palette.length;build32RememberedDark=0;
       build32Active=true;syncBuild32DetailCellButton();syncBuild32LassoButtons();
       syncBuild32FamilyRanges();
-      build32RenderDetailOnly('light');
-      build32Status.textContent=build32DetailTitle()+' · '+result.palette.length+' lokale Farben aus '+selectedCount.toLocaleString('de-DE')+' Bildpunkten. Globale Farbanalyse unverändert.';draw();
+      if(stageRanks){
+        build32StageIndex=0;build32StageView='all';renderBuild32Stage();
+        build32Status.textContent='Lasso-Malaufbau · '+selectedCount.toLocaleString('de-DE')+' Bildpunkte innerhalb der Kontur, außerhalb Original.';
+      }else build32RenderDetailOnly('light');
+      if(!stageRanks)build32Status.textContent=build32DetailTitle()+' · '+result.palette.length+' lokale Farben aus '+selectedCount.toLocaleString('de-DE')+' Bildpunkten. Globale Farbanalyse unverändert.';
+      draw();
     }catch(err){
       build32Status.textContent='Lokale Farberkennung fehlgeschlagen: '+(err?.message||'Unbekannter Fehler');
     }
@@ -7374,7 +7393,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     showBuild32PalettePage(0);
     document.getElementById('build32Dock').hidden=false;
     if(!result.pure)document.getElementById('build32MixPalette').value=paintPalette.value;
-    requestAnimationFrame(()=>{resizeCanvas();fitImage();});
+    // Recalculating the palette must never reset the artist's current zoom/pan.
+    requestAnimationFrame(()=>{resizeCanvas();syncGlobalViewControls();draw();});
     build32RememberedLight=0;build32RememberedDark=0;
     build32DetailCell=null;build32DetailCanvas=null;build32DetailBaseCanvas=null;build32DetailLocalRendered=false;build32DetailCellArmed=false;syncBuild32DetailCellButton();
     for(const d of ['light','dark']){document.getElementById('build32'+d).disabled=false;document.getElementById('build32'+d).value=0;}
@@ -7382,7 +7402,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     renderBuild32('light');
     if(result.stages){build32StageIndex=0;build32StageView='all';document.getElementById('build32StagesControls').hidden=false;renderBuild32Stage();}
     const restore=build32LassoRestorePoints;build32LassoRestorePoints=null;
-    if(restore&&!result.stages)analyzeBuild32Lasso(restore);
+    if(restore)analyzeBuild32Lasso(restore);
     document.getElementById('build32StagesStart').disabled=false;
   }
 
@@ -7396,19 +7416,31 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function renderBuild32Stage(){
     if(!build32Data?.stages)return;
-    const data=build32Data,stage=build32StageIndex,view=build32StageView||'all';build32StageView=view;build32MixRequest++;
+    const local=build32DetailCell?.kind==='lasso'&&build32DetailCell.stageRanks?build32DetailCell:null;
+    const data=local||build32Data,stage=build32StageIndex,view=build32StageView||'all';build32StageView=view;build32MixRequest++;
     const previous=stage?data.stageCounts[stage-1]:0,end=data.stageCounts[stage];
-    const ranks=data.stages[view==='before'?Math.max(0,stage-1):stage];
+    const ranks=local?local.stageRanks[view==='before'?Math.max(0,stage-1):stage]
+                     :data.stages[view==='before'?Math.max(0,stage-1):stage];
     data.ranks=ranks;delete data.filledCache;
     build32Extras=false;build32ExtrasBase=null;build32Manual=false;build32Active=true;build32Selected=null;build32AllPrevious=null;build32SoloPrevious=null;
     build32Selection.clear();for(let i=view==='new'?previous:0;i<(view==='before'?previous:end);i++)build32Selection.add(i);
-    const c=build32Canvas.getContext('2d'),frame=c.createImageData(data.width,data.height),bg=build32BackgroundValue(128);
+    const c=local?build32DetailCanvas.getContext('2d'):build32Canvas.getContext('2d');
+    const frame=c.createImageData(local?local.w:data.width,local?local.h:data.height),bg=build32BackgroundValue(128);
     build32VisibleMask=new Uint8Array(ranks.length);
-    for(let i=0;i<ranks.length;i++){const show=data.finalStages?build32Selection.has(ranks[i]):(view!=='new'||ranks[i]>=previous);build32VisibleMask[i]=show?1:0;const rgb=show?data.palette[ranks[i]]:[bg,bg,bg];frame.data.set([...rgb,255],i*4);}
-    c.putImageData(frame,0,0);rebuildBuild32Foreground(frame);
+    for(let i=0;i<ranks.length;i++){
+      const rank=ranks[i];
+      if(local&&rank===65535)continue; // Transparent outside the polygon.
+      const show=data.finalStages?build32Selection.has(rank):(view!=='new'||rank>=previous);
+      build32VisibleMask[i]=show?1:0;
+      const rgb=show?data.palette[rank]:[bg,bg,bg];
+      frame.data.set([...rgb,255],i*4);
+    }
+    c.putImageData(frame,0,0);
+    if(local){build32DetailLocalRendered=true;build32Active=true;}
+    else rebuildBuild32Foreground(frame);
     [...document.getElementById('build32Palette').children].forEach((b,i)=>{b.setAttribute('aria-pressed',String(build32Selection.has(i)));b.style.opacity=build32Selection.has(i)?'1':'.4';});
     document.getElementById('build32Extras').disabled=true;
-    const message=(data.finalStages?'Endgültige Farben · ':'')+'Malstufe '+(stage+1)+' · '+(view==='before'?previous+' bisherige Farben':view==='new'?(end-previous)+' neue Farben (Nr. '+(previous+1)+'–'+end+')':end+' Farben zusammen');
+    const message=(local?'Lasso · ':'')+(data.finalStages?'Endgültige Farben · ':'')+'Malstufe '+(stage+1)+' · '+(view==='before'?previous+' bisherige Farben':view==='new'?(end-previous)+' neue Farben (Nr. '+(previous+1)+'–'+end+')':end+' Farben zusammen');
     build32Status.textContent=message;document.getElementById('build32StagesInfo').textContent=message+(end===previous?' · Keine weiteren Farben im Motiv.':data.finalStages?' · Freie Flächen bleiben ausgespart. Größte Farbflächen zuerst.':'');
     document.getElementById('build32Recipe').textContent='Farbfeld antippen für die Mischung. Mit den Stufenknöpfen zurück zum Malaufbau.';
     syncBuild32StageButtons();syncBuild32ReturnButtons();draw();
@@ -7424,15 +7456,15 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   });
   document.querySelectorAll('[data-paint-stage]').forEach(b=>b.addEventListener('click',()=>{
     if(!build32Data?.stages)return;
-    if(build32DetailCell)clearBuild32DetailCell();
+    if(build32DetailCell&&build32DetailCell.kind!=='lasso')clearBuild32DetailCell();
     build32StageIndex=Number(b.dataset.paintStage);build32StageView='all';renderBuild32Stage();
   }));
   document.querySelectorAll('[data-paint-view]').forEach(b=>b.addEventListener('click',()=>{
-    if(build32DetailCell)clearBuild32DetailCell();
+    if(build32DetailCell&&build32DetailCell.kind!=='lasso')clearBuild32DetailCell();
     build32StageView=b.dataset.paintView;renderBuild32Stage();
   }));
   document.getElementById('build32StagesToggle').addEventListener('click',()=>{
-    if(build32DetailCell)clearBuild32DetailCell();
+    if(build32DetailCell&&build32DetailCell.kind!=='lasso')clearBuild32DetailCell();
     build32StageView=build32StageView==='all'?'before':'all';renderBuild32Stage();
   });
 
@@ -7957,11 +7989,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   document.getElementById('build32LassoClear').addEventListener('click',()=>{
     build32LassoArmed=false;build32LassoRestorePoints=null;
     if(build32DetailCell?.kind==='lasso'){
-      const state=build32LassoGlobalState;
       clearBuild32DetailCell();build32Manual=false;build32Selection.clear();build32Selected=null;
-      if(build32Data){if(state)restoreBuild32State(state);else renderBuild32(build32Direction);}
     }
-    build32LassoGlobalState=null;build32LassoPoints=null;build32LassoDraft=null;syncBuild32LassoButtons();draw();
+    build32Active=false; // Clearing does not authorize global color reduction.
+    build32StageView=null;syncBuild32StageButtons();
+    build32LassoGlobalState=null;build32LassoPoints=null;build32LassoDraft=null;
+    build32Status.textContent='Lasso entfernt · Originalbild unverändert. Für Gesamtbild-Reduktion „Farben erkennen“ drücken.';
+    syncBuild32LassoButtons();syncBuild32ReturnButtons();draw();
   });
   document.getElementById('build32DetailCell').addEventListener('click',()=>{
     if(!build32Data){build32Status.textContent='Bitte zuerst Farben erkennen lassen.';return;}
