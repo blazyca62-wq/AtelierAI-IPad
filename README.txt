@@ -1,3 +1,20 @@
+AtelierAI iPad 4.59 – lokale Farberkennung mit Lasso
+=================================================
+Neu im Modul 8 / 16 / 32 / 48 / 64 Farben:
+1. Wie bisher zuerst das Gesamtbild analysieren.
+2. Gewünschte Anzahl lokaler Farben (8/16/32/48/64) auswählen.
+3. „Lasso-Bereich wählen“ antippen und mit einem Finger / mit der Maus den Bereich frei umfahren.
+4. Nur die Farben innerhalb der gezeichneten Kontur werden erkannt, anhand der vorhandenen repräsentativen Bildfarben.
+5. Mit zwei Fingern vergrößern/verschieben, auch wenn das Lasso aktiviert ist.
+6. Ein neues Lasso ersetzt die vorige lokale Auswahl; „Bereich aufheben“ stellt die Gesamtansicht wieder her.
+7. Beim Wechsel der Farbanzahl wird das Lasso nach der globalen Neuberechnung erneut lokal analysiert.
+8. Außerhalb der Auswahl bleibt die globale Ansicht unverändert. Die gestrichelte Kontur ist nur eine Bildschirmhilfe und wird nicht exportiert.
+
+Die bestehenden Raster-Kästchen, Malaufbau-Stufen, Farbmischungen und die normale Farberkennung bleiben erhalten.
+„Zusammenfassen“ wird NICHT eingeführt.
+
+Hinweis: Fachlich sorgfältig kodiert; echte iPad/Safari-Bedienung wurde hier nicht getestet.
+
 4.58 – Die Funktion „Farben zusammenfassen“ im 8/16/32/48/64-Farben-Modul vollständig entfernt. Kein Reduktionsregler, keine Zusammenfassen-Schaltfläche und keine automatische gewichtete RGB-Mittelwertbildung beim Erkennen oder in Detail-Kästchen. Die normale Erkennung wählt wie bisher repräsentative Farben aus dem Bild; alle fünf Farbzahlen (8/16/32/48/64), Malaufbau-Stufen, Ersatzfarben und Farbfamilien bleiben erhalten. Die unabhängige Option „Kleine Farbflecken auffüllen“ bleibt verfügbar. Service-Worker und Startseiten auf 4.58 aktualisiert, damit Offline-Installationen die neue Version laden.
 
 4.56 – Daler-Rowney System3 Original Acryl als zusätzliche Palette mit 54 Farben, Hersteller-Farbnummern und Pigmentbezeichnungen. Neu: Medium „Acryl“ in Farbmischung und Lasuren, System3-Auswahl in den Mischpaletten für Flächenberater, 8/16/32/48/64 Farben, Farbmischpult und bei der Farbänderung. „Meine Farben“ und persönlicher Standard werden für System3 getrennt von Artisan gespeichert. Bestehende Öl- und Aquarell-Paletten unverändert. ACRYL-MISCHWERTE: Es liegen keine spektral gemessenen Originalpigmentdaten vor; RGB-Werte sind lediglich visuelle Näherungen und Mischrezepte müssen auf der Palette getestet werden. Fluoreszierende und metallische Effekte kann der Bildschirm nicht originalgetreu darstellen.

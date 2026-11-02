@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.58</title>
+  <title>AtelierAI iPad 4.59</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.58</div>
+    <div class="title">AtelierAI · iPad 4.59</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1173,6 +1173,8 @@
 
         <button id="build32DetailCell" class="secondary" type="button" style="width:100%;margin-top:7px" aria-pressed="false">Detail-Kästchen auswählen: Aus</button>
         <p id="build32DetailCellStatus" class="tiny">Raster einschalten → Detail-Kästchen auswählen → ein Kästchen antippen. Die aktuell gewählte 8/16/32/48/64-Farbzahl wird dann nur in diesem Kästchen neu berechnet.</p>
+        <div class="grid2" style="margin-top:8px"><button id="build32Lasso" type="button" class="secondary" aria-pressed="false">Lasso-Bereich wählen</button><button id="build32LassoClear" type="button" class="secondary" disabled>Bereich aufheben</button></div>
+        <p id="build32LassoStatus" class="tiny" role="status">Lasso: freie Fläche mit einem Finger oder der Maus umfahren, um ihre Farben separat zu erkennen. Zwei Finger zoomen wie bisher. Kein Raster nötig.</p>
         <p class="tiny">Mischung aufnehmen: eine sichtbare Farbfläche antippen. Das Raster wird nicht mitgemessen.</p>
         <label>Darstellung <select id="build32PaintModeSide"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Einfache Öl-/Acryl-Mischungen</option></select></label><label id="build32SimpleLimitLabelSide" hidden>Mischungen <select id="build32SimpleLimitSide" aria-label="Anzahl einfacher Öl-/Acryl-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><p class="tiny">Ungemischt: Farben der gewählten Palette. Aquarell mit Wasserverdünnung und Papierweiß; Öl ohne Ausmischen. Einfache Öl-/Acryl-Mischungen: mit Weiß, Gelb oder Blau, bei Bedarf zusätzlich Weiß. Bildschirm-Simulation.</p><label for="build32CountSide">Anzahl Farben</label><select id="build32CountSide" style="min-height:44px;margin:8px"><option value="8">8</option><option value="16">16</option><option value="32" selected>32</option><option value="48">48</option><option value="64">64</option></select>
         <button id="build32Analyze" style="width:100%">32 Farben erkennen</button>
@@ -6710,6 +6712,29 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   // Separate color workspace for the selected detail cell.
   let build32DetailOriginalPalette=null,build32DetailColorOverrides=new Map();
   let build32DetailCellArmed=false, build32DetailCell=null, build32DetailCanvas=null, build32DetailBaseCanvas=null, build32DetailLocalRendered=false;
+  let build32LassoArmed=false,build32LassoDraft=null,build32LassoPoints=null,build32LassoRestorePoints=null,build32LassoGlobalState=null,build32SuppressLassoOutline=false;
+  function build32DetailTitle(){return build32DetailCell?.kind==='lasso'?'Lasso-Bereich':'Detail-Kästchen '+(build32DetailCell?.col+1)+' / '+(build32DetailCell?.row+1);}
+  function syncBuild32LassoButtons(){
+    const b=document.getElementById('build32Lasso'),clear=document.getElementById('build32LassoClear'),status=document.getElementById('build32LassoStatus');
+    if(!b)return;
+    b.textContent=build32LassoArmed?'Lasso zeichnen: Ein':'Lasso-Bereich wählen';b.setAttribute('aria-pressed',String(build32LassoArmed));
+    b.classList.toggle('active',build32LassoArmed);b.classList.toggle('secondary',!build32LassoArmed);
+    clear.disabled=!build32LassoPoints&&!build32LassoDraft;
+    status.textContent=build32LassoArmed?'Jetzt mit einem Finger oder der Maus die Fläche umfahren und loslassen. Zwei Finger: wie gewohnt Zoom.':
+      build32DetailCell?.kind==='lasso'?'Lasso aktiv · '+build32DetailCell.palette.length+' Farben nur innerhalb der Kontur. Außerhalb bleibt die bisherige Ansicht.':
+      'Lasso: eine frei umrandete Fläche separat erkennen; kein Raster nötig. Vorher die gewünschte Farbanzahl einstellen.';
+  }
+  function drawBuild32LassoOutline(){
+    if(!loaded||build32SuppressLassoOutline||document.getElementById('build32Dock').hidden)return;
+    const pts=build32LassoDraft||build32LassoPoints;
+    if(!pts||pts.length<2)return;
+    ctx.save();ctx.translate(offsetX,offsetY);ctx.scale(scale,scale);
+    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+    if(!build32LassoDraft)ctx.closePath();
+    ctx.lineJoin='round';ctx.lineCap='round';ctx.setLineDash([7/scale,5/scale]);
+    ctx.lineWidth=3.5/scale;ctx.strokeStyle='rgba(0,0,0,.95)';ctx.stroke();
+    ctx.lineWidth=1.8/scale;ctx.strokeStyle='rgba(255,255,255,.98)';ctx.lineDashOffset=-6/scale;ctx.stroke();ctx.restore();
+  }
   const build32Selection=new Set();
   let build32AllPrevious=null,build32PalettePage=0,build32SoloPrevious=null,build32SoloAdditive=false,build32SimilarAnchor=null;
   function showBuild32PalettePage(page){
@@ -6743,7 +6768,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     b.setAttribute('aria-pressed',String(build32DetailCellArmed));
     b.classList.toggle('active',build32DetailCellArmed);b.classList.toggle('secondary',!build32DetailCellArmed);
     if(build32DetailCell){
-      status.textContent='Detail-Kästchen '+(build32DetailCell.col+1)+' / '+(build32DetailCell.row+1)+' aktiv · '+build32ColorCount()+' Farben nur in diesem Kästchen. Erneut ein Kästchen antippen ersetzt die Detailanalyse.';
+      status.textContent=build32DetailTitle()+' aktiv · '+build32DetailCell.palette.length+' lokale Farben. Erneute Auswahl ersetzt diese Analyse.';
     }else{
       status.textContent=build32DetailCellArmed?'Jetzt ein Raster-Kästchen im Bild antippen. Die globale Farbauswahl bleibt erhalten.':'Raster einschalten → Detail-Kästchen auswählen → ein Kästchen antippen. Die aktuell gewählte 8/16/32/48/64-Farbzahl wird dann nur in diesem Kästchen neu berechnet.';
     }
@@ -6773,56 +6798,126 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     showBuild32PalettePage(0);
   }
   function clearBuild32DetailCell(){
+    build32LassoPoints=null;build32LassoDraft=null;
     build32DetailCell=null;build32DetailCanvas=null;build32DetailBaseCanvas=null;build32DetailLocalRendered=false;
     build32DetailOriginalPalette=null;build32DetailColorOverrides.clear();
     if(build32Data) renderBuild32PaletteStrip(build32Data.palette);
-    syncBuild32DetailCellButton();
+    syncBuild32DetailCellButton();syncBuild32LassoButtons();
     if(build32Data) syncBuild32FamilyRanges();
   }
   function analyzeBuild32DetailCell(cell){
     if(!build32Data||!cell)return;
-    flushToneImage();
-    const crop=document.createElement('canvas');crop.width=cell.w;crop.height=cell.h;
-    const cc=crop.getContext('2d');cc.drawImage(sourceCanvas,cell.x,cell.y,cell.w,cell.h,0,0,cell.w,cell.h);
-    const pixels=cc.getImageData(0,0,cell.w,cell.h).data.buffer;
-    const data={colorCount:Number(document.getElementById('build32Count').value),pixels,width:cell.w,height:cell.h};
-    let result;
     try{
+      // Preserve the global display exactly as it was before this local analysis.
+      if(cell.points&&!build32LassoGlobalState&&build32Data&&!build32DetailCell)build32LassoGlobalState=captureBuild32State();
+      // Never bake an older local analysis into the frozen global background.
+      if(build32DetailCell){clearBuild32DetailCell();renderBuild32(build32Direction);}
+      flushToneImage();
+      const crop=document.createElement('canvas');crop.width=cell.w;crop.height=cell.h;
+      const cc=crop.getContext('2d',{willReadFrequently:true});
+      cc.drawImage(sourceCanvas,cell.x,cell.y,cell.w,cell.h,0,0,cell.w,cell.h);
+      const source=cc.getImageData(0,0,cell.w,cell.h).data;
+      let regionMask=null;
+      if(cell.points){
+        // Rasterize the polygon at source resolution; no bounding-box colours
+        // may influence the palette outside the hand-drawn contour.
+        const mc=document.createElement('canvas');mc.width=cell.w;mc.height=cell.h;
+        const c=mc.getContext('2d',{willReadFrequently:true});
+        c.beginPath();cell.points.forEach((point,i)=>i?c.lineTo(point.x-cell.x,point.y-cell.y):c.moveTo(point.x-cell.x,point.y-cell.y));
+        c.closePath();c.fillStyle='#fff';c.fill();
+        const alpha=c.getImageData(0,0,cell.w,cell.h).data;
+        regionMask=new Uint8Array(cell.w*cell.h);for(let i=0;i<regionMask.length;i++)regionMask[i]=alpha[i*4+3]>127?1:0;
+      }
+      const pixelCount=cell.w*cell.h;
+      let selectedCount=0;
+      for(let i=0;i<pixelCount;i++)if(!regionMask||regionMask[i])selectedCount++;
+      if(selectedCount<16){build32Status.textContent='Lasso-Fläche ist zu klein. Bitte einen größeren Bereich umfahren.';return;}
+      // A bounded, uniformly spaced sampling prevents large iPad photos from
+      // freezing without introducing colours from outside the polygon.
+      const sampleEvery=Math.max(1,Math.ceil(selectedCount/350000));
+      const sample=new Uint8ClampedArray(Math.ceil(selectedCount/sampleEvery)*4);
+      let n=0,j=0;
+      for(let i=0;i<pixelCount;i++){
+        if(regionMask&&!regionMask[i])continue;
+        if(n++%sampleEvery)continue;
+        sample.set(source.subarray(i*4,i*4+4),j);j+=4;
+      }
+      const pixels=sample.subarray(0,j);
+      const data={colorCount:Number(document.getElementById('build32Count').value),pixels:pixels.buffer.slice(pixels.byteOffset,pixels.byteOffset+pixels.byteLength),width:j/4,height:1};
       if(build32IsPure()){
         const key=document.getElementById('build32MixPalette').value;
         data.pureColors=build32IsSimple()?build32SimpleColors(key):build32PureColors(key);
         data.simpleLimit=build32IsSimple()?Number(document.getElementById('build32SimpleLimit').value):0;
         data.watercolor=['watercolor','horadam','akademie'].includes(key);
-        result=quantizeBuild32Pure(data);
-      }else{
-        result=quantizeBuild32(data);
       }
-      build32DetailCell={...cell,palette:result.palette,ranks:new Uint8Array(result.ranks)};
+      const result=build32IsPure()?quantizeBuild32Pure(data):quantizeBuild32(data);
+      if(!result.palette.length)throw new Error('Keine Farben im Lasso');
+      const ranks=new Uint16Array(pixelCount);ranks.fill(65535);
+      if(sampleEvery===1){
+        const indexed=result.pure?new Uint16Array(result.ranks):new Uint8Array(result.ranks);
+        for(let i=0,k=0;i<pixelCount;i++)if(!regionMask||regionMask[i])ranks[i]=indexed[k++];
+      }else{
+        const paletteLab=result.palette.map(rgbToLabFast),cache=new Map();
+        for(let i=0;i<pixelCount;i++){
+          if(regionMask&&!regionMask[i])continue;
+          const r=source[i*4],g=source[i*4+1],b=source[i*4+2],key=((r>>2)<<12)|((g>>2)<<6)|(b>>2);
+          let index=cache.get(key);
+          if(index===undefined){
+            const lab=rgbToLabFast([r,g,b]);let best=Infinity;index=0;
+            for(let a=0;a<paletteLab.length;a++){
+              const q=paletteLab[a],d=(lab[0]-q[0])**2+1.3*((lab[1]-q[1])**2+(lab[2]-q[2])**2);
+              if(d<best){best=d;index=a;}
+            }
+            cache.set(key,index);
+          }
+          ranks[i]=index;
+        }
+      }
+      build32DetailCell={...cell,kind:cell.points?'lasso':'grid',palette:result.palette,ranks,mask:regionMask,pure:!!result.pure,paintInfo:result.paintInfo||null};
       build32DetailOriginalPalette=result.palette.map(rgb=>[...rgb]);
-      build32DetailColorOverrides.clear();
-      build32Selected=null;build32Selection.clear();build32Manual=false;build32MixRequest++;
-      renderBuild32PaletteStrip(build32DetailCell.palette);
-      // Freeze the current global view as the background. From now on the
-      // controls affect only the selected detail cell.
-      build32DetailBaseCanvas=document.createElement('canvas');
-      build32DetailBaseCanvas.width=build32Canvas.width;build32DetailBaseCanvas.height=build32Canvas.height;
+      build32DetailColorOverrides.clear();build32Selected=null;build32Selection.clear();build32Manual=false;build32MixRequest++;
+      renderBuild32PaletteStrip(result.palette);
+      build32DetailBaseCanvas=document.createElement('canvas');build32DetailBaseCanvas.width=build32Canvas.width;build32DetailBaseCanvas.height=build32Canvas.height;
       build32DetailBaseCanvas.getContext('2d').drawImage(build32Canvas,0,0);
       build32DetailLocalRendered=false;
       build32DetailCanvas=document.createElement('canvas');build32DetailCanvas.width=cell.w;build32DetailCanvas.height=cell.h;
       const dc=build32DetailCanvas.getContext('2d'),frame=dc.createImageData(cell.w,cell.h);
-      for(let i=0;i<build32DetailCell.ranks.length;i++){const rgb=build32DetailCell.palette[build32DetailCell.ranks[i]]||[128,128,128];frame.data[i*4]=rgb[0];frame.data[i*4+1]=rgb[1];frame.data[i*4+2]=rgb[2];frame.data[i*4+3]=255;}
+      for(let i=0;i<ranks.length;i++){
+        if(ranks[i]===65535)continue;
+        const rgb=result.palette[ranks[i]]||[128,128,128];
+        frame.data[i*4]=rgb[0];frame.data[i*4+1]=rgb[1];frame.data[i*4+2]=rgb[2];frame.data[i*4+3]=255;
+      }
       dc.putImageData(frame,0,0);
-      build32Active=true;syncBuild32DetailCellButton();build32Status.textContent='Detail-Kästchen '+(cell.col+1)+' / '+(cell.row+1)+' · '+result.palette.length+' lokale Farben. Die globale Farbanalyse bleibt unverändert.';draw();
+      build32LassoPoints=cell.points?cell.points.map(p=>({...p})):null;
+      build32LassoArmed=false;build32DetailCellArmed=false;
+      build32RememberedLight=result.palette.length;build32RememberedDark=0;
+      build32Active=true;syncBuild32DetailCellButton();syncBuild32LassoButtons();
+      syncBuild32FamilyRanges();
+      build32RenderDetailOnly('light');
+      build32Status.textContent=build32DetailTitle()+' · '+result.palette.length+' lokale Farben aus '+selectedCount.toLocaleString('de-DE')+' Bildpunkten. Globale Farbanalyse unverändert.';draw();
     }catch(err){
-      build32Status.textContent='Detailanalyse konnte nicht berechnet werden.';
+      build32Status.textContent='Lokale Farberkennung fehlgeschlagen: '+(err?.message||'Unbekannter Fehler');
     }
   }
+  function analyzeBuild32Lasso(points){
+    if(!build32Data||!points||points.length<3)return;
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    for(const p of points){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);}
+    const x=Math.max(0,Math.floor(minX)),y=Math.max(0,Math.floor(minY));
+    const w=Math.min(sourceCanvas.width,Math.ceil(maxX))-x,h=Math.min(sourceCanvas.height,Math.ceil(maxY))-y;
+    if(w<3||h<3){build32Status.textContent='Lasso zu klein; bitte größere Fläche wählen.';return;}
+    analyzeBuild32DetailCell({x,y,w,h,points});
+  }
+
   function drawBuild32DetailOverlay(targetCtx){
     if(build32DetailLocalRendered)return;
     if(!build32DetailCell||!build32DetailCanvas)return;
     targetCtx.drawImage(build32DetailCanvas,build32DetailCell.x,build32DetailCell.y,build32DetailCell.w,build32DetailCell.h);
     targetCtx.save();targetCtx.globalCompositeOperation='difference';targetCtx.strokeStyle='rgba(255,255,255,.95)';targetCtx.lineWidth=Math.max(2,Math.min(sourceCanvas.width,sourceCanvas.height)/700);
-    targetCtx.strokeRect(build32DetailCell.x+.5,build32DetailCell.y+.5,build32DetailCell.w-1,build32DetailCell.h-1);targetCtx.restore();
+    if(build32DetailCell.points){
+      targetCtx.beginPath();build32DetailCell.points.forEach((p,i)=>i?targetCtx.lineTo(p.x,p.y):targetCtx.moveTo(p.x,p.y));targetCtx.closePath();targetCtx.stroke();
+    }else targetCtx.strokeRect(build32DetailCell.x+.5,build32DetailCell.y+.5,build32DetailCell.w-1,build32DetailCell.h-1);
+    targetCtx.restore();
   }
 
   function build32BackgroundValue(automatic){
@@ -6995,6 +7090,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function build32ColorCount(){if(build32Data)return build32Data.palette.length;return Number(document.getElementById('build32Count').value);}
   for(const id of ['build32Count','build32CountSide'])document.getElementById(id).addEventListener('change',e=>{
     for(const other of ['build32Count','build32CountSide'])document.getElementById(other).value=e.target.value;
+    build32LassoRestorePoints=build32LassoPoints?build32LassoPoints.map(p=>({...p})):null;
+    build32LassoGlobalState=null; // global palette will be rebuilt for the new count
     resetBuild32();
     document.getElementById('build32Analyze').textContent=build32ColorCount()+' Farben erkennen';
     if(loaded)document.getElementById('build32Analyze').click();
@@ -7040,7 +7137,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     build32Extras=false;document.getElementById('build32Extras').disabled=true;document.getElementById('build32Extras').textContent='Nur Ergänzungen zeigen';
     build32Selection.clear();build32Manual=false;
     build32RememberedLight=0;build32RememberedDark=0;
-    build32DetailCellArmed=false;build32DetailCell=null;build32DetailCanvas=null;syncBuild32DetailCellButton();
+    build32DetailCellArmed=false;build32DetailCell=null;build32DetailCanvas=null;
+    build32LassoArmed=false;build32LassoDraft=null;build32LassoPoints=null;build32LassoGlobalState=null;syncBuild32DetailCellButton();syncBuild32LassoButtons();
     build32Selected=null;build32MixRequest++;document.getElementById('build32Dock').hidden=true;
     build32Generation++;if(build32Worker)build32Worker.terminate();build32Worker=null;
     build32Data=null;build32Canvas=null;build32Active=false;build32VisibleMask=null;
@@ -7130,13 +7228,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const bg=build32BackgroundValue((lightCount>0&&darkCount===0)?128:(darkCount>0&&lightCount===0?255:128));
     const dc=build32DetailCanvas.getContext('2d'),frame=dc.createImageData(width,height);
     for(let i=0;i<ranks.length;i++){
-      const rank=ranks[i],show=build32Selection.has(rank),rgb=show?palette[rank]:[bg,bg,bg];
+      const rank=ranks[i];if(rank===65535)continue;
+      const show=build32Selection.has(rank),rgb=show?palette[rank]:[bg,bg,bg];
       frame.data[i*4]=rgb[0];frame.data[i*4+1]=rgb[1];frame.data[i*4+2]=rgb[2];frame.data[i*4+3]=255;
     }
     // Apply the smoothing slider locally to the selected cell only.
     if(build32Smoothing>0){
       const localMask=new Uint8Array(ranks.length);
-      for(let i=0;i<ranks.length;i++) localMask[i]=build32Selection.has(ranks[i])?1:0;
+      for(let i=0;i<ranks.length;i++) localMask[i]=ranks[i]!==65535&&build32Selection.has(ranks[i])?1:0;
       const smoothed=smoothBuild32Pixels(frame.data,localMask,width,height,build32Smoothing);
       frame.data.set(smoothed);
     }
@@ -7161,8 +7260,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const el=document.getElementById('build32'+d);el.max=max;el.disabled=false;
       document.getElementById('build32'+d+'Val').textContent=el.value+' / '+max;
     }
-    build32Status.textContent='Detail-Kästchen '+(build32DetailCell.col+1)+' / '+(build32DetailCell.row+1)+' · Hell: '+lightCount+' + Dunkel: '+darkCount+' · '+build32Selection.size+' lokale Farben sichtbar. Alle Regler wirken nur auf dieses Kästchen.';
-    if(direction==='middle')build32Status.textContent='Detail-Kästchen · '+document.getElementById('build32middleVal').textContent;
+    build32Status.textContent=build32DetailTitle()+' · Hell: '+lightCount+' + Dunkel: '+darkCount+' · '+build32Selection.size+' lokale Farben sichtbar. Nur innerhalb der Auswahl.';
+    if(direction==='middle')build32Status.textContent=build32DetailTitle()+' · '+document.getElementById('build32middleVal').textContent;
     syncBuild32ReturnButtons();draw();
     return true;
   }
@@ -7281,6 +7380,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(result.pure){build32Families=new Set(['all']);build32Family='all';build32RememberedLight=build32ColorCount();syncBuild32FamilyRanges();document.getElementById('build32light').value=build32ColorCount();}
     renderBuild32('light');
     if(result.stages){build32StageIndex=0;build32StageView='all';document.getElementById('build32StagesControls').hidden=false;renderBuild32Stage();}
+    const restore=build32LassoRestorePoints;build32LassoRestorePoints=null;
+    if(restore&&!result.stages)analyzeBuild32Lasso(restore);
     document.getElementById('build32StagesStart').disabled=false;
   }
 
@@ -7341,7 +7442,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const rgb=palette&&palette[index],key=document.getElementById('build32MixPalette').value;
     if(!rgb)return;
     const box=document.getElementById('build32Recipe');
-    if(build32Data.pure){const info=build32Data.paintInfo[index];box.textContent=info.recipe?info.recipe+' · Öl · Farbanteile als Startrezept (Simulation)':info.name+' · '+(info.watercolor?(info.coverage===0?'Papierweiß erhalten':Math.round(info.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)'):'Reine Tubenfarbe · ohne Mischung');return;}
+    if(build32DetailCell?.pure||(!build32DetailCell&&build32Data.pure)){const info=(build32DetailCell?.paintInfo||build32Data.paintInfo)[index];box.textContent=info.recipe?info.recipe+' · Öl · Farbanteile als Startrezept (Simulation)':info.name+' · '+(info.watercolor?(info.coverage===0?'Papierweiß erhalten':Math.round(info.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)'):'Reine Tubenfarbe · ohne Mischung');return;}
     box.textContent='Mischung für Farbe '+(index+1)+' wird berechnet …';
     setTimeout(()=>{
       if(request!==build32MixRequest)return;
@@ -7362,6 +7463,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(detail){
       if(ix<detail.x||iy<detail.y||ix>=detail.x+detail.w||iy>=detail.y+detail.h)return null;
       x=Math.floor(ix-detail.x);y=Math.floor(iy-detail.y);width=detail.w;height=detail.h;
+      if(detail.mask&&!detail.mask[y*width+x])return null;
     }else{
       width=data.width;height=data.height;
       x=Math.floor(ix*width/sourceWidth);y=Math.floor(iy*height/sourceHeight);
@@ -7374,10 +7476,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const data=build32DetailCell||build32Data;
     const pixel=build32ImageIndexAt(ix,iy,build32Data,build32DetailCell,sourceCanvas.width,sourceCanvas.height);
     if(pixel===null){
-      if(build32DetailCell)hint.textContent='Für die lokale Palette bitte innerhalb des Detail-Kästchens antippen.';
+      if(build32DetailCell)hint.textContent='Für die lokale Palette bitte innerhalb der gewählten Fläche antippen.';
       return true;
     }
-    if(build32VisibleMask&&build32VisibleMask[pixel]===0){
+    if((build32DetailCell?!build32Selection.has(build32FilledRanks(build32DetailCell)[pixel]):(build32VisibleMask&&build32VisibleMask[pixel]===0))){
       hint.textContent='Hier ist die Farbe ausgeblendet. Bitte eine sichtbare Farbfläche antippen oder „Alle Farben“ anzeigen.';
       return true;
     }
@@ -7443,13 +7545,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const bg=build32BackgroundValue(build32Selected!==null&&rgbToLabFast(palette[build32Selected])[0]<55?255:128);
       const dc=build32DetailCanvas.getContext('2d'),frame=dc.createImageData(width,height);
       build32VisibleMask=new Uint8Array(ranks.length);
-      for(let i=0;i<ranks.length;i++){const show=build32Selection.has(ranks[i]),rgb=show?palette[ranks[i]]:[bg,bg,bg];build32VisibleMask[i]=show?1:0;frame.data.set([...rgb,255],i*4);}
+      for(let i=0;i<ranks.length;i++){if(ranks[i]===65535)continue;const show=build32Selection.has(ranks[i]),rgb=show?palette[ranks[i]]:[bg,bg,bg];build32VisibleMask[i]=show?1:0;frame.data.set([...rgb,255],i*4);}
       dc.putImageData(frame,0,0);
       const c=build32Canvas.getContext('2d');c.clearRect(0,0,build32Canvas.width,build32Canvas.height);c.drawImage(build32DetailBaseCanvas,0,0);c.drawImage(build32DetailCanvas,build32DetailCell.x,build32DetailCell.y,width,height);
       [...document.getElementById('build32Palette').children].forEach((el,i)=>{el.setAttribute('aria-pressed',String(build32Selection.has(i)));el.textContent=String(i+1)+(build32DetailColorOverrides.has(i)?' ✓':'');});
       if(build32Selected!==null){setMixTarget(palette[build32Selected],'Detail Farbe '+(build32Selected+1));updateBuild32Recipe();}
       else{build32MixRequest++;document.getElementById('build32Recipe').textContent='Keine lokale Farbe ausgewählt.';}
-      build32Status.textContent='Detail-Kästchen '+(build32DetailCell.col+1)+' / '+(build32DetailCell.row+1)+' · '+build32Selection.size+' von '+palette.length+' lokalen Farben sichtbar. Farbwerkzeuge wirken nur hier.';
+      build32Status.textContent=build32DetailTitle()+' · '+build32Selection.size+' von '+palette.length+' lokalen Farben sichtbar. Farbwerkzeuge wirken nur hier.';
       syncBuild32ReturnButtons();draw();
       return;
     }
@@ -7830,10 +7932,26 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   document.getElementById('build32Grid').addEventListener('click',()=>{gridToggleBtn.click();syncBuild32Grid();});
   document.getElementById('build32GridDensity').addEventListener('input',e=>{gridDensity.value=e.target.value;gridDensity.dispatchEvent(new Event('input'));syncBuild32Grid();clearBuild32DetailCell();draw();});
+  document.getElementById('build32Lasso').addEventListener('click',()=>{
+    if(!build32Data){build32Status.textContent='Bitte zuerst die Farben des Gesamtbildes erkennen lassen.';return;}
+    build32LassoArmed=!build32LassoArmed;
+    if(build32LassoArmed){build32DetailCellArmed=false;syncBuild32DetailCellButton();setMode('move');hint.textContent='Lasso: mit einem Finger frei umfahren, mit zwei Fingern zoomen. Die Farben werden nur innerhalb erkannt.';}
+    else build32LassoDraft=null;
+    syncBuild32LassoButtons();draw();
+  });
+  document.getElementById('build32LassoClear').addEventListener('click',()=>{
+    build32LassoArmed=false;build32LassoRestorePoints=null;
+    if(build32DetailCell?.kind==='lasso'){
+      const state=build32LassoGlobalState;
+      clearBuild32DetailCell();build32Manual=false;build32Selection.clear();build32Selected=null;
+      if(build32Data){if(state)restoreBuild32State(state);else renderBuild32(build32Direction);}
+    }
+    build32LassoGlobalState=null;build32LassoPoints=null;build32LassoDraft=null;syncBuild32LassoButtons();draw();
+  });
   document.getElementById('build32DetailCell').addEventListener('click',()=>{
     if(!build32Data){build32Status.textContent='Bitte zuerst Farben erkennen lassen.';return;}
     build32DetailCellArmed=!build32DetailCellArmed;
-    if(build32DetailCellArmed){
+    if(build32DetailCellArmed){build32LassoArmed=false;build32LassoDraft=null;syncBuild32LassoButtons();
       if(!gridEnabled){gridEnabled=true;syncBuild32Grid();}
       setMode('picker');hint.textContent='Jetzt ein Raster-Kästchen antippen. Nur dieses Kästchen wird mit der gewählten Farbzahl neu berechnet.';
     }else{
@@ -9310,7 +9428,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(build32GrayBlend>0){
         if(build32DetailLocalRendered&&build32DetailCell){
           ctx.save();
-          ctx.beginPath();ctx.rect(build32DetailCell.x,build32DetailCell.y,build32DetailCell.w,build32DetailCell.h);ctx.clip();
+          ctx.beginPath();
+          if(build32DetailCell.points){build32DetailCell.points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();}
+          else ctx.rect(build32DetailCell.x,build32DetailCell.y,build32DetailCell.w,build32DetailCell.h);
+          ctx.clip();
           ctx.globalAlpha=build32GrayBlend/100;ctx.drawImage(toneGrayCanvas,0,0);
           ctx.restore();
         }else{
@@ -9368,6 +9489,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     ctx.clearRect(0,0,r.width,r.height);
     if(!loaded) return;
     paintArtworkAtView(ctx,true);
+    drawBuild32LassoOutline();
     drawGridCropSelection();
     drawPlanMarkers();
     if(surfacePreview && !sketchActive && !build32Active){
@@ -9907,8 +10029,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       flushToneImage();
       if(exportScope.value==='viewport'){
         const previousGrid=gridEnabled,previousOriginal=originalGridEnabled;
-        try{gridEnabled=previousGrid&&exportIncludeGrid.checked;originalGridEnabled=previousOriginal&&exportIncludeGrid.checked;paintViewer();out.width=canvas.width;out.height=canvas.height;}
-        finally{gridEnabled=previousGrid;originalGridEnabled=previousOriginal;draw();}
+        try{gridEnabled=previousGrid&&exportIncludeGrid.checked;originalGridEnabled=previousOriginal&&exportIncludeGrid.checked;build32SuppressLassoOutline=true;paintViewer();out.width=canvas.width;out.height=canvas.height;}
+        finally{build32SuppressLassoOutline=false;gridEnabled=previousGrid;originalGridEnabled=previousOriginal;draw();}
         const c=out.getContext('2d');c.fillStyle=getComputedStyle(viewer).backgroundColor;c.fillRect(0,0,out.width,out.height);c.drawImage(canvas,0,0);
       }else{
         out.width=sourceCanvas.width;out.height=sourceCanvas.height;
@@ -10488,16 +10610,26 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     viewer.setPointerCapture?.(e.pointerId);
     touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(touches.size===1){
-      gestureStart={type:'tap',startX:e.clientX,startY:e.clientY,offsetX,offsetY};
+      if(build32LassoArmed){
+        const q=canvasPoint(e.clientX,e.clientY),x=(q.x-offsetX)/scale,y=(q.y-offsetY)/scale;
+        if(x>=0&&y>=0&&x<=sourceCanvas.width&&y<=sourceCanvas.height){
+          build32LassoDraft=[{x,y}];gestureStart={type:'lasso',pointerId:e.pointerId};
+        }else gestureStart={type:'tap',startX:e.clientX,startY:e.clientY,offsetX,offsetY};
+      }else gestureStart={type:'tap',startX:e.clientX,startY:e.clientY,offsetX,offsetY};
     }else if(touches.size>=2){
-      startViewerPinch();
+      build32LassoDraft=null;
+      startViewerPinch();draw();
     }
     e.preventDefault();
   });
   viewer.addEventListener('pointermove',e=>{
     if(!touches.has(e.pointerId)||!gestureStart) return;
     touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(touches.size===1){
+    if(touches.size===1&&gestureStart.type==='lasso'){
+      const q=canvasPoint(e.clientX,e.clientY),x=Math.max(0,Math.min(sourceCanvas.width,(q.x-offsetX)/scale)),y=Math.max(0,Math.min(sourceCanvas.height,(q.y-offsetY)/scale));
+      const last=build32LassoDraft?.[build32LassoDraft.length-1];
+      if(last&&Math.hypot(x-last.x,y-last.y)>2/Math.max(.1,scale)){build32LassoDraft.push({x,y});draw();}
+    }else if(touches.size===1){
       const dx=e.clientX-gestureStart.startX,dy=e.clientY-gestureStart.startY;
       if(gestureStart.type==='tap' && Math.hypot(dx,dy)>8) gestureStart.type='pan';
       if(gestureStart.type==='pan'){
@@ -10521,10 +10653,21 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(!touches.has(e.pointerId)) return;
     const tap=e.type==='pointerup' && touches.size===1 && gestureStart?.type==='tap'
       && Math.hypot(e.clientX-gestureStart.startX,e.clientY-gestureStart.startY)<=8;
+    const finishLasso=e.type==='pointerup'&&touches.size===1&&gestureStart?.type==='lasso';
+    const points=finishLasso?build32LassoDraft:null;
     touches.delete(e.pointerId);
     if(touches.size===0){
       gestureStart=null;
-      if(tap) selectViewerPoint(e);
+      if(finishLasso){
+        build32LassoDraft=null;
+        if(points?.length>=5){
+          // A tiny closed scribble should not destroy an existing good result.
+          let area=0;for(let i=0;i<points.length;i++){const p=points[i],q=points[(i+1)%points.length];area+=p.x*q.y-q.x*p.y;}
+          if(Math.abs(area)>32)analyzeBuild32Lasso(points);
+          else build32Status.textContent='Lasso zu klein. Bitte eine Fläche umfahren.';
+        }else build32Status.textContent='Lasso mit einem Finger als geschlossene Fläche zeichnen.';
+        syncBuild32LassoButtons();draw();
+      }else if(tap&&!build32LassoArmed) selectViewerPoint(e);
       else refreshSurfaceAfterZoom();
     }else if(touches.size===1){
       const p=[...touches.values()][0];
