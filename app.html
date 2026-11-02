@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.56</title>
+  <title>AtelierAI iPad 4.57</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.56</div>
+    <div class="title">AtelierAI · iPad 4.57</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1081,6 +1081,14 @@
         <button id="resetBtn" class="secondary">Zurücksetzen</button>
       </div>
     </details>
+    <label style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:13px;font-weight:600" for="mainPaletteSelect">Mischpalette
+      <select id="mainPaletteSelect" aria-label="Aktive Mischpalette" style="max-width:245px;padding:8px;border-radius:8px">
+        <option value="artisan">Winsor & Newton Artisan · Öl</option>
+        <option value="horadam">Schmincke Horadam · Aquarell</option>
+        <option value="akademie">Schmincke Akademie · Aquarell</option>
+        <option value="system3">Daler-Rowney System3 · Acryl</option>
+      </select>
+    </label>
   </div>
 
   <script>
@@ -4923,6 +4931,29 @@
     showStudioMixPage();
   }
 
+  // Central palette selector: use the existing medium/palette logic, not a parallel mixing engine.
+  (function(){
+    const main=document.getElementById('mainPaletteSelect');
+    const source=document.getElementById('paintPalette');
+    const sync=()=>{ main.value=source.value; };
+    main.addEventListener('change',()=>{
+      const key=main.value;
+      setMedium(key==='artisan'?'oil':key==='system3'?'acrylic':'water');
+      source.value=key;
+      source.dispatchEvent(new Event('change',{bubbles:true}));
+      for(const id of ['build32MixPalette','surfaceMixPalette','advisorOwnPalette']){
+        const el=document.getElementById(id);
+        if(el && [...el.options].some(o=>o.value===key)){
+          el.value=key;el.dispatchEvent(new Event('change',{bubbles:true}));
+        }
+      }
+      sync();
+    });
+    source.addEventListener('change',sync);
+    ['mediumOilBtn','mediumWaterBtn','mediumAcrylicBtn'].forEach(id=>document.getElementById(id)?.addEventListener('click',()=>setTimeout(sync,0)));
+    sync();
+  })();
+
   function showMixes(){
     const target=lastSmartColor || lastAverageColor;
     if(!target){
@@ -4933,6 +4964,10 @@
     const paletteKey=paintPalette.value;
 const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,paletteKey):chooseMixes(target,paletteKey);
     mixResults.innerHTML=mixes.length?'':'<p>Bitte zuerst vorhandene Farben in der Palette auswählen.</p>';
+    const paletteHeading=document.createElement('p');
+    paletteHeading.style.cssText='font-weight:700;margin:8px 0';
+    paletteHeading.textContent='Mischpalette: '+({artisan:'Winsor & Newton Artisan · Öl',system3:'Daler-Rowney System3 · Acryl',horadam:'Schmincke Horadam · Aquarell',akademie:'Schmincke Akademie · Aquarell'}[paletteKey]||paletteKey);
+    mixResults.appendChild(paletteHeading);
     if(!selectedPaletteColors(paletteKey).length){
       mixResults.innerHTML+='<p class="tiny">Keine persönliche Auswahl aktiv: Vorschläge aus der Standardpalette'+(paletteKey==='artisan'?' ohne Schwarz':'')+'. Unter Palette kannst du deine vorhandenen Farben auswählen.</p>';
     }
@@ -4965,7 +5000,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           ${correctionRecipeHint?`<div><div class="tiny">Deine Korrektur</div><div class="mix-swatch" style="background:${rgbHex(correctionRecipeHint)}"></div><div class="tiny" style="margin-top:6px">${rgbHex(correctionRecipeHint)}</div></div>`:''}
           <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex}"></div><div class="tiny" style="margin-top:6px">${brightnessText}</div></div>
         </div>
-        <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i].toLocaleString('de-DE')} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)':'Öl · angenäherte Pigmentfarben, keine gemessenen Mischspektren; Mengen als Startrezept'}. Auf Papier/Palette prüfen.</span></div>
+        <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i].toLocaleString('de-DE')} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)':paletteKey==='system3'?'Acryl · angenäherte Farbwerte, keine gemessenen Mischspektren; Mengen als Startrezept':'Öl · angenäherte Pigmentfarben, keine gemessenen Mischspektren; Mengen als Startrezept'}. Auf Papier/Palette prüfen.</span></div>
       `;
       appendPictureUseButton(card,m,paletteKey,target);
       (alternatives&&idx>0?alternatives:mixResults).appendChild(card);
