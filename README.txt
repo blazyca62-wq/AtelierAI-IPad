@@ -1,3 +1,21 @@
+AtelierAI iPad 4.60 – Lasso-Darstellung und Bildkoordinaten korrigiert
+===================================================================
+Fehler in 4.59: Bei großen Fotos hatte die globale Farbanalyse eine kleinere
+Arbeitsauflösung als die Lasso- oder Rasterauswahl. Das direkte Einfügen des
+lokalen Ausschnitts in die kleinere Palette-Canvas konnte die Wirkung räumlich
+verschieben. Außerdem war außerhalb des Lassos eine ggf. graue Gesamtansicht
+sichtbar. Korrektur: Der lokale Ausschnitt wird ausschließlich in den originalen
+Bildkoordinaten überlagert; die globale reduzierte Canvas wird nicht verändert.
+
+Lasso: Die Farbreduktion erfolgt ausschließlich innerhalb der markierten
+Kontur, außerhalb bleibt das Originalfoto sichtbar – auch beim Export und
+beim Wechsel der lokalen Farbnummern. Raster-Detail behält die bisherige
+Gesamtansicht außerhalb des gewählten Kästchens, aber mit korrekten Koordinaten.
+Die bisherigen 8/16/32/48/64-Farben, Farbmischungen und übrigen Werkzeuge
+bleiben erhalten. Die Zusammenfassen-Funktion bleibt entfernt.
+
+Einen tatsächlichen iPad/Safari-Gerätetest ersetzt der Browser-Test nicht.
+
 AtelierAI iPad 4.59 – lokale Farberkennung mit Lasso
 =================================================
 Neu im Modul 8 / 16 / 32 / 48 / 64 Farben:

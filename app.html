@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.59</title>
+  <title>AtelierAI iPad 4.60</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.59</div>
+    <div class="title">AtelierAI · iPad 4.60</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -6721,7 +6721,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     b.classList.toggle('active',build32LassoArmed);b.classList.toggle('secondary',!build32LassoArmed);
     clear.disabled=!build32LassoPoints&&!build32LassoDraft;
     status.textContent=build32LassoArmed?'Jetzt mit einem Finger oder der Maus die Fläche umfahren und loslassen. Zwei Finger: wie gewohnt Zoom.':
-      build32DetailCell?.kind==='lasso'?'Lasso aktiv · '+build32DetailCell.palette.length+' Farben nur innerhalb der Kontur. Außerhalb bleibt die bisherige Ansicht.':
+      build32DetailCell?.kind==='lasso'?'Lasso aktiv · '+build32DetailCell.palette.length+' Farben innerhalb der Kontur. Außerhalb bleibt das Originalfoto sichtbar.':
       'Lasso: eine frei umrandete Fläche separat erkennen; kein Raster nötig. Vorher die gewünschte Farbanzahl einstellen.';
   }
   function drawBuild32LassoOutline(){
@@ -7249,10 +7249,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       el.textContent=String(i+1)+(build32DetailColorOverrides.has(i)?' ✓':'');
       el.title='Lokale Farbe '+(i+1)+(show?' · aktuell sichtbar':' · ausgeblendet');
     });
-    // Restore the frozen global view, then replace only the selected cell.
-    const c=build32Canvas.getContext('2d');c.clearRect(0,0,build32Canvas.width,build32Canvas.height);
-    c.drawImage(build32DetailBaseCanvas,0,0);
-    c.drawImage(build32DetailCanvas,build32DetailCell.x,build32DetailCell.y,width,height);
+    // Important: the global quantized canvas may be only 1600px wide, while
+    // the Lasso and detail cells use ORIGINAL source-image coordinates.
+    // Never paste a full-resolution local crop into this smaller canvas.
+    // renderCurrentArtwork() composites the masked crop in source coordinates
+    // over the untouched original (Lasso) or global view (grid detail).
     build32VisibleMask=new Uint8Array(build32Data.ranks.length);
     build32DetailLocalRendered=true;build32Active=true;
     const max=palette.length;
@@ -7547,7 +7548,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       build32VisibleMask=new Uint8Array(ranks.length);
       for(let i=0;i<ranks.length;i++){if(ranks[i]===65535)continue;const show=build32Selection.has(ranks[i]),rgb=show?palette[ranks[i]]:[bg,bg,bg];build32VisibleMask[i]=show?1:0;frame.data.set([...rgb,255],i*4);}
       dc.putImageData(frame,0,0);
-      const c=build32Canvas.getContext('2d');c.clearRect(0,0,build32Canvas.width,build32Canvas.height);c.drawImage(build32DetailBaseCanvas,0,0);c.drawImage(build32DetailCanvas,build32DetailCell.x,build32DetailCell.y,width,height);
+      // Local detail is composited at full source resolution in renderCurrentArtwork.
+      // Keep the global palette canvas untouched when clicking local swatches.
       [...document.getElementById('build32Palette').children].forEach((el,i)=>{el.setAttribute('aria-pressed',String(build32Selection.has(i)));el.textContent=String(i+1)+(build32DetailColorOverrides.has(i)?' ✓':'');});
       if(build32Selected!==null){setMixTarget(palette[build32Selected],'Detail Farbe '+(build32Selected+1));updateBuild32Recipe();}
       else{build32MixRequest++;document.getElementById('build32Recipe').textContent='Keine lokale Farbe ausgewählt.';}
@@ -9423,7 +9425,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     // 1.13: Original stufenlos über die aktuelle Arbeitsansicht blenden.
     if(build32Active && build32Canvas){
       ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
-      ctx.drawImage(build32Canvas,0,0,sourceCanvas.width,sourceCanvas.height);
+      // A Lasso always means LOCAL color reduction, with the *original*
+      // untouched everywhere outside the polygon. The global palette view
+      // can be grey or downsampled and must not bleed into the Lasso view.
+      const localLasso=build32DetailLocalRendered&&build32DetailCell?.kind==='lasso';
+      if(localLasso)ctx.drawImage(sourceCanvas,0,0,sourceCanvas.width,sourceCanvas.height);
+      else ctx.drawImage(build32Canvas,0,0,sourceCanvas.width,sourceCanvas.height);
       drawBuild32DetailOverlay(ctx);
       if(build32GrayBlend>0){
         if(build32DetailLocalRendered&&build32DetailCell){
