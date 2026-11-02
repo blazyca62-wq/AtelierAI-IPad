@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.57</title>
+  <title>AtelierAI iPad 4.58</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.57</div>
+    <div class="title">AtelierAI · iPad 4.58</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1189,11 +1189,7 @@
           </div>
           <p id="build32StagesInfo" class="tiny" role="status">Grundbild: zuerst ein vollständiges Bild mit 8 Hauptfarben malen, danach mit 16, 32, 48 und 64 Farben übermalen und verfeinern. Die 16-Farben-Stufe wird aus denselben ursprünglichen 16 Farben wie bisher aufgebaut. „Angrenzende Farben verblenden“ startet bei 0 % für klare Farbflächen. Alternativ bleibt „Endgültige Farben“ wählbar: Flächen des 64-Farben-Zielbilds schrittweise füllen. Nur Mischfarben; bei farbarmen Motiven weniger Farben.</p>
         </details>
-        <details style="margin-top:12px"><summary style="padding:10px 0;cursor:pointer;font-weight:bold">Malflächen vereinfachen</summary>
-          <label for="build32Merge">Zielfarbanzahl: <span id="build32MergeVal">32 → 32 Farben</span></label>
-          <input id="build32Merge" type="range" min="2" max="32" step="1" value="32" style="width:100%;min-height:44px">
-          <button id="build32MergeApply" class="secondary" type="button" style="width:100%">Zusammenfassen anwenden</button>
-          <p class="tiny">Gewünschte Anzahl wählen, z. B. 64 → 56 Farben. Ähnlichste Farben werden schrittweise zusammengefasst. „Anwenden“ setzt Farbauswahl und eigene Ersatzfarben zurück. Die höchste Anzahl stellt die ursprüngliche Aufteilung wieder her. Nur für Mischfarben.</p>
+        <details style="margin-top:12px"><summary style="padding:10px 0;cursor:pointer;font-weight:bold">Kleine Farbflecken auffüllen</summary>
           <label for="build32Spots">Kleine Flecken auffüllen: <span id="build32SpotsVal">Aus</span></label>
           <input id="build32Spots" type="range" min="0" max="10" step="1" value="0" style="width:100%;min-height:44px">
           <p class="tiny">Kleine Farbinseln übernehmen die Farbe der angrenzenden größeren Fläche – ohne Hintergrundlöcher. Nach dem Loslassen wird aktualisiert. 0 stellt alle Details wieder her. Kleine wichtige Details können ebenfalls verschwinden.</p>
@@ -6801,7 +6797,6 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }else{
         result=quantizeBuild32(data);
       }
-      if(!result.stages)result=build32MergeResult(result,Number(document.getElementById('build32Merge').value));
       build32DetailCell={...cell,palette:result.palette,ranks:new Uint8Array(result.ranks)};
       build32DetailOriginalPalette=result.palette.map(rgb=>[...rgb]);
       build32DetailColorOverrides.clear();
@@ -7000,7 +6995,6 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function build32ColorCount(){if(build32Data)return build32Data.palette.length;return Number(document.getElementById('build32Count').value);}
   for(const id of ['build32Count','build32CountSide'])document.getElementById(id).addEventListener('change',e=>{
     for(const other of ['build32Count','build32CountSide'])document.getElementById(other).value=e.target.value;
-    syncBuild32Merge(true);
     resetBuild32();
     document.getElementById('build32Analyze').textContent=build32ColorCount()+' Farben erkennen';
     if(loaded)document.getElementById('build32Analyze').click();
@@ -7231,27 +7225,6 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     build32ExtrasNotice();syncBuild32ReturnButtons();draw();
   }
 
-  // Merge the nearest palette pair until the explicit target count is reached.
-  function build32MergeResult(result,target){
-    if(!target||result.pure||result.palette.length<=target)return result;
-    const ranks=new Uint8Array(result.ranks).slice(),counts=new Uint32Array(result.palette.length);
-    for(const r of ranks)counts[r]++;
-    const groups=result.palette.map((rgb,i)=>({rgb:rgb.slice(),weight:counts[i]||1,ids:[i]}));
-    while(groups.length>Math.max(2,target)){
-      const labs=groups.map(g=>rgbToLabFast(g.rgb));let best=Infinity,a=0,b=1;
-      for(let i=0;i<groups.length;i++)for(let j=i+1;j<groups.length;j++){
-        const d=deltaE76FromLab(labs[i],labs[j]);if(d<best){best=d;a=i;b=j;}
-      }
-      const x=groups[a],y=groups[b],weight=x.weight+y.weight;
-      x.rgb=x.rgb.map((v,c)=>(v*x.weight+y.rgb[c]*y.weight)/weight);
-      x.weight=weight;x.ids.push(...y.ids);groups.splice(b,1);
-    }
-    groups.sort((a,b)=>rgbToLabFast(b.rgb)[0]-rgbToLabFast(a.rgb)[0]);
-    const map=new Uint8Array(result.palette.length);
-    groups.forEach((g,i)=>g.ids.forEach(j=>map[j]=i));
-    for(let i=0;i<ranks.length;i++)ranks[i]=map[ranks[i]];
-    return {...result,palette:groups.map(g=>g.rgb.map(Math.round)),ranks:ranks.buffer};
-  }
   // Relabel small connected islands; never turn them into background pixels.
   // Work from immutable source ranks so every setting is reversible.
   function build32FilledRanks(data,amount=Number(document.getElementById('build32Spots').value)){
@@ -7279,18 +7252,6 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     for(let i=0;i<n;i++)if(ids[i]>=0)filled[i]=replacements[ids[i]];
     data.filledCache={amount,ranks:filled};return filled;
   }
-  function syncBuild32Merge(reset=false){
-    const base=Number(document.getElementById('build32Count').value),slider=document.getElementById('build32Merge');
-    slider.max=base;if(reset||Number(slider.value)>base)slider.value=base;
-    document.getElementById('build32MergeVal').textContent=base+' → '+slider.value+' Farben';
-  }
-  document.getElementById('build32Merge').addEventListener('input',()=>syncBuild32Merge());
-  let build32SimplifyShowAll=false;
-  document.getElementById('build32MergeApply').addEventListener('click',()=>{
-    if(build32IsPure()){build32Status.textContent='Zusammenfassen ist nur in der Darstellung Mischfarben verfügbar.';return;}
-    if(!loaded){build32Status.textContent='Bitte zuerst ein Foto öffnen.';return;}
-    build32SimplifyShowAll=true;document.getElementById('build32Analyze').click();
-  });
   document.getElementById('build32Spots').addEventListener('input',e=>{
     document.getElementById('build32SpotsVal').textContent=Number(e.target.value)?e.target.value+' / 10':'Aus';
   });
@@ -7300,7 +7261,6 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
   function acceptBuild32(result,generation){
     if(generation!==build32Generation)return;
-    if(!result.stages)result=build32MergeResult(result,Number(document.getElementById('build32Merge').value));
     build32Data={...result,ranks:result.pure?new Uint16Array(result.ranks):new Uint8Array(result.ranks)};
     build32OriginalPalette=result.palette.map(rgb=>[...rgb]);
     build32ColorOverrides.clear();build32ReplaceArmed=false;
@@ -7318,7 +7278,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     build32RememberedLight=0;build32RememberedDark=0;
     build32DetailCell=null;build32DetailCanvas=null;build32DetailBaseCanvas=null;build32DetailLocalRendered=false;build32DetailCellArmed=false;syncBuild32DetailCellButton();
     for(const d of ['light','dark']){document.getElementById('build32'+d).disabled=false;document.getElementById('build32'+d).value=0;}
-    if(result.pure||build32SimplifyShowAll){build32SimplifyShowAll=false;build32Families=new Set(['all']);build32Family='all';build32RememberedLight=build32ColorCount();syncBuild32FamilyRanges();document.getElementById('build32light').value=build32ColorCount();}
+    if(result.pure){build32Families=new Set(['all']);build32Family='all';build32RememberedLight=build32ColorCount();syncBuild32FamilyRanges();document.getElementById('build32light').value=build32ColorCount();}
     renderBuild32('light');
     if(result.stages){build32StageIndex=0;build32StageView='all';document.getElementById('build32StagesControls').hidden=false;renderBuild32Stage();}
     document.getElementById('build32StagesStart').disabled=false;
@@ -7357,7 +7317,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     syncBuild32SimpleLimit();
     for(const id of ['build32Count','build32CountSide'])document.getElementById(id).value='64';
     if(document.getElementById('build32StagesMode').value==='final'&&build32Smoothing===0){build32Smoothing=11;document.getElementById('build32Smooth').value='11';document.getElementById('build32SmoothVal').textContent='11 %';}
-    syncBuild32Merge(true);document.getElementById('build32Analyze').textContent='64 Farben erkennen';build32StageRequest=document.getElementById('build32StagesMode').value;document.getElementById('build32Analyze').click();
+    document.getElementById('build32Analyze').textContent='64 Farben erkennen';build32StageRequest=document.getElementById('build32StagesMode').value;document.getElementById('build32Analyze').click();
     build32Status.textContent='Fünf Malstufen (8 bis 64 Farben) werden vorbereitet …';
   });
   document.querySelectorAll('[data-paint-stage]').forEach(b=>b.addEventListener('click',()=>{
