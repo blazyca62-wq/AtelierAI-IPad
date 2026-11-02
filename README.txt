@@ -1,3 +1,18 @@
+AtelierAI iPad 4.65 – Original S/W im Lasso korrigiert
+====================================================
+- Original S/W ist nun auch innerhalb des Lassos sichtbar, wenn
+  nur ein Teil der lokal erkannten Farben eingeblendet ist.
+- Grau wird ausschließlich in den noch NICHT ausgewählten
+  Farbflächen angezeigt. Bereits sichtbare Farben bleiben farbig.
+- Der Außenbereich des Lassos bleibt unverändert originalfarbig.
+- Gilt für die gewöhnliche 8/16/32/48/64-Farberkennung,
+  beide Malaufbau-Arten und die Auswahl einzelner Farben.
+- Der Regler bleibt 0–100 %, die Exportdarstellung nutzt dieselbe Logik.
+- Bei vollständig eingeblendeten Farben gibt es keinen grauen
+  Hintergrundbereich; in diesem Fall ist die S/W-Einblendung unsichtbar.
+- Alle anderen Funktionen von 4.64 unverändert.
+- iPad-Safari-Test vor Ort weiterhin empfohlen.
+
 AtelierAI iPad 4.64 – Nur neue Farben / Hell-Dunkel-Ansicht
 ========================================================
 - Farbstufen 8/16/32/48/64: "Nur neue Farben" bleibt beim

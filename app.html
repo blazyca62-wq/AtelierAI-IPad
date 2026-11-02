@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.64</title>
+  <title>AtelierAI iPad 4.65</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.64</div>
+    <div class="title">AtelierAI · iPad 4.65</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -9543,6 +9543,30 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       paintViewer();
     });
   }
+  // Graustufen-Original unter *nicht eingeblendeten* Detailfarben zeigen.
+  // Die Maske folgt den aktuellen Hell-/Dunkel-Reglern sowie den Malstufen.
+  // Die originalen Farben außerhalb des Lassos bleiben vollständig unberührt.
+  let build32DetailGrayCache=null;
+  function build32DetailGrayUnderlay(){
+    const cell=build32DetailCell;
+    if(!cell||!build32DetailCanvas)return null;
+    const ranks=build32FilledRanks(cell);
+    const selection=[...build32Selection].sort((a,b)=>a-b).join(',');
+    const old=build32DetailGrayCache;
+    if(old&&old.cell===cell&&old.ranks===ranks&&old.selection===selection)return old.canvas;
+    const result=document.createElement('canvas');result.width=cell.w;result.height=cell.h;
+    const c=result.getContext('2d',{willReadFrequently:true});
+    c.drawImage(toneGrayCanvas,cell.x,cell.y,cell.w,cell.h,0,0,cell.w,cell.h);
+    const im=c.getImageData(0,0,cell.w,cell.h),data=im.data;
+    for(let i=0;i<ranks.length;i++){
+      const rank=ranks[i];
+      // No grayscale outside the polygon or above a selected paint color.
+      data[i*4+3]=(rank===65535||build32Selection.has(rank))?0:255;
+    }
+    c.putImageData(im,0,0);
+    build32DetailGrayCache={cell,ranks,selection,canvas:result};
+    return result;
+  }
   // Shared composition keeps display and export in sync in every photo module.
   function renderCurrentArtwork(ctx,includeGrid=true){
     // 1.13: Original stufenlos über die aktuelle Arbeitsansicht blenden.
@@ -9555,25 +9579,23 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(localLasso)ctx.drawImage(sourceCanvas,0,0,sourceCanvas.width,sourceCanvas.height);
       else ctx.drawImage(build32Canvas,0,0,sourceCanvas.width,sourceCanvas.height);
       drawBuild32DetailOverlay(ctx);
+      // Zuerst die lokalen Farben auftragen; die spätere Original-S/W-Schicht
+      // darf nur noch an nicht ausgewählten Stellen sichtbar werden.
+      if(build32DetailLocalRendered&&build32DetailCell&&build32DetailCanvas){
+        ctx.drawImage(build32DetailCanvas,build32DetailCell.x,build32DetailCell.y,build32DetailCell.w,build32DetailCell.h);
+      }
       if(build32GrayBlend>0){
         if(build32DetailLocalRendered&&build32DetailCell){
-          ctx.save();
-          ctx.beginPath();
-          if(build32DetailCell.points){build32DetailCell.points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();}
-          else ctx.rect(build32DetailCell.x,build32DetailCell.y,build32DetailCell.w,build32DetailCell.h);
-          ctx.clip();
-          ctx.globalAlpha=build32GrayBlend/100;ctx.drawImage(toneGrayCanvas,0,0);
-          ctx.restore();
+          const gray=build32DetailGrayUnderlay();
+          if(gray){
+            ctx.save();ctx.globalAlpha=build32GrayBlend/100;
+            ctx.drawImage(gray,build32DetailCell.x,build32DetailCell.y);
+            ctx.restore();
+          }
         }else{
           ctx.save();ctx.globalAlpha=build32GrayBlend/100;ctx.drawImage(toneGrayCanvas,0,0);ctx.restore();
           if(build32Foreground)ctx.drawImage(build32Foreground,0,0,sourceCanvas.width,sourceCanvas.height);
         }
-      }
-      // Detail-Kästchen zuletzt nochmals zeichnen: Die lokal ausgewählten
-      // Hell-/Dunkelfarben müssen im Kästchen sichtbar bleiben, auch wenn
-      // danach noch Tonwert-/Original-Überblendungen verarbeitet wurden.
-      if(build32DetailLocalRendered&&build32DetailCell&&build32DetailCanvas){
-        ctx.drawImage(build32DetailCanvas,build32DetailCell.x,build32DetailCell.y,build32DetailCell.w,build32DetailCell.h);
       }
     }
     else if(sketchActive){
