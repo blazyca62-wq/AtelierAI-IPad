@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.55</title>
+  <title>AtelierAI iPad 4.56</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -127,6 +127,7 @@
     #mixAlternatives summary{cursor:pointer;font-weight:600}
     .mix-lines{font-size:13px;line-height:1.4;margin-top:8px}
     .palette-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    #paintMixPanel .palette-grid,#glazePanel .palette-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
     .picker-circle{position:absolute;border:2px solid #fff;box-shadow:0 0 0 1px #000;border-radius:50%;pointer-events:none;display:none;z-index:9}
     .range-row{display:grid;grid-template-columns:92px 1fr 48px;gap:8px;align-items:center;margin:7px 0}
     .target-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
@@ -1061,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.55</div>
+    <div class="title">AtelierAI · iPad 4.56</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1114,7 +1115,7 @@
     </div>
 
     <div id="build32Dock" hidden>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="build32Collapse" class="secondary" type="button" aria-expanded="true">Farben einklappen</button><label>Darstellung <select id="build32PaintMode"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Artisan – einfache Mischungen</option></select></label><label id="build32SimpleLimitLabel" hidden>Mischungen <select id="build32SimpleLimit" aria-label="Anzahl einfacher Artisan-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><label>Farben <select id="build32Count" aria-label="Anzahl Bildfarben"><option value="8">8</option><option value="16">16</option><option value="32" selected>32</option><option value="48">48</option><option value="64">64</option></select></label><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap" title="Verlauf aus zwei angrenzenden Farben. Der Regler bestimmt die Breite; Mischrezepte bleiben gleich.">Angrenzende Farben verblenden <input id="build32Smooth" aria-label="Breite der Farbübergänge" type="range" min="0" max="20" step="1" value="0" style="width:140px;min-height:32px"><span id="build32SmoothVal">0 %</span></label><button id="build32Add" class="secondary" type="button" aria-pressed="false">Farben zuschalten: Aus</button><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">Original S/W <input id="build32GrayBlend" aria-label="Schwarz-Weiß-Original zur Orientierung einblenden" type="range" min="0" max="100" step="1" value="0" style="width:140px;min-height:32px"><span id="build32GrayBlendVal">0 %</span></label><button id="build32SW" class="secondary" type="button" aria-pressed="false">S/W-Effekt: Aus</button><button id="build32Replace" class="secondary" type="button" aria-pressed="false">Originalfarbe ersetzen</button><button id="build32ResetColor" class="secondary" type="button" disabled>Farbe zurücksetzen</button><button id="build32Solo" class="secondary" type="button" aria-pressed="false">Eine Farbe ansehen</button><button id="build32All" class="secondary" type="button">Alle Farben</button><label>Hintergrund <select id="build32Background" aria-label="Hintergrund der Bildfarben"><option value="auto">Automatisch</option><option value="white">Weiß</option><option value="gray">Grau</option></select></label><select id="build32MixPalette" aria-label="Palette für die Mischung"><option value="watercolor">Eigene Aquarellpalette · Horadam + Akademie</option><option value="artisan" selected>Artisan · Öl</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="build32Collapse" class="secondary" type="button" aria-expanded="true">Farben einklappen</button><label>Darstellung <select id="build32PaintMode"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Einfache Öl-/Acryl-Mischungen</option></select></label><label id="build32SimpleLimitLabel" hidden>Mischungen <select id="build32SimpleLimit" aria-label="Anzahl einfacher Öl-/Acryl-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><label>Farben <select id="build32Count" aria-label="Anzahl Bildfarben"><option value="8">8</option><option value="16">16</option><option value="32" selected>32</option><option value="48">48</option><option value="64">64</option></select></label><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap" title="Verlauf aus zwei angrenzenden Farben. Der Regler bestimmt die Breite; Mischrezepte bleiben gleich.">Angrenzende Farben verblenden <input id="build32Smooth" aria-label="Breite der Farbübergänge" type="range" min="0" max="20" step="1" value="0" style="width:140px;min-height:32px"><span id="build32SmoothVal">0 %</span></label><button id="build32Add" class="secondary" type="button" aria-pressed="false">Farben zuschalten: Aus</button><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">Original S/W <input id="build32GrayBlend" aria-label="Schwarz-Weiß-Original zur Orientierung einblenden" type="range" min="0" max="100" step="1" value="0" style="width:140px;min-height:32px"><span id="build32GrayBlendVal">0 %</span></label><button id="build32SW" class="secondary" type="button" aria-pressed="false">S/W-Effekt: Aus</button><button id="build32Replace" class="secondary" type="button" aria-pressed="false">Originalfarbe ersetzen</button><button id="build32ResetColor" class="secondary" type="button" disabled>Farbe zurücksetzen</button><button id="build32Solo" class="secondary" type="button" aria-pressed="false">Eine Farbe ansehen</button><button id="build32All" class="secondary" type="button">Alle Farben</button><label>Hintergrund <select id="build32Background" aria-label="Hintergrund der Bildfarben"><option value="auto">Automatisch</option><option value="white">Weiß</option><option value="gray">Grau</option></select></label><select id="build32MixPalette" aria-label="Palette für die Mischung"><option value="watercolor">Eigene Aquarellpalette · Horadam + Akademie</option><option value="artisan" selected>Artisan · Öl</option><option value="system3">Daler-Rowney System3 · Acryl</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select></div>
       <div id="build32Pages" aria-label="Farbseiten"></div>
       <div id="build32Palette" aria-label="Erkannte Bildfarben"></div>
       <div id="build32Similar" hidden style="margin:6px 0"></div>
@@ -1165,7 +1166,7 @@
         <button id="build32DetailCell" class="secondary" type="button" style="width:100%;margin-top:7px" aria-pressed="false">Detail-Kästchen auswählen: Aus</button>
         <p id="build32DetailCellStatus" class="tiny">Raster einschalten → Detail-Kästchen auswählen → ein Kästchen antippen. Die aktuell gewählte 8/16/32/48/64-Farbzahl wird dann nur in diesem Kästchen neu berechnet.</p>
         <p class="tiny">Mischung aufnehmen: eine sichtbare Farbfläche antippen. Das Raster wird nicht mitgemessen.</p>
-        <label>Darstellung <select id="build32PaintModeSide"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Artisan – einfache Mischungen</option></select></label><label id="build32SimpleLimitLabelSide" hidden>Mischungen <select id="build32SimpleLimitSide" aria-label="Anzahl einfacher Artisan-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><p class="tiny">Ungemischt: Farben der gewählten Palette. Aquarell mit Wasserverdünnung und Papierweiß; Öl ohne Ausmischen. Artisan – einfache Mischungen: mit Weiß, Gelb oder Blau, bei Bedarf zusätzlich Weiß. Bildschirm-Simulation.</p><label for="build32CountSide">Anzahl Farben</label><select id="build32CountSide" style="min-height:44px;margin:8px"><option value="8">8</option><option value="16">16</option><option value="32" selected>32</option><option value="48">48</option><option value="64">64</option></select>
+        <label>Darstellung <select id="build32PaintModeSide"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Einfache Öl-/Acryl-Mischungen</option></select></label><label id="build32SimpleLimitLabelSide" hidden>Mischungen <select id="build32SimpleLimitSide" aria-label="Anzahl einfacher Öl-/Acryl-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><p class="tiny">Ungemischt: Farben der gewählten Palette. Aquarell mit Wasserverdünnung und Papierweiß; Öl ohne Ausmischen. Einfache Öl-/Acryl-Mischungen: mit Weiß, Gelb oder Blau, bei Bedarf zusätzlich Weiß. Bildschirm-Simulation.</p><label for="build32CountSide">Anzahl Farben</label><select id="build32CountSide" style="min-height:44px;margin:8px"><option value="8">8</option><option value="16">16</option><option value="32" selected>32</option><option value="48">48</option><option value="64">64</option></select>
         <button id="build32Analyze" style="width:100%">32 Farben erkennen</button>
 
 
@@ -1368,15 +1369,18 @@
         <div class="palette-grid">
           <button id="mediumOilBtn" class="active">Öl</button>
           <button id="mediumWaterBtn" class="secondary">Aquarell</button>
+          <button id="mediumAcrylicBtn" class="secondary">Acryl</button>
         </div>
 
         <label style="display:block;margin-top:10px;">Palette</label>
         <select id="paintPalette" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;">
           <option value="artisan">Winsor & Newton Artisan</option>
+          <option value="system3">Daler-Rowney System3 Original · Acryl</option>
           <option value="horadam">Schmincke Horadam</option>
           <option value="akademie">Schmincke Akademie</option>
         </select>
 
+        <div id="system3AccuracyNote" class="tiny" hidden style="margin-top:5px;">System3: 54 Original-Farben mit Herstellernummern und Pigmenten. Bildschirm-Farbproben und Mischvorschläge sind Näherungen, keine gemessenen Acrylmischwerte. Metallic/Fluoreszenz können am Display nicht originalgetreu dargestellt werden.</div>
         <label style="display:block;margin-top:9px;">Pipettenquelle</label>
         <select id="pickerSource" style="width:100%;padding:9px;border-radius:8px;border:1px solid #aaa;">
           <option value="visible">Sichtbares Bild</option>
@@ -1496,6 +1500,7 @@
 <label for="advisorOwnPalette"><b>Ganze Farbpalette fürs Farbmischpult</b></label>
 <select id="advisorOwnPalette" style="width:100%;margin-top:5px">
 <option value="artisan">Winsor &amp; Newton Artisan – Öl</option>
+<option value="system3">Daler-Rowney System3 Original – Acryl</option>
 <option value="horadam">Schmincke Horadam – Aquarell</option>
 <option value="akademie">Schmincke Akademie – Aquarell</option>
 </select></div>
@@ -1636,7 +1641,7 @@
         <button id="surfaceIsolationGrayBtn" class="secondary" aria-pressed="false" style="width:100%;margin-top:8px;">Mittelgrauer Hintergrund: Aus</button>
 
 
-        <details data-picture-palette="surfaceMixPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details><label for="surfaceMixPalette">Palette für alle acht Mischungen</label><select id="surfaceMixPalette" style="width:100%;padding:9px;margin:6px 0"><option value="artisan">Winsor &amp; Newton Artisan · Öl</option><option value="watercolor">Horadam + Akademie · Aquarell</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select>
+        <details data-picture-palette="surfaceMixPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details><label for="surfaceMixPalette">Palette für alle acht Mischungen</label><select id="surfaceMixPalette" style="width:100%;padding:9px;margin:6px 0"><option value="artisan">Winsor &amp; Newton Artisan · Öl</option><option value="system3">Daler-Rowney System3 · Acryl</option><option value="watercolor">Horadam + Akademie · Aquarell</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select>
         <label class="base-suggestion-switch"><input id="showBaseMixesSurface" type="checkbox"> Gemeinsame Basismischungen anzeigen</label>
         <div id="surfaceResults" class="pc-card"><span class="tiny">Noch kein Bereich analysiert.</span></div>
         <div id="surfaceBaseResults" class="pc-card" style="margin-top:10px"><span class="tiny">Gemeinsame Basisfarbe: Nach der Analyse kann eine der Hauptfarben als Ausgangsmischung gewählt werden.</span></div>
@@ -1650,6 +1655,7 @@
         <div class="palette-grid">
           <button id="glazeWaterBtn" class="active">Aquarell</button>
           <button id="glazeOilBtn" class="secondary">Öl</button>
+          <button id="glazeAcrylicBtn" class="secondary">Acryl</button>
         </div>
 
         <label style="display:block;margin-top:9px;">Palette</label>
@@ -1658,6 +1664,7 @@
           <option value="horadam">Nur Schmincke Horadam</option>
           <option value="akademie">Nur Schmincke Akademie</option>
           <option value="artisan">Winsor & Newton Artisan</option>
+          <option value="system3">Daler-Rowney System3 Original · Acryl</option>
         </select>
         <div id="glazePaletteStatus" class="tiny" style="margin-top:5px;font-weight:600;">Palette wird geprüft…</div>
         <div class="tiny" style="margin-top:3px;">Bei „Meine Aquarellfarben“ dürfen Horadam- und Akademie-Farben gemeinsam in einem Vorschlag verwendet werden.</div>
@@ -1925,6 +1932,7 @@
   const smartAreaPickerBtn = document.getElementById('smartAreaPickerBtn');
   const mediumOilBtn = document.getElementById('mediumOilBtn');
   const mediumWaterBtn = document.getElementById('mediumWaterBtn');
+  const mediumAcrylicBtn = document.getElementById('mediumAcrylicBtn');
   const paintPalette = document.getElementById('paintPalette');
   const avgTargetBox = document.getElementById('avgTargetBox');
   const smartTargetBox = document.getElementById('smartTargetBox');
@@ -2108,6 +2116,7 @@
   const corrInfo=document.getElementById('corrInfo');
   const glazeWaterBtn=document.getElementById('glazeWaterBtn');
   const glazeOilBtn=document.getElementById('glazeOilBtn');
+  const glazeAcrylicBtn=document.getElementById('glazeAcrylicBtn');
   const glazePalette=document.getElementById('glazePalette');
   const glazePaletteStatus=document.getElementById('glazePaletteStatus');
   const glazeOriginalInput=document.getElementById('glazeOriginalInput');
@@ -2879,6 +2888,14 @@
   // Auch Phthalo Blue (Red Shade) war als fast violett-schwarz hinterlegt.
   // Diese repraesentativen BLAU-Werte sind Schätzwerte fuer die Simulation;
   // sie ersetzen keine gemessenen Weissausmischungen.
+
+  // Daler-Rowney System3 ORIGINAL Acrylic: 54 manufacturer colours (2026).
+  // Code/pigment from manufacturer; sRGB are approximate screen swatches only.
+  // Neither measured CIELAB values nor measured mixing spectra are available.
+  const SYSTEM3_INFO = {"Lemon Yellow":{"code":"651","pigments":"PY3"},"Process Yellow":{"code":"675","pigments":"PY74 PY3"},"Cadmium Yellow Hue":{"code":"620","pigments":"PY74 PY83"},"Cadmium Yellow Deep Hue":{"code":"618","pigments":"PY83"},"Cadmium Orange Light Hue":{"code":"638","pigments":"PY83 PO73"},"Cadmium Orange Hue":{"code":"619","pigments":"PR112 PY74"},"Cadmium Scarlet Hue":{"code":"511","pigments":"PR9 PY83"},"Vermilion Hue":{"code":"588","pigments":"PR9"},"Cadmium Red Hue":{"code":"503","pigments":"PR112"},"Cadmium Red Deep Hue":{"code":"504","pigments":"PR112 PR122 PR2"},"Crimson":{"code":"513","pigments":"PR170"},"Process Magenta":{"code":"412","pigments":"PV19 PR122"},"Purple":{"code":"433","pigments":"PV19 PR122"},"Velvet Purple":{"code":"418","pigments":"PR122 PW6 PV23"},"Deep Violet":{"code":"408","pigments":"PV23"},"Prussian Blue Hue":{"code":"134","pigments":"PB29 PB15 PBk7 PG7"},"Phthalo Blue":{"code":"142","pigments":"PB15 PG7"},"Ultramarine":{"code":"123","pigments":"PB29"},"Cobalt Blue Hue":{"code":"110","pigments":"PB29 PW6"},"Process Cyan":{"code":"120","pigments":"PB15:3 PG7"},"Coeruleum Blue Hue":{"code":"112","pigments":"PB15:3 PW5 PY74"},"Wedgewood":{"code":"114","pigments":"PW6 PB29 PY42"},"Phthalo Turquoise":{"code":"154","pigments":"PB15:3 PG7"},"Phthalo Green":{"code":"361","pigments":"PG7"},"Emerald":{"code":"335","pigments":"PY3 PG7"},"Leaf Green":{"code":"355","pigments":"PY3 PG7"},"Pale Olive Green":{"code":"368","pigments":"PY83 PG7"},"Sap Green":{"code":"375","pigments":"PY74 PG7 PR101"},"Hooker's Green":{"code":"352","pigments":"PG7 PR101 PY74"},"Oxide Of Chromium Green":{"code":"367","pigments":"PG17"},"Buff Titanium":{"code":"024","pigments":"PW6:1"},"Peach Pink":{"code":"578","pigments":"PW5 PY42 PR101"},"Naples Yellow":{"code":"634","pigments":"PW6 PY83 PO13"},"Yellow Ochre":{"code":"663","pigments":"PY42"},"Raw Sienna":{"code":"667","pigments":"PY42 PR101 PBk7"},"Burnt Sienna":{"code":"221","pigments":"PR101"},"Burnt Umber":{"code":"223","pigments":"PR101 PBk7"},"Raw Umber":{"code":"247","pigments":"PBr7"},"Payne's Grey":{"code":"065","pigments":"PB29 PBk11"},"Mars Black":{"code":"036","pigments":"PBk11"},"Process Black":{"code":"040","pigments":"PBk7"},"Warm Grey":{"code":"078","pigments":"PW6 PBr7 PBk11"},"Silver Imit":{"code":"702","pigments":"PW6 PBk7 PB15:3"},"Pale Gold Imit":{"code":"708","pigments":"PW6 PR101 PY83"},"Rich Gold Imit":{"code":"707","pigments":"PW6 PR101 PY83"},"Copper Imit":{"code":"230","pigments":"PR101"},"Fluorescent Yellow":{"code":"681","pigments":"Fluorescent Yellow 27"},"Fluorescent Orange":{"code":"653","pigments":"Fluorescent Orange 5"},"Fluorescent Red":{"code":"544","pigments":"Fluorescent Red 3"},"Fluorescent Pink":{"code":"538","pigments":"Fluorescent Pink 1"},"Fluorescent Blue":{"code":"100","pigments":"Fluorescent Blue 60"},"Fluorescent Green":{"code":"349","pigments":"Fluorescent Green 8"},"Zinc Mixing White":{"code":"006","pigments":"PW5"},"Titanium White":{"code":"009","pigments":"PW6"}};
+  PALETTES.system3 = [["Lemon Yellow",[242,215,12]],["Process Yellow",[239,197,9]],["Cadmium Yellow Hue",[242,186,17]],["Cadmium Yellow Deep Hue",[233,159,11]],["Cadmium Orange Light Hue",[242,127,18]],["Cadmium Orange Hue",[233,103,24]],["Cadmium Scarlet Hue",[222,73,36]],["Vermilion Hue",[216,48,35]],["Cadmium Red Hue",[205,29,32]],["Cadmium Red Deep Hue",[171,28,44]],["Crimson",[149,26,64]],["Process Magenta",[162,32,118]],["Purple",[118,37,133]],["Velvet Purple",[145,94,158]],["Deep Violet",[74,48,117]],["Prussian Blue Hue",[27,47,86]],["Phthalo Blue",[15,85,138]],["Ultramarine",[45,64,152]],["Cobalt Blue Hue",[67,111,171]],["Process Cyan",[2,148,191]],["Coeruleum Blue Hue",[82,155,182]],["Wedgewood",[133,159,185]],["Phthalo Turquoise",[0,117,133]],["Phthalo Green",[12,100,96]],["Emerald",[30,147,108]],["Leaf Green",[60,137,64]],["Pale Olive Green",[121,142,73]],["Sap Green",[76,102,50]],["Hooker's Green",[44,91,65]],["Oxide Of Chromium Green",[77,108,72]],["Buff Titanium",[224,205,173]],["Peach Pink",[235,171,148]],["Naples Yellow",[244,208,132]],["Yellow Ochre",[187,136,51]],["Raw Sienna",[165,105,54]],["Burnt Sienna",[161,71,51]],["Burnt Umber",[83,54,47]],["Raw Umber",[101,83,65]],["Payne's Grey",[55,66,83]],["Mars Black",[34,35,37]],["Process Black",[26,29,31]],["Warm Grey",[155,144,132]],["Silver Imit",[180,185,190]],["Pale Gold Imit",[197,171,110]],["Rich Gold Imit",[169,130,61]],["Copper Imit",[173,97,73]],["Fluorescent Yellow",[247,248,46]],["Fluorescent Orange",[255,104,27]],["Fluorescent Red",[246,55,61]],["Fluorescent Pink",[253,64,142]],["Fluorescent Blue",[54,128,249]],["Fluorescent Green",[91,240,67]],["Zinc Mixing White",[244,243,235]],["Titanium White",[249,249,245]]];
+  const BASIC_SYSTEM3_NAMES = new Set(['Titanium White','Lemon Yellow','Cadmium Yellow Hue','Cadmium Red Hue','Crimson','Ultramarine','Phthalo Blue','Phthalo Green','Yellow Ochre','Burnt Sienna','Burnt Umber','Mars Black']);
+
   const ARTISAN_BLUE_TINT_PROXIES={
     'Prussian Blue':[15,50,100],
     'Phthalo Blue (Red Shade)':[15,46,110]
@@ -2983,39 +3000,54 @@
     const n=(PALETTES[key]||[]).filter(x=>owned[paletteId(key,x[0])]===true).length;
     const custom=loadCustom().filter(x=>x.enabled!==false).length;
     if(!selectedPaletteColors(key).length){
-      ownedSummary.textContent='Keine persönliche Auswahl aktiv · Standardpalette für Mischvorschläge'+(key==='artisan'?' (ohne Schwarz)':'');
+      ownedSummary.textContent='Keine persönliche Auswahl aktiv · Standardpalette für Mischvorschläge'+(key==='artisan'?' (ohne Schwarz)':key==='system3'?' (54 System3-Farben)':'');
       return;
     }
     ownedSummary.textContent=(key==='artisan')?`${n} von 40 Farben aktiv${custom?` + ${custom} eigene`:''}`:
-      `Ausgewählt: ${n} Herstellerfarben${custom?` + ${custom} eigene`:''}. Mischungen benutzen nur diese Farben.`;
+      `Ausgewählt: ${n} von ${(PALETTES[key]||[]).length} Herstellerfarben${custom?` + ${custom} eigene`:''}. Mischungen benutzen nur diese Farben.`;
   }
 
   function applyBasicArtisanPalette(){
-    if(currentCatalogueKey()!=='artisan') return;
+    if(currentCatalogueKey()!=='artisan'&&currentCatalogueKey()!=='system3') return;
     const o=loadOwned();
-    (PALETTES.artisan||[]).forEach(([n])=>o[paletteId('artisan',n)]=BASIC_ARTISAN_NAMES.has(n));
+    const key=currentCatalogueKey();
+    (PALETTES[key]||[]).forEach(([n])=>o[paletteId(key,n)]=(key==='system3'?BASIC_SYSTEM3_NAMES:BASIC_ARTISAN_NAMES).has(n));
     saveOwned(o);renderPaletteChecklist();updateOwnedSummary();
   }
+  function currentStandardPaletteKey(){
+    return currentCatalogueKey()==='system3' ? 'atelierai_standard_system3_pc_v1' : STANDARD_ARTISAN_KEY;
+  }
   function saveStandardArtisanPalette(){
+    const key=currentCatalogueKey();
+    if(!['artisan','system3'].includes(key))return;
     const o=loadOwned();
-    const ids=(PALETTES.artisan||[]).filter(([n])=>o[paletteId('artisan',n)]===true).map(([n])=>n);
-    localStorage.setItem(STANDARD_ARTISAN_KEY,JSON.stringify({format:'atelier-ai-standard-palette',version:1,
-      palette_name:'Winsor & Newton Artisan',selected_ids:ids,updated_at:new Date().toISOString()}));
+    const ids=(PALETTES[key]||[]).filter(([n])=>o[paletteId(key,n)]===true).map(([n])=>n);
+    localStorage.setItem(currentStandardPaletteKey(),JSON.stringify({format:'atelier-ai-standard-palette',version:1,
+      palette_name:key==='system3'?'Daler-Rowney System3 Original':'Winsor & Newton Artisan',selected_ids:ids,updated_at:new Date().toISOString()}));
     updateStandardPaletteInfo();
   }
   function loadStandardArtisanPalette(){
     try{
-      const d=JSON.parse(localStorage.getItem(STANDARD_ARTISAN_KEY)||'null');
+      const key=currentCatalogueKey();
+      if(!['artisan','system3'].includes(key))return;
+      const d=JSON.parse(localStorage.getItem(currentStandardPaletteKey())||'null');
       if(!d||!Array.isArray(d.selected_ids))return;
-      const s=new Set(d.selected_ids),o=loadOwned();
-      (PALETTES.artisan||[]).forEach(([n])=>o[paletteId('artisan',n)]=s.has(n));
-      saveOwned(o);renderPaletteChecklist();updateOwnedSummary();updateStandardPaletteInfo();
+      const selected=new Set(d.selected_ids),owned=loadOwned();
+      (PALETTES[key]||[]).forEach(([n])=>owned[paletteId(key,n)]=selected.has(n));
+      saveOwned(owned);renderPaletteChecklist();updateOwnedSummary();updateStandardPaletteInfo();
     }catch(e){}
   }
-  function deleteStandardArtisanPalette(){localStorage.removeItem(STANDARD_ARTISAN_KEY);updateStandardPaletteInfo();}
+  function deleteStandardArtisanPalette(){
+    if(!['artisan','system3'].includes(currentCatalogueKey()))return;
+    localStorage.removeItem(currentStandardPaletteKey());updateStandardPaletteInfo();
+  }
   function updateStandardPaletteInfo(){
     try{
-      const d=JSON.parse(localStorage.getItem(STANDARD_ARTISAN_KEY)||'null');
+      if(!['artisan','system3'].includes(currentCatalogueKey())){
+        standardPaletteInfo.textContent='Persönlicher Standard: Für Öl (Artisan) und Acryl (System3) separat speicherbar.';
+        return;
+      }
+      const d=JSON.parse(localStorage.getItem(currentStandardPaletteKey())||'null');
       standardPaletteInfo.textContent=d&&Array.isArray(d.selected_ids)
        ?`Persönliche Standardpalette: ${d.selected_ids.length} Farben gespeichert.`
        :'Noch keine persönliche Standardpalette gespeichert.';
@@ -3029,7 +3061,7 @@
       const row=document.createElement('label'); row.className='palette-item';
       const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=owned[paletteId(key,name)]===true;
       const dot=document.createElement('span'); dot.className='palette-dot'; dot.style.background=rgbHex(paletteMixRgb(name,rgb,key));
-      const txt=document.createElement('span'); txt.textContent=name;
+      const txt=document.createElement('span'); txt.textContent=key==='system3' ? name+' · Nr. '+SYSTEM3_INFO[name].code+' · '+SYSTEM3_INFO[name].pigments : name;
       cb.addEventListener('change',()=>{const o=loadOwned();o[paletteId(key,name)]=cb.checked;saveOwned(o);updateOwnedSummary();});
       row.append(cb,dot,txt);paletteChecklist.appendChild(row);
     });
@@ -3267,7 +3299,7 @@
       const active=colors.map((rgb,i)=>[oilSpectralColor(rgb),Math.max(0,parts[i]||0)]).filter(x=>x[1]>0);
       if(active.length===1)return active[0][0].sRGB.slice();
       const mixed=spectral.mix(...active).sRGB.map(v=>Math.max(0,Math.min(255,Math.round(v))));
-      return calibrateOilMixedMidtone(mixed);
+      return key==='artisan' ? calibrateOilMixedMidtone(mixed) : mixed;
     }
     // Three-channel approximation: absorption for transparent washes,
     // K/S proxy for opaque paint. No measured spectra or tinting strengths.
@@ -3563,7 +3595,7 @@
     // Dies ist KEINE ermittelte Pigment-Mischgenauigkeit. Eigene Farben bleiben
     // unveraendert, ebenso neutrale, dunkle und gering gesaettigte Ziele.
     const targetChroma=Math.hypot(targetLab[1],targetLab[2]);
-    const needs=(paletteKey==='artisan' && targetChroma>=14 &&
+    const needs=((paletteKey==='artisan'||paletteKey==='system3') && targetChroma>=14 &&
       targetLab[0]>23 && targetLab[0]<92 && targetSaturation>=.13)
       ? (targetHue>=325||targetHue<20?'rose':
          targetHue>=20&&targetHue<85?'warm':
@@ -3572,8 +3604,11 @@
     function pigmentPlausibilityPenalty(items){
       if(!needs || !items.length)return 0;
       // Keine unbekannten, individuellen Pigmente falsch klassifizieren.
-      if(items.some(i=>!Object.prototype.hasOwnProperty.call(ARTISAN_PIGMENTS,i.name)))return 0;
-      const pigments=items.flatMap(i=>ARTISAN_PIGMENTS[i.name][0].split(' '));
+      if(items.some(i=>!(/^[A-Z]+\d/.test((paletteKey==='system3'?SYSTEM3_INFO[i.name]?.pigments:'')||'')) && paletteKey==='system3'))return 0;
+      if(items.some(i=>!(paletteKey==='system3' ? SYSTEM3_INFO[i.name] : ARTISAN_PIGMENTS[i.name])))return 0;
+      const pigments=items.flatMap(i=>paletteKey==='system3'
+        ? SYSTEM3_INFO[i.name].pigments.split(' ')
+        : ARTISAN_PIGMENTS[i.name][0].split(' '));
       const has=(re)=>pigments.some(p=>re.test(p));
       const red=has(/^(PR|PV19$)/), yellow=has(/^(PY|PO)/),
         blue=has(/^PB(?!k)/), green=has(/^PG/), violet=has(/^PV/);
@@ -3904,7 +3939,7 @@
     resetPhotoFilters();installPhoto(photo);document.dispatchEvent(new Event('atelier-reset-photo'));
     planBook=studioClone(a.plan||{name:a.name,samples:[]});picturePalette=studioClone(a.palette||{ids:[],enabled:true});
     planSamplePoint=null;planActiveId=null;planPlaceId=null;mixResultCache.clear();
-    if(a.medium&&[...paintPalette.options].some(o=>o.value===a.medium)){setMedium(a.medium==='artisan'?'oil':'water');paintPalette.value=a.medium;}
+    if(a.medium&&[...paintPalette.options].some(o=>o.value===a.medium)){setMedium(a.medium==='artisan'?'oil':a.medium==='system3'?'acrylic':'water');paintPalette.value=a.medium;}
     gridEnabled=!!a.grid?.enabled;if(a.grid?.density)gridDensity.value=a.grid.density;
     const isSelectedCrop=!!(a.fullView||a.returnAreaId||a.cropMap||a.grid?.reference);
     originalGridGeometry=isSelectedCrop&&a.grid?.originalGeometry?{...a.grid.originalGeometry}:null;
@@ -4123,8 +4158,8 @@
     const wasIsolating=!!activeIsolatedColor||multiIsolatedIds.length>0;
     // Auf die gespeicherte Malfarbenpalette wechseln: sonst erscheinen Rezepte
     // aus einer anderen Palette statt aus den gespeicherten Tubenfarben.
-    const medium=sample.key==='artisan'?'oil':'water';
-    if((paintPalette.value==='artisan')!==(medium==='oil'))setMedium(medium);
+    const medium=sample.key==='artisan'?'oil':sample.key==='system3'?'acrylic':'water';
+    if(paintMedium!==medium)setMedium(medium);
     if([...paintPalette.options].some(option=>option.value===sample.key))paintPalette.value=sample.key;
     setMixTarget(sample.target,'Gemerkte Farbnummer '+(planBook.samples.indexOf(sample)+1)+' · '+sample.name,
       sample.point?{...sample.point,pictureId:picturePaletteId}:null,sample.id);
@@ -4462,7 +4497,7 @@
       const sw=add('span','',row);sw.style.cssText='display:inline-block;width:30px;height:30px;border:1px solid #888;background:'+rgbHex(s.target);sw.title='Zielfarbe '+rgbHex(s.target);
       const label=add('input','',row);label.value=s.name;label.style.width='125px';label.setAttribute('aria-label','Name der Farbprobe');label.placeholder='Stelle benennen';label.title='Antippen zum Umbenennen, z. B. linke Wange';
       const qty=add('input','',row);qty.type='number';qty.min='1';qty.max='20';qty.step='1';qty.value=s.amount;qty.style.width='65px';qty.setAttribute('aria-label','Rezeptmenge für '+s.name);
-      add('small',s.key==='artisan'?'Öl':s.key,row);
+      add('small',s.key==='artisan'?'Öl':s.key==='system3'?'Acryl':s.key,row);
       const locate=add('button',planPlaceId===s.id?'Setzen abbrechen':s.point?'Stelle versetzen':'Stelle setzen',row);locate.type='button';locate.className='secondary';
       locate.onclick=()=>{planPlaceId=planPlaceId===s.id?null:s.id;setMode('move');hint.textContent=planPlaceId?'Jetzt die Stelle für „'+s.name+'“ im Bild antippen.':'Setzen abgebrochen.';renderPalettePlan();};
       const remove=add('button','×',row);remove.type='button';remove.className='secondary';remove.setAttribute('aria-label',s.name+' entfernen');
@@ -4948,14 +4983,28 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     mediumOilBtn.classList.toggle('secondary',m!=='oil');
     mediumWaterBtn.classList.toggle('active',m==='water');
     mediumWaterBtn.classList.toggle('secondary',m!=='water');
+    mediumAcrylicBtn.classList.toggle('active',m==='acrylic');
+    mediumAcrylicBtn.classList.toggle('secondary',m!=='acrylic');
     if(m==='oil'){
       paintPalette.value='artisan';
       [...paintPalette.options].forEach(o=>o.disabled=(o.value!=='artisan'));
+    }else if(m==='acrylic'){
+      paintPalette.value='system3';
+      [...paintPalette.options].forEach(o=>o.disabled=(o.value!=='system3'));
     }else{
-      [...paintPalette.options].forEach(o=>o.disabled=(o.value==='artisan'));
-      if(paintPalette.value==='artisan') paintPalette.value='horadam';
+      [...paintPalette.options].forEach(o=>o.disabled=(o.value==='artisan'||o.value==='system3'));
+      if(paintPalette.value==='artisan'||paintPalette.value==='system3') paintPalette.value='horadam';
     }
     mixResults.innerHTML='';
+    updateStandardPaletteInfo();
+    if(m==='acrylic'){
+      // A single deliberate acrylic choice should also be reflected in the other mixing panels.
+      for(const id of ['build32MixPalette','surfaceMixPalette','advisorOwnPalette']){
+        const field=document.getElementById(id);
+        if(field)field.value='system3';
+      }
+    }
+    document.getElementById('system3AccuracyNote').hidden=m!=='acrylic';
     setTimeout(updateOwnedSummary,0);
   }
 
@@ -5395,7 +5444,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     let a=Math.max(0,Math.min(1,strength/100));
     // Aquarell bleibt bewusst sanfter als eine reine Bildschirm-Überblendung.
     // Öl darf etwas stärker wirken.
-    const effective=medium==='water' ? a*0.72 : a*0.88;
+    const effective=medium==='water' ? a*0.72 : medium==='acrylic' ? a*0.80 : a*0.88;
     return [0,1,2].map(i=>glazeClamp(base[i]*(1-effective)+paint[i]*effective));
   }
 
@@ -5418,7 +5467,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       ? (PALETTES.horadam||[]).length+(PALETTES.akademie||[]).length
       : (PALETTES[key]||[]).length;
     const active=selectedPaletteColors(key).length;
-    const names={watercolor:'Meine Aquarellfarben · Horadam + Akademie',horadam:'Schmincke Horadam',akademie:'Schmincke Akademie',artisan:'Winsor & Newton Artisan'};
+    const names={watercolor:'Meine Aquarellfarben · Horadam + Akademie',horadam:'Schmincke Horadam',akademie:'Schmincke Akademie',artisan:'Winsor & Newton Artisan',system3:'Daler-Rowney System3 Original · Acryl'};
     glazePaletteStatus.textContent=`${names[key]||key} – ${active} von ${total} Farben aktiv`;
   }
 
@@ -5856,15 +5905,19 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     glazeWaterBtn.classList.toggle('secondary',m!=='water');
     glazeOilBtn.classList.toggle('active',m==='oil');
     glazeOilBtn.classList.toggle('secondary',m!=='oil');
+    glazeAcrylicBtn.classList.toggle('active',m==='acrylic');
+    glazeAcrylicBtn.classList.toggle('secondary',m!=='acrylic');
     [...glazePalette.options].forEach(o=>{
       if(m==='oil') o.disabled=o.value!=='artisan';
-      else o.disabled=o.value==='artisan';
+      else if(m==='acrylic') o.disabled=o.value!=='system3';
+      else o.disabled=o.value==='artisan'||o.value==='system3';
     });
     if(m==='oil') glazePalette.value='artisan';
-    else if(glazePalette.value==='artisan') glazePalette.value='horadam';
+    else if(m==='acrylic') glazePalette.value='system3';
+    else if(glazePalette.value==='artisan'||glazePalette.value==='system3') glazePalette.value='horadam';
 
     // Praxisnah sanfter Startwert.
-    glazeMaxStrength.value=m==='water'?'18':'22';
+    glazeMaxStrength.value=m==='water'?'18':m==='acrylic'?'20':'22';
     glazeMaxStrengthVal.textContent=glazeMaxStrength.value+' %';
     glazeResults.innerHTML='<span class="tiny">Originalfoto und Gemälde vergleichen.</span>';
   }
@@ -6166,6 +6219,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       note.style.marginTop='8px';
       note.innerHTML=glazeMedium==='water'
         ? 'Aquarell: bis zu drei nacheinander aufgetragene, transparente Lasuren. Jede Schicht trocknen lassen. Die einfachere Folge bleibt vorne, wenn zusätzliche Lasuren kaum verbessern.'
+        : glazeMedium==='acrylic' ? 'Acryl: bis zu drei dünne, transparente Lasuren als Bildschirmvorschau. Schichten trocknen lassen; Pigmentdeckkraft und Acrylmedium bestimmen die echte Transparenz.'
         : 'Öl: bis zu drei transparente Lasuren. Zwischen den Schichten ausreichend trocknen lassen; Deckkraft und Malmittel verändern das reale Ergebnis.';
       glazeResults.appendChild(note);
     },30);
@@ -6424,18 +6478,18 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(water)out.push({name:'Papierweiß – aussparen',rgb:[255,255,255],coverage:0});
     return out;
   }
-  function build32SimpleColors(){
-    const paints=effectivePaletteColors('artisan');
+  function build32SimpleColors(paletteKey='artisan'){
+    const paints=effectivePaletteColors(paletteKey);
     const choose=(preferred,pattern)=>paints.find(c=>c[0]===preferred)||paints.find(c=>pattern.test(c[0]));
     const white=choose('Titanium White',/white|weiß/i);
     const yellow=choose('Lemon Yellow',/yellow|gelb/i);
-    const blue=choose('French Ultramarine',/blue|blau|ultramarin/i);
+    const blue=choose(paletteKey==='system3'?'Ultramarine':'French Ultramarine',/blue|blau|ultramarin/i);
     const out=[],seen=new Set();
     const add=(items,parts)=>{
       const active=items.map((c,i)=>({c,part:parts[i]})).filter(x=>x.part>0);
       const merged=new Map();
       for(const {c,part} of active){const prior=merged.get(c[0]);if(prior)prior.part+=part;else merged.set(c[0],{c,part});}
-      const entries=[...merged.values()],rgb=entries.length===1?entries[0].c[1].slice():pigmentMix(entries.map(x=>x.c[1]),entries.map(x=>x.part),'artisan');
+      const entries=[...merged.values()],rgb=entries.length===1?entries[0].c[1].slice():pigmentMix(entries.map(x=>x.c[1]),entries.map(x=>x.part),paletteKey);
       const key=rgb.join(',');if(seen.has(key))return;seen.add(key);
       const recipe=entries.map(x=>(Math.round(x.part*1000)/10).toLocaleString('de-DE')+' % '+x.c[0]).join(' + ');
       out.push({name:entries.map(x=>x.c[0]).join(' + '),rgb,coverage:1,recipe:entries.length===1?'Reine Tubenfarbe':recipe});
@@ -6467,11 +6521,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function build32IsPure(){return document.getElementById('build32PaintMode').value!=='mixed';}
   for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).addEventListener('change',e=>{
     for(const other of ['build32PaintMode','build32PaintModeSide'])document.getElementById(other).value=e.target.value;
-    if(build32IsSimple())document.getElementById('build32MixPalette').value='artisan';
+    if(build32IsSimple()&&!['artisan','system3'].includes(document.getElementById('build32MixPalette').value))document.getElementById('build32MixPalette').value='artisan';
     syncBuild32SimpleLimit();
     for(const other of ['build32Count','build32CountSide'])document.getElementById(other).disabled=build32IsPure();
     resetBuild32();
-    document.getElementById('build32Analyze').textContent=build32IsSimple()?'Einfache Artisan-Mischungen anzeigen':build32IsPure()?'Ungemischte Farben anzeigen':build32ColorCount()+' Farben erkennen';
+    document.getElementById('build32Analyze').textContent=build32IsSimple()?'Einfache Öl-/Acryl-Mischungen anzeigen':build32IsPure()?'Ungemischte Farben anzeigen':build32ColorCount()+' Farben erkennen';
     if(loaded)document.getElementById('build32Analyze').click();
   });
   function quantizeBuild32(data){
@@ -6705,7 +6759,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     try{
       if(build32IsPure()){
         const key=document.getElementById('build32MixPalette').value;
-        data.pureColors=build32IsSimple()?build32SimpleColors():build32PureColors(key);
+        data.pureColors=build32IsSimple()?build32SimpleColors(key):build32PureColors(key);
         data.simpleLimit=build32IsSimple()?Number(document.getElementById('build32SimpleLimit').value):0;
         data.watercolor=['watercolor','horadam','akademie'].includes(key);
         result=quantizeBuild32Pure(data);
@@ -7436,7 +7490,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     else [...document.getElementById('build32Palette').children].forEach((el,i)=>el.setAttribute('aria-pressed',String(build32Additive&&build32Selection.has(i))));
   });
-  document.getElementById('build32MixPalette').addEventListener('change',()=>{if(build32IsSimple()&&document.getElementById('build32MixPalette').value!=='artisan'){for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).value='pure';document.getElementById('build32Analyze').textContent='Ungemischte Farben anzeigen';syncBuild32SimpleLimit();}if(build32IsPure()){document.getElementById('build32Analyze').click();}else updateBuild32Recipe();});
+  document.getElementById('build32MixPalette').addEventListener('change',()=>{if(build32IsSimple()&&!['artisan','system3'].includes(document.getElementById('build32MixPalette').value)){for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).value='pure';document.getElementById('build32Analyze').textContent='Ungemischte Farben anzeigen';syncBuild32SimpleLimit();}if(build32IsPure()){document.getElementById('build32Analyze').click();}else updateBuild32Recipe();});
   document.getElementById('build32Solo').addEventListener('click',()=>{
     if(!build32Data)return;
     if(build32SoloPrevious){
@@ -7640,10 +7694,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     work.width=Math.max(1,Math.round(sourceCanvas.width*ratio));work.height=Math.max(1,Math.round(sourceCanvas.height*ratio));
     const wc=work.getContext('2d');wc.fillStyle='#fff';wc.fillRect(0,0,work.width,work.height);wc.drawImage(sourceCanvas,0,0,work.width,work.height);
     const data={progressive:progressive==='layer',finalStages:progressive==='final',colorCount:progressive==='layer'?16:build32ColorCount(),pixels:wc.getImageData(0,0,work.width,work.height).data.buffer,width:work.width,height:work.height};
-    if(build32IsSimple())document.getElementById('build32MixPalette').value='artisan';
+    if(build32IsSimple()&&!['artisan','system3'].includes(document.getElementById('build32MixPalette').value))document.getElementById('build32MixPalette').value='artisan';
     const key=document.getElementById('build32MixPalette').value;
     const quantizer=build32IsPure()?quantizeBuild32Pure:quantizeBuild32;
-    if(build32IsPure()){data.pureColors=build32IsSimple()?build32SimpleColors():build32PureColors(key);data.simpleLimit=build32IsSimple()?Number(document.getElementById('build32SimpleLimit').value):0;data.watercolor=['watercolor','horadam','akademie'].includes(key);build32Status.textContent=build32IsSimple()?'Einfache Artisan-Mischungen werden zugeordnet …':'Ungemischte Palettenfarben werden zugeordnet …';}
+    if(build32IsPure()){data.pureColors=build32IsSimple()?build32SimpleColors(key):build32PureColors(key);data.simpleLimit=build32IsSimple()?Number(document.getElementById('build32SimpleLimit').value):0;data.watercolor=['watercolor','horadam','akademie'].includes(key);build32Status.textContent=build32IsSimple()?'Einfache Öl-/Acryl-Mischungen werden zugeordnet …':'Ungemischte Palettenfarben werden zugeordnet …';}
     const fail=()=>{if(generation!==build32Generation)return;document.getElementById('build32Analyze').disabled=false;document.getElementById('build32StagesStart').disabled=false;build32Status.textContent='Farberkennung fehlgeschlagen. Bitte erneut versuchen.';};
     const fallback=()=>setTimeout(()=>{if(generation!==build32Generation)return;try{acceptBuild32(quantizer(data),generation);}catch(e){fail();}},20);
     try{
@@ -8241,7 +8295,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         renderSurfaceBase();
       };
       row.querySelector('.surfaceMixBtn').onclick=()=>{
-        setMedium(paletteKey==='artisan'?'oil':'water');paintPalette.value=paletteKey;
+        setMedium(paletteKey==='artisan'?'oil':paletteKey==='system3'?'acrylic':'water');paintPalette.value=paletteKey;
         setMixTarget(c.rgb,`${nuanceMode ? 'Nuance' : 'Hauptfarbe'} ${i+1}`);
         takeCorrectionColor(c.rgb);
         showStudioMixPage();
@@ -8356,7 +8410,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
     const p1=ratio, p2=other;
     let txt=`${p1} Teile ${selectedPairMix.n1} · ${p2} Teile ${selectedPairMix.n2}`;
-    if(lv>3)txt+=paintPalette.value==='artisan'?' · Helligkeit nur Vorschau; Weißzugabe separat erproben':' · heller durch verdünnten Auftrag auf weißem Papier';
+    if(lv>3)txt+=(paintPalette.value==='artisan'||paintPalette.value==='system3')?' · Helligkeit nur Vorschau; Weißzugabe separat erproben':' · heller durch verdünnten Auftrag auf weißem Papier';
     if(lv<-3)txt+=' · vorsichtig mit dunkler Tubenfarbe vertiefen';
     if(selectedAdjustColor)txt+=` · + ${Number(pairEditAmount.value).toFixed(0)} % ${selectedAdjustColor.name}`;
     pairEditRecipe.textContent=txt;
@@ -9509,6 +9563,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   });
   mediumOilBtn.addEventListener('click',()=>setMedium('oil'));
   mediumWaterBtn.addEventListener('click',()=>setMedium('water'));
+  mediumAcrylicBtn.addEventListener('click',()=>setMedium('acrylic'));
   calcMixesBtn.addEventListener('click',showMixes);
   paintPalette.addEventListener('change',()=>{ mixResults.innerHTML=''; });
   setMedium('oil');
@@ -9654,6 +9709,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
   glazeWaterBtn.addEventListener('click',()=>setGlazeMedium('water'));
   glazeOilBtn.addEventListener('click',()=>setGlazeMedium('oil'));
+  glazeAcrylicBtn.addEventListener('click',()=>setGlazeMedium('acrylic'));
   glazeOriginalInput.addEventListener('change',e=>loadGlazeImage(e.target.files&&e.target.files[0],'original'));
   glazePaintingInput.addEventListener('change',e=>loadGlazeImage(e.target.files&&e.target.files[0],'painting'));
   glazeAutoAlignBtn.addEventListener('click',autoAlignGlaze);
@@ -10548,7 +10604,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     <p class="tiny">Einen Farbton aus dem Bild aufnehmen. „Mischen“ simuliert eine transparente Lasur und lässt etwas Ursprungsfarbe sichtbar. „Ersetzen“ tauscht den Farbton vollständig aus. Beide bewahren die Licht- und Schattenstruktur. Bei aktiviertem Tonwertschutz bleiben die Tonwerte in beiden Modi erhalten.</p>
     <button id="ceTargetPick" class="secondary" aria-pressed="false">Neue Zielfarbe aus dem Bild aufnehmen</button>
     <label>Leitfarbe <input id="ceTarget" type="color" value="#b49a45"></label>
-    <label>Winsor &amp; Newton Artisan <select id="ceArtisanPick"><option value="">Farbe auswählen …</option></select></label>
+    <label>Malfarben aus der gewählten Palette <select id="ceArtisanPick"><option value="">Farbe auswählen …</option></select></label>
     <label><input id="ceHarmonyEnabled" type="checkbox" checked> Farbänderung AN / AUS · vergleichen</label>
     <label>Farbänderung <select id="ceColorMode"><option value="mix">Farbe mischen</option><option value="replace">Farbton vollständig ersetzen</option></select></label>
     <label>Stärke <output id="ceBlendVal">0 %</output><input id="ceBlend" type="range" min="0" max="100" step="1" value="0"></label>
@@ -10613,11 +10669,20 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     document.body.append(panel);
     const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceReviewCanvas[hidden],#ceReviewBadge[hidden]{display:none}#ceReviewBadge{position:absolute;top:8px;left:8px;z-index:2;padding:5px 9px;border-radius:6px;background:#172822d9;color:white;font-size:12px;pointer-events:none}#ceCanvas,#ceReviewCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceLassoOutline{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls details{margin:12px 0;padding:10px;border:1px solid #c4ccc7;border-radius:8px}.ce-controls summary{cursor:pointer;font-weight:bold}.ce-controls>label,.ce-controls details>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceProjectPanel button[aria-pressed=true]{background:#345c4a;color:white;outline:2px solid #84a893}#ceProjectName{font:inherit;min-height:40px;padding:6px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}.ce-controls details details{margin:10px 0 0}.ce-controls details details summary{font-weight:600}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
     const el=id=>document.getElementById('ce'+id),cv=el('Canvas'),ctx=cv.getContext('2d');
-    // Use the existing Artisan pigment swatches rather than inventing a second palette.
+    // Use the chosen paint palette; do not silently fall back to Artisan when painting in acrylic.
     const artisanSelect=el('ArtisanPick');
-    for(const [name,values] of PALETTES.artisan){
-      const option=document.createElement('option');option.value='#'+values.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');option.textContent=name;artisanSelect.append(option);
+    function refreshEditorPaintPalette(){
+      const key=paintPalette.value;
+      artisanSelect.replaceChildren(new Option('Farbe auswählen …',''));
+      for(const [name,values] of effectivePaletteColors(key)){
+        const option=document.createElement('option');
+        option.value='#'+values.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+        option.textContent=name+(key==='system3' && SYSTEM3_INFO[name]?' · '+SYSTEM3_INFO[name].code:'');
+        artisanSelect.append(option);
+      }
     }
+    refreshEditorPaintPalette();
+    paintPalette.addEventListener('change',refreshEditorPaintPalette);
     artisanSelect.addEventListener('change',()=>{if(artisanSelect.value){el('Target').value=artisanSelect.value;el('Target').dispatchEvent(new Event('input',{bubbles:true}));}});
     el('Target').addEventListener('input',()=>{if(artisanSelect.value!==el('Target').value)artisanSelect.value='';});
 
@@ -10897,7 +10962,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         ctx.drawImage(base,0,0,cv.width,cv.height);preview=ctx.getImageData(0,0,cv.width,cv.height);
       }
       if(!sample&&el('Family').value==='all'){el('Family').value='pick';el('Range').value=12;}
-      panel.hidden=false;fitEditor();syncRegion();render();
+      refreshEditorPaintPalette();panel.hidden=false;fitEditor();syncRegion();render();
     };
     el('Close').onclick=()=>{panel.hidden=true;revision++;clearGesture();button.focus();};
     for(const n of ['Range','Light','Blend','Warm','Saturation','Target','Original','Mask','ProtectTone','ProtectHighlights'])el(n).addEventListener('input',render);
@@ -11747,7 +11812,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           return `${q} Teile ${advEsc(x.name)}`;
         }).join(' + ')
       : '<b>Aktuelle Mischung:</b> leer';
-    advisorRecipe.innerHTML+='<br><small>Unkalibrierte Mischvorschau · Farbprobe erforderlich. '+(advPalette().key!=='artisan'?Math.round(advisorCoverage*100)+' % Farbauftrag auf Weiß; kein Wasserverhältnis. ':'')+'Helligkeitsregler verändert nur die Vorschau.</small>';
+    advisorRecipe.innerHTML+='<br><small>Unkalibrierte Mischvorschau · Farbprobe erforderlich. '+(['watercolor','horadam','akademie'].includes(advPalette().key)?Math.round(advisorCoverage*100)+' % Farbauftrag auf Weiß; kein Wasserverhältnis. ':'')+'Helligkeitsregler verändert nur die Vorschau.</small>';
   }
 
   function advRenderRows(){
@@ -11787,6 +11852,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
     const paletteNames={
       artisan:'Winsor & Newton Artisan',
+      system3:'Daler-Rowney System3 Original · Acryl',
       horadam:'Schmincke Horadam',
       akademie:'Schmincke Akademie'
     };
@@ -11853,16 +11919,17 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   const advisorPaletteSelect=document.getElementById('advisorOwnPalette');
   const advisorMainPaletteSelect=document.getElementById('paintPalette');
   if(advisorPaletteSelect){
-    if(advisorMainPaletteSelect && ['artisan','horadam','akademie'].includes(advisorMainPaletteSelect.value)){
+    if(advisorMainPaletteSelect && ['artisan','system3','horadam','akademie'].includes(advisorMainPaletteSelect.value)){
     advisorPaletteSelect.value=advisorMainPaletteSelect.value;
   }
   advisorPaletteSelect?.addEventListener('change',()=>{
     if(advisorMainPaletteSelect && advisorMainPaletteSelect.value!==advisorPaletteSelect.value){
+      setMedium(advisorPaletteSelect.value==='artisan'?'oil':advisorPaletteSelect.value==='system3'?'acrylic':'water');
       advisorMainPaletteSelect.value=advisorPaletteSelect.value;
     }
   });
   advisorMainPaletteSelect?.addEventListener('change',()=>{
-    if(['artisan','horadam','akademie'].includes(advisorMainPaletteSelect.value) && advisorPaletteSelect.value!==advisorMainPaletteSelect.value){
+    if(['artisan','system3','horadam','akademie'].includes(advisorMainPaletteSelect.value) && advisorPaletteSelect.value!==advisorMainPaletteSelect.value){
       advisorPaletteSelect.value=advisorMainPaletteSelect.value;
       advisorPaletteSelect.dispatchEvent(new Event('change',{bubbles:true}));
     }
