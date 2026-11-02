@@ -1,0 +1,10204 @@
+
+(() => {
+  const canvas = document.getElementById('canvas');
+  // Die Anzeigefläche wird nur gezeichnet; Pixel liest die separate Analysefläche.
+  const ctx = canvas.getContext('2d', {colorSpace:'srgb'});
+  const viewer = document.getElementById('viewer');
+  const fileInput = document.getElementById('fileInput');
+  const placeholder = document.getElementById('placeholder');
+  const fitBtn = document.getElementById('fitBtn');
+  const globalMoveBtn=document.getElementById('globalMoveBtn');
+  const globalFitBtn=document.getElementById('globalFitBtn');
+  const globalZoom=document.getElementById('globalZoom');
+  const globalZoomVal=document.getElementById('globalZoomVal');
+  const resetBtn = document.getElementById('resetBtn');
+  const moveMode = document.getElementById('moveMode');
+  const pickerMode = document.getElementById('pickerMode');
+  const pointPickerMode = document.getElementById('pointPickerMode');
+  const colorBox = document.getElementById('colorBox');
+  const colorText = document.getElementById('colorText');
+  const hint = document.getElementById('hint');
+  const smartPickerBtn = document.getElementById('smartPickerBtn');
+  const familiesReset = document.getElementById('familiesReset');
+  const smartColorBox = document.getElementById('smartColorBox');
+  const smartColorText = document.getElementById('smartColorText');
+  const familySliders = [...document.querySelectorAll('.familySlider')];
+  const familyValues = {red:100,orange:100,yellow:100,green:100,cyan:100,blue:100,violet:100,magenta:100};
+  const pickerCircle = document.getElementById('pickerCircle');
+  const pickerRadius = document.getElementById('pickerRadius');
+  const pickerRadiusVal = document.getElementById('pickerRadiusVal');
+  const areaPickerBtn = document.getElementById('areaPickerBtn');
+  const smartAreaPickerBtn = document.getElementById('smartAreaPickerBtn');
+  const mediumOilBtn = document.getElementById('mediumOilBtn');
+  const mediumWaterBtn = document.getElementById('mediumWaterBtn');
+  const mediumAcrylicBtn = document.getElementById('mediumAcrylicBtn');
+  const paintPalette = document.getElementById('paintPalette');
+  const avgTargetBox = document.getElementById('avgTargetBox');
+  const smartTargetBox = document.getElementById('smartTargetBox');
+  const targetInfo = document.getElementById('targetInfo');
+  const calcMixesBtn = document.getElementById('calcMixesBtn');
+  const pickerColorTolerance=document.getElementById('pickerColorTolerance');
+  const pickerColorToleranceVal=document.getElementById('pickerColorToleranceVal');
+  const pickerShowOnlyBtn=document.getElementById('pickerShowOnlyBtn');
+  const pickerShowAllBtn=document.getElementById('pickerShowAllBtn');
+  const toneOriginalBlend=document.getElementById('toneOriginalBlend');
+  const toneOriginalColorBtn=document.getElementById('toneOriginalColorBtn');
+  const toneOriginalGrayBtn=document.getElementById('toneOriginalGrayBtn');
+  let toneOriginalModeValue='color';
+
+  function setToneOriginalMode(mode){
+    toneOriginalModeValue = mode==='gray' ? 'gray' : 'color';
+    if(toneOriginalColorBtn){
+      toneOriginalColorBtn.classList.toggle('active',toneOriginalModeValue==='color');
+      toneOriginalColorBtn.classList.toggle('secondary',toneOriginalModeValue!=='color');
+    }
+    if(toneOriginalGrayBtn){
+      toneOriginalGrayBtn.classList.toggle('active',toneOriginalModeValue==='gray');
+      toneOriginalGrayBtn.classList.toggle('secondary',toneOriginalModeValue!=='gray');
+    }
+    if(toneOriginalBlend && Number(toneOriginalBlend.value)===0){
+      toneOriginalBlend.value='50';
+      setOriginalBlend(50,'tone');
+    }else{ draw(); }
+  }
+  const toneOriginalBlendVal=document.getElementById('toneOriginalBlendVal');
+  const isolationOriginalBlend=document.getElementById('isolationOriginalBlend');
+  const isolationOriginalBlendVal=document.getElementById('isolationOriginalBlendVal');
+  const mixResults = document.getElementById('mixResults');
+  const BASE_SUGGESTIONS_KEY='atelierai-show-base-mixes-v1';
+  let showBaseSuggestions=false;
+  try{showBaseSuggestions=localStorage.getItem(BASE_SUGGESTIONS_KEY)==='true';}catch(e){}
+  function syncBaseSuggestionSwitches(){
+    for(const id of ['showBaseMixesStudio','showBaseMixesSurface']){
+      const field=document.getElementById(id);
+      if(field)field.checked=showBaseSuggestions;
+    }
+    document.getElementById('surfaceAdvisorPanel')?.classList.toggle('show-base-suggestions',showBaseSuggestions);
+  }
+  function setBaseSuggestionsEnabled(enabled){
+    showBaseSuggestions=!!enabled;
+    try{localStorage.setItem(BASE_SUGGESTIONS_KEY,String(showBaseSuggestions));}catch(e){}
+    syncBaseSuggestionSwitches();
+    if(!showBaseSuggestions){
+      // Stop a still-running asynchronous series of shared-base suggestions.
+      surfaceBaseRevision++;
+      surfaceBaseResults.replaceChildren();
+    }else if(surfaceClusters.length){
+      renderSurfaceBase();
+    }
+    if(lastSmartColor||lastAverageColor)showMixes();
+  }
+  for(const id of ['showBaseMixesStudio','showBaseMixesSurface']){
+    document.getElementById(id)?.addEventListener('change',event=>setBaseSuggestionsEnabled(event.target.checked));
+  }
+  syncBaseSuggestionSwitches();
+  let mixSurroundArmed=false;
+  let mixSurroundMode='auto'; // auto, image, neutral, manual
+  let mixGrayLevel=null;
+  function targetGrayStage(rgb){
+    // Die Graustufe bewertet die Helligkeit; Stufe 1 ist ausschliesslich
+    // neutralem Weiss bzw. fast neutralem Weiss vorbehalten.
+    const linear=rgb.map(v=>{const c=Math.max(0,Math.min(255,v))/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;});
+    const Y=.2126*linear[0]+.7152*linear[1]+.0722*linear[2];
+    const light=Y<=.008856?903.3*Y:116*Math.cbrt(Y)-16;
+    const chroma=Math.max(...rgb)-Math.min(...rgb);
+    if(light>=96 && chroma<=12)return 1;
+    // Stufe 12 ist nur fuer Schwarz und fast neutrales Schwarz reserviert.
+    // Dunkle Buntfarben (Blau, Gruen, Braun usw.) bleiben hoechstens Stufe 11.
+    if(Math.max(...rgb)<=24 && chroma<=9 && light<=8)return 12;
+    const levels=12;
+    const step=100/levels;
+    const basic=Math.max(2,Math.min(11,1+Math.floor((100-light)/step)));
+    // Stark bunte Lichter (z. B. Gelb) duerfen nicht als Weiss erscheinen.
+    return chroma>60?Math.max(3,basic):basic;
+  }
+  function updateMixSurroundButtons(){
+    const auto=document.getElementById('mixSurroundAuto'),pick=document.getElementById('mixSurroundPick'),neutral=document.getElementById('mixSurroundGray');
+    auto.classList.toggle('active',mixSurroundMode==='auto');auto.classList.toggle('secondary',mixSurroundMode!=='auto');
+    auto.setAttribute('aria-pressed',String(mixSurroundMode==='auto'));
+    neutral.classList.toggle('active',mixSurroundMode==='neutral');neutral.classList.toggle('secondary',mixSurroundMode!=='neutral');
+    pick.classList.toggle('active',mixSurroundMode==='image');pick.classList.toggle('secondary',mixSurroundMode!=='image');
+  }
+  function setMixSurround(hex,mode=mixSurroundMode){
+    if(!/^#[0-9a-f]{6}$/i.test(hex))return;
+    mixSurroundMode=mode;
+    const rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
+    mixResults.style.setProperty('--mix-surround',hex);
+    mixResults.style.setProperty('--mix-surround-text',luminance(...rgb)>145?'#111':'#fff');
+    mixResults.style.setProperty('--mix-swatch-outline',luminance(...rgb)>145?'#333':'#eee');
+    document.getElementById('mixSurroundColor').value=hex;
+    armMixSurround(false);
+    updateMixSurroundButtons();
+    const hint=document.getElementById('mixSurroundHint');
+    hint.textContent=mode==='auto'?'Automatisch: Helligkeitsstufe '+mixGrayLevel+'/12 · Grau '+hex.toUpperCase()+' · Mischfarben unverändert.':mode==='image'?'Umgebung aus dem Foto: '+hex.toUpperCase():mode==='neutral'?'Neutralgrau #808080':'Eigene Hintergrundfarbe '+hex.toUpperCase();
+    mixResults.querySelectorAll('.mix-swatches').forEach(el=>{
+      if(mode==='auto' && mixGrayLevel!==null)el.dataset.grayLevel=String(mixGrayLevel);
+      else delete el.dataset.grayLevel;
+    });
+  }
+  function updateAutoMixSurround(target){
+    if(mixSurroundMode!=='auto'||!target)return;
+    mixGrayLevel=targetGrayStage(target);
+    // 12 wahrnehmungsbezogene Tonwertstufen einschliesslich Endpunkten:
+    // Stufe 1 = reines Weiss, Stufe 12 = reines Schwarz.
+    const levels=12;
+    const grayL=100-((mixGrayLevel-1)*(100/(levels-1)));
+    const y=grayL>8?Math.pow((grayL+16)/116,3):grayL/903.3;
+    const srgb=y<=0.0031308?12.92*y:1.055*Math.pow(y,1/2.4)-0.055;
+    const v=Math.max(0,Math.min(255,Math.round(srgb*255)));
+    setMixSurround(rgbHex([v,v,v]),'auto');
+  }
+  function armMixSurround(active){
+    mixSurroundArmed=active;
+    const button=document.getElementById('mixSurroundPick');
+    button.setAttribute('aria-pressed',String(active));
+    button.textContent=active?'Auswahl abbrechen':'Umgebung im Bild wählen';
+    if(active)document.getElementById('mixSurroundHint').textContent='Jetzt die gewünschte Umgebung im Foto antippen.';
+  }
+  function pickMixSurround(clientX,clientY){
+    const p=canvasPoint(clientX,clientY),x=Math.floor((p.x-offsetX)/scale),y=Math.floor((p.y-offsetY)/scale);
+    if(x<0||y<0||x>=sourceCanvas.width||y>=sourceCanvas.height)return;
+    const d=readImageDataSRGB(sourceCtx,x,y,1,1).data;
+    setMixSurround(rgbHex([d[0],d[1],d[2]]),'image');
+  }
+  document.getElementById('mixSurroundAuto').addEventListener('click',()=>{
+    mixSurroundMode='auto';updateAutoMixSurround(lastSmartColor||lastAverageColor);
+    updateMixSurroundButtons();
+    if(!(lastSmartColor||lastAverageColor))document.getElementById('mixSurroundHint').textContent='Grau automatisch: zuerst eine Zielfarbe mit der Pipette aufnehmen.';
+  });
+  document.getElementById('mixSurroundPick').addEventListener('click',()=>{
+    if(!loaded){document.getElementById('mixSurroundHint').textContent='Bitte zuerst ein Foto öffnen.';return;}
+    armMixSurround(!mixSurroundArmed);
+  });
+  document.getElementById('mixSurroundColor').addEventListener('input',e=>setMixSurround(e.target.value,'manual'));
+  document.getElementById('mixSurroundGray').addEventListener('click',()=>setMixSurround('#808080','neutral'));
+  updateMixSurroundButtons();
+
+  const journeyTakeStartBtn=document.getElementById('journeyTakeStartBtn');
+  const journeyTakeTargetBtn=document.getElementById('journeyTakeTargetBtn');
+  const journeyStartSwatch=document.getElementById('journeyStartSwatch');
+  const journeyTargetSwatch=document.getElementById('journeyTargetSwatch');
+  const journeyInfo=document.getElementById('journeyInfo');
+  const journeyResults=document.getElementById('journeyResults');
+  const journeyResetBtn=document.getElementById('journeyResetBtn');
+  const managePaletteBtn=document.getElementById('managePaletteBtn');
+  const paletteManager=document.getElementById('paletteManager');
+  const closePaletteBtn=document.getElementById('closePaletteBtn');
+  const paletteSearch=document.getElementById('paletteSearch');
+  const paletteChecklist=document.getElementById('paletteChecklist');
+  const selectAllColors=document.getElementById('selectAllColors');
+  const selectNoColors=document.getElementById('selectNoColors');
+  const ownedSummary=document.getElementById('ownedSummary');
+  const customColorName=document.getElementById('customColorName');
+  const customColorValue=document.getElementById('customColorValue');
+  const addCustomColor=document.getElementById('addCustomColor');
+  const customColorsList=document.getElementById('customColorsList');
+  const selectBasicColors=document.getElementById('selectBasicColors');
+  const saveStandardPalette=document.getElementById('saveStandardPalette');
+  const loadStandardPalette=document.getElementById('loadStandardPalette');
+  const deleteStandardPalette=document.getElementById('deleteStandardPalette');
+  const standardPaletteInfo=document.getElementById('standardPaletteInfo');
+
+  const pickerSource=document.getElementById('pickerSource');
+  const surfaceCircleBtn=document.getElementById('surfaceCircleBtn');
+  const surfaceRectBtn=document.getElementById('surfaceRectBtn');
+  const surfaceResetBtn=document.getElementById('surfaceResetBtn');
+  const surfaceClearMarkBtn=document.getElementById('surfaceClearMarkBtn');
+  const surfaceSize=document.getElementById('surfaceSize');
+  const surfaceSizeVal=document.getElementById('surfaceSizeVal');
+  const surfaceColorTolerance=document.getElementById('surfaceColorTolerance');
+  const surfaceColorToleranceVal=document.getElementById('surfaceColorToleranceVal');
+  const surfaceResults=document.getElementById('surfaceResults');
+  const surfaceBaseResults=document.getElementById('surfaceBaseResults');
+  const corrOriginal=document.getElementById('corrOriginal');
+  const corrResult=document.getElementById('corrResult');
+  const corrInfo=document.getElementById('corrInfo');
+  const glazeWaterBtn=document.getElementById('glazeWaterBtn');
+  const glazeOilBtn=document.getElementById('glazeOilBtn');
+  const glazeAcrylicBtn=document.getElementById('glazeAcrylicBtn');
+  const glazePalette=document.getElementById('glazePalette');
+  const glazePaletteStatus=document.getElementById('glazePaletteStatus');
+  const glazeOriginalInput=document.getElementById('glazeOriginalInput');
+  const glazePaintingInput=document.getElementById('glazePaintingInput');
+  const glazeOriginalCanvas=document.getElementById('glazeOriginalCanvas');
+  const glazePaintingCanvas=document.getElementById('glazePaintingCanvas');
+  const glazeAutoAlignBtn=document.getElementById('glazeAutoAlignBtn');
+  const glazeAlignInfo=document.getElementById('glazeAlignInfo');
+  const glazeCompareBiggerBtn=document.getElementById('glazeCompareBiggerBtn');
+  const glazeClearPointsBtn=document.getElementById('glazeClearPointsBtn');
+  const glazePointsList=document.getElementById('glazePointsList');
+  const glazeSampleRadius=document.getElementById('glazeSampleRadius');
+  const glazeSampleRadiusVal=document.getElementById('glazeSampleRadiusVal');
+  const glazeBaseSwatch=document.getElementById('glazeBaseSwatch');
+  const glazeTargetSwatch=document.getElementById('glazeTargetSwatch');
+  const glazeColorInfo=document.getElementById('glazeColorInfo');
+  const glazeMaxStrength=document.getElementById('glazeMaxStrength');
+  const glazeMaxStrengthVal=document.getElementById('glazeMaxStrengthVal');
+  const glazeCalcBtn=document.getElementById('glazeCalcBtn');
+  const glazeCalcAllBtn=document.getElementById('glazeCalcAllBtn');
+  const glazeResults=document.getElementById('glazeResults');
+  const glazeOpenFullscreenBtn=document.getElementById('glazeOpenFullscreenBtn');
+  const glazeFullscreen=document.getElementById('glazeFullscreen');
+  const glazeFsOriginalCanvas=document.getElementById('glazeFsOriginalCanvas');
+  const glazeFsPaintingCanvas=document.getElementById('glazeFsPaintingCanvas');
+  const glazeFsAutoAlign=document.getElementById('glazeFsAutoAlign');
+  const glazeFsFit=document.getElementById('glazeFsFit');
+  const glazeFsClear=document.getElementById('glazeFsClear');
+  const glazeFsClose=document.getElementById('glazeFsClose');
+  const glazeFsAlignInfo=document.getElementById('glazeFsAlignInfo');
+  const glazeFsRadius=document.getElementById('glazeFsRadius');
+  const glazeFsRadiusVal=document.getElementById('glazeFsRadiusVal');
+  const glazeFsPointInfo=document.getElementById('glazeFsPointInfo');
+
+  const corrLight=document.getElementById('corrLight');
+  const corrWarm=document.getElementById('corrWarm');
+  const corrSat=document.getElementById('corrSat');
+  const corrLightVal=document.getElementById('corrLightVal');
+  const corrWarmVal=document.getElementById('corrWarmVal');
+  const corrSatVal=document.getElementById('corrSatVal');
+  const corrTakeBtn=document.getElementById('corrTakeBtn');
+  const corrMixBtn=document.getElementById('corrMixBtn');
+  const corrResetBtn=document.getElementById('corrResetBtn');
+  const pairCalcBtn=document.getElementById('pairCalcBtn');
+  const pairResults=document.getElementById('pairResults');
+  const pairEditBox=document.getElementById('pairEditBox');
+  const pairEditBase=document.getElementById('pairEditBase');
+  const pairEditResult=document.getElementById('pairEditResult');
+  const pairEditInfo=document.getElementById('pairEditInfo');
+  const pairEditRatio=document.getElementById('pairEditRatio');
+  const pairEditRatioVal=document.getElementById('pairEditRatioVal');
+  const pairEditLight=document.getElementById('pairEditLight');
+  const pairEditLightVal=document.getElementById('pairEditLightVal');
+  const pairEditAmount=document.getElementById('pairEditAmount');
+  const pairEditAmountVal=document.getElementById('pairEditAmountVal');
+  const pairEditLighter=document.getElementById('pairEditLighter');
+  const pairEditDarker=document.getElementById('pairEditDarker');
+  const pairEditRecipe=document.getElementById('pairEditRecipe');
+  const pairEditReset=document.getElementById('pairEditReset');
+  const gridToggleBtn=document.getElementById('gridToggleBtn');
+  const gridDensity=document.getElementById('gridDensity');
+  const gridDensityVal=document.getElementById('gridDensityVal');
+  const savePngBtn=document.getElementById('savePngBtn');
+  const saveJpegBtn=document.getElementById('saveJpegBtn');
+
+  const ideaBase=document.getElementById('ideaBase');
+  const ideaResult=document.getElementById('ideaResult');
+  const ideaInfo=document.getElementById('ideaInfo');
+  const ideaLight=document.getElementById('ideaLight');
+  const ideaWarm=document.getElementById('ideaWarm');
+  const ideaSat=document.getElementById('ideaSat');
+  const ideaLightVal=document.getElementById('ideaLightVal');
+  const ideaWarmVal=document.getElementById('ideaWarmVal');
+  const ideaSatVal=document.getElementById('ideaSatVal');
+  const ideaTakeBtn=document.getElementById('ideaTakeBtn');
+  const ideaMixBtn=document.getElementById('ideaMixBtn');
+  const ideaResetBtn=document.getElementById('ideaResetBtn');
+
+
+
+  const lightSlider = document.getElementById('lightSlider');
+  const midSlider = document.getElementById('midSlider');
+  const darkSlider = document.getElementById('darkSlider');
+  const lightValue = document.getElementById('lightValue');
+  const midValue = document.getElementById('midValue');
+  const darkValue = document.getElementById('darkValue');
+
+  const toneAll = document.getElementById('toneAll');
+  const toneOnly = document.getElementById('toneOnly');
+  const toneOff = document.getElementById('toneOff');
+  const waterMode = document.getElementById('waterMode');
+  const oilMode = document.getElementById('oilMode');
+
+  const formsOriginal = document.getElementById('formsOriginal');
+  const formsSlider = document.getElementById('formsSlider');
+  const formsValue = document.getElementById('formsValue');
+  const formBtns = [...document.querySelectorAll('.formBtn')];
+
+  let img = new Image();
+  let loaded = false;
+  let scale = 1, offsetX = 0, offsetY = 0;
+  let mode = 'move';
+  // 4.54: Im normalen Pipettenwerkzeug wird standardmaessig ein Kreis gemittelt.
+  // Punktaufnahme bleibt als ausdrueckliche Alternative erhalten.
+  let pickerSampleShape = 'circle';
+  let paintMode = 'water';
+  let toneView = 'all';
+  let formLevel = 0, formsOriginalPreview = false;
+  // Das unveränderte Foto gehört zum Projekt und nicht zur aktuellen Arbeitsvorlage.
+  let originalPhoto=null,originalPhotoDataUrl=null,workingFromTemplate=false,photoLoadRevision=0;
+  let croppedFormsSnapshot=null;
+  let touches = new Map();
+  let gestureStart = null;
+  let smartPickerArmed = false;
+  let smartStart = null;
+  let areaPickerMode = null;
+  let lastAverageColor = null;
+  let lastSmartColor = null;
+
+  // Farbreise: Startfarbe bleibt gespeichert, während anschließend
+  // mit der Pipette die gewünschte Zielfarbe aufgenommen wird.
+  let journeyStartColor=null;
+  let journeyTargetColor=null;
+  let paintMedium = 'oil';
+
+  let surfaceMode=null;
+  let correctionBase=null, correctionTarget=null;
+  let correctionRecipeHint=null;
+  let correctionOriginalRecipe=null;
+  let gridEnabled=false;
+  // Second, independent overlay. Its geometry is captured before a crop, and
+  // then translated into each descendant crop's image pixel coordinates.
+  let originalGridEnabled=false;
+  let originalGridGeometry=null;
+  let gridReference=null; // Original image coordinates retained through nested crops.
+  const gridAdjust={size:100,x:0,y:0,width:100,height:100,locked:false};
+  let gridFine=true;
+  const gridCenters={size:100,x:0,y:0,width:100,height:100};
+  function gridBounds(key){return key==='x'||key==='y'?[-100,100]:[25,300];}
+  function centerGridControls(){
+    for(const key of Object.keys(gridCenters))gridCenters[key]=gridAdjust[key];
+  }
+  function nudgeGridValue(key,direction){
+    const [lo,hi]=gridBounds(key),step=key==='x'||key==='y'?.02:.1;
+    gridAdjust[key]=Math.max(lo,Math.min(hi,Math.round((gridAdjust[key]+direction*step)*100)/100));
+  }
+  // One image-relative geometry shared by drawing, export and cell selection.
+  function gridGeometry(w,h,density){
+    const ref=gridReference||{width:w,height:h,x:0,y:0,viewWidth:w,viewHeight:h};
+    const sx=w/ref.viewWidth,sy=h/ref.viewHeight;
+    const base=Math.min(ref.width,ref.height)/Math.max(2,Number(density)||8);
+    const cellX=base*gridAdjust.size/100*gridAdjust.width/100*sx;
+    const cellY=base*gridAdjust.size/100*gridAdjust.height/100*sy;
+    const cx=(ref.width*(.5+gridAdjust.x/100)-ref.x)*sx;
+    const cy=(ref.height*(.5+gridAdjust.y/100)-ref.y)*sy;
+    // In a selected/cropped image, the fine grid should divide the ORIGINAL
+    // big squares into equal parts. Two unrelated grid origins made closely
+    // spaced/doubled and uneven-looking lines, especially when zoomed.
+    // The slider still controls roughly how many fine squares appear. Manual
+    // adjustment of the fine grid remains possible without snapping.
+    if(originalGridGeometry && gridAdjust.size===100 && gridAdjust.x===0 && gridAdjust.y===0 &&
+       gridAdjust.width===100 && gridAdjust.height===100 &&
+       originalGridGeometry.cellX>0 && originalGridGeometry.cellY>0){
+      const old=originalGridGeometry;
+      const stepX=old.cellX/Math.max(1,Math.round(old.cellX/cellX));
+      const stepY=old.cellY/Math.max(1,Math.round(old.cellY/cellY));
+      const wrap=(v,step)=>((v%step)+step)%step;
+      return {cellX:stepX,cellY:stepY,firstX:wrap(old.firstX,stepX),firstY:wrap(old.firstY,stepY)};
+    }
+    return {cellX,cellY,firstX:cx-Math.ceil(cx/cellX)*cellX,firstY:cy-Math.ceil(cy/cellY)*cellY};
+  }
+  function syncOriginalGridButtons(){
+    document.querySelectorAll('[data-original-grid-toggle]').forEach(button=>{
+      button.textContent=originalGridEnabled?'Ursprungsraster aus':'Ursprungsraster ein';
+      button.setAttribute('aria-pressed',String(originalGridEnabled));
+      button.classList.toggle('active',originalGridEnabled);
+      button.classList.toggle('secondary',!originalGridEnabled);
+      // A source grid makes sense only AFTER a grid/zoom area was selected.
+      button.disabled=!originalGridGeometry;
+      button.title=originalGridGeometry?'Alte größere Rasterkästchen im Ausschnitt anzeigen oder ausblenden':'Erst einen Bildausschnitt als Malvorlage übernehmen.';
+    });
+  }
+  // Grid lines are stored in CURRENT source-image coordinates, not viewer
+  // coordinates. Panning/zooming uses the common image transform.
+  function croppedGridGeometry(geometry,box){
+    const wrap=(v,step)=>((v%step)+step)%step;
+    return {
+      cellX:geometry.cellX,cellY:geometry.cellY,
+      firstX:wrap(geometry.firstX-box.x,geometry.cellX),
+      firstY:wrap(geometry.firstY-box.y,geometry.cellY)
+    };
+  }
+  function rememberOriginalGridForCrop(box){
+    const geometry=originalGridGeometry||gridGeometry(sourceCanvas.width,sourceCanvas.height,gridDensity.value);
+    const wasCaptured=!!originalGridGeometry;
+    originalGridGeometry=croppedGridGeometry(geometry,box);
+    // When the first crop is made, show the previous big squares by default
+    // if the normal grid was visible. Respect an existing manual off setting.
+    if(!wasCaptured)originalGridEnabled=gridEnabled;
+    syncOriginalGridButtons();
+  }
+  document.querySelectorAll('[data-original-grid-toggle]').forEach(button=>button.addEventListener('click',()=>{
+    if(!loaded||!originalGridGeometry)return;
+    originalGridEnabled=!originalGridEnabled;
+    syncOriginalGridButtons();draw();studioDirty();
+  }));
+  syncOriginalGridButtons();
+  function syncGridAdjust(){
+    document.querySelectorAll('[data-grid-adjust]').forEach(el=>{
+      const key=el.dataset.gridAdjust,[lo,hi]=gridBounds(key);
+      // Fine travel spans 20 percentage points instead of 200 / 275.
+      el.min=gridFine?Math.max(lo,gridCenters[key]-10):lo;
+      el.max=gridFine?Math.min(hi,gridCenters[key]+10):hi;
+      el.step=key==='x'||key==='y'?.02:.1;
+      el.value=gridAdjust[key];el.disabled=gridAdjust.locked;
+    });
+    document.querySelectorAll('[data-grid-nudge]').forEach(el=>{el.disabled=gridAdjust.locked;});
+    document.querySelectorAll('[data-grid-precision]').forEach(el=>{el.textContent=gridFine?'Fein einstellen · langsam':'Grob einstellen · großer Bereich';el.setAttribute('aria-pressed',String(gridFine));el.disabled=gridAdjust.locked;});
+    document.querySelectorAll('[data-grid-value]').forEach(el=>{el.textContent=Number(gridAdjust[el.dataset.gridValue].toFixed(2)).toLocaleString('de-DE')+' %';});
+    document.querySelectorAll('[data-grid-lock]').forEach(el=>{el.textContent=gridAdjust.locked?'Raster lösen':'Raster fixieren';el.classList.toggle('active',gridAdjust.locked);el.setAttribute('aria-pressed',String(gridAdjust.locked));});
+    document.querySelectorAll('[data-grid-reset]').forEach(el=>{el.disabled=gridAdjust.locked;});
+    gridDensity.disabled=gridAdjust.locked;
+    document.getElementById('build32GridDensity').disabled=gridAdjust.locked;
+  }
+  function gridGeometryChanged(){
+    if(build32DetailCell){clearBuild32DetailCell();build32Manual=false;build32Selection.clear();build32Selected=null;renderBuild32(build32Direction);}
+    if(!gridEnabled)gridToggleBtn.click();
+    syncGridAdjust();syncBuild32Grid();draw();
+  }
+  let surfacePreview=null;
+  let surfaceHoverImage=null;
+  let surfaceClusters=[];
+  let surfaceSelectedIndex=null;
+  let surfaceBaseIndex=0;
+  let surfaceBaseRevision=0;
+  let surfaceRenderRevision=0;
+  let surfaceBaseRecipes=[];
+  let surfaceBaseSuggestionCache=new Map();
+  let surfaceMarkCanvas=null;
+
+  let glazeMedium='water';
+  let glazeBase=null;
+  let glazeTarget=null;
+  let glazeOriginalImg=null;
+  let glazePaintingImg=null;
+  let glazePoint=null;
+  let glazePoints=[];
+  let glazeActivePoint=-1;
+  let glazeLargeCompare=false;
+  let glazeAlign={scale:1,rotation:0,dx:0,dy:0,score:null};
+  let glazeFsView={zoom:1,panX:0,panY:0};
+  let glazeFsGesture=null;
+  let glazeFsTouches=new Map();
+
+  let ideasBase=null;
+
+
+  let sourceCanvas = document.createElement('canvas');
+  let sourceCtx = sourceCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
+  window.__atelierArtBridge = { photo:()=>({loaded,canvas:sourceCanvas}), load:(blob,done)=>loadPhoto(blob,true,done) };
+
+  let formCanvas = document.createElement('canvas');
+  let formCtx = formCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
+  let toneGrayCanvas = document.createElement('canvas');
+  let toneGrayCtx = toneGrayCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
+  function rebuildToneGrayOriginal(){
+    if(!sourceCanvas.width || !sourceCanvas.height) return;
+    toneGrayCanvas.width=sourceCanvas.width; toneGrayCanvas.height=sourceCanvas.height;
+    toneGrayCtx.drawImage(sourceCanvas,0,0);
+    const im=toneGrayCtx.getImageData(0,0,toneGrayCanvas.width,toneGrayCanvas.height);
+    const d=im.data;
+    for(let i=0;i<d.length;i+=4){
+      const y=Math.round(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2]);
+      d[i]=y; d[i+1]=y; d[i+2]=y;
+    }
+    toneGrayCtx.putImageData(im,0,0);
+  }
+
+  let toneGrayBackgroundCanvas = document.createElement('canvas');
+  let toneGrayBackgroundCtx = toneGrayBackgroundCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
+
+  let processedCanvas = document.createElement('canvas');
+  let processedCtx = processedCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
+  let originalBlendPercent=0;
+
+  // Vorzeichnung: geglättete Konturen, dünne Linien und zusammenhängende Formen.
+  // Die Analyse bleibt auf 1800 Pixel begrenzt und gibt regelmäßig die Bedienung frei.
+  async function atelierSketchEdges(rgba,w,h,details,pause){
+    const n=w*h, reduction=1-Math.max(0,Math.min(100,details))/100;
+    const sizeScale=Math.max(.45,Math.max(w,h)/1400);
+    const analysisScale=Math.max(.45,Math.max(w,h)/600);
+    const sigma=(1.1+3.6*reduction)*analysisScale;
+    // Drei gleitende Mittelwerte nähern die Gauß-Glättung in linearer Zeit an.
+    // Dadurch wird auch ein großes Foto geglättet, ohne jede Nachbarschaft
+    // für jeden Bildpunkt erneut durchsuchen zu müssen.
+    let lower=Math.floor(Math.sqrt(4*sigma*sigma+1));if(lower%2===0)lower--;
+    lower=Math.max(1,lower);
+    const lowerPasses=Math.round((12*sigma*sigma-3*lower*lower-12*lower-9)/(-4*lower-4));
+    const gray=new Float32Array(n),temp=new Float32Array(n),smooth=new Float32Array(n),coarse=new Float32Array(n),darkContrast=new Float32Array(n);
+    for(let i=0,j=0;i<n;i++,j+=4){
+      const alpha=rgba[j+3]/255;
+      gray[i]=(.2126*rgba[j]+.7152*rgba[j+1]+.0722*rgba[j+2])*alpha+255*(1-alpha);
+    }
+    let input=gray;
+    await pause();
+    for(let pass=0;pass<3;pass++){
+      const radius=((pass<lowerPasses?lower:lower+2)-1)/2,divisor=2*radius+1;
+      for(let y=0;y<h;y++){
+        const row=y*w;let value=input[row]*(radius+1);
+        for(let k=1;k<=radius;k++)value+=input[row+Math.min(w-1,k)];
+        for(let x=0;x<w;x++){
+          temp[row+x]=value/divisor;
+          value+=input[row+Math.min(w-1,x+radius+1)]-input[row+Math.max(0,x-radius)];
+        }
+        if(y%100===99)await pause();
+      }
+      for(let x=0;x<w;x++){
+        let value=temp[x]*(radius+1);
+        for(let k=1;k<=radius;k++)value+=temp[Math.min(h-1,k)*w+x];
+        for(let y=0;y<h;y++){
+          smooth[y*w+x]=value/divisor;
+          value+=temp[Math.min(h-1,y+radius+1)*w+x]-temp[Math.max(0,y-radius)*w+x];
+        }
+        if(x%100===99)await pause();
+      }
+      input=smooth;
+    }
+
+    // Zweite, gröbere Ansicht: dunkle, zusammenhängende Formzüge wie Augen,
+    // Mundwinkel, Lockenbänder und Wellenkämme erhalten dadurch Priorität.
+    const coarseRadius=Math.max(2,Math.round((4+7*reduction)*analysisScale));
+    const coarseDivisor=2*coarseRadius+1;
+    for(let y=0;y<h;y++){
+      const row=y*w;let value=smooth[row]*(coarseRadius+1);
+      for(let k=1;k<=coarseRadius;k++)value+=smooth[row+Math.min(w-1,k)];
+      for(let x=0;x<w;x++){
+        temp[row+x]=value/coarseDivisor;
+        value+=smooth[row+Math.min(w-1,x+coarseRadius+1)]-smooth[row+Math.max(0,x-coarseRadius)];
+      }
+      if(y%100===99)await pause();
+    }
+    for(let x=0;x<w;x++){
+      let value=temp[x]*(coarseRadius+1);
+      for(let k=1;k<=coarseRadius;k++)value+=temp[Math.min(h-1,k)*w+x];
+      for(let y=0;y<h;y++){
+        coarse[y*w+x]=value/coarseDivisor;
+        value+=temp[Math.min(h-1,y+coarseRadius+1)*w+x]-temp[Math.max(0,y-coarseRadius)*w+x];
+      }
+    }
+
+    const magnitude=new Float32Array(n), direction=new Uint8Array(n);
+    for(let y=1;y<h-1;y++){
+      for(let x=1;x<w-1;x++){
+        const i=y*w+x;
+        const gx=-smooth[i-w-1]+smooth[i-w+1]-2*smooth[i-1]+2*smooth[i+1]-smooth[i+w-1]+smooth[i+w+1];
+        const gy=-smooth[i-w-1]-2*smooth[i-w]-smooth[i-w+1]+smooth[i+w-1]+2*smooth[i+w]+smooth[i+w+1];
+        magnitude[i]=Math.hypot(gx,gy)*analysisScale;
+        darkContrast[i]=Math.max(0,coarse[i]-smooth[i]);
+        const ax=Math.abs(gx),ay=Math.abs(gy);
+        direction[i]=ay<ax*.41421356?0:(ax<ay*.41421356?2:(gx*gy>=0?1:3));
+      }
+      if(y%80===79)await pause();
+    }
+    const thin=new Float32Array(n),flowScore=new Uint8Array(n),histogram=new Uint32Array(1024);
+    let candidates=0;
+    for(let y=1;y<h-1;y++){
+      for(let x=1;x<w-1;x++){
+        const i=y*w+x,m=magnitude[i],d=direction[i];
+        const step=d===0?1:(d===2?w:(d===1?w+1:w-1));
+        // Einseitig strenger Vergleich vermeidet doppelte Linien auf Plateaus.
+        if(m>1 && m>=magnitude[i-step] && m>magnitude[i+step]){
+          thin[i]=m;histogram[Math.min(1023,Math.floor(m))]++;candidates++;
+        }
+      }
+      if(y%80===79)await pause();
+    }
+    const quantile=.46+reduction*.34;
+    let accumulated=0,threshold=0;
+    for(;threshold<1023;threshold++){accumulated+=histogram[threshold];if(accumulated>=candidates*quantile)break;}
+    const high=Math.max(22+reduction*20,threshold), low=high*.42;
+
+    // Eine Vorzeichnung soll dem Auge die Formführung zeigen. Einzelne
+    // Kantenpunkte aus Haarstruktur, Stoff oder Bildrauschen werden deshalb
+    // verworfen, wenn sie sich nicht in ihrer eigenen Tangentenrichtung
+    // fortsetzen. So bleiben Locken, Wellen, Falten und Gesichtskonturen als
+    // ruhige Linien erhalten.
+    for(let y=2;y<h-2;y++){
+      for(let x=2;x<w-2;x++){
+        const i=y*w+x, m=thin[i];
+        if(m<low) continue;
+        const tangent=direction[i]===0 ? 1 : direction[i]===2 ? w : direction[i]===1 ? w+1 : w-1;
+        let support=0;
+        for(let k=1;k<=5;k++){
+          if(thin[i-tangent*k]>=low) support++;
+          if(thin[i+tangent*k]>=low) support++;
+        }
+        flowScore[i]=support;
+      }
+      if(y%80===79)await pause();
+    }
+
+    const darkCut=Math.max(10,16-reduction*5);
+    const minLength=Math.max(3,Math.round((4+reduction*20)*sizeScale));
+    const seen=new Uint8Array(n),edges=new Float32Array(n),queue=new Int32Array(n);
+    let sincePause=0;
+    for(let y=1;y<h-1;y++){
+      for(let x=1;x<w-1;x++){
+        const seed=y*w+x;
+        if(seen[seed] || thin[seed]<low)continue;
+        let count=1,head=0,peak=0,flowPixels=0,featurePixels=0;
+        let x0=x,x1=x,y0=y,y1=y;
+        queue[0]=seed;seen[seed]=1;
+        while(head<count){
+          const i=queue[head++],ix=i%w,iy=(i-ix)/w;
+          peak=Math.max(peak,thin[i]);
+          if(flowScore[i]>=2) flowPixels++;
+          if(darkContrast[i]>=darkCut && thin[i]>=low*.58) featurePixels++;
+          x0=Math.min(x0,ix);x1=Math.max(x1,ix);y0=Math.min(y0,iy);y1=Math.max(y1,iy);
+          for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+            const j=i+dy*w+dx;
+            // Randpixel sind null; die Suche erreicht daher nie den Außenrand.
+            if(!seen[j] && thin[j]>=low){seen[j]=1;queue[count++]=j;}
+          }
+          if(++sincePause>=20000){sincePause=0;await pause();}
+        }
+        const span=Math.max(x1-x0+1,y1-y0+1);
+        const coherent=flowPixels>=Math.max(2,Math.round(minLength*.24)) && count>=minLength;
+        const strongFeature=peak>=high*1.55 && count>=4 && flowPixels>=1;
+        const longContour=span>=Math.max(12,Math.round(minLength*1.4)) && flowPixels>=2;
+        const darkFeature=featurePixels>=Math.max(2,Math.round(minLength*.16)) && count>=Math.max(4,Math.round(minLength*.45));
+        if(coherent || strongFeature || longContour || darkFeature){
+          for(let k=0;k<count;k++){const i=queue[k];edges[i]=.65+.35*Math.min(1,thin[i]/(high*1.5));}
+        }
+      }
+      if(y%80===79)await pause();
+    }
+    return {edges,width:w,height:h};
+  }
+
+  async function atelierSketchInk(edgeData,strength,lineWidth,pause){
+    const {edges,width:w,height:h}=edgeData;
+    const widthScale=Math.max(.65,Math.max(w,h)/1400);
+    const halfWidth=Math.max(.35,lineWidth*widthScale/2);
+    const radius=Math.ceil(halfWidth+.55);
+    const strokes=new Float32Array(w*h),rgba=new Uint8ClampedArray(w*h*4);
+    const kernel=[];
+    for(let dy=-radius;dy<=radius;dy++)for(let dx=-radius;dx<=radius;dx++){
+      const weight=Math.max(0,Math.min(1,halfWidth+.55-Math.hypot(dx,dy)));
+      if(weight>0)kernel.push([dx,dy,weight]);
+    }
+    for(let y=1;y<h-1;y++){
+      for(let x=1;x<w-1;x++){
+        const value=edges[y*w+x];if(!value)continue;
+        for(const [dx,dy,weight] of kernel){
+          const xx=x+dx,yy=y+dy;
+          if(xx>=0&&xx<w&&yy>=0&&yy<h){const j=yy*w+xx;strokes[j]=Math.max(strokes[j],value*weight);}
+        }
+      }
+      if(y%100===99)await pause();
+    }
+    const darkness=Math.max(.08,Math.min(1,strength/100));
+    for(let i=0,j=0;i<strokes.length;i++,j+=4){
+      const gray=Math.round(255*(1-strokes[i]*darkness));
+      rgba[j]=gray;rgba[j+1]=gray;rgba[j+2]=gray;rgba[j+3]=255;
+    }
+    return rgba;
+  }
+
+  const sketchDetails=document.getElementById('sketchDetails');
+  const sketchStrength=document.getElementById('sketchStrength');
+  const sketchWidth=document.getElementById('sketchWidth');
+  const sketchStatus=document.getElementById('sketchStatus');
+  const sketchSaveBtn=document.getElementById('sketchSaveBtn');
+  const sketchCompareBtn=document.getElementById('sketchCompareBtn');
+  let sketchActive=false,sketchOriginalPreview=false,sketchMedium='water';
+  let sketchCanvas=null,sketchEdgeCache=null,sketchReadyKey='',sketchImageRevision=0;
+  let sketchJob=0,sketchTimer=0,sketchBusy=false;
+  const sketchCancelled=Symbol('Vorzeichnung aktualisiert');
+
+  function sketchSettings(){
+    return {details:Number(sketchDetails.value),strength:Number(sketchStrength.value),width:Number(sketchWidth.value)};
+  }
+  function sketchKey(settings){
+    return [sketchImageRevision,settings.details,settings.strength,settings.width].join(':');
+  }
+  function syncSketchControls(){
+    document.getElementById('sketchDetailsValue').textContent=sketchDetails.value+' %';
+    document.getElementById('sketchStrengthValue').textContent=sketchStrength.value+' %';
+    document.getElementById('sketchWidthValue').textContent=Number(sketchWidth.value).toFixed(1).replace('.',',');
+    for(const [id,medium] of [['sketchWaterBtn','water'],['sketchOilBtn','oil']]){
+      const button=document.getElementById(id),active=sketchMedium===medium;
+      button.classList.toggle('active',active);button.classList.toggle('secondary',!active);
+      button.setAttribute('aria-pressed',String(active));
+    }
+    sketchCompareBtn.textContent=sketchOriginalPreview?'Zur Vorzeichnung':'Original vergleichen';
+    sketchCompareBtn.setAttribute('aria-pressed',String(sketchOriginalPreview));
+    sketchCompareBtn.disabled=!loaded;
+    sketchSaveBtn.disabled=!loaded || sketchBusy || sketchReadyKey!==sketchKey(sketchSettings());
+  }
+  function scheduleSketch(immediate=false){
+    clearTimeout(sketchTimer);sketchTimer=0;
+    const token=++sketchJob;
+    if(!loaded){sketchBusy=false;sketchStatus.textContent='Bitte zuerst ein Foto öffnen.';syncSketchControls();return;}
+    if(sketchReadyKey===sketchKey(sketchSettings())){
+      sketchBusy=false;sketchStatus.textContent='Vorzeichnung bereit.';syncSketchControls();draw();return;
+    }
+    sketchBusy=true;sketchStatus.textContent='Vorzeichnung wird berechnet …';syncSketchControls();
+    sketchTimer=setTimeout(()=>{sketchTimer=0;buildSketch(token);},immediate?0:140);
+  }
+  async function buildSketch(token){
+    const settings=sketchSettings(),key=sketchKey(settings);
+    const edgeKey=sketchImageRevision+':'+settings.details;
+    const pause=async()=>{
+      await new Promise(resolve=>setTimeout(resolve,0));
+      if(token!==sketchJob)throw sketchCancelled;
+    };
+    try{
+      if(token!==sketchJob)return;
+      let edgeData=sketchEdgeCache?.key===edgeKey?sketchEdgeCache.data:null;
+      if(!edgeData){
+        const factor=Math.min(1,1800/Math.max(sourceCanvas.width,sourceCanvas.height));
+        const w=Math.max(1,Math.round(sourceCanvas.width*factor)),h=Math.max(1,Math.round(sourceCanvas.height*factor));
+        const work=document.createElement('canvas');work.width=w;work.height=h;
+        const wc=work.getContext('2d',{willReadFrequently:true});
+        wc.fillStyle='#fff';wc.fillRect(0,0,w,h);
+        wc.imageSmoothingEnabled=true;wc.imageSmoothingQuality='high';
+        wc.drawImage(sourceCanvas,0,0,w,h);
+        const pixels=wc.getImageData(0,0,w,h);
+        await pause();
+        edgeData=await atelierSketchEdges(pixels.data,w,h,settings.details,pause);
+        if(token!==sketchJob)return;
+        sketchEdgeCache={key:edgeKey,data:edgeData};
+      }
+      const pixels=await atelierSketchInk(edgeData,settings.strength,settings.width,pause);
+      if(token!==sketchJob)return;
+      const output=document.createElement('canvas');output.width=edgeData.width;output.height=edgeData.height;
+      const oc=output.getContext('2d');
+      const image=oc.createImageData(output.width,output.height);image.data.set(pixels);oc.putImageData(image,0,0);
+      sketchCanvas=output;sketchReadyKey=key;sketchBusy=false;
+      sketchStatus.textContent='Bereit · '+output.width+' × '+output.height+' Pixel. Die Linien folgen den wichtigen Formverläufen.';
+      syncSketchControls();draw();
+    }catch(error){
+      if(error===sketchCancelled || token!==sketchJob)return;
+      sketchBusy=false;sketchStatus.textContent='Die Vorzeichnung konnte nicht erstellt werden. Bitte erneut versuchen.';
+      syncSketchControls();console.error('Vorzeichnung:',error);
+    }
+  }
+  function sketchPreset(medium){
+    sketchMedium=medium;
+    sketchDetails.value=medium==='water'?55:70;
+    sketchStrength.value=medium==='water'?38:72;
+    sketchWidth.value=medium==='water'?1:1.4;
+    sketchOriginalPreview=false;
+    scheduleSketch(true);
+  }
+  function selectSketchTool(id){
+    const next=id==='sketchPanel' || (id==='gridSavePanel' && sketchActive);
+    if(next){
+      sketchActive=true;setMode('move');scheduleSketch(true);
+    }else if(sketchActive){
+      sketchActive=false;sketchOriginalPreview=false;clearTimeout(sketchTimer);sketchTimer=0;
+      sketchJob++;sketchBusy=false;syncSketchControls();
+    }
+    draw();
+  }
+  function resetSketchImage(){
+    clearTimeout(sketchTimer);sketchTimer=0;sketchJob++;sketchImageRevision++;
+    sketchCanvas=null;sketchEdgeCache=null;sketchReadyKey='';sketchBusy=false;sketchOriginalPreview=false;
+    if(sketchActive)scheduleSketch(true);else syncSketchControls();
+  }
+  function saveSketchImage(type='image/png'){
+    if(!loaded)return;
+    if(sketchBusy || !sketchCanvas || sketchReadyKey!==sketchKey(sketchSettings())){
+      sketchStatus.textContent=sketchBusy?'Bitte warten, bis die Vorzeichnung fertig ist.':'Die Vorzeichnung wird zuerst aktualisiert …';
+      if(!sketchBusy)scheduleSketch(true);
+      return;
+    }
+    const output=document.createElement('canvas');output.width=sketchCanvas.width;output.height=sketchCanvas.height;
+    const oc=output.getContext('2d');oc.drawImage(sketchCanvas,0,0);
+    // Gleiche Rasterproportionen wie in der vergrößerten Ansicht.
+    if(gridEnabled||originalGridEnabled){
+      oc.save();oc.scale(output.width/sourceCanvas.width,output.height/sourceCanvas.height);
+      drawVisibleGrids(oc,sourceCanvas.width,sourceCanvas.height);oc.restore();
+    }
+    output.toBlob(blob=>{
+      if(!blob){sketchStatus.textContent='Speichern fehlgeschlagen. Bitte erneut versuchen.';return;}
+      const url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download='AtelierAI_Vorzeichnung_'+(sketchMedium==='water'?'Aquarell':'Oel')+(type==='image/jpeg'?'.jpg':'.png');
+      document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+    },type,.95);
+  }
+
+
+  function setOriginalBlend(value, source){
+    originalBlendPercent=Math.max(0,Math.min(100,Number(value)||0));
+    const pct=Math.round(originalBlendPercent);
+    if(source!=='tone' && toneOriginalBlend) toneOriginalBlend.value=String(pct);
+    if(source!=='isolation' && isolationOriginalBlend) isolationOriginalBlend.value=String(pct);
+    if(toneOriginalBlendVal) toneOriginalBlendVal.textContent=pct+' %';
+    if(isolationOriginalBlendVal) isolationOriginalBlendVal.textContent=pct+' %';
+    draw();
+  }
+
+
+  function rgbToHsl(r,g,b){
+    r/=255; g/=255; b/=255;
+    const max=Math.max(r,g,b), min=Math.min(r,g,b);
+    let h=0,s=0,l=(max+min)/2;
+    if(max!==min){
+      const d=max-min;
+      s=l>.5 ? d/(2-max-min) : d/(max+min);
+      switch(max){
+        case r: h=(g-b)/d+(g<b?6:0); break;
+        case g: h=(b-r)/d+2; break;
+        case b: h=(r-g)/d+4; break;
+      }
+      h*=60;
+    }
+    return [h,s*100,l*100];
+  }
+
+  function familyForHue(h){
+    if(h>=345 || h<15) return 'red';
+    if(h<45) return 'orange';
+    if(h<75) return 'yellow';
+    if(h<165) return 'green';
+    if(h<195) return 'cyan';
+    if(h<255) return 'blue';
+    if(h<315) return 'violet';
+    return 'magenta';
+  }
+
+  function applyFamilyVisibility(imageData){
+    // Die unveränderte Palette benötigt keine HSL-Berechnung pro Bildpunkt.
+    if(Object.values(familyValues).every(value=>value>=99.9)) return imageData;
+    const d=imageData.data;
+    for(let i=0;i<d.length;i+=4){
+      const r=d[i], g=d[i+1], b=d[i+2];
+      const [h,s]=rgbToHsl(r,g,b);
+      if(s<8) continue;
+      const family=familyForHue(h);
+      const amount=(familyValues[family] ?? 100)/100;
+      if(amount>=0.999) continue;
+      const lum=luminance(r,g,b);
+      d[i]=Math.round(lum+(r-lum)*amount);
+      d[i+1]=Math.round(lum+(g-lum)*amount);
+      d[i+2]=Math.round(lum+(b-lum)*amount);
+    }
+    return imageData;
+  }
+
+  function median(values){
+    const a=values.slice().sort((x,y)=>x-y);
+    const m=Math.floor(a.length/2);
+    return a.length%2 ? a[m] : (a[m-1]+a[m])/2;
+  }
+
+  // Farbtreue Mittelung:
+  // RGB-Fotos liegen in sRGB. Ein direktes arithmetisches Mitteln der
+  // 8-Bit-sRGB-Werte macht gemischte Messbereiche sichtbar zu dunkel.
+  // Deshalb für Mittelwerte zuerst in lineares Licht umrechnen und danach
+  // wieder nach sRGB zurückwandeln.
+  function srgb8ToLinear(v){
+    const c=Math.max(0,Math.min(255,v))/255;
+    return c<=0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4);
+  }
+  function linearToSrgb8(v){
+    const c=Math.max(0,Math.min(1,v));
+    const s=c<=0.0031308 ? 12.92*c : 1.055*Math.pow(c,1/2.4)-0.055;
+    return Math.round(Math.max(0,Math.min(1,s))*255);
+  }
+  function linearAverageRGB(samples, weights=null){
+    if(!samples || !samples.length) return [0,0,0];
+    let sum=[0,0,0], sw=0;
+    for(let i=0;i<samples.length;i++){
+      const w=weights ? weights[i] : 1;
+      sw+=w;
+      sum[0]+=srgb8ToLinear(samples[i][0])*w;
+      sum[1]+=srgb8ToLinear(samples[i][1])*w;
+      sum[2]+=srgb8ToLinear(samples[i][2])*w;
+    }
+    if(sw<=0) return [0,0,0];
+    return sum.map(v=>linearToSrgb8(v/sw));
+  }
+
+  // 4.55: sanfte Malton-Aufhellung einer Kreisprobe, NICHT des Originalbildes.
+  // Bei realen Fotos fallen gemittelte Schattenanteile oft dunkler aus als
+  // der für die Farbmischung gesuchte lokale Malton. Den echten Messwert
+  // zeigen wir weiter separat an. Die Punkt-Pipette bleibt exakt und neutral.
+  function painterAreaLift(rgb){
+    const lum=luminance(rgb[0],rgb[1],rgb[2]);
+    // Schatten vor allem anheben, tiefes Schwarz und Spitzlichter schonen.
+    const midFactor=Math.max(0,Math.min(1,(lum-12)/48));
+    const lightFactor=Math.max(0,Math.min(1,(224-lum)/110));
+    const gamma=1-0.13*midFactor*lightFactor;
+    return rgb.map(v=>{
+      const n=Math.max(0,Math.min(1,v/255));
+      return Math.round(Math.pow(n,gamma)*255);
+    });
+  }
+
+  function robustSmartColor(samples){
+    if(!samples.length) return null;
+    const raw=linearAverageRGB(samples);
+    if(samples.length<7) return {smart:raw,count:samples.length,filtered:samples.length};
+    const med=[0,1,2].map(ch=>median(samples.map(p=>p[ch])));
+    const rows=samples.map(p=>{
+      const dist=Math.sqrt(.30*(p[0]-med[0])**2+.59*(p[1]-med[1])**2+.11*(p[2]-med[2])**2);
+      const lum=luminance(p[0],p[1],p[2]);
+      return {p,dist,lum};
+    });
+    const md=median(rows.map(x=>x.dist));
+    const mad=median(rows.map(x=>Math.abs(x.dist-md)));
+    const limit=Math.max(10, md+Math.max(12,3.5*mad));
+    let kept=rows.filter(x=>!(((x.lum>247)||(x.lum<8)) && x.dist>limit) && x.dist<=limit*1.45);
+    if(kept.length<Math.max(3,Math.floor(samples.length*.25))) kept=rows;
+    const weights=kept.map(x=>1/(1+Math.pow(x.dist/Math.max(10,limit),2)));
+    const smart=linearAverageRGB(kept.map(x=>x.p),weights);
+    return {smart,count:samples.length,filtered:kept.length};
+  }
+
+  function showSmartColor(result){
+    if(!result) return;
+    const [r,g,b]=result.smart;
+    const hex='#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();
+    smartColorBox.style.background=`rgb(${r},${g},${b})`;
+    smartColorText.innerHTML=`RGB: ${r}, ${g}, ${b}<br>HEX: ${hex}<br>${result.filtered} von ${result.count} Messpunkten verwendet`;
+  }
+
+  function sampleSmartAt(clientX,clientY,radiusPx=10){
+    if(!loaded) return;
+    const p=canvasPoint(clientX,clientY);
+    const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
+    if(ix<0||iy<0||ix>=img.width||iy>=img.height) return;
+    const radius=Math.max(2,Math.round(radiusPx/Math.max(scale,0.01)));
+    const x0=Math.max(0,Math.floor(ix-radius)), y0=Math.max(0,Math.floor(iy-radius));
+    const x1=Math.min(img.width,Math.ceil(ix+radius)), y1=Math.min(img.height,Math.ceil(iy+radius));
+    const w=Math.max(1,x1-x0), h=Math.max(1,y1-y0);
+    const data=readImageDataSRGB(sourceContextForPicker(),x0,y0,w,h).data;
+    const samples=[];
+    const step=Math.max(1,Math.floor(Math.sqrt((w*h)/700)));
+    for(let y=0;y<h;y+=step){
+      for(let x=0;x<w;x+=step){
+        // Do not average the viewer margin when the circle crosses the photo edge.
+        if(visible){
+          const ax=((x+x0+.5)/dpr-offsetX)/scale,ay=((y+y0+.5)/dpr-offsetY)/scale;
+          if(ax<0||ay<0||ax>=img.width||ay>=img.height)continue;
+        }
+        const i=(y*w+x)*4;
+        if(data[i+3]>20) samples.push([data[i],data[i+1],data[i+2]]);
+      }
+    }
+    showSmartColor(robustSmartColor(samples));
+  }
+
+
+  // Artisan: Originalwerte sind Masstone-Bildschirmproben, KEINE gemessenen Farbmischspektren.
+  // Bei sehr dunklen Blautoenen geht im Masstone-RGB die blaue Hue verloren;
+  // ein fast neutrales Schwarz ergab dadurch faelschlich rosa Mischungen mit Weiss.
+  // Fuer diese zwei Blautoene verwenden wir vorsichtige BLAUE Farbproxies als
+  // Tint-naeherung (nicht als echte Pigmentmessung oder garantierte Mischwerte).
+  // Dioxazine Purple behaelt den violetten Proxy. Uebrige Werte unveraendert.
+  const PALETTES = {"artisan":[["Lemon Yellow",[239,173,0]],["Cadmium Yellow Light",[255,194,0]],["Cadmium Yellow Pale Hue",[247,194,9]],["Cadmium Yellow Medium",[255,161,0]],["Cadmium Yellow Hue",[255,139,0]],["Cadmium Yellow Deep Hue",[240,140,29]],["Cadmium Orange Hue",[221,63,0]],["Cadmium Red Light",[229,42,0]],["Cadmium Red Medium",[221,63,0]],["Cadmium Red Hue",[222,14,46]],["Cadmium Red Dark",[166,0,9]],["Cadmium Red Deep Hue",[171,0,5]],["Permanent Rose",[130,0,24]],["Permanent Alizarin Crimson",[74,1,16]],["Magenta",[98,4,32]],["Dioxazine Purple",[82,48,129]],["Cerulean Blue",[0,97,102]],["Cerulean Blue Hue",[0,74,91]],["Cobalt Blue",[0,39,71]],["Cobalt Blue Hue",[31,93,167]],["French Ultramarine",[8,8,32]],["Phthalo Blue (Red Shade)",[17,12,37]],["Prussian Blue",[15,11,11]],["Phthalo Green (Yellow Shade)",[0,32,24]],["Viridian Hue",[0,174,117]],["Phthalo Green (Blue Shade)",[3,26,33]],["Permanent Sap Green",[28,42,10]],["Olive Green",[54,64,34]],["Naples Yellow Hue",[237,179,100]],["Yellow Ochre",[187,128,18]],["Raw Sienna",[117,70,17]],["Indian Red",[155,58,51]],["Burnt Sienna",[58,22,14]],["Burnt Umber",[50,27,15]],["Raw Umber",[37,26,20]],["Payne's Gray",[37,58,57]],["Ivory Black",[27,28,28]],["Lamp Black",[21,21,20]],["Titanium White",[249,245,234]],["Zinc White (Mixing White)",[250,242,222]]],"horadam":[["Titan-Deckweiß",[244,243,237]],["Permanent chinesisch Weiß",[244,243,237]],["Titangelb",[220,178,55]],["Zitronengelb",[220,178,55]],["Kadmiumgelb zitron",[220,178,55]],["Chromgelbton zitron",[220,178,55]],["Vanadiumgelb",[220,178,55]],["Kadmiumgelb hell",[220,178,55]],["Reingelb",[220,178,55]],["Aureolinton",[128,128,128]],["Kadmiumgelb mittel",[220,178,55]],["Chromgelbton hell",[220,178,55]],["Lasurgelb",[220,178,55]],["Turners Gelb",[220,178,55]],["Chinacridongoldton",[194,151,61]],["Chromgelbton dunkel",[220,178,55]],["Kadmiumgelb dunkel",[220,178,55]],["Indischgelb",[220,178,55]],["Gelborange",[220,178,55]],["Kadmiumorange hell",[226,105,44]],["Chromorangeton",[226,105,44]],["Kadmiumorange dunkel",[226,105,44]],["Lasurorange",[226,105,44]],["Saturnrot",[184,55,57]],["Kadmiumrot Orange",[226,105,44]],["Permanentrot Orange",[226,105,44]],["Permanentrot",[184,55,57]],["Kadmiumrot hell",[184,55,57]],["Geranienrot",[184,55,57]],["Zinnoberrot",[184,55,57]],["Zinnoberrot hell",[184,55,57]],["Scharlachrot",[184,55,57]],["Kadmiumrot mittel",[184,55,57]],["Chinacridon Hellrot",[184,55,57]],["Lasurdunkelrot",[184,55,57]],["Kadmiumrot dunkel",[184,55,57]],["Dunkelrot",[184,55,57]],["Perylenrot tief",[184,55,57]],["Alizarin-Karmesin",[128,128,128]],["Rubinrot dunkel",[184,55,57]],["Krapplack dunkel",[128,128,128]],["Krapprot tief",[184,55,57]],["Bordeauxrot",[184,55,57]],["Krapplack Rosa",[204,87,120]],["Permanent Karmin",[184,55,57]],["Rubinrot",[184,55,57]],["Magenta",[177,48,119]],["Purpur Magenta",[177,48,119]],["Chinacridon Magenta",[177,48,119]],["Chinacridon Violett",[107,69,135]],["Potters Pink",[204,87,120]],["Perylenviolett",[107,69,135]],["Chinacridon Purpur",[177,48,119]],["Manganviolett",[107,69,135]],["Schmincke Violett",[107,69,135]],["Kobaltviolettton",[107,69,135]],["Ultramarinviolett",[107,69,135]],["Delftblau",[53,83,144]],["Indigo",[53,83,144]],["Tiefblau",[53,83,144]],["Phthalo Saphirblau",[53,83,144]],["Kobaltblau dunkel",[53,83,144]],["Franz. Ultramarin",[53,83,144]],["Ultramarin feinst",[53,83,144]],["Ultramarinblau",[53,83,144]],["Kobaltblau hell",[53,83,144]],["Kobaltblauton",[53,83,144]],["Bergblau",[53,83,144]],["Kobalt Azur",[128,128,128]],["Preußischblau",[53,83,144]],["Pariserblau",[53,83,144]],["Phthaloblau",[53,83,144]],["Coelinblauton",[53,83,144]],["Heliocoelin",[49,133,155]],["Kobaltcoelin",[49,133,155]],["Heliotürkis",[49,133,155]],["Kobalttürkis",[49,133,155]],["Kobaltgrün Türkis",[49,133,155]],["Preußischgrün",[61,112,76]],["Smaragdgrün",[61,112,76]],["Chromoxidgrün feurig",[61,112,76]],["Phthalogrün",[61,112,76]],["Heliogrün",[61,112,76]],["Permanentgrün Oliv",[61,112,76]],["Saftgrün",[61,112,76]],["Permanentgrün",[61,112,76]],["Maigrün",[61,112,76]],["Kobaltgrün rein",[61,112,76]],["Kobaltgrün tief",[61,112,76]],["Hookersgrün",[61,112,76]],["Grünoliv",[61,112,76]],["Chromoxidgrün stumpf",[61,112,76]],["Olivgrün gelblich",[220,178,55]],["Grüne Erde",[61,112,76]],["Lasurgoldgrün",[61,112,76]],["Rutilgelb",[220,178,55]],["Jaune brillant tief",[128,128,128]],["Neapelgelb",[220,178,55]],["Siena natur",[126,85,57]],["Lichter Ocker natur",[220,178,55]],["Titangoldocker",[220,178,55]],["Lichter Ocker",[220,178,55]],["Lasur Ocker",[220,178,55]],["Umbra natur",[126,85,57]],["Neapelgelb rötlich",[220,178,55]],["Spinellbraun",[126,85,57]],["Goldbraun",[126,85,57]],["Lasur Siena",[126,85,57]],["Kastanienbraun",[126,85,57]],["Siena gebrannt",[126,85,57]],["Englisch-Venezianisch Rot",[184,55,57]],["Krappbraun",[126,85,57]],["Lasurbraun",[126,85,57]],["Mahagonibraun",[126,85,57]],["Caput mortuum",[128,128,128]],["Eisenoxidbraun",[126,85,57]],["Lasur Umbra",[126,85,57]],["Umbra gebrannt",[126,85,57]],["Umbra grünlich",[61,112,76]],["Vandyckbraun",[126,85,57]],["Sepiabraun",[126,85,57]],["Sepiabraun rötlich",[126,85,57]],["Neutraltinte",[128,128,128]],["Neutralgrau",[105,108,112]],["Paynesgrau bläulich",[105,108,112]],["Perylengrün",[61,112,76]],["Schmincke Paynesgrau",[105,108,112]],["Lampenschwarz",[35,35,35]],["Elfenbeinschwarz",[35,35,35]],["Hämatitschwarz",[35,35,35]],["Anthrazit",[128,128,128]],["Graphitgrau",[105,108,112]],["Eisenoxidschwarz",[35,35,35]],["Silber",[170,173,177]],["Gold",[194,151,61]],["Brillant Opernrosa",[204,87,120]],["Brillant Purpur",[177,48,119]],["Brillant Rotviolett",[184,55,57]],["Brillant Blauviolett",[107,69,135]]],"akademie":[["Deckweiß",[244,243,237]],["Hellgelb zitron",[220,178,55]],["Kadmiumgelbton",[220,178,55]],["Indischgelb",[220,178,55]],["Orange",[226,105,44]],["Kadmiumrotton",[184,55,57]],["Brillantrot",[184,55,57]],["Dunkelrot",[184,55,57]],["Karmin",[184,55,57]],["Magenta",[177,48,119]],["Violett",[107,69,135]],["Blauviolett",[107,69,135]],["Lavendelviolett",[107,69,135]],["Dunkelblau",[53,83,144]],["Indigo",[53,83,144]],["Ultramarin",[53,83,144]],["Preußischblau",[53,83,144]],["Kobaltblauton",[53,83,144]],["Cyan",[49,133,155]],["Kobalttürkiston",[49,133,155]],["Brillantgrün",[61,112,76]],["Laubgrün",[61,112,76]],["Dunkelgrün",[61,112,76]],["Permanentgrün",[61,112,76]],["Oliv Gelbgrün",[220,178,55]],["Maigrün",[61,112,76]],["Lichter Ocker",[220,178,55]],["Neapelgelb",[220,178,55]],["Goldrosa",[204,87,120]],["Englischrot",[184,55,57]],["Siena gebrannt",[126,85,57]],["Umbra gebrannt",[126,85,57]],["Vandyckbraun",[126,85,57]],["Sepia",[126,85,57]],["Paynesgrau",[105,108,112]],["Hellgrau",[105,108,112]],["Schwarz",[35,35,35]],["Neongelb",[220,178,55]],["Neonorange",[226,105,44]],["Neonpink",[204,87,120]]]};
+
+
+  // 4.46: Korrektur des gravierenden Masstone/Tint-Fehlers.
+  // Urspruenglich Prussian Blue = [15,11,11], also rotstichig-fast-schwarz;
+  // das RGB-zu-Spektral-Modell erzeugte daraus bei Weisszugabe rosa Grau.
+  // Auch Phthalo Blue (Red Shade) war als fast violett-schwarz hinterlegt.
+  // Diese repraesentativen BLAU-Werte sind Schätzwerte fuer die Simulation;
+  // sie ersetzen keine gemessenen Weissausmischungen.
+
+  // Daler-Rowney System3 ORIGINAL Acrylic: 54 manufacturer colours (2026).
+  // Code/pigment from manufacturer; sRGB are approximate screen swatches only.
+  // Neither measured CIELAB values nor measured mixing spectra are available.
+  const SYSTEM3_INFO = {"Lemon Yellow":{"code":"651","pigments":"PY3"},"Process Yellow":{"code":"675","pigments":"PY74 PY3"},"Cadmium Yellow Hue":{"code":"620","pigments":"PY74 PY83"},"Cadmium Yellow Deep Hue":{"code":"618","pigments":"PY83"},"Cadmium Orange Light Hue":{"code":"638","pigments":"PY83 PO73"},"Cadmium Orange Hue":{"code":"619","pigments":"PR112 PY74"},"Cadmium Scarlet Hue":{"code":"511","pigments":"PR9 PY83"},"Vermilion Hue":{"code":"588","pigments":"PR9"},"Cadmium Red Hue":{"code":"503","pigments":"PR112"},"Cadmium Red Deep Hue":{"code":"504","pigments":"PR112 PR122 PR2"},"Crimson":{"code":"513","pigments":"PR170"},"Process Magenta":{"code":"412","pigments":"PV19 PR122"},"Purple":{"code":"433","pigments":"PV19 PR122"},"Velvet Purple":{"code":"418","pigments":"PR122 PW6 PV23"},"Deep Violet":{"code":"408","pigments":"PV23"},"Prussian Blue Hue":{"code":"134","pigments":"PB29 PB15 PBk7 PG7"},"Phthalo Blue":{"code":"142","pigments":"PB15 PG7"},"Ultramarine":{"code":"123","pigments":"PB29"},"Cobalt Blue Hue":{"code":"110","pigments":"PB29 PW6"},"Process Cyan":{"code":"120","pigments":"PB15:3 PG7"},"Coeruleum Blue Hue":{"code":"112","pigments":"PB15:3 PW5 PY74"},"Wedgewood":{"code":"114","pigments":"PW6 PB29 PY42"},"Phthalo Turquoise":{"code":"154","pigments":"PB15:3 PG7"},"Phthalo Green":{"code":"361","pigments":"PG7"},"Emerald":{"code":"335","pigments":"PY3 PG7"},"Leaf Green":{"code":"355","pigments":"PY3 PG7"},"Pale Olive Green":{"code":"368","pigments":"PY83 PG7"},"Sap Green":{"code":"375","pigments":"PY74 PG7 PR101"},"Hooker's Green":{"code":"352","pigments":"PG7 PR101 PY74"},"Oxide Of Chromium Green":{"code":"367","pigments":"PG17"},"Buff Titanium":{"code":"024","pigments":"PW6:1"},"Peach Pink":{"code":"578","pigments":"PW5 PY42 PR101"},"Naples Yellow":{"code":"634","pigments":"PW6 PY83 PO13"},"Yellow Ochre":{"code":"663","pigments":"PY42"},"Raw Sienna":{"code":"667","pigments":"PY42 PR101 PBk7"},"Burnt Sienna":{"code":"221","pigments":"PR101"},"Burnt Umber":{"code":"223","pigments":"PR101 PBk7"},"Raw Umber":{"code":"247","pigments":"PBr7"},"Payne's Grey":{"code":"065","pigments":"PB29 PBk11"},"Mars Black":{"code":"036","pigments":"PBk11"},"Process Black":{"code":"040","pigments":"PBk7"},"Warm Grey":{"code":"078","pigments":"PW6 PBr7 PBk11"},"Silver Imit":{"code":"702","pigments":"PW6 PBk7 PB15:3"},"Pale Gold Imit":{"code":"708","pigments":"PW6 PR101 PY83"},"Rich Gold Imit":{"code":"707","pigments":"PW6 PR101 PY83"},"Copper Imit":{"code":"230","pigments":"PR101"},"Fluorescent Yellow":{"code":"681","pigments":"Fluorescent Yellow 27"},"Fluorescent Orange":{"code":"653","pigments":"Fluorescent Orange 5"},"Fluorescent Red":{"code":"544","pigments":"Fluorescent Red 3"},"Fluorescent Pink":{"code":"538","pigments":"Fluorescent Pink 1"},"Fluorescent Blue":{"code":"100","pigments":"Fluorescent Blue 60"},"Fluorescent Green":{"code":"349","pigments":"Fluorescent Green 8"},"Zinc Mixing White":{"code":"006","pigments":"PW5"},"Titanium White":{"code":"009","pigments":"PW6"}};
+  PALETTES.system3 = [["Lemon Yellow",[242,215,12]],["Process Yellow",[239,197,9]],["Cadmium Yellow Hue",[242,186,17]],["Cadmium Yellow Deep Hue",[233,159,11]],["Cadmium Orange Light Hue",[242,127,18]],["Cadmium Orange Hue",[233,103,24]],["Cadmium Scarlet Hue",[222,73,36]],["Vermilion Hue",[216,48,35]],["Cadmium Red Hue",[205,29,32]],["Cadmium Red Deep Hue",[171,28,44]],["Crimson",[149,26,64]],["Process Magenta",[162,32,118]],["Purple",[118,37,133]],["Velvet Purple",[145,94,158]],["Deep Violet",[74,48,117]],["Prussian Blue Hue",[27,47,86]],["Phthalo Blue",[15,85,138]],["Ultramarine",[45,64,152]],["Cobalt Blue Hue",[67,111,171]],["Process Cyan",[2,148,191]],["Coeruleum Blue Hue",[82,155,182]],["Wedgewood",[133,159,185]],["Phthalo Turquoise",[0,117,133]],["Phthalo Green",[12,100,96]],["Emerald",[30,147,108]],["Leaf Green",[60,137,64]],["Pale Olive Green",[121,142,73]],["Sap Green",[76,102,50]],["Hooker's Green",[44,91,65]],["Oxide Of Chromium Green",[77,108,72]],["Buff Titanium",[224,205,173]],["Peach Pink",[235,171,148]],["Naples Yellow",[244,208,132]],["Yellow Ochre",[187,136,51]],["Raw Sienna",[165,105,54]],["Burnt Sienna",[161,71,51]],["Burnt Umber",[83,54,47]],["Raw Umber",[101,83,65]],["Payne's Grey",[55,66,83]],["Mars Black",[34,35,37]],["Process Black",[26,29,31]],["Warm Grey",[155,144,132]],["Silver Imit",[180,185,190]],["Pale Gold Imit",[197,171,110]],["Rich Gold Imit",[169,130,61]],["Copper Imit",[173,97,73]],["Fluorescent Yellow",[247,248,46]],["Fluorescent Orange",[255,104,27]],["Fluorescent Red",[246,55,61]],["Fluorescent Pink",[253,64,142]],["Fluorescent Blue",[54,128,249]],["Fluorescent Green",[91,240,67]],["Zinc Mixing White",[244,243,235]],["Titanium White",[249,249,245]]];
+  const BASIC_SYSTEM3_NAMES = new Set(['Titanium White','Lemon Yellow','Cadmium Yellow Hue','Cadmium Red Hue','Crimson','Ultramarine','Phthalo Blue','Phthalo Green','Yellow Ochre','Burnt Sienna','Burnt Umber','Mars Black']);
+
+  const ARTISAN_BLUE_TINT_PROXIES={
+    'Prussian Blue':[15,50,100],
+    'Phthalo Blue (Red Shade)':[15,46,110]
+  };
+  for(const item of PALETTES.artisan){
+    if(Object.prototype.hasOwnProperty.call(ARTISAN_BLUE_TINT_PROXIES,item[0])){
+      item[1]=ARTISAN_BLUE_TINT_PROXIES[item[0]].slice();
+    }
+  }
+
+  // 4.51: Oeffentliche Herstellerangaben, nicht aus einer fremden App extrahiert.
+  // Quelle: https://uk.winsornewton.com/pages/artisan-water-mixable-oil-colour
+  // Pigmentcodes und Deckkraft sind HERSTELLERDATEN; keine gemessenen Mischspektren.
+  // Bestehende RGB-Proxies, Farbpaletten und synthetisches Spektralmodell bleiben erhalten.
+  const ARTISAN_PIGMENTS={
+    'Lemon Yellow':['PY3','T'],
+    'Cadmium Yellow Light':['PY35','O'],
+    'Cadmium Yellow Pale Hue':['PY3 PY65','T'],
+    'Cadmium Yellow Medium':['PO20 PY35','O'],
+    'Cadmium Yellow Hue':['PY65','T'],
+    'Cadmium Yellow Deep Hue':['PO43 PY65','ST'],
+    'Cadmium Orange Hue':['PO43','ST'],
+    'Cadmium Red Light':['PR108','O'],
+    'Cadmium Red Medium':['PR108','O'],
+    'Cadmium Red Hue':['PR170 PR188','ST'],
+    'Cadmium Red Dark':['PR108','O'],
+    'Cadmium Red Deep Hue':['PO36 PR170','ST'],
+    'Permanent Rose':['PV19','T'],
+    'Permanent Alizarin Crimson':['PR179 PV19','T'],
+    'Magenta':['PR122','T'],
+    'Dioxazine Purple':['PV23','T'],
+    'Cerulean Blue':['PB35','SO'],
+    'Cerulean Blue Hue':['PB36 PW4','SO'],
+    'Cobalt Blue':['PB28','ST'],
+    'Cobalt Blue Hue':['PB29 PB60','T'],
+    'French Ultramarine':['PB29','T'],
+    'Phthalo Blue (Red Shade)':['PB15','T'],
+    'Prussian Blue':['PB27','T'],
+    'Phthalo Green (Yellow Shade)':['PG36','T'],
+    'Viridian Hue':['PG7 PY42 PY43','T'],
+    'Phthalo Green (Blue Shade)':['PG7','T'],
+    'Permanent Sap Green':['PB15 PY110','T'],
+    'Olive Green':['PBk6 PY110','T'],
+    'Naples Yellow Hue':['PR101 PW6 PY42','O'],
+    'Yellow Ochre':['PY42','O'],
+    'Raw Sienna':['PBr7 PY42','T'],
+    'Indian Red':['PR101','O'],
+    'Burnt Sienna':['PR101','T'],
+    'Burnt Umber':['PBr7','T'],
+    'Raw Umber':['PBr7','T'],
+    "Payne's Gray":['PB29 PBk6','SO'],
+    'Ivory Black':['PBk9','O'],
+    'Lamp Black':['PBk6','O'],
+    'Titanium White':['PW4 PW6','O'],
+    'Zinc White (Mixing White)':['PW4 PW6','O']
+  };
+  const OWNED_KEY='atelierai_owned_colors_v141';
+  const CUSTOM_KEY='atelierai_custom_colors_v141';
+  const STANDARD_ARTISAN_KEY='atelierai_standard_artisan_pc_v1';
+  const BASIC_ARTISAN_NAMES=new Set(['Titanium White','Lemon Yellow','Cadmium Yellow Hue','Cadmium Red Hue',
+    'Permanent Rose','French Ultramarine','Phthalo Blue (Red Shade)','Phthalo Green (Blue Shade)',
+    'Yellow Ochre','Burnt Sienna','Burnt Umber','Ivory Black']);
+  function loadOwned(){
+    try{return JSON.parse(localStorage.getItem(OWNED_KEY)||'{}')}catch(e){return {}}
+  }
+  function saveOwned(o){localStorage.setItem(OWNED_KEY,JSON.stringify(o))}
+  function loadCustom(){
+    try{return JSON.parse(localStorage.getItem(CUSTOM_KEY)||'[]')}catch(e){return []}
+  }
+  function saveCustom(c){localStorage.setItem(CUSTOM_KEY,JSON.stringify(c))}
+  function currentCatalogueKey(){return paintPalette.value}
+  function paletteId(key,name){return key+'::'+name}
+  function selectedPaletteColorsSingle(key){
+    const owned=loadOwned();
+    const base=(PALETTES[key]||[]).filter(x=>owned[paletteId(key,x[0])]===true);
+    const custom=loadCustom().filter(x=>x.enabled!==false).map(x=>[x.name,x.rgb]);
+    return base.concat(custom);
+  }
+
+  function selectedPaletteColors(key){
+    if(key==='watercolor'){
+      const h=selectedPaletteColorsSingle('horadam').map(([name,rgb])=>[name,rgb,'Horadam']);
+      const a=selectedPaletteColorsSingle('akademie').map(([name,rgb])=>[name,rgb,'Akademie']);
+      return h.concat(a);
+    }
+    return selectedPaletteColorsSingle(key);
+  }
+
+  function effectivePaletteColors(key){
+    const selected=selectedPaletteColors(key);
+    if(selected.length)return selected;
+    // Compatibility: earlier versions worked without a saved personal palette.
+    // A single selected colour remains a valid restricted palette.
+    if(key==='watercolor'){
+      return ['horadam','akademie'].flatMap(k=>PALETTES[k].map(([name,rgb])=>[name,rgb,k==='horadam'?'Horadam':'Akademie']));
+    }
+    return (PALETTES[key]||[]).filter(([name])=>key!=='artisan'||!(/black|schwarz/i.test(name))).map(([name,rgb])=>[name,rgb]);
+  }
+
+  function updateOwnedSummary(){
+    const key=currentCatalogueKey(), owned=loadOwned();
+    const n=(PALETTES[key]||[]).filter(x=>owned[paletteId(key,x[0])]===true).length;
+    const custom=loadCustom().filter(x=>x.enabled!==false).length;
+    if(!selectedPaletteColors(key).length){
+      ownedSummary.textContent='Keine persönliche Auswahl aktiv · Standardpalette für Mischvorschläge'+(key==='artisan'?' (ohne Schwarz)':key==='system3'?' (54 System3-Farben)':'');
+      return;
+    }
+    ownedSummary.textContent=(key==='artisan')?`${n} von 40 Farben aktiv${custom?` + ${custom} eigene`:''}`:
+      `Ausgewählt: ${n} von ${(PALETTES[key]||[]).length} Herstellerfarben${custom?` + ${custom} eigene`:''}. Mischungen benutzen nur diese Farben.`;
+  }
+
+  function applyBasicArtisanPalette(){
+    if(currentCatalogueKey()!=='artisan'&&currentCatalogueKey()!=='system3') return;
+    const o=loadOwned();
+    const key=currentCatalogueKey();
+    (PALETTES[key]||[]).forEach(([n])=>o[paletteId(key,n)]=(key==='system3'?BASIC_SYSTEM3_NAMES:BASIC_ARTISAN_NAMES).has(n));
+    saveOwned(o);renderPaletteChecklist();updateOwnedSummary();
+  }
+  function currentStandardPaletteKey(){
+    return currentCatalogueKey()==='system3' ? 'atelierai_standard_system3_pc_v1' : STANDARD_ARTISAN_KEY;
+  }
+  function saveStandardArtisanPalette(){
+    const key=currentCatalogueKey();
+    if(!['artisan','system3'].includes(key))return;
+    const o=loadOwned();
+    const ids=(PALETTES[key]||[]).filter(([n])=>o[paletteId(key,n)]===true).map(([n])=>n);
+    localStorage.setItem(currentStandardPaletteKey(),JSON.stringify({format:'atelier-ai-standard-palette',version:1,
+      palette_name:key==='system3'?'Daler-Rowney System3 Original':'Winsor & Newton Artisan',selected_ids:ids,updated_at:new Date().toISOString()}));
+    updateStandardPaletteInfo();
+  }
+  function loadStandardArtisanPalette(){
+    try{
+      const key=currentCatalogueKey();
+      if(!['artisan','system3'].includes(key))return;
+      const d=JSON.parse(localStorage.getItem(currentStandardPaletteKey())||'null');
+      if(!d||!Array.isArray(d.selected_ids))return;
+      const selected=new Set(d.selected_ids),owned=loadOwned();
+      (PALETTES[key]||[]).forEach(([n])=>owned[paletteId(key,n)]=selected.has(n));
+      saveOwned(owned);renderPaletteChecklist();updateOwnedSummary();updateStandardPaletteInfo();
+    }catch(e){}
+  }
+  function deleteStandardArtisanPalette(){
+    if(!['artisan','system3'].includes(currentCatalogueKey()))return;
+    localStorage.removeItem(currentStandardPaletteKey());updateStandardPaletteInfo();
+  }
+  function updateStandardPaletteInfo(){
+    try{
+      if(!['artisan','system3'].includes(currentCatalogueKey())){
+        standardPaletteInfo.textContent='Persönlicher Standard: Für Öl (Artisan) und Acryl (System3) separat speicherbar.';
+        return;
+      }
+      const d=JSON.parse(localStorage.getItem(currentStandardPaletteKey())||'null');
+      standardPaletteInfo.textContent=d&&Array.isArray(d.selected_ids)
+       ?`Persönliche Standardpalette: ${d.selected_ids.length} Farben gespeichert.`
+       :'Noch keine persönliche Standardpalette gespeichert.';
+    }catch(e){standardPaletteInfo.textContent='Noch keine persönliche Standardpalette gespeichert.'}
+  }
+
+  function renderPaletteChecklist(){
+    const key=currentCatalogueKey(), q=(paletteSearch.value||'').trim().toLowerCase(), owned=loadOwned();
+    paletteChecklist.innerHTML='';
+    (PALETTES[key]||[]).filter(x=>!q||x[0].toLowerCase().includes(q)).forEach(([name,rgb])=>{
+      const row=document.createElement('label'); row.className='palette-item';
+      const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=owned[paletteId(key,name)]===true;
+      const dot=document.createElement('span'); dot.className='palette-dot'; dot.style.background=rgbHex(paletteMixRgb(name,rgb,key));
+      const txt=document.createElement('span'); txt.textContent=key==='system3' ? name+' · Nr. '+SYSTEM3_INFO[name].code+' · '+SYSTEM3_INFO[name].pigments : name;
+      cb.addEventListener('change',()=>{const o=loadOwned();o[paletteId(key,name)]=cb.checked;saveOwned(o);updateOwnedSummary();});
+      row.append(cb,dot,txt);paletteChecklist.appendChild(row);
+    });
+    renderCustomColors();
+  }
+  function renderCustomColors(){
+    const c=loadCustom(); customColorsList.innerHTML='';
+    c.forEach((x,i)=>{
+      const row=document.createElement('div');row.className='custom-row';
+      row.innerHTML=`<span><span class="palette-dot" style="display:inline-block;vertical-align:middle;margin-right:8px;background:${rgbHex(x.rgb)}"></span>${x.name}</span>`;
+      const b=document.createElement('button');b.className='secondary';b.textContent='Löschen';
+      b.addEventListener('click',()=>{const a=loadCustom();a.splice(i,1);saveCustom(a);renderCustomColors();updateOwnedSummary();});
+      row.appendChild(b);customColorsList.appendChild(row);
+    });
+  }
+  function adaptiveDisplayColor(c){
+    return c;
+  }
+
+  function rgbHex(rgb){
+    return '#'+rgb.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('').toUpperCase();
+  }
+
+
+  // Aquarell-Palettenkorrektur:
+  // Die frühen iPad-Versionen enthielten grobe Familien-Platzhalterwerte
+  // (viele Gelb-/Rot-/Blau-Farben mit identischem RGB). Für Mischvorschläge
+  // werden die Herstellerfarben deshalb anhand ihres tatsächlichen Farbnamens
+  // differenziert. Das ersetzt die Platzhalter, ohne die gespeicherte Auswahl
+  // des Nutzers zu verändern.
+  function watercolorRepresentativeRgb(name, fallback){
+    const n=(name||'').toLowerCase();
+
+    const rules=[
+      // Weiß / Grau / Schwarz
+      [/titan.*weiß|deckweiß/, [248,247,242]],
+      [/chinesisch.*weiß/, [251,250,246]],
+      [/lampen.*schwarz|elfenbein.*schwarz|eisenoxid.*schwarz|hämatit.*schwarz/, [31,31,32]],
+      [/anthrazit|graphitgrau/, [75,79,83]],
+      [/neutralgrau|paynesgrau|payne.*grau/, [70,78,87]],
+      [/neutraltinte/, [76,70,76]],
+
+      // Rosa / Karmin / Magenta / Purpur – wichtig für Haut und Wangen
+      [/potters pink/, [184,111,111]],
+      [/krapplack rosa/, [203,83,112]],
+      [/goldrosa/, [218,122,119]],
+      [/brillant opernrosa|neonpink/, [238,66,137]],
+      [/chinacridon hellrot/, [225,62,72]],
+      [/rubinrot dunkel/, [145,38,59]],
+      [/rubinrot/, [196,45,72]],
+      [/permanent karmin|karmin/, [178,37,64]],
+      [/alizarin.*karmesin/, [145,37,54]],
+      [/krapplack dunkel/, [137,42,61]],
+      [/krapprot tief/, [160,38,59]],
+      [/lasurdunkelrot/, [139,37,48]],
+      [/bordeauxrot/, [122,38,57]],
+      [/perylenrot tief/, [157,36,43]],
+      [/dunkelrot/, [151,41,47]],
+      [/permanentrot/, [207,48,49]],
+      [/geranienrot/, [220,45,55]],
+      [/scharlachrot/, [224,51,45]],
+      [/zinnoberrot/, [221,69,48]],
+      [/kadmiumrot.*orange/, [229,83,43]],
+      [/kadmiumrot.*hell/, [222,61,48]],
+      [/kadmiumrot.*mittel/, [199,48,44]],
+      [/kadmiumrot.*dunkel/, [158,45,44]],
+      [/saturnrot/, [214,64,51]],
+      [/^magenta$/, [190,40,119]],
+      [/purpur magenta/, [167,42,112]],
+      [/chinacridon magenta/, [182,39,111]],
+      [/chinacridon purpur/, [137,49,109]],
+      [/brillant purpur/, [196,61,131]],
+      [/brillant rotviolett/, [170,56,105]],
+
+      // Violett
+      [/chinacridon violett/, [111,53,118]],
+      [/perylenviolett/, [91,46,75]],
+      [/manganviolett/, [121,72,142]],
+      [/schmincke violett/, [102,57,130]],
+      [/kobaltviolett/, [119,78,145]],
+      [/ultramarinviolett/, [89,71,148]],
+      [/blauviolett/, [83,67,145]],
+      [/lavendelviolett/, [142,125,170]],
+      [/violett/, [105,63,139]],
+
+      // Gelb
+      [/zitronengelb|kadmiumgelb zitron|chromgelbton zitron|hellgelb zitron/, [238,218,46]],
+      [/vanadiumgelb/, [239,210,41]],
+      [/reingelb/, [239,194,35]],
+      [/aureolin/, [222,183,53]],
+      [/kadmiumgelb hell/, [239,190,35]],
+      [/kadmiumgelb mittel|kadmiumgelbton/, [231,165,34]],
+      [/chromgelbton hell/, [236,180,37]],
+      [/lasurgelb/, [231,186,47]],
+      [/turners gelb/, [236,188,65]],
+      [/chinacridongold/, [190,133,49]],
+      [/chromgelbton dunkel|kadmiumgelb dunkel/, [222,142,34]],
+      [/indischgelb/, [226,157,43]],
+      [/titangelb/, [231,190,79]],
+      [/rutilgelb/, [198,170,93]],
+      [/jaune brillant/, [232,196,134]],
+      [/neapelgelb rötlich/, [218,164,113]],
+      [/neapelgelb/, [228,194,121]],
+      [/lichter ocker natur/, [190,147,82]],
+      [/titangoldocker/, [185,139,68]],
+      [/lichter ocker/, [194,145,73]],
+      [/lasur ocker/, [188,132,57]],
+      [/oliv.*gelbgrün|olivgrün gelblich/, [157,149,55]],
+
+      // Orange
+      [/gelborange/, [230,137,36]],
+      [/kadmiumorange hell/, [231,104,43]],
+      [/chromorangeton/, [220,92,42]],
+      [/kadmiumorange dunkel/, [207,76,38]],
+      [/lasurorange/, [222,91,40]],
+      [/^orange$/, [226,103,43]],
+      [/neonorange/, [245,104,45]],
+
+      // Braun / Erden
+      [/siena natur/, [170,121,73]],
+      [/umbra natur/, [112,91,69]],
+      [/spinellbraun/, [112,68,55]],
+      [/goldbraun/, [153,94,51]],
+      [/lasur siena/, [160,87,50]],
+      [/kastanienbraun/, [113,58,48]],
+      [/siena gebrannt/, [139,72,48]],
+      [/englisch.*rot|englischrot/, [158,62,50]],
+      [/krappbraun/, [113,56,53]],
+      [/lasurbraun/, [103,66,50]],
+      [/mahagonibraun/, [104,53,48]],
+      [/caput mortuum/, [91,53,65]],
+      [/eisenoxidbraun/, [105,67,53]],
+      [/lasur umbra/, [91,72,55]],
+      [/umbra gebrannt/, [91,65,52]],
+      [/vandyckbraun/, [79,62,50]],
+      [/sepiabraun rötlich/, [88,62,55]],
+      [/sepiabraun|sepia/, [77,65,56]],
+
+      // Blau
+      [/delftblau/, [39,69,111]],
+      [/indigo/, [42,57,84]],
+      [/tiefblau/, [39,60,102]],
+      [/phthalo saphirblau/, [27,70,119]],
+      [/kobaltblau dunkel/, [43,74,126]],
+      [/franz.*ultramarin/, [50,70,137]],
+      [/ultramarin feinst/, [55,76,148]],
+      [/ultramarinblau|ultramarin/, [57,78,151]],
+      [/kobaltblau hell/, [66,105,165]],
+      [/kobaltblauton/, [61,100,160]],
+      [/bergblau/, [77,123,166]],
+      [/kobalt azur/, [74,134,179]],
+      [/preußischblau/, [33,58,92]],
+      [/pariserblau/, [30,68,104]],
+      [/phthaloblau/, [27,82,126]],
+      [/coelinblauton/, [67,139,170]],
+      [/heliocoelin/, [47,137,161]],
+      [/kobaltcoelin/, [72,145,170]],
+      [/cyan/, [35,142,173]],
+
+      // Türkis
+      [/heliotürkis/, [37,145,152]],
+      [/kobalttürkis/, [64,151,154]],
+      [/kobaltgrün türkis/, [50,137,128]],
+
+      // Grün
+      [/preußischgrün/, [47,93,68]],
+      [/smaragdgrün/, [35,134,78]],
+      [/chromoxidgrün feurig/, [58,125,71]],
+      [/phthalogrün/, [25,110,78]],
+      [/heliogrün/, [35,124,78]],
+      [/permanentgrün oliv/, [89,105,56]],
+      [/saftgrün/, [84,115,65]],
+      [/permanentgrün/, [57,127,70]],
+      [/maigrün/, [116,151,62]],
+      [/kobaltgrün rein/, [61,135,96]],
+      [/kobaltgrün tief/, [50,108,80]],
+      [/hookersgrün/, [57,101,61]],
+      [/grünoliv/, [76,88,50]],
+      [/chromoxidgrün stumpf/, [73,95,66]],
+      [/grüne erde/, [92,111,78]],
+      [/lasurgoldgrün/, [107,119,51]],
+      [/umbra grünlich/, [78,84,61]],
+      [/perylengrün/, [42,69,61]],
+      [/brillantgrün/, [45,142,76]],
+      [/laubgrün/, [73,121,67]],
+      [/dunkelgrün/, [42,84,58]]
+    ];
+    for(const [rx,rgb] of rules) if(rx.test(n)) return rgb;
+    return fallback;
+  }
+
+  // Representative screen swatches, not measured pigment spectra.
+  for(const key of ['horadam','akademie']){
+    PALETTES[key]=PALETTES[key].map(([name,rgb])=>[name,watercolorRepresentativeRgb(name,rgb)]);
+  }
+
+  // Reconstructed reflectance curves, not measured Artisan pigment spectra.
+  // One shared oil model for recipes, mixing chart and mixing desk.
+  const oilColorCache=new Map();
+  function oilSpectralColor(rgb){
+    const key=rgb.join(',');
+    if(!oilColorCache.has(key)){
+      if(oilColorCache.size>512)oilColorCache.clear();
+      oilColorCache.set(key,new spectral.Color(rgb));
+    }
+    return oilColorCache.get(key);
+  }
+  // 4.52: Artisan-Rezepte leicht heller nach Praxisrueckmeldung.
+  // Die Tuben-RGB sind keine gemessenen Spektraldaten. Die Simulation
+  // schaetzt reale Mischungen zu hell ein. Daher nur die interne PROGNOSE
+  // gemischter Oelfarben im Mitteltonbereich um bis zu 6.5 CIELAB-L*
+  // abdunkeln (4.51: 5.0). Die Rezeptsuche setzt entsprechend etwas mehr
+  // helle Mischanteile ein. Das Foto, Pipette, unvermischte Tubenfarben,
+  // Aquarell und alle anderen Module bleiben unveraendert.
+  // Vorsichtige Heuristik, keine Messung: reale Farbprobe entscheidet.
+  function calibrateOilMixedMidtone(rgb){
+    const linear=rgb.map(srgb8ToLinear);
+    const Y=.2126729*linear[0]+.7151522*linear[1]+.0721750*linear[2];
+    if(!(Y>0.0088564517))return rgb;
+    const L=116*Math.cbrt(Y)-16;
+    const rise=Math.max(0,Math.min(1,(L-33)/22));
+    const fall=Math.max(0,Math.min(1,(L-88)/-18));
+    const deltaL=6.5*rise*fall;
+    if(deltaL<0.05)return rgb;
+    const darkerY=Math.pow((L-deltaL+16)/116,3);
+    const factor=darkerY/Y;
+    return linear.map(v=>linearToSrgb8(v*factor));
+  }
+
+  function pigmentMix(colors,parts,key){
+    const total=parts.reduce((a,b)=>a+Math.max(0,b),0);
+    if(!total)return [255,255,255];
+    const water=key==='watercolor'||key==='horadam'||key==='akademie';
+    if(!water){
+      const active=colors.map((rgb,i)=>[oilSpectralColor(rgb),Math.max(0,parts[i]||0)]).filter(x=>x[1]>0);
+      if(active.length===1)return active[0][0].sRGB.slice();
+      const mixed=spectral.mix(...active).sRGB.map(v=>Math.max(0,Math.min(255,Math.round(v))));
+      return key==='artisan' ? calibrateOilMixedMidtone(mixed) : mixed;
+    }
+    // Three-channel approximation: absorption for transparent washes,
+    // K/S proxy for opaque paint. No measured spectra or tinting strengths.
+    return [0,1,2].map(ch=>{
+      let value=0;
+      colors.forEach((rgb,i)=>{
+        const v=Math.max(.0001,Math.min(1,rgb[ch]/255));
+        const r=v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);
+        value+=(water?-Math.log(Math.max(.00001,r)):(1-r)*(1-r)/(2*Math.max(.00001,r)))*Math.max(0,parts[i])/total;
+      });
+      const r=water?Math.exp(-value):1/(1+value+Math.sqrt(value*value+2*value));
+      return Math.round(255*(r<=.0031308?12.92*r:1.055*Math.pow(r,1/2.4)-.055));
+    });
+  }
+
+  function washRgb(rgb,coverage){
+    return rgb.map(v=>Math.round(255+(v-255)*coverage));
+  }
+
+  function paletteMixRgb(name,rgb,paletteKey){
+    return rgb;
+  }
+
+  function opticalDensityMix(items,parts,paletteKey){
+    return pigmentMix(items.map(x=>x.rgb),parts,paletteKey);
+  }
+
+  function perceptualMixScore(target,rgb,items,paletteKey){
+    const d=deltaE76FromLab(rgbToLabFast(target),rgbToLabFast(rgb));
+    let penalty=0;
+    if(paletteKey==='watercolor'||paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie'){
+      const [th,ts,tv]=rgbToHsv(target);
+      // Bei klar rosigen/roten/magentafarbenen Zielen vermeiden wir,
+      // dass gelb-ocker-dominierte Rezepte mathematisch "gewinnen".
+      const rosy=(th>=330||th<=28) && ts>=0.12;
+      if(rosy){
+        const warmEarth=items.filter(x=>/ocker|siena|umbra|neapel|gold|gelb|orange/i.test(x.name)).length;
+        const rosePigment=items.filter(x=>/rosa|pink|karmin|krap|magenta|rot|rubin|purpur|alizarin|potters/i.test(x.name)).length;
+        if(warmEarth && !rosePigment) penalty+=18;
+        else if(warmEarth>rosePigment) penalty+=7;
+      }
+      // Zu viele Pigmente ergeben bei Aquarell schnell stumpfe Mischungen.
+      if(items.length>2) penalty+=(items.length-2)*2.5;
+    }
+    return d+penalty;
+  }
+
+  function watercolorSimilarityPct(target,rgb,items,paletteKey){
+    const d=perceptualMixScore(target,rgb,items,paletteKey);
+    return Math.max(0,Math.min(100,Math.round(100-d*1.35)));
+  }
+
+  function colorDistance(a,b){
+    return Math.sqrt(.30*(a[0]-b[0])**2+.59*(a[1]-b[1])**2+.11*(a[2]-b[2])**2);
+  }
+
+  function mixRgb(parts, colors){
+    let total=parts.reduce((a,b)=>a+b,0);
+    return [0,1,2].map(ch=>Math.round(parts.reduce((s,p,i)=>s+p*colors[i][ch],0)/total));
+  }
+
+  function similarityPct(a,b){
+    const d=deltaE76FromLab(rgbToLabFast(a),rgbToLabFast(b));
+    return Math.max(0,Math.min(100,Math.round(100-d*1.35)));
+  }
+
+  const mixResultCache=new Map();
+  function chooseWaterMixes(target, paletteKey, pal=effectivePaletteColors(paletteKey)){
+    if(pal.length<1)return[];
+    // Die vollständige Palette im Schlüssel berücksichtigt auch eigene Farben
+    // und Änderungen an der Auswahl. Kleine, begrenzte Ergebnissammlung.
+    const cacheKey=JSON.stringify([target,paletteKey,pal,[...pictureUsedIds(paletteKey)]]);
+    if(mixResultCache.has(cacheKey)) return mixResultCache.get(cacheKey);
+    const targetLab=rgbToLabFast(target);
+    const [targetHue,targetSaturation]=rgbToHsv(target);
+    const isWater=paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie';
+    const candidates=pal.map(([name,rgb,series])=>({name,rgb,series}));
+
+    const waterRgb=new Map(), waterDensity=new Map();
+    if(isWater){
+      for(const c of candidates){
+        const rgb=paletteMixRgb(c.name,c.rgb,paletteKey);
+        waterRgb.set(c,rgb);
+        waterDensity.set(c,rgb.map(v=>-Math.log(Math.max(.015,Math.min(.995,v/255)))));
+      }
+    }
+    function candidateRgb(c){
+      return isWater ? waterRgb.get(c) : c.rgb;
+    }
+    function mixFor(items,parts){
+      return pigmentMix(items.map(c=>c.rgb),parts,paletteKey);
+    }
+    function finishMix(base){
+      let best={rgb:base,coverage:1,d:deltaE76FromLab(targetLab,rgbToLabFast(base))};
+      if(isWater){
+        // Project the target onto the white-to-pigment line, then check
+        // neighbouring printable coverage values in perceptual space.
+        let num=0,den=0;
+        for(let ch=0;ch<3;ch++){num+=(255-target[ch])*(255-base[ch]);den+=(255-base[ch])**2;}
+        const estimate=Math.max(.01,Math.min(1,Math.round(100*num/(den||1))/100));
+        for(const coverage of [...new Set([estimate,Math.max(.01,estimate-.03),Math.min(1,estimate+.03)])]){
+          const rgb=washRgb(base,coverage),d=deltaE76FromLab(targetLab,rgbToLabFast(rgb));
+          if(d<best.d)best={rgb,coverage,d};
+        }
+      }
+      return best;
+    }
+    function studioCost(rgb,items){
+      return deltaE76FromLab(targetLab,rgbToLabFast(rgb));
+    }
+    function displayPct(rgb){
+      return similarityPct(target,rgb);
+    }
+    function recipeKey(items){
+      return items.map(i=>i.name+'@'+(i.series||'')).sort().join('|');
+    }
+
+    const pool=[];
+
+    // 1 Farbe: zuerst die einfachste mögliche Lösung prüfen.
+    for(const c of candidates){
+      const finished=finishMix(candidateRgb(c)),rgb=finished.rgb;
+      pool.push({items:[c],parts:[10],coverage:finished.coverage,rgb,cost:studioCost(rgb,[c]),score:displayPct(rgb)});
+    }
+
+    // 2 Farben: ALLE Farbpaarungen und malerisch brauchbare Verhältnisse prüfen.
+    // Diese Suche entspricht bewusst der Logik der Mischpalette.
+    for(let i=0;i<candidates.length;i++){
+      for(let j=i+1;j<candidates.length;j++){
+        for(let pct=10;pct<=90;pct+=5){
+          const a=pct/100, b=1-a;
+          const finished=finishMix(mixFor([candidates[i],candidates[j]],[pct,100-pct])),rgb=finished.rgb;
+          const parts=[pct,100-pct];
+          const items=[candidates[i],candidates[j]];
+          pool.push({items,parts,coverage:finished.coverage,rgb,cost:studioCost(rgb,items),score:displayPct(rgb)});
+        }
+      }
+    }
+
+    // 3–5 Farben weiter mit Studio-Suche berechnen.
+    const nearest=[...candidates].sort((a,b)=>
+      studioCost(candidateRgb(a),[a])-studioCost(candidateRgb(b),[b])
+    ).slice(0,Math.min(18,candidates.length));
+
+    let beam=nearest.map(c=>{
+      const items=[c],parts=[10],rgb=candidateRgb(c);
+      return {items,parts,rgb,cost:studioCost(rgb,items),score:displayPct(rgb)};
+    }).sort((a,b)=>a.cost-b.cost).slice(0,30);
+
+    for(let count=2;count<=3;count++){
+      const next=[];
+      for(const state of beam){
+        const used=new Set(state.items.map(x=>x.name+'|'+(x.series||'')));
+        for(const c of nearest){
+          if(used.has(c.name+'|'+(c.series||'')))continue;
+          for(const add of [1,2,3,4,5,6,8,10]){
+            const items=state.items.concat([c]);
+            const parts=state.parts.concat([add]);
+            const finished=finishMix(mixFor(items,parts)),rgb=finished.rgb;
+            const cost=studioCost(rgb,items);
+            next.push({items,parts,coverage:finished.coverage,rgb,cost,score:displayPct(rgb)});
+          }
+        }
+      }
+      next.sort((a,b)=>a.cost-b.cost);
+      const seen=new Set(),trim=[];
+      for(const x of next){
+        const key=x.rgb.map(v=>Math.round(v/3)).join(',')+'|'+recipeKey(x.items);
+        if(seen.has(key))continue;
+        seen.add(key);trim.push(x);
+        if(trim.length>=48)break;
+      }
+      if(!trim.length)break;
+      beam=trim;
+      if(count>=3) pool.push(...beam.slice(0,20));
+    }
+
+    // Pro Rezept nur die beste Variante behalten.
+    const bestByRecipe=new Map();
+    for(const x of pool){
+      const key=recipeKey(x.items);
+      const old=bestByRecipe.get(key);
+      if(!old || x.score>old.score || (x.score===old.score && x.cost<old.cost)){
+        bestByRecipe.set(key,x);
+      }
+    }
+
+    const recipes=[...bestByRecipe.values()];
+
+    // 4.12: Eine um bis zu 5 Prozentpunkte ungenauere Mischung mit
+    // weniger Tubenfarben wird einer komplexeren Lösung vorgezogen.
+    // Beste einfache Mischung bestimmen.
+    const best1=Math.max(-1,...recipes.filter(x=>x.items.length===1).map(x=>x.score));
+    const best2=Math.max(-1,...recipes.filter(x=>x.items.length===2).map(x=>x.score));
+    const bestSimple=Math.max(best1,best2);
+
+    // 3–5 Farben nur dann zulassen, wenn sie die beste 1-/2-Farben-Lösung
+    // wirklich sichtbar verbessern (mehr als +5 Prozentpunkte).
+    const filtered=recipes.filter(x=>{
+      if(x.items.length<=2)return true;
+      return x.score>bestSimple+5;
+    });
+
+    // Innerhalb von 5 Prozentpunkten gewinnt die Mischung mit weniger Farben.
+    filtered.sort((a,b)=>{const best=Math.max(...filtered.map(x=>x.score));const nearA=a.score>=best-5,nearB=b.score>=best-5;if(nearA!==nearB)return nearA?-1:1;if(nearA&&a.items.length!==b.items.length)return a.items.length-b.items.length;return b.score-a.score||a.cost-b.cost;});
+
+
+    rankPictureRecipes(filtered,paletteKey);
+    const chosen=[];
+    for(const x of filtered){
+      const total=x.parts.reduce((a,b)=>a+b,0)||1;
+      const gcd=(a,b)=>b?gcd(b,a%b):a;
+      const divisor=x.parts.reduce(gcd);
+      const scaled=x.parts.map(v=>v/divisor);
+      chosen.push({
+        sig:recipeKey(x.items),
+        tubeIds:x.items.map(i=>pictureTubeId(paletteKey,i)),
+        names:x.items.map(i=>(isWater&&i.series)?`${i.name} (${i.series})`:i.name),
+        parts:scaled,
+        rgb:x.rgb,
+        score:x.score,referenceBest:x.referenceBest,
+        color_count:x.items.length,
+        coverage:x.coverage||1,
+        watercolor:isWater
+      });
+      if(chosen.length===3)break;
+    }
+    if(mixResultCache.size>=12) mixResultCache.delete(mixResultCache.keys().next().value);
+    mixResultCache.set(cacheKey,chosen);
+    return chosen;
+  }
+
+  // Small whole-number palette portions; zeros remove undosable trace additions.
+  function practicalOilPortions(items,weights){
+    const total=weights.reduce((a,b)=>a+b,0),seen=new Set(),out=[];
+    if(!(total>0))return out;
+    const gcd=(a,b)=>b?gcd(b,a%b):a;
+    for(const scale of [4,8,12,16,24]){
+      const rounded=weights.map(w=>Math.round(w/total*scale));
+      const kept=items.map((item,i)=>({item,part:rounded[i]})).filter(x=>x.part>0);
+      if(!kept.length)continue;
+      const divisor=kept.reduce((d,x)=>gcd(d,x.part),0);
+      const parts=kept.map(x=>x.part/divisor),indices=rounded.map((v,i)=>v>0?i:-1).filter(i=>i>=0);
+      const key=indices.join(',')+':'+parts.join(',');if(seen.has(key))continue;seen.add(key);
+      out.push({items:kept.map(x=>x.item),parts});
+    }
+    return out;
+  }
+  function chooseMixesRaw(target, paletteKey, pal=effectivePaletteColors(paletteKey)){
+    if(['watercolor','horadam','akademie'].includes(paletteKey))return chooseWaterMixes(target,paletteKey,pal);
+    if(pal.length<1)return[];
+    // Die vollständige Palette im Schlüssel berücksichtigt auch eigene Farben
+    // und Änderungen an der Auswahl. Kleine, begrenzte Ergebnissammlung.
+    const cacheKey=JSON.stringify([target,paletteKey,pal,[...pictureUsedIds(paletteKey)]]);
+    if(mixResultCache.has(cacheKey)) return mixResultCache.get(cacheKey);
+    const targetLab=rgbToLabFast(target);
+    const [targetHue,targetSaturation]=rgbToHsv(target);
+    const isWater=paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie';
+    const candidates=pal.map(([name,rgb,series])=>({name,rgb,series}));
+
+    const waterRgb=new Map(), waterDensity=new Map();
+    if(isWater){
+      for(const c of candidates){
+        const rgb=paletteMixRgb(c.name,c.rgb,paletteKey);
+        waterRgb.set(c,rgb);
+        waterDensity.set(c,rgb.map(v=>-Math.log(Math.max(.015,Math.min(.995,v/255)))));
+      }
+    }
+    function candidateRgb(c){
+      return isWater ? waterRgb.get(c) : c.rgb;
+    }
+    function mixFor(items,parts){
+      return pigmentMix(items.map(c=>c.rgb),parts,paletteKey);
+    }
+    function finishMix(base){
+      let best={rgb:base,coverage:1,d:deltaE76FromLab(targetLab,rgbToLabFast(base))};
+      if(isWater){
+        // Project the target onto the white-to-pigment line, then check
+        // neighbouring printable coverage values in perceptual space.
+        let num=0,den=0;
+        for(let ch=0;ch<3;ch++){num+=(255-target[ch])*(255-base[ch]);den+=(255-base[ch])**2;}
+        const estimate=Math.max(.01,Math.min(1,Math.round(100*num/(den||1))/100));
+        for(const coverage of [...new Set([estimate,Math.max(.01,estimate-.03),Math.min(1,estimate+.03)])]){
+          const rgb=washRgb(base,coverage),d=deltaE76FromLab(targetLab,rgbToLabFast(rgb));
+          if(d<best.d)best={rgb,coverage,d};
+        }
+      }
+      return best;
+    }
+    // Farb-Familien als konservativer Plausibilitaetscheck: Aus nur Blau+Weiss
+    // kann keine rosa Tubenmischung entstehen, auch wenn ein RGB-Spektralproxy
+    // einen irrefuehrend kleinen Abstand zum Ziel ausgibt.
+    // Dies ist KEINE ermittelte Pigment-Mischgenauigkeit. Eigene Farben bleiben
+    // unveraendert, ebenso neutrale, dunkle und gering gesaettigte Ziele.
+    const targetChroma=Math.hypot(targetLab[1],targetLab[2]);
+    const needs=((paletteKey==='artisan'||paletteKey==='system3') && targetChroma>=14 &&
+      targetLab[0]>23 && targetLab[0]<92 && targetSaturation>=.13)
+      ? (targetHue>=325||targetHue<20?'rose':
+         targetHue>=20&&targetHue<85?'warm':
+         targetHue>=85&&targetHue<190?'green':
+         targetHue>=190&&targetHue<265?'blue':'violet') : null;
+    function pigmentPlausibilityPenalty(items){
+      if(!needs || !items.length)return 0;
+      // Keine unbekannten, individuellen Pigmente falsch klassifizieren.
+      if(items.some(i=>!(/^[A-Z]+\d/.test((paletteKey==='system3'?SYSTEM3_INFO[i.name]?.pigments:'')||'')) && paletteKey==='system3'))return 0;
+      if(items.some(i=>!(paletteKey==='system3' ? SYSTEM3_INFO[i.name] : ARTISAN_PIGMENTS[i.name])))return 0;
+      const pigments=items.flatMap(i=>paletteKey==='system3'
+        ? SYSTEM3_INFO[i.name].pigments.split(' ')
+        : ARTISAN_PIGMENTS[i.name][0].split(' '));
+      const has=(re)=>pigments.some(p=>re.test(p));
+      const red=has(/^(PR|PV19$)/), yellow=has(/^(PY|PO)/),
+        blue=has(/^PB(?!k)/), green=has(/^PG/), violet=has(/^PV/);
+      const plausible=needs==='rose'?red:
+        needs==='warm'?yellow:
+        needs==='green'?(green||(blue&&yellow)):
+        needs==='blue'?(blue||(green&&violet)):
+        (violet||(red&&blue));
+      return plausible?0:36;
+    }
+    function studioCost(rgb,items){
+      return deltaE76FromLab(targetLab,rgbToLabFast(rgb))+pigmentPlausibilityPenalty(items);
+    }
+    function displayPct(rgb,items){
+      return Math.max(0,similarityPct(target,rgb)-Math.round(1.35*pigmentPlausibilityPenalty(items)));
+    }
+    function recipeKey(items){
+      return items.map(i=>i.name+'@'+(i.series||'')).sort().join('|');
+    }
+
+    const pool=[];
+
+    // 1 Farbe: zuerst die einfachste mögliche Lösung prüfen.
+    for(const c of candidates){
+      const finished=finishMix(candidateRgb(c)),rgb=finished.rgb;
+      pool.push({items:[c],parts:[10],coverage:finished.coverage,rgb,cost:studioCost(rgb,[c]),score:displayPct(rgb,[c])});
+    }
+
+    // 2 Farben: ALLE Farbpaarungen und malerisch brauchbare Verhältnisse prüfen.
+    // Diese Suche entspricht bewusst der Logik der Mischpalette.
+    for(let i=0;i<candidates.length;i++){
+      for(let j=i+1;j<candidates.length;j++){
+        for(const pct of [.5,1,2,3,5,7.5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,92.5,95,97,98,99,99.5]){
+          const a=pct/100, b=1-a;
+          const finished=finishMix(mixFor([candidates[i],candidates[j]],[pct,100-pct])),rgb=finished.rgb;
+          const parts=[pct,100-pct];
+          const items=[candidates[i],candidates[j]];
+          pool.push({items,parts,coverage:finished.coverage,rgb,cost:studioCost(rgb,items),score:displayPct(rgb,items)});
+        }
+      }
+    }
+
+    // Expand the best distinct pairs with EVERY available pigment. A pigment
+    // need not resemble the target in its unmixed state to be useful.
+    const white=c=>/white|weiß/i.test(c.name);
+    const valid=items=>items.filter(white).length<=1;
+    const seeds=[],seenPairs=new Set();
+    for(const x of [...pool].sort((a,b)=>a.cost-b.cost)){
+      if(x.items.length!==2 || !valid(x.items))continue;
+      const key=recipeKey(x.items);
+      if(seenPairs.has(key))continue;
+      seenPairs.add(key);seeds.push(x);
+      if(seeds.length===64)break;
+    }
+    const triples=new Map();
+    for(const seed of seeds){
+      const sum=seed.parts.reduce((a,b)=>a+b,0);
+      for(const c of candidates){
+        if(seed.items.includes(c))continue;
+        const items=[...seed.items,c];
+        if(!valid(items))continue;
+        for(const add of [1,3,10,30,100,250,500,750,900]){
+          const parts=[Math.round(seed.parts[0]/sum*(1000-add)),0,add];
+          parts[1]=1000-add-parts[0];
+          if(parts.some(p=>p<=0))continue;
+          const f=finishMix(mixFor(items,parts));
+          const x={items,parts,coverage:f.coverage,rgb:f.rgb,cost:studioCost(f.rgb,items),score:displayPct(f.rgb,items)};
+          const key=recipeKey(items),old=triples.get(key);
+          if(!old||x.cost<old.cost)triples.set(key,x);
+        }
+      }
+    }
+    // Refine proportions, including small doses of strong pigments.
+    for(let x of [...triples.values()].sort((a,b)=>a.cost-b.cost).slice(0,80)){
+      for(const step of [100,30,10,3,1]){
+        for(let round=0;round<12;round++){
+          let best=x;
+          for(let i=0;i<3;i++)for(let j=0;j<3;j++){
+            if(i===j||x.parts[i]<=step)continue;
+            const parts=x.parts.slice();parts[i]-=step;parts[j]+=step;
+            const f=finishMix(mixFor(x.items,parts)),cost=studioCost(f.rgb,x.items);
+            if(cost<best.cost-1e-8)best={items:x.items,parts,rgb:f.rgb,coverage:f.coverage,cost,score:displayPct(f.rgb,x.items)};
+          }
+          if(best===x)break;
+          x=best;
+        }
+      }
+      pool.push(x);
+    }
+
+    // Pro Rezept nur die beste Variante behalten.
+    const bestByRecipe=new Map();
+    for(const x of pool){
+      if(!valid(x.items))continue;
+      const key=recipeKey(x.items);
+      const old=bestByRecipe.get(key);
+      if(!old || x.score>old.score || (x.score===old.score && x.cost<old.cost)){
+        bestByRecipe.set(key,x);
+      }
+    }
+
+    const recipes=[...bestByRecipe.values()];
+
+    // Beste einfache Mischung bestimmen.
+    const best1=Math.max(-1,...recipes.filter(x=>x.items.length===1).map(x=>x.score));
+    const best2=Math.max(-1,...recipes.filter(x=>x.items.length===2).map(x=>x.score));
+    const bestSimple=Math.max(best1,best2);
+
+    // Drei Farben nur dann zulassen, wenn sie die beste 1-/2-Farben-Lösung
+    // wirklich sichtbar verbessern (mehr als +5 Prozentpunkte).
+    const filtered=recipes.filter(x=>{
+      if(x.items.length<=2)return true;
+      return x.score>bestSimple+5;
+    });
+
+    // Innerhalb von 5 Prozentpunkten gewinnt die Mischung mit weniger Farben.
+    filtered.sort((a,b)=>{const best=Math.max(...filtered.map(x=>x.score));const nearA=a.score>=best-5,nearB=b.score>=best-5;if(nearA!==nearB)return nearA?-1:1;if(nearA&&a.items.length!==b.items.length)return a.items.length-b.items.length;return b.score-a.score||a.cost-b.cost;});
+
+
+    rankPictureRecipes(filtered,paletteKey,target);
+    const practicalByRecipe=new Map();
+    // Re-evaluate the actual simplified recipe, including removed trace colors.
+    const practicalSources=[...filtered.slice(0,100),...recipes.filter(x=>x.items.length<=2)];
+    for(const x of practicalSources){
+      for(const candidate of practicalOilPortions(x.items,x.parts)){
+        const {items,parts}=candidate;if(!valid(items))continue;
+        const finished=finishMix(mixFor(items,parts));
+        const item={...x,items,parts,rgb:finished.rgb,coverage:finished.coverage,score:displayPct(finished.rgb,items),cost:studioCost(finished.rgb,items)};
+        const key=recipeKey(items),old=practicalByRecipe.get(key);
+        if(!old||item.score>old.score||(item.score===old.score&&parts.reduce((a,b)=>a+b,0)<old.parts.reduce((a,b)=>a+b,0)))practicalByRecipe.set(key,item);
+      }
+    }
+    // 3.11: optimise the printable recipe itself. Continuous optimisation
+    // followed by rounding can otherwise discard its useful small additions.
+    const evaluatePractical=(items,parts)=>{
+      const active=items.map((item,i)=>({item,part:parts[i]})).filter(v=>v.part>0);
+      items=active.map(v=>v.item);parts=active.map(v=>v.part);
+      const f=finishMix(mixFor(items,parts));
+      return {items,parts,rgb:f.rgb,coverage:f.coverage,cost:studioCost(f.rgb,items),score:displayPct(f.rgb,items)};
+    };
+    const keepPractical=x=>{
+      const key=recipeKey(x.items),old=practicalByRecipe.get(key);
+      if(!old||x.cost<old.cost-1e-8)practicalByRecipe.set(key,x);
+    };
+    const refinePractical=start=>{
+      let x=start;
+      for(let round=0;round<16;round++){
+        let best=x;
+        const total=x.parts.reduce((a,b)=>a+b,0);
+        const tryParts=parts=>{
+          if(parts.some(v=>v<0)||!parts.some(v=>v>0))return;
+          const trial=evaluatePractical(x.items,parts);
+          if(trial.cost<best.cost-1e-8)best=trial;
+        };
+        for(let i=0;i<x.parts.length;i++){
+          if(total<24){const p=x.parts.slice();p[i]++;tryParts(p);}
+          if(x.parts[i]>0){const p=x.parts.slice();p[i]--;tryParts(p);}
+          for(let j=0;j<x.parts.length;j++){
+            if(i===j||x.parts[i]<=0)continue;
+            const p=x.parts.slice();p[i]--;p[j]++;tryParts(p);
+          }
+        }
+        if(best===x)break;
+        x=best;
+      }
+      keepPractical(x);return x;
+    };
+    for(const x of [...practicalByRecipe.values()].sort((a,b)=>a.cost-b.cost).slice(0,24))refinePractical(x);
+    // A fourth tube may correct a residual hue/value error. All available
+    // pigments are eligible; keep the same maximum of 24 whole portions.
+    const additions=[];
+    for(const seed of [...practicalByRecipe.values()].sort((a,b)=>a.cost-b.cost).slice(0,8)){
+      if(seed.items.length>=4)continue;
+      for(const c of candidates){
+        if(seed.items.includes(c)||!valid([...seed.items,c]))continue;
+        for(const add of [1,2,4]){
+          const sum=seed.parts.reduce((a,b)=>a+b,0);
+          const parts=seed.parts.map(p=>Math.max(1,Math.floor(p/sum*(24-add))));
+          const x=evaluatePractical([...seed.items,c],[...parts,add]);
+          additions.push(x);keepPractical(x);
+        }
+      }
+    }
+    for(const x of additions.sort((a,b)=>a.cost-b.cost).slice(0,16))refinePractical(x);
+    const practical=[...practicalByRecipe.values()];
+    const practicalSimple=Math.max(-1,...practical.filter(x=>x.items.length<=2).map(x=>x.score));
+    const printable=practical.filter(x=>x.items.length<=2||x.score>practicalSimple+5);
+    printable.sort((a,b)=>{const best=Math.max(...printable.map(x=>x.score));const nearA=a.score>=best-5,nearB=b.score>=best-5;if(nearA!==nearB)return nearA?-1:1;if(nearA&&a.items.length!==b.items.length)return a.items.length-b.items.length;return b.score-a.score||a.cost-b.cost;});
+    rankPictureRecipes(printable,paletteKey,target);
+    const chosen=printable.slice(0,3).map(x=>({
+      sig:recipeKey(x.items),
+        tubeIds:x.items.map(i=>pictureTubeId(paletteKey,i)),
+      names:x.items.map(i=>(isWater&&i.series)?`${i.name} (${i.series})`:i.name),
+      parts:x.parts,rgb:x.rgb,score:x.score,referenceBest:x.referenceBest,color_count:x.items.length,
+      coverage:x.coverage||1,watercolor:isWater
+    }));
+    if(mixResultCache.size>=12) mixResultCache.delete(mixResultCache.keys().next().value);
+    mixResultCache.set(cacheKey,chosen);
+    return chosen;
+  }
+
+  // 3.24: named projects with independent areas, portable backups and IndexedDB storage.
+  let studioProject=null,studioBusy=false,studioManaged=true,studioURL=null;
+  const studioClone=v=>JSON.parse(JSON.stringify(v));
+  const studioId=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
+  function studioStatus(text){const e=document.getElementById('studioStatus');if(e)e.textContent=text;
+    const button=document.getElementById('studioMenu');if(button){button.title=text;button.setAttribute('aria-label','Projekt – '+text);button.textContent=/Nicht gespeichert|nicht verfügbar|fehlgeschlagen/i.test(text)?'Projekt ⚠':'Projekt';}}
+
+  let studioTimer=null,studioPending=false,studioRevision=0;
+  function studioDirty(){
+    if(!loaded)return;studioPending=true;studioRevision++;clearTimeout(studioTimer);
+    studioStatus('Änderungen werden automatisch gespeichert …');
+    studioTimer=setTimeout(studioAutoSave,6000);
+  }
+  async function studioAutoSave(){
+    if(!loaded||!studioPending)return;
+    if(studioBusy||window.atelierEditorBusy?.()){studioTimer=setTimeout(studioAutoSave,6000);return;}
+    await studioRun(studioPersist);
+  }
+  function studioRemember(){try{if(studioProject)localStorage.setItem('atelierai-last-project',studioProject.id);else localStorage.removeItem('atelierai-last-project');}catch(e){}}
+
+  function studioDB(){return new Promise((resolve,reject)=>{
+    let done=false;const finish=(error,db)=>{if(done){db?.close();return;}done=true;clearTimeout(timer);error?reject(error):resolve(db);};
+    const timer=setTimeout(()=>finish(Error('Projektspeicher antwortet nicht. Bitte erneut versuchen.')),15000);
+    let r;try{r=indexedDB.open('atelierai-studio-projects',1);}catch(e){finish(e);return;}
+    r.onupgradeneeded=()=>r.result.createObjectStore('projects',{keyPath:'id'});
+    r.onsuccess=()=>finish(null,r.result);r.onerror=()=>finish(Error('Projektspeicher ist nicht verfügbar. Bitte Projektdatei sichern.'));
+    r.onblocked=()=>finish(Error('Projektspeicher ist blockiert. Andere Atelier-Tabs schließen und erneut versuchen.'));
+  });}
+  async function studioStore(action,value){
+    const db=await studioDB();return new Promise((resolve,reject)=>{
+      let tx,done=false,result=action==='list'?[]:undefined;
+      const finish=error=>{if(done)return;done=true;clearTimeout(timer);db.close();error?reject(error):resolve(result);};
+      const timer=setTimeout(()=>{finish(Error('Projektspeicher antwortet nicht. Der aktuelle Stand bleibt geöffnet.'));try{tx?.abort();}catch(e){}},20000);
+      try{
+        tx=db.transaction('projects',['get','list'].includes(action)?'readonly':'readwrite');const store=tx.objectStore('projects');
+        tx.oncomplete=()=>finish();tx.onerror=tx.onabort=()=>finish(Error('Projektspeicher fehlgeschlagen. Der aktuelle Stand bleibt geöffnet. Bitte Projektdatei sichern.'));
+        const r=action==='put'?store.put(value):action==='delete'?store.delete(value):action==='get'?store.get(value):store.openCursor();
+        r.onsuccess=()=>{if(done)return;if(action==='list'){const c=r.result;if(c){const p=c.value;result.push({id:p.id,name:p.name,updated:p.updated,areaCount:p.areas?.length||0});c.continue();}}else result=r.result;};
+      }catch(e){finish(e);try{tx?.abort();}catch(ignore){}}
+    });
+  }
+  // Keep processing canvases within a practical iPad memory budget.
+  function studioWorkingImage(photo){
+    const f=Math.min(1,3072/Math.max(photo.width,photo.height));if(f===1)return photo;
+    const c=document.createElement('canvas');c.width=Math.max(1,Math.round(photo.width*f));c.height=Math.max(1,Math.round(photo.height*f));
+    const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(photo,0,0,c.width,c.height);return c;
+  }
+  function studioEncode(c){return new Promise((resolve,reject)=>{
+    let done=false,reader;const finish=(error,value)=>{if(done)return;done=true;clearTimeout(timer);error?reject(error):resolve(value);};
+    const timer=setTimeout(()=>{finish(Error('Bildspeicherung dauert zu lange. Bitte erneut speichern.'));try{reader?.abort();}catch(e){}},20000);
+    try{c.toBlob(blob=>{
+      if(done)return;if(!blob){finish(Error('Bild konnte nicht gespeichert werden.'));return;}
+      try{reader=new FileReader();reader.onload=()=>finish(null,reader.result);reader.onerror=reader.onabort=()=>finish(Error('Bild konnte nicht gespeichert werden.'));reader.readAsDataURL(blob);}catch(e){finish(e);}
+    },'image/png');}catch(e){finish(e);}
+  });}
+  function studioEnsure(){
+    if(!studioProject)studioProject={format:'AtelierAI-Bildprojekt',version:1,id:studioId(),name:'Mein Bild',active:0,areas:[]};
+    if(!studioProject.areas.length)studioProject.areas.push({id:studioId(),name:planBook.name||'Gesamtbild'});
+  }
+  async function studioCapture(){
+    if(!loaded)throw Error('Bitte zuerst ein Foto öffnen.');
+    studioEnsure();
+    const title=document.getElementById('studioName');if(title)studioProject.name=title.value.trim()||'Mein Bild';
+    const area=studioProject.areas[studioProject.active];
+    flushToneImage();const c=document.createElement('canvas');c.width=sourceCanvas.width;c.height=sourceCanvas.height;
+    renderCurrentArtwork(c.getContext('2d'),false);
+    const imageJob=studioEncode(c),sourceJob=studioEncode(sourceCanvas);
+    area.editor=window.atelierEditorCapture?.()||null;
+    area.plan=studioClone(planBook);area.name=planBook.name||area.name;area.palette=studioClone(picturePalette);area.medium=paintPalette.value;
+    area.view={scale,offsetX,offsetY,width:canvas.getBoundingClientRect().width,height:canvas.getBoundingClientRect().height};
+    area.grid={enabled:gridEnabled,density:gridDensity.value,adjust:{...gridAdjust},reference:gridReference?{...gridReference}:null,
+      originalEnabled:originalGridEnabled,originalGeometry:originalGridGeometry?{...originalGridGeometry}:null};
+    const [image,source]=await Promise.all([imageJob,sourceJob]);
+    area.image=image;if(source===image)delete area.source;else area.source=source;
+    // Das aktuelle Quellcanvas kann nach „Als Malvorlage übernehmen“ bereits
+    // Großformen enthalten. Deshalb die unveränderte Fotovorlage unabhängig
+    // von area.source speichern, auch für Wiederöffnen/Projektexport.
+    if(workingFromTemplate&&originalPhoto&&!originalPhotoDataUrl){
+      const first=studioWorkingImage(originalPhoto);
+      const originalCanvas=document.createElement('canvas');
+      originalCanvas.width=first.width;originalCanvas.height=first.height;
+      originalCanvas.getContext('2d').drawImage(first,0,0);
+      originalPhotoDataUrl=await studioEncode(originalCanvas);
+      originalCanvas.width=originalCanvas.height=1;
+    }
+    if(originalPhotoDataUrl)area.original=originalPhotoDataUrl;
+    else delete area.original;
+    area.templateActive=!!workingFromTemplate;
+    c.width=c.height=1;
+    studioProject.updated=Date.now();return studioProject;
+  }
+
+  async function studioPersist(){const revision=studioRevision,p=await studioCapture();await studioStore('put',p);if(revision===studioRevision){studioPending=false;clearTimeout(studioTimer);}studioRemember();studioStatus('Automatisch im Browser gespeichert · '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+'. Für eine Datei: Projekt speichern.');}
+  function studioImage(data){return new Promise((resolve,reject)=>{
+    const p=new Image();let done=false;
+    const finish=error=>{if(done)return;done=true;clearTimeout(timer);p.onload=p.onerror=null;error?reject(error):resolve(p);};
+    const timer=setTimeout(()=>{finish(Error('Projektbild lädt zu lange. Bitte erneut öffnen.'));p.src='';},20000);
+    p.onload=()=>finish();p.onerror=()=>finish(Error('Projektbild konnte nicht gelesen werden.'));p.src=data;
+  });}
+  function studioOpeningView(){
+    gridEnabled=false;
+    gridToggleBtn.textContent='Feinraster ein';gridToggleBtn.classList.remove('active');gridToggleBtn.classList.add('secondary');
+    syncBuild32Grid();fitImage();draw();
+  }
+  async function studioOpenProject(project){
+    // Open the root image, regardless of the last active area or zoom.
+    const next=studioClone(project);
+    const index=next.areas.findIndex(a=>a?.image&&!a.returnAreaId);
+    if(index<0)throw Error('Dieses Projekt enthält kein gespeichertes Gesamtbild.');
+    const area=next.areas[index];
+    if(area.fullView){
+      studioMergeCropSamples(area);
+      const full=area.fullView;full.name=area.name;full.plan.name=area.name;
+      next.areas[index]=full;
+    }
+    await studioRestore(next,index);
+    studioOpeningView();
+  }
+  async function studioRestore(project,index){
+    const a=project.areas[index];if(!a?.image)throw Error('Dieser Bereich enthält kein Bild.');
+    const photo=await studioImage(a.image); // Decode before modifying the current workspace.
+    const original=a.original?await studioImage(a.original):(a.source&&a.source!==a.image?await studioImage(a.source):photo);
+    studioProject=project;studioProject.active=index;studioManaged=true;
+    originalPhoto=original;originalPhotoDataUrl=a.original||null;
+    workingFromTemplate=!!a.templateActive&&!!a.original;
+    visibleCropWhole=null;visibleCropGrid=null;gridReference=null;
+    resetPhotoFilters();installPhoto(photo);document.dispatchEvent(new Event('atelier-reset-photo'));
+    planBook=studioClone(a.plan||{name:a.name,samples:[]});picturePalette=studioClone(a.palette||{ids:[],enabled:true});
+    planSamplePoint=null;planActiveId=null;planPlaceId=null;mixResultCache.clear();
+    if(a.medium&&[...paintPalette.options].some(o=>o.value===a.medium)){setMedium(a.medium==='artisan'?'oil':a.medium==='system3'?'acrylic':'water');paintPalette.value=a.medium;}
+    gridEnabled=!!a.grid?.enabled;if(a.grid?.density)gridDensity.value=a.grid.density;
+    const isSelectedCrop=!!(a.fullView||a.returnAreaId||a.cropMap||a.grid?.reference);
+    originalGridGeometry=isSelectedCrop&&a.grid?.originalGeometry?{...a.grid.originalGeometry}:null;
+    originalGridEnabled=!!(originalGridGeometry&&a.grid?.originalEnabled);
+    syncOriginalGridButtons();
+    gridReference=a.grid?.reference?{...a.grid.reference}:null;
+    Object.assign(gridAdjust,a.grid?.adjust||{size:100,x:0,y:0,width:100,height:100,locked:false});
+    gridDensityVal.textContent=gridDensity.value;centerGridControls();syncGridAdjust();syncBuild32Grid();syncVisibleCrop();
+    gridToggleBtn.textContent=gridEnabled?'Feinraster aus':'Feinraster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);
+    const rect=canvas.getBoundingClientRect();if(a.view&&img.width===photo.width&&Math.abs(rect.width-a.view.width)<2&&Math.abs(rect.height-a.view.height)<2){scale=a.view.scale;offsetX=a.view.offsetX;offsetY=a.view.offsetY;syncGlobalViewControls();}
+    if(a.editor)await window.atelierEditorRestore?.(a.editor);
+    studioRemember();renderPicturePalettePanels();renderPalettePlan();studioRender();draw();
+    studioStatus('Geöffnet: '+project.name+' · '+a.name+'.');
+  }
+  function studioClear(){
+    clearTimeout(studioTimer);studioPending=false;photoLoadRevision++;studioProject=null;studioRemember();studioManaged=true;planSamplePoint=null;planActiveId=null;planPlaceId=null;
+    picturePaletteEpoch++;picturePaletteId=null;picturePalette={ids:[],enabled:true};planBook={name:'Gesamtbild',samples:[]};
+    resetPhotoFilters();resetBuild32();cancelIsolation();loaded=false;img=null;originalPhoto=null;originalPhotoDataUrl=null;workingFromTemplate=false;visibleCropWhole=null;visibleCropGrid=null;gridReference=null;
+    originalGridGeometry=null;originalGridEnabled=false;syncOriginalGridButtons();
+    lastSmartColor=null;lastAverageColor=null;correctionRecipeHint=null;mixResultCache.clear();mixResults.replaceChildren();surfaceResults.replaceChildren();surfaceBaseResults.replaceChildren();surfaceBaseRevision++;surfaceBaseIndex=0;surfaceBaseRecipes=[];surfaceBaseSuggestionCache.clear();
+    sourceCanvas.width=sourceCanvas.height=1;placeholder.style.display='';fileInput.value='';
+    document.dispatchEvent(new Event('atelier-reset-photo'));renderPicturePalettePanels();renderPalettePlan();studioRender();syncVisibleCrop();draw();
+  }
+  async function studioList(){
+    const list=document.getElementById('studioSaved');if(!list)return;
+    const selected=list.value;const rows=await studioStore('list');list.replaceChildren();
+    const option=document.createElement('option');option.value='';option.textContent='Gespeichertes Projekt wählen';list.appendChild(option);
+    rows.sort((a,b)=>b.updated-a.updated).forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name+' · '+p.areaCount+' Bereiche · '+new Date(p.updated||0).toLocaleString('de-DE');list.appendChild(o);});
+    if(rows.some(p=>p.id===selected))list.value=selected;
+  }
+  async function studioRun(fn){if(studioBusy){studioStatus('Bitte kurz warten – die vorherige Aktion läuft noch.');return;}studioBusy=true;const panel=document.getElementById('studioProjects');document.querySelectorAll('#studioProjects button,#studioProjects input,#studioProjects select,#studioAreaPanel button,#studioAreaPanel input,#studioAreaPanel select').forEach(e=>{if(e.id!=='studioClose')e.disabled=true;});
+    try{await fn();}catch(e){studioStatus('Nicht gespeichert / Aktion fehlgeschlagen: '+e.message);clearTimeout(studioTimer);}finally{studioBusy=false;document.querySelectorAll('#studioProjects button,#studioProjects input,#studioProjects select,#studioAreaPanel button,#studioAreaPanel input,#studioAreaPanel select').forEach(e=>e.disabled=false);}}
+  function studioValidate(p){
+    if(p?.format!=='AtelierAI-Bildprojekt'||p.version!==1||!Array.isArray(p.areas)||!p.areas.length||p.areas.length>100)throw Error('Keine gültige AtelierAI-Bildprojektdatei.');
+    for(const a of p.areas){
+      if(typeof a.image!=='string'||!a.image.startsWith('data:image/png;base64,')||!Array.isArray(a.plan?.samples)||typeof a.name!=='string')throw Error('Ein Projektbereich ist unvollständig.');
+      for(const s of a.plan.samples){const r=s.recipe;if(!Array.isArray(s.target)||s.target.length!==3||!s.target.every(v=>Number.isFinite(v)&&v>=0&&v<=255)||!r||!Array.isArray(r.parts)||!Array.isArray(r.names)||!Array.isArray(r.tubeIds)||r.parts.length!==r.names.length||r.parts.length!==r.tubeIds.length||!r.parts.every(v=>Number.isFinite(v)&&v>0)||!Array.isArray(r.rgb)||r.rgb.length!==3)throw Error('Ungültige Farbprobe in der Projektdatei.');
+        if(s.point&&(!Number.isFinite(s.point.x)||!Number.isFinite(s.point.y)||s.point.x<0||s.point.x>1||s.point.y<0||s.point.y>1))throw Error('Ungültige Bildmarkierung.');}
+    }
+    p.id=studioId();p.name=String(p.name||'Importiertes Bild');p.active=Number.isInteger(p.active)&&p.active>=0&&p.active<p.areas.length?p.active:0;return p;
+  }
+  function studioWithoutArea(project){
+    const index=project.active,area=project.areas[index];
+    if(!area||project.areas.length<2)throw Error('Der einzige Bereich kann nicht gelöscht werden.');
+    if(index===0||project.areas.some(a=>a.returnAreaId===area.id))throw Error('Das Gesamtbild bleibt als Ausgangsbild erhalten. Bitte einen anderen Bereich wählen.');
+    const next=studioClone(project);
+    next.areas.splice(index,1);
+    const parent=next.areas.findIndex(a=>a.id===area.returnAreaId);
+    next.active=parent>=0?parent:0;next.updated=Date.now();
+    return next;
+  }
+  function studioRender(){
+    const name=document.getElementById('studioName');if(!name)return;name.value=studioProject?.name||'Mein Bild';
+    const list=document.getElementById('studioAreas');list.replaceChildren();
+    (studioProject?.areas||[{name:planBook.name||'Gesamtbild'}]).forEach((a,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=a.name;list.appendChild(o);});list.value=String(studioProject?.active||0);
+  }
+  function initStudioProjects(){
+    const panel=document.createElement('section');panel.id='studioProjects';panel.hidden=true;
+    panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Projektverwaltung');
+    panel.style.cssText='position:fixed;top:max(55px,env(safe-area-inset-top));right:12px;z-index:9999;width:min(440px,calc(100vw - 24px));max-height:80vh;overflow:auto;box-sizing:border-box;padding:14px;background:#f7f7f2;color:#222;border:1px solid #888;border-radius:12px;box-shadow:0 8px 32px #0005';
+    panel.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b>Projekt</b><button id="studioClose" class="secondary" aria-label="Projektmenü schließen">Menü schließen</button></div><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <input id="studioName" value="Mein Bild" maxlength="80" aria-label="Projektname" placeholder="Projektname">
+      <button id="studioNew" class="secondary">Neues Projekt</button>
+      <button id="studioFinish" class="secondary">Projekt schließen</button>
+      <button id="studioOpen" class="secondary">Projekt öffnen</button>
+      <button id="studioSave">Projekt speichern</button></div>
+      <p id="studioStatus" class="tiny" role="status">Foto öffnen – Änderungen werden automatisch im Browser gespeichert.</p>
+      <a id="studioDownload" hidden>Projektdatei herunterladen</a>
+      <div id="studioChooser" hidden><select id="studioSaved" aria-label="Gespeichertes Projekt"></select>
+      <button id="studioLoad">Ausgewähltes Projekt öffnen</button><button id="studioImport" class="secondary">Aus Dateien auswählen …</button>
+      <p class="tiny">Die Liste enthält Projekte in diesem Browser. Eine heruntergeladene Projektdatei öffnest du über „Aus Dateien auswählen“.</p></div>
+      <input type="file" id="studioFile" accept=".atelierprojekt,.atelierai,.json,application/json" hidden>
+      <details id="studioAreaPanel"><summary>Bereiche · eigene Bildteile</summary>
+      <label>Aktiver Bereich <select id="studioAreas"></select></label>
+      <input id="studioAreaName" placeholder="Neuer Bereich, z. B. Kleid" aria-label="Name des neuen Bereichs">
+      <button id="studioAdd" class="secondary">Bereich hinzufügen</button>
+      <button id="studioRenameArea" class="secondary">Bereich umbenennen</button>
+      <button id="studioDeleteArea" class="secondary">Bereich löschen</button>
+      <p class="tiny">Eigene Farbproben, Mischungen, Markierungen und Bildstände je Bereich. Farbbearbeitung einschließlich A/B/C und Notizen wird mitgespeichert. Andere Module werden als fertiger Bildstand gesichert; deren Regler und Rückgängig-Schritte werden nicht wiederhergestellt.</p></details>
+      <details><summary>Speicherort &amp; weitere Optionen</summary>
+      <p class="tiny">Automatisch: im Speicher dieses Browsers auf diesem Gerät, nicht als Datei. Browserdaten löschen oder ein anderer App-Pfad kann den Zugriff darauf verlieren. „Projekt speichern“ lädt eine vollständige .atelierprojekt-Datei herunter. Auf dem iPad findest du sie im eingestellten Downloadordner der Dateien-App, häufig iCloud Drive → Downloads oder Auf meinem iPad → Downloads. Bei einer Teilen-Auswahl „In Dateien sichern“ wählen. Die heruntergeladene Datei wird nicht automatisch aktualisiert: am Ende erneut „Projekt speichern“ drücken.</p>
+      <button id="studioLegacy" class="secondary">Frühere Farbproben dieses Fotos übernehmen</button>
+      <button id="studioDelete" class="secondary">Aktuelles Projekt löschen</button></details>`;
+    document.body.appendChild(panel);
+    const areaPanel=panel.querySelector('#studioAreaPanel');
+    areaPanel.style.cssText='margin:10px;padding:10px;border:1px solid #888;border-radius:10px';
+    document.getElementById('palettePlan').before(areaPanel);
+    const launcher=document.createElement('button');launcher.id='studioMenu';launcher.type='button';launcher.textContent='Projekt';launcher.className='secondary';
+    launcher.setAttribute('aria-expanded','false');launcher.setAttribute('aria-controls','studioProjects');
+    document.querySelector('.topbar .title').after(launcher);
+    const closeMenu=()=>{panel.hidden=true;launcher.setAttribute('aria-expanded','false');};
+    launcher.onclick=()=>{panel.hidden=!panel.hidden;launcher.setAttribute('aria-expanded',String(!panel.hidden));};
+    panel.querySelector('#studioClose').onclick=()=>{closeMenu();launcher.focus();};
+    document.addEventListener('click',event=>{if(!panel.hidden&&!panel.contains(event.target)&&!launcher.contains(event.target))closeMenu();});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden){closeMenu();launcher.focus();}});
+    const e=id=>document.getElementById('studio'+id);
+    e('Name').oninput=()=>{if(studioProject)studioProject.name=e('Name').value.trim()||'Mein Bild';studioDirty();};
+    e('Open').onclick=async()=>{e('Chooser').hidden=!e('Chooser').hidden;if(!e('Chooser').hidden)try{await studioList();}catch(error){studioStatus(error.message+' Über „Aus Dateien auswählen“ öffnen.');}};
+    e('New').onclick=()=>studioRun(async()=>{if(loaded)await studioPersist();studioClear();studioStatus('Neues leeres Projekt · jetzt ein neues Foto öffnen. Gespeicherte Projekte bleiben erhalten.');});
+    e('Finish').onclick=()=>studioRun(async()=>{if(loaded)await studioPersist();studioClear();await studioList();studioStatus('Projekt gespeichert und geschlossen. Zum Fortsetzen „Projekt öffnen“ wählen.');});
+    e('Add').onclick=()=>studioRun(async()=>{
+      const name=e('AreaName').value.trim();if(!name)throw Error('Bitte einen Bereichsnamen eingeben, z. B. Kleid.');
+      await studioPersist();const a=studioClone(studioProject.areas[studioProject.active]);a.id=studioId();a.name=name;a.plan={name,samples:[],markers:true};a.palette={ids:[],enabled:true};
+      studioProject.areas.push(a);await studioRestore(studioProject,studioProject.areas.length-1);await studioStore('put',studioProject);await studioList();e('AreaName').value='';
+    });
+    e('RenameArea').onclick=()=>studioRun(async()=>{
+      if(!loaded)return;
+      const name=prompt('Neuer Name für diesen Bereich:',planBook.name||'');
+      if(name===null||!name.trim())return;
+      planBook.name=name.trim().slice(0,80);
+      if(studioProject?.areas[studioProject.active]?.fullView)studioProject.areas[studioProject.active].fullView.name=planBook.name;
+      renderPalettePlan();await studioPersist();studioRender();
+    });
+    e('DeleteArea').onclick=()=>studioRun(async()=>{
+      if(!studioProject)throw Error('Kein Projekt geöffnet.');
+      studioWithoutArea(studioProject); // Check protected areas before asking.
+      const name=planBook.name||studioProject.areas[studioProject.active].name;
+      if(!confirm('Bereich „'+name+'“ mit seinen Farbproben, Mischungen und Markierungen löschen? Das Gesamtbild und die anderen Bereiche bleiben erhalten.'))return;
+      await studioPersist();
+      const previous=studioProject,previousIndex=studioProject.active;
+      const next=studioWithoutArea(previous);
+      try{await studioRestore(next,next.active);await studioStore('put',next);}
+      catch(error){await studioRestore(previous,previousIndex);throw error;}
+      studioRemember();await studioList();
+      hint.textContent='Bereich „'+name+'“ gelöscht. Die anderen Bereiche bleiben erhalten.';
+      studioStatus('Bereich „'+name+'“ gelöscht und Projekt gespeichert.');
+    });
+    e('Areas').onchange=()=>{const index=Number(e('Areas').value);studioRun(async()=>{if(!studioProject||index===studioProject.active)return;await studioPersist();await studioRestore(studioProject,index);await studioStore('put',studioProject);});};
+    e('Load').onclick=()=>studioRun(async()=>{const id=e('Saved').value;if(!id)throw Error('Bitte ein gespeichertes Projekt wählen.');const p=await studioStore('get',id);if(!p)throw Error('Projekt nicht gefunden.');if(loaded)await studioPersist();const target=studioProject?.id===id?studioClone(studioProject):p;await studioOpenProject(target);e('Chooser').hidden=true;});
+    e('Save').onclick=()=>studioRun(async()=>{const revision=studioRevision,p=await studioCapture();let localSaved=true;try{await studioStore('put',p);if(revision===studioRevision){studioPending=false;clearTimeout(studioTimer);}studioRemember();}catch(error){localSaved=false;clearTimeout(studioTimer);}const blob=new Blob([JSON.stringify(p)],{type:'application/json'});if(studioURL)URL.revokeObjectURL(studioURL);studioURL=URL.createObjectURL(blob);const a=e('Download');a.href=studioURL;a.download=(p.name.replace(/[^\p{L}\p{N}_-]+/gu,'_')||'Bildprojekt')+'.atelierprojekt';a.hidden=false;setTimeout(()=>a.click(),0);studioStatus((localSaved?'Im Browser gespeichert. ':'Browserspeicher nicht verfügbar. ')+'Datei zum Download bereit – in Dateien / Downloads nachsehen oder „In Dateien sichern“ wählen.');});
+    e('Import').onclick=()=>e('File').click();e('File').onchange=()=>studioRun(async()=>{const f=e('File').files[0];e('File').value='';if(!f)return;const raw=JSON.parse(await f.text());if(raw.format==='AtelierAI-Malprojekt'){if(loaded)await studioPersist();await window.atelierLegacyImport(raw);await studioPersist();e('Chooser').hidden=true;return;}const p=studioValidate(raw);if(loaded)await studioPersist();await studioOpenProject(p);await studioStore('put',studioProject);await studioList();e('Chooser').hidden=true;});
+    e('Delete').onclick=()=>studioRun(async()=>{if(!studioProject)throw Error('Kein Projekt geöffnet.');if(!confirm('„'+studioProject.name+'“ wirklich aus dem Browser löschen? Zum Beenden bitte abbrechen und „Projekt schließen“ wählen. Eine heruntergeladene Projektdatei bleibt erhalten.'))return;if(studioProject)await studioStore('delete',studioProject.id);studioClear();await studioList();studioStatus('Geöffnetes Projekt samt Bereichen gelöscht. Andere gespeicherte Projekte bleiben erhalten.');});
+    e('Legacy').onclick=()=>studioRun(async()=>{
+      if(!loaded||!picturePaletteId)throw Error('Zuerst das frühere Foto öffnen.');
+      const old=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}')[picturePaletteId];if(!old?.samples?.length)throw Error('Für dieses Foto wurden keine früheren Farbproben gefunden.');
+      studioEnsure();await studioCapture();const a=studioClone(studioProject.areas[studioProject.active]);a.id=studioId();a.name='Übernommene Farbproben';a.plan=studioClone(old);a.plan.name=a.name;a.palette=JSON.parse(localStorage.getItem(PICTURE_PALETTE_KEY)||'{}')[picturePaletteId]||{ids:[],enabled:true};studioProject.areas.push(a);await studioRestore(studioProject,studioProject.areas.length-1);await studioStore('put',studioProject);await studioList();
+    });
+    studioRender();
+    for(const type of ['input','change','click','pointerup'])document.addEventListener(type,event=>{
+      if(event.target.closest?.('#studioProjects, #studioAreaPanel, #studioMenu')||event.target===fileInput)return;
+      if(loaded)studioDirty();
+    });
+    document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(studioTimer);studioAutoSave();}});
+    setTimeout(()=>studioRun(async()=>{await studioList();let id;try{id=localStorage.getItem('atelierai-last-project');}catch(e){}if(id&&!loaded){const p=await studioStore('get',id);if(p)await studioOpenProject(p);}}),0);
+  }
+
+  // 3.15: remembered targets and exact, mass-conserving shared premixes.
+  // Markers use normalized image coordinates; overlays never enter picker/export pixels.
+  let planSamplePoint=null,planActiveId=null,planPlaceId=null;
+  let planSwatchSurround=[128,128,128],planSurroundPicking=false;
+  function planPointAt(ix,iy){
+    if(!picturePaletteId||ix<0||iy<0||ix>=sourceCanvas.width||iy>=sourceCanvas.height)return null;
+    return {x:ix/sourceCanvas.width,y:iy/sourceCanvas.height,pictureId:picturePaletteId};
+  }
+  function planSignature(m,key,target,point=null){
+    const fields=[key,target,m.tubeIds,m.parts,m.coverage];
+    if(point)fields.push([Number(point.x.toFixed(6)),Number(point.y.toFixed(6))]);
+    return JSON.stringify(fields);
+  }
+  function planMarkerScreen(point){return {x:offsetX+point.x*sourceCanvas.width*scale,y:offsetY+point.y*sourceCanvas.height*scale};}
+  function drawPlanMarkers(){
+    if(!loaded||sketchActive||planBook.markers===false)return;
+    ctx.save();ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    planBook.samples.forEach((s,i)=>{
+      if(!s.point)return;const p=planMarkerScreen(s.point),active=s.id===planActiveId;
+      ctx.beginPath();ctx.arc(p.x,p.y,12,0,Math.PI*2);ctx.fillStyle=active?'#ffd24b':'#ffffff';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#222';ctx.stroke();
+      ctx.fillStyle='#111';ctx.fillText(String(i+1),p.x,p.y);
+      if(active){const text=s.name.slice(0,32),w=ctx.measureText(text).width+14;
+        ctx.fillStyle='rgba(255,255,255,.95)';ctx.fillRect(p.x+17,p.y-13,w,26);ctx.textAlign='left';ctx.fillStyle='#111';ctx.fillText(text,p.x+24,p.y);ctx.textAlign='center';}
+    });ctx.restore();
+  }
+  // Eine gemerkte Farbnummer ist eine echte Mischauswahl, nicht nur eine Markierung.
+  // Das gespeicherte Originalrezept wird über den neuen Vorschlägen angezeigt.
+  function showRememberedMix(sample){
+    const recipe=sample.recipe;
+    if(!recipe||!Array.isArray(recipe.names)||!Array.isArray(recipe.parts))return;
+    const number=planBook.samples.indexOf(sample)+1;
+    const card=document.createElement('div');card.className='mix-card';
+    card.id='rememberedMixCard';
+    const heading=document.createElement('div');heading.className='mix-head';
+    const title=document.createElement('b');title.textContent='Gemerkte Mischung · Farbe '+number+' · '+sample.name;
+    heading.appendChild(title);
+    if(Number.isFinite(Number(recipe.score))){
+      const score=document.createElement('span');score.textContent=recipe.score+'/100 Bildschirmnähe';heading.appendChild(score);
+    }
+    card.appendChild(heading);
+    const pair=document.createElement('div');pair.className='mix-swatches';
+    for(const [label,rgb] of [['Zielfarbe',sample.target],['Gespeicherte Mischung',recipe.rgb]]){
+      if(!Array.isArray(rgb)||rgb.length!==3)continue;
+      const cell=document.createElement('div');
+      const name=document.createElement('div');name.className='tiny';name.textContent=label;
+      const swatch=document.createElement('div');swatch.className='mix-swatch';swatch.style.background=rgbHex(rgb);
+      cell.append(name,swatch);pair.appendChild(cell);
+    }
+    card.appendChild(pair);
+    const lines=document.createElement('p');lines.className='mix-lines';
+    lines.textContent=recipe.names.map((name,i)=>recipe.parts[i]+' Teile '+name).join(' + ');
+    card.appendChild(lines);
+    const only=document.createElement('button');only.type='button';only.className='secondary';
+    only.textContent='Nur diese Farbe zeigen';
+    only.onclick=()=>{
+      planActiveId=sample.id;
+      multiIsolatedIds=[sample.id];
+      isolatePlanSampleAreas('Farbe '+number);
+      renderPalettePlan();draw();
+    };
+    card.appendChild(only);
+    const note=document.createElement('div');note.className='tiny';note.style.marginTop='6px';
+    note.textContent='Dein ursprünglich gemerktes Rezept. Darunter stehen weitere Mischvorschläge.';
+    card.appendChild(note);
+    mixResults.prepend(card);
+  }
+  function openPlanMarker(sample){
+    if(!sample||!Array.isArray(sample.target)||sample.target.length!==3)return;
+    const previousActiveId=planActiveId;
+    const wasIsolating=!!activeIsolatedColor||multiIsolatedIds.length>0;
+    // Auf die gespeicherte Malfarbenpalette wechseln: sonst erscheinen Rezepte
+    // aus einer anderen Palette statt aus den gespeicherten Tubenfarben.
+    const medium=sample.key==='artisan'?'oil':sample.key==='system3'?'acrylic':'water';
+    if(paintMedium!==medium)setMedium(medium);
+    if([...paintPalette.options].some(option=>option.value===sample.key))paintPalette.value=sample.key;
+    setMixTarget(sample.target,'Gemerkte Farbnummer '+(planBook.samples.indexOf(sample)+1)+' · '+sample.name,
+      sample.point?{...sample.point,pictureId:picturePaletteId}:null,sample.id);
+    // Bereits aktivierte Einzelfarbenansichten können wie bisher um weitere
+    // gemerkte Nummern ergänzt werden. Ohne Isolation erfolgt nur die Auswahl.
+    if(activeIsolatedColor||multiIsolatedIds.length){
+      const visibleIds=multiIsolatedIds.slice();
+      if(!visibleIds.length){
+        if(previousActiveId)visibleIds.push(previousActiveId);
+        else visibleIds.push(sample.id);
+      }
+      if(visibleIds.includes(sample.id))multiIsolatedIds=visibleIds.filter(id=>id!==sample.id);
+      else multiIsolatedIds=[...visibleIds,sample.id];
+      if(!multiIsolatedIds.length){
+        cancelIsolation();
+      }else{
+        const first=planBook.samples.find(s=>s.id===multiIsolatedIds[0]&&Array.isArray(s.target)&&s.target.length===3)
+          || planBook.samples.find(s=>multiIsolatedIds.includes(s.id)&&Array.isArray(s.target)&&s.target.length===3);
+        if(first)isolatePlanSampleAreas('Ausgewählte Farben');
+        else cancelIsolation();
+      }
+    }
+    if(typeof window.activateToolPage==='function')window.activateToolPage('paintMixPanel');
+    showMixes();
+    showRememberedMix(sample);
+    renderPalettePlan();draw();
+    const panel=document.getElementById('palettePlan');panel.open=true;
+    // Ohne aktive Einzelfarbenansicht das gemerkte Rezept ins Blickfeld holen.
+    // Beim Zuschalten weiterer Nummern dagegen an der bisherigen Regler-/Legendenposition bleiben.
+    if(!wasIsolating)setTimeout(()=>{
+      const card=document.getElementById('rememberedMixCard');
+      if(card&&typeof card.scrollIntoView==='function')card.scrollIntoView({behavior:'auto',block:'nearest'});
+    },0);
+  }
+  function placePlanMarker(e){
+    if(!planPlaceId)return false;
+    const p=canvasPoint(e.clientX,e.clientY),point=planPointAt((p.x-offsetX)/scale,(p.y-offsetY)/scale);
+    if(!point)return true;
+    const s=planBook.samples.find(s=>s.id===planPlaceId);
+    if(s){s.point={x:point.x,y:point.y};planBook.markers=true;planActiveId=s.id;savePalettePlan();}
+    planPlaceId=null;hint.textContent='Farbmarkierung gesetzt.';renderPalettePlan();draw();return true;
+  }
+  function hitPlanMarker(e){
+    if(planBook.markers===false||sketchActive)return false;
+    const p=canvasPoint(e.clientX,e.clientY);let best=null,distance=23;
+    for(const s of planBook.samples){if(!s.point)continue;const q=planMarkerScreen(s.point),d=Math.hypot(p.x-q.x,p.y-q.y);if(d<distance){distance=d;best=s;}}
+    if(!best)return false;openPlanMarker(best);return true;
+  }
+  function syncPlanMarkerToggle(){
+    let b=document.getElementById('planMarkerToggle');
+    if(!b){b=document.createElement('button');b.id='planMarkerToggle';b.type='button';b.className='secondary';globalMoveBtn.after(b);
+      b.onclick=()=>{planBook.markers=planBook.markers===false;planPlaceId=null;savePalettePlan();syncPlanMarkerToggle();draw();};}
+    b.textContent='Farbmarken: '+(planBook.markers===false?'aus':'an');b.setAttribute('aria-pressed',String(planBook.markers!==false));
+  }
+
+  const PLAN_KEY='atelierai_palette_plans_v1';
+  let planBook={name:'Gesamtbild',samples:[]},planStorageOK=true;
+  function loadPalettePlan(){
+    if(studioManaged){planBook={name:'Gesamtbild',samples:[]};renderPalettePlan();return;}
+    planBook={name:'Gesamtbild',samples:[]};
+    try {const b=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}')[picturePaletteId];
+      if(b&&Array.isArray(b.samples))planBook=b;
+      planStorageOK=true;
+    }catch(e){planStorageOK=false;}
+    renderPalettePlan();
+  }
+  function savePalettePlan(){
+    if(studioManaged){studioDirty();return;}
+    if(!picturePaletteId)return;
+    try {const all=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}');
+      all[picturePaletteId]={...planBook,time:Date.now()};
+      localStorage.setItem(PLAN_KEY,JSON.stringify(Object.fromEntries(Object.entries(all).sort((a,b)=>(b[1].time||0)-(a[1].time||0)).slice(0,40))));planStorageOK=true;
+    }catch(e){planStorageOK=false;}
+  }
+  function planRemember(m,key,target,name='',point=null){
+    if(!picturePaletteId||!target||!m.tubeIds?.length)return;
+    const signature=planSignature(m,key,target,point);
+    const givenName=String(name).trim().slice(0,100);
+    const existing=planBook.samples.find(s=>s.signature===signature);
+    if(existing){
+      if(givenName&&existing.name!==givenName){existing.name=givenName;savePalettePlan();renderPalettePlan();}
+      return;
+    }
+    {
+      planBook.samples.push({id:Date.now()+'-'+Math.random().toString(36).slice(2),signature,key,target:target.slice(),recipe:JSON.parse(JSON.stringify(m)),point:point?{x:point.x,y:point.y}:null,name:givenName||'Farbe '+(planBook.samples.length+1),selected:true,amount:1});
+      savePalettePlan();renderPalettePlan();
+    }
+  }
+  function buildPalettePlan(samples){
+    const gcd=(a,b)=>b?gcd(b,a%b):a;
+    const rows=samples.map(s=>{
+      const r=s.recipe;
+      if(!r.parts.length||r.parts.some(p=>!Number.isInteger(p)||p<=0))throw new Error('Dieses Rezept enthält keine ganzzahligen Teile. Bitte ein neues Rezept merken.');
+      const d=r.parts.reduce(gcd),v={};
+      r.tubeIds.forEach((id,i)=>{v[id]=(v[id]||0)+r.parts[i]/d;});
+      return {sample:s,v,base:null,n:0};
+    });
+    const candidates=new Map();
+    for(const row of rows){
+      const ids=Object.keys(row.v).sort();
+      for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){
+        for(let a=1;a<=6;a++)for(let b=1;b<=6;b++)if(gcd(a,b)===1){
+          const v={[ids[i]]:a,[ids[j]]:b};candidates.set(JSON.stringify(v),v);
+        }
+      }
+      if(ids.length>=2){const v=Object.fromEntries(ids.map(id=>[id,row.v[id]]));candidates.set(JSON.stringify(v),v);}
+    }
+    const bases=[];
+    while(bases.length<4){
+      let best=null;
+      for(const v of candidates.values()){
+        const ids=Object.keys(v),sum=Object.values(v).reduce((a,b)=>a+b,0),uses=[];let score=0,steps=-(ids.length-1);
+        for(const row of rows.filter(r=>!r.base)){
+          const n=Math.floor(Math.min(...ids.map(id=>(row.v[id]||0)/v[id])));
+          const fraction=n*sum/Object.values(row.v).reduce((a,b)=>a+b,0);
+          if(n<1||fraction<.25)continue;
+          const removed=ids.filter(id=>row.v[id]===v[id]*n).length;
+          uses.push({row,n});score+=fraction+removed;steps+=removed-1;
+        }
+        if(uses.length>=2&&steps>=0&&(!best||score>best.score))best={v,uses,score};
+      }
+      if(!best)break;
+      const base={v:best.v,label:String.fromCharCode(65+bases.length),uses:best.uses};bases.push(base);
+      for(const {row,n} of best.uses){row.base=base;row.n=n;}
+    }
+    return {rows,bases};
+  }
+
+  // 3.36: Gemeinsame Basis nach Zielfarb-Naehe statt nach identischen Tuben.
+  // Gespeicherte Einzelrezepte bleiben unveraendert. Vorschlaege sind Simulationen.
+  function buildSimilarToneBases(samples){
+    if(samples.length<2)return [];
+    const groups=[],remaining=samples.slice(),key=samples[0].key;
+    const colors=effectivePaletteColors(key);
+    const nameOf=c=>(c[2]?c[0]+' ('+c[2]+')':c[0]);
+    const mix=(rgb,c,n,total=30)=>pigmentMix([rgb,c[1]],[total-n,n],key);
+    const findCorrection=(base,sample)=>{
+      const target=sample.target;
+      const original=Number.isFinite(+sample.recipe.score)?+sample.recipe.score:similarityPct(target,sample.recipe.rgb);
+      // Grosszuegiger gemeinsamer Ansatz: etwas mehr Farbabweichung zugunsten einer
+      // brauchbaren gemeinsamen Vorratsmischung; nie als exakt ausgeben.
+      const limit=Math.max(74,Math.min(90,original-13));
+      const start=similarityPct(target,base.recipe.rgb);
+      let best={score:start,rgb:base.recipe.rgb,adds:[],amount:0};
+      if(start>=limit)return {...best,usable:true};
+      // Neben farblich nahen Tuben auch die Pigmente der gemeinsamen Basis
+      // pruefen. Ein Korrekturweg bleibt dadurch bei wenigen Tubenfarben.
+      const nearest=colors.map(c=>({c,d:colorDistance(c[1],target)}))
+        .sort((a,b)=>a.d-b.d).slice(0,14).map(x=>x.c);
+      const preferred=base.ingredients.map(x=>x.c);
+      const ranked=[...preferred,...nearest].filter((c,i,a)=>
+        a.findIndex(x=>x[0]===c[0])===i);
+      const amounts=[1,2,3,4,5,6,8,10,12,15,18,22,26,30,36,45];
+      // Zwei oder drei nacheinander zugegebene Tubenfarben erlauben, auch
+      // hellere, dunklere und waermere/kuehlere Abwandlungen zu erreichen.
+      let frontier=[best];
+      for(let step=0;step<3;step++){
+        const next=[];
+        for(const prev of frontier){
+          for(const c of ranked){
+            if(prev.adds.some(a=>a.name===nameOf(c)))continue;
+            for(const n of amounts){
+              const rgb=mix(prev.rgb,c,n);
+              const score=similarityPct(target,rgb);
+              const candidate={score,rgb,adds:[...prev.adds,{name:nameOf(c),parts:n}],amount:prev.amount+n};
+              // Nur bei erkennbar besserer Farbnaehe mehr Korrekturpigmente verwenden.
+              if(score>best.score+5 || (candidate.adds.length<=best.adds.length && score>best.score+0.01))best=candidate;
+              next.push(candidate);
+            }
+          }
+        }
+        next.sort((a,b)=>b.score-a.score||a.amount-b.amount);
+        frontier=next.slice(0,step===0?7:4);
+        if(best.score>=Math.max(91,original-2))break;
+      }
+      return {...best,usable:best.score>=limit};
+    };
+    // 3.40: A basis is a separately prepared mix of ORIGINAL TUBE PIGMENTS,
+    // never an already sampled target colour. Keep every individual recipe intact.
+    while(remaining.length>=2&&groups.length<8){
+      const pooled=new Map();
+      for(const sample of remaining){
+        const r=sample.recipe,parts=r.parts||[],total=parts.reduce((a,n)=>a+(+n||0),0)||1;
+        for(let i=0;i<(r.tubeIds||[]).length;i++){
+          const id=r.tubeIds[i],c=colors.find(c=>paletteId(key,c[0])===id)||
+            colors.find(c=>c[0]===r.names[i]);
+          if(!c)continue;
+          const entry=pooled.get(id)||{id,c,weight:0,count:0};
+          entry.weight+=(+parts[i]||0)/total;entry.count++;pooled.set(id,entry);
+        }
+      }
+      let ranked=[...pooled.values()].sort((a,b)=>(b.count*1.4+b.weight)-(a.count*1.4+a.weight));
+      if(ranked.length<2)break;
+      // Build several neutral starting bases from commonly useful pigments.
+      const candidates=[];
+      for(const count of [2,3,4,5]){
+        if(ranked.length<count)continue;
+        const ingredients=ranked.slice(0,count);
+        for(const exponent of [0,0.5,1]){
+          const raw=ingredients.map(e=>Math.pow(Math.max(.05,e.weight),exponent));
+          const norm=Math.max(...raw);
+          const parts=raw.map(v=>Math.max(1,Math.round(v/norm*8)));
+          const rgb=pigmentMix(ingredients.map(e=>e.c[1]),parts,key);
+          if(!candidates.some(x=>JSON.stringify(x.parts)===JSON.stringify(parts)&&x.ingredients.length===count))
+            candidates.push({ingredients,parts,rgb});
+        }
+      }
+      // 3.90: Nicht nur die haeufigsten 2/3/4 Tuben kombinieren.
+      // Alternative Paare und Dreiergruppen erfassen Farbverwandtschaft
+      // auch dann, wenn einzelne Zielrezepte andere Pigmente benutzen.
+      const top=ranked.slice(0,6);
+      const seen=new Set(candidates.map(x=>x.ingredients.map(e=>e.id).join('|')+':'+x.parts.join(',')));
+      const register=(ingredients,parts)=>{
+        const signature=ingredients.map(e=>e.id).join('|')+':'+parts.join(',');
+        if(seen.has(signature))return;
+        seen.add(signature);
+        candidates.push({ingredients,parts,rgb:pigmentMix(ingredients.map(e=>e.c[1]),parts,key)});
+      };
+      for(let i=0;i<top.length;i++)for(let j=i+1;j<top.length;j++){
+        const pair=[top[i],top[j]];
+        // Unterschiedliche Mischungsverhaeltnisse statt nur gleichem Anteil.
+        register(pair,[1,1]);
+        register(pair,[2,1]);
+        register(pair,[1,2]);
+      }
+      // Kandidaten zunaechst auf Naehe zu den tatsaechlich gewaelten
+      // Farbproben pruefen. Dadurch bleibt die Suche auf dem iPad begrenzt.
+      const plausible=candidates.map(base=>({base,proximity:remaining.reduce((sum,s)=>
+        sum+Math.max(0,100-colorDistance(base.rgb,s.target)*1.2),0)}))
+        .sort((a,b)=>b.proximity-a.proximity)
+        .slice(0,18).map(x=>x.base);
+      let winner=null;
+      for(const base of plausible){
+        const pseudo={recipe:{rgb:base.rgb}};
+        const members=[];let penalty=0;
+        for(const sample of remaining){
+          const adjustment=findCorrection(pseudo,sample);
+          if(!adjustment.usable)continue;
+          members.push({sample,...adjustment});
+          penalty+=100-adjustment.score+adjustment.adds.length*3+adjustment.amount*.16;
+        }
+        if(members.length<2)continue;
+        const rank=members.length*1000-penalty-base.ingredients.length*15;
+        if(!winner||rank>winner.rank)winner={base,members,rank};
+      }
+      if(!winner)break;
+      winner.label=String.fromCharCode(65+groups.length);groups.push(winner);
+      const taken=new Set(winner.members.map(x=>x.sample));
+      for(let i=remaining.length-1;i>=0;i--)if(taken.has(remaining[i]))remaining.splice(i,1);
+    }
+    return groups;
+  }
+  function updateIsolationPairLegend(){
+    const legend=document.getElementById('isolationPairLegend');
+    if(!legend)return;
+    legend.replaceChildren();
+    const ids=multiIsolatedIds.filter(id=>planBook.samples.some(s=>s.id===id));
+    if(ids.length!==2){legend.style.display='none';return;}
+    legend.style.display='block';
+    const heading=document.createElement('strong');
+    heading.textContent='Überlappung – zwei Farben';
+    legend.appendChild(heading);
+    const line=document.createElement('div');
+    line.style.cssText='display:flex;gap:8px 12px;flex-wrap:wrap;margin-top:6px;align-items:center';
+    legend.appendChild(line);
+    ids.forEach((id,i)=>{
+      const sample=planBook.samples.find(s=>s.id===id);
+      const item=document.createElement('span');
+      item.style.cssText='display:inline-flex;gap:5px;align-items:center';
+      const dot=document.createElement('span');
+      dot.style.cssText='display:inline-block;width:14px;height:14px;border:1px solid #888;border-radius:3px;background:'+isolationDisplayColors[i];
+      item.appendChild(dot);
+      item.appendChild(document.createTextNode((planBook.samples.indexOf(sample)+1)+': '+sample.name));
+      line.appendChild(item);
+    });
+    const both=document.createElement('span');
+    both.style.cssText='display:inline-flex;gap:5px;align-items:center';
+    const dot=document.createElement('span');
+    dot.style.cssText='display:inline-block;width:14px;height:14px;border:1px solid #888;border-radius:3px;background:#e430a1';
+    both.appendChild(dot);
+    both.appendChild(document.createTextNode('Pink: beide Farben'));
+    line.appendChild(both);
+  }
+  function renderPalettePlan(){
+    updateIsolationPairLegend();
+    syncPlanMarkerToggle();
+    if(loaded)draw();
+    let panel=document.getElementById('palettePlan');
+    if(!panel){panel=document.createElement('details');panel.id='palettePlan';panel.style.cssText='margin:12px 0;padding:10px;border:1px solid #888;border-radius:10px';
+      document.querySelector('[data-picture-palette="paintPalette"]').after(panel);}
+    const wasOpen=panel.open;panel.replaceChildren();panel.open=wasOpen;
+    const add=(tag,text,parent=panel)=>{const e=document.createElement(tag);e.textContent=text;parent.appendChild(e);return e;};
+    add('summary','Palettenplan · '+planBook.samples.length+' gemerkte Farbproben');
+    add('p','Beim gewünschten Mischvorschlag die Stelle benennen und „Diese Farbe merken“ drücken. Farbprobe, Rezept und Tubenfarben werden gemeinsam gespeichert. Danach hier den Palettenplan erstellen. Alle gemerkten Farbproben sind bereits ausgewählt; Zum Umbenennen unten direkt auf den Namen tippen, z. B. „Farbe 5“, und „linke Wange“ eintragen. Mengen kannst du ebenfalls ändern.');
+    if(!picturePaletteId){add('p','Zuerst ein Foto öffnen.');return;}
+    const name=add('input','');name.value=planBook.name;name.placeholder='Bereich, z. B. Gesicht';name.setAttribute('aria-label','Name des Bereichs');
+    name.onchange=()=>{planBook.name=name.value;savePalettePlan();};
+    add('p','Menge 1 = ein kleines Rezept; 2 = doppelte Menge. Alle Teile mit derselben kleinen Maßeinheit abnehmen. Große Flächen bei Bedarf höher gewichten.');
+    const active=planBook.samples.find(s=>s.id===planActiveId);
+    if(active){
+      const card=add('div','');card.className='mix-card';
+      add('strong','Markierung '+(planBook.samples.indexOf(active)+1)+' · '+active.name,card);
+      const preview=add('div','',card);
+      preview.style.cssText='margin:8px 0;padding:14px;background:'+rgbHex(planSwatchSurround)+';border-radius:6px;display:flex;justify-content:center;align-items:center;min-height:88px';
+      const sw=add('div','',preview);
+      sw.style.cssText='width:74%;height:48px;background:'+rgbHex(active.target)+';border:1px solid #777;border-radius:2px';
+      add('p',active.recipe.names.map((name,i)=>active.recipe.parts[i]+' Teile '+name).join(' + '),card);
+      const settings=add('div','',card);
+      settings.style.cssText='display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:8px 0';
+      const pick=add('button',planSurroundPicking?'Auswahl abbrechen':'Umgebung aus Foto wählen',settings);
+      pick.type='button';pick.className='secondary';
+      pick.onclick=()=>{
+        planSurroundPicking=!planSurroundPicking;
+        if(planSurroundPicking){cancelIsolation();draw();hint.textContent='Im Foto auf die gewünschte Umgebungsfarbe tippen.';}
+        renderPalettePlan();
+      };
+      const gray=add('button','Grau',settings);gray.type='button';gray.className='secondary';
+      gray.onclick=()=>{planSwatchSurround=[128,128,128];renderPalettePlan();};
+      add('small','Nur das Farbmuster rechts wird verändert. Das Bild bleibt vollständig sichtbar.',card);
+      if(active.recipe.watercolor)add('small',Math.round(active.recipe.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis).',card);
+    }
+    add('p','Farbnummer im Bild direkt antippen: Die zugehörige Farbe mit ihrem Rezept wird ausgewählt – auch im Pipettenmodus. „Stelle setzen“ ergänzt ältere Farbproben.');
+    if(activeIsolatedColor||multiIsolatedIds.length){
+      const note=add('p','Einzelfarbenansicht aktiv: Weitere Farbnummern unten antippen, um sie zu- oder abzuschalten.');
+      note.textContent=multiIsolatedIds.length===2
+        ? 'Zwei Farben im Vergleich: Gemeinsame Flächen sind pink markiert. Die Legende steht direkt beim Ähnlichkeitsregler.'
+        : 'Farbflächen der gewählten Nummern sichtbar. Für die farbige Überlappungsanalyse genau zwei Farben wählen.';
+      note.className='tiny';
+      note.style.margin='6px 0 10px';
+    }
+    for(const s of planBook.samples){
+      const row=add('div','');row.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 0';
+      const number=add('button',String(planBook.samples.indexOf(s)+1)+'.',row);number.type='button';number.className=(multiIsolatedIds.includes(s.id)||s.id===planActiveId)?'active':'secondary';number.setAttribute('aria-pressed',String(multiIsolatedIds.includes(s.id)));number.title='Farbe '+(planBook.samples.indexOf(s)+1)+' direkt auswählen';number.onclick=()=>openPlanMarker(s);
+      const check=add('input','',row);check.type='checkbox';check.checked=s.selected;check.setAttribute('aria-label',s.name+' auswählen');
+      const sw=add('span','',row);sw.style.cssText='display:inline-block;width:30px;height:30px;border:1px solid #888;background:'+rgbHex(s.target);sw.title='Zielfarbe '+rgbHex(s.target);
+      const label=add('input','',row);label.value=s.name;label.style.width='125px';label.setAttribute('aria-label','Name der Farbprobe');label.placeholder='Stelle benennen';label.title='Antippen zum Umbenennen, z. B. linke Wange';
+      const qty=add('input','',row);qty.type='number';qty.min='1';qty.max='20';qty.step='1';qty.value=s.amount;qty.style.width='65px';qty.setAttribute('aria-label','Rezeptmenge für '+s.name);
+      add('small',s.key==='artisan'?'Öl':s.key==='system3'?'Acryl':s.key,row);
+      const locate=add('button',planPlaceId===s.id?'Setzen abbrechen':s.point?'Stelle versetzen':'Stelle setzen',row);locate.type='button';locate.className='secondary';
+      locate.onclick=()=>{planPlaceId=planPlaceId===s.id?null:s.id;setMode('move');hint.textContent=planPlaceId?'Jetzt die Stelle für „'+s.name+'“ im Bild antippen.':'Setzen abgebrochen.';renderPalettePlan();};
+      const remove=add('button','×',row);remove.type='button';remove.className='secondary';remove.setAttribute('aria-label',s.name+' entfernen');
+      const changed=()=>{output.replaceChildren();savePalettePlan();draw();};
+      check.onchange=()=>{s.selected=check.checked;changed();};label.onchange=()=>{s.name=label.value||'Farbe';changed();};
+      qty.onchange=()=>{s.amount=Math.max(1,Math.min(20,Math.round(Number(qty.value)||1)));qty.value=s.amount;changed();};
+      remove.onclick=()=>{planBook.samples=planBook.samples.filter(x=>x.id!==s.id);savePalettePlan();renderPalettePlan();};
+    }
+    if(!planStorageOK)add('p','Speichern ist hier nicht verfügbar. Die Farbproben bleiben nur in dieser Sitzung erhalten.');
+    const run=add('button','Palettenplan erstellen');run.type='button';
+    const output=add('div','');output.setAttribute('aria-live','polite');
+    run.onclick=()=>{
+      output.replaceChildren();const samples=planBook.samples.filter(s=>s.selected);
+      if(!samples.length){add('p','Bitte mindestens eine Farbprobe auswählen.',output);return;}
+      if(new Set(samples.map(s=>s.key)).size!==1){add('p','Bitte nur Farbproben derselben Palette auswählen. Öl und Aquarell werden getrennt geplant.',output);return;}
+      try{
+        const {rows,bases}=buildPalettePlan(samples),toneBases=buildSimilarToneBases(samples),names={},totals={};
+        for(const row of rows)row.sample.recipe.tubeIds.forEach((id,i)=>{names[id]=row.sample.recipe.names[i];});
+        const fmt=v=>Object.entries(v).filter(([,n])=>n>0).map(([id,n])=>n+' Teile '+names[id]).join(' + ');
+        for(const row of rows)for(const [id,n] of Object.entries(row.v))totals[id]=(totals[id]||0)+n*row.sample.amount;
+        add('h3',planBook.name+' · Mischplan',output);
+        add('p','Die gespeicherten Rezeptanteile bleiben exakt erhalten. Gemeinsame Vormischungen sparen wiederholte Arbeit; sie garantieren keine reale Pigmentübereinstimmung. Zuerst kleine Farbproben prüfen.',output);
+        add('h4','1. Tubenfarben bereitlegen',output);add('p',fmt(totals)+' (Gesamtbedarf für die gewählten Mengen).',output);
+        add('h4','2. Ausgangsmischungen vorbereiten',output);
+        if(!bases.length)add('p',toneBases.length?'Keine gemeinsame Tuben-Teilrezeptur. Die gemeinsame Farbbasis nach Farbähnlichkeit steht unten.':'Keine ausreichend praktische gemeinsame Ausgangsmischung gefunden. Die Einzelrezepte bleiben erhalten.',output);
+        for(const b of bases){
+          const batches=b.uses.reduce((sum,u)=>sum+u.n*u.row.sample.amount,0),v=Object.fromEntries(Object.entries(b.v).map(([id,n])=>[id,n*batches]));
+          add('p','Basis '+b.label+': '+fmt(v)+'. Ergibt '+Object.values(v).reduce((a,n)=>a+n,0)+' Teile. Für: '+b.uses.map(u=>u.row.sample.name).join(', ')+'.',output);
+        }
+        if(bases.length)add('p','Jede Basis gründlich mischen und getrennt liegen lassen. Nur die angegebene Teilportion entnehmen und auf einem freien Platz ergänzen.',output);
+        if(toneBases.length){
+          add('h4','2a. Gemeinsame Farbbasis aus ähnlichen Farbtönen',output);
+          add('p','Großzügiger Zusatzvorschlag: Eine eigenständige Grundmischung aus deinen Tubenfarben vorbereiten und daraus verschiedene Zielfarben durch Zugaben entwickeln. Die Einzelrezepte bleiben als Alternative erhalten.',output);
+          for(const group of toneBases){
+            const base=group.base;
+            const card=add('div','',output);card.className='mix-card';
+            add('strong','Farbbasis '+group.label+' · gemeinsame Tubenmischung',card);
+            add('p','Einmal vorbereiten: '+base.parts.map((n,i)=>n+' Teile '+base.ingredients[i].c[0]).join(' + ')+'.',card);
+            for(const member of group.members){
+              const title=member.sample.name+': ';
+              const action=member.adds.length
+                ?'30 Teile fertige Basis '+group.label+' + '+member.adds.map(a=>a.parts+' Teile '+a.name).join(' + ') + (member.adds.length>1?' (Korrekturen nacheinander, jeweils von 30 Teilen der Zwischenmischung)':'')
+                :'Fertige Basis '+group.label+' direkt verwenden';
+              add('p',title+action+' · etwa '+member.score+'/100 Bildschirmnähe',card);
+            }
+          }
+          add('small','Wichtig: Bei großzügigeren Korrekturen können auch sichtbar größere Abweichungen auftreten. Die Ähnlichkeit und Korrektur beruhen auf einer RGB-Simulation, nicht auf gemessenen Pigmenten. Auf der Palette zuerst kleine Proben mischen; bei sichtbarer Abweichung das unveränderte Einzelrezept verwenden.',output);
+        }
+
+        add('h4','3. Gespeicherte Einzelrezepte (unverändert)',output);
+        rows.sort((a,b)=>(a.base?.label||'Z').localeCompare(b.base?.label||'Z')||luminance(...b.sample.recipe.rgb)-luminance(...a.sample.recipe.rgb));
+        for(const row of rows){
+          const s=row.sample,r=s.recipe,q=s.amount,remaining=Object.fromEntries(Object.entries(row.v).map(([id,n])=>[id,(n-(row.base?(row.base.v[id]||0)*row.n:0))*q]));
+          const card=add('div','',output);card.className='mix-card';
+          const title=add('h4',s.name,card);title.style.margin='4px 0';
+          const swatches=add('div','',card);swatches.style.cssText='display:flex;gap:12px;background:#808080;padding:12px;color:white';
+          for(const [label,rgb] of [['Ziel',s.target],['Mischung',r.rgb]]){const wrap=add('div',label,swatches),sw=add('div','',wrap);sw.style.cssText='width:60px;height:40px;background:'+rgbHex(rgb);}
+          const rest=fmt(remaining),amount=row.base?Object.values(row.base.v).reduce((a,n)=>a+n,0)*row.n*q:0;
+          add('p',row.base?amount+' Teile Basis '+row.base.label+(rest?' + '+rest:': unverändert verwenden.'):rest,card);
+          add('small',r.score+'/100 Bildschirmnähe · gespeichertes Rezept',card);
+          if(r.watercolor)add('p',Math.round(r.coverage*100)+' % Farbauftrag auf Weiß laut Simulation – kein Wasserverhältnis. Pigmentbasis zuerst mischen, Teilportion erst danach mit Wasser aufhellen und auf Papier testen. Papierweiß frei lassen.',card);
+          const done=add('label','',card),cb=add('input','',done);cb.type='checkbox';done.append(' Gemischt');
+        }
+      }catch(e){add('p',e.message,output);}
+    };
+  }
+
+  // 2.45: confirmed tube colours, scoped to the loaded picture.
+  const PICTURE_PALETTE_KEY='atelierai_picture_palettes_v1';
+  let picturePalette={ids:[],enabled:true},picturePaletteId=null,picturePaletteEpoch=0;
+  let picturePaletteStorageOK=true;
+  function pictureTubeId(key,item){
+    const name=Array.isArray(item)?item[0]:item.name;
+    const series=Array.isArray(item)?item[2]:item.series;
+    const brand=series==='Horadam'?'horadam':series==='Akademie'?'akademie':key;
+    return brand+'::'+name;
+  }
+  function pictureUsedIds(key){
+    if(!picturePalette.enabled)return new Set();
+    const available=new Set(effectivePaletteColors(key).map(c=>pictureTubeId(key,c)));
+    return new Set(picturePalette.ids.filter(id=>available.has(id)));
+  }
+  function savePicturePalette(){
+    if(studioManaged){studioDirty();return;}
+    if(!picturePaletteId)return;
+    try{
+      let all=JSON.parse(localStorage.getItem(PICTURE_PALETTE_KEY)||'{}');
+      if(!all||typeof all!=='object'||Array.isArray(all))all={};
+      all[picturePaletteId]={ids:picturePalette.ids,enabled:picturePalette.enabled,time:Date.now()};
+      const recent=Object.entries(all).sort((a,b)=>(b[1]?.time||0)-(a[1]?.time||0)).slice(0,40);
+      localStorage.setItem(PICTURE_PALETTE_KEY,JSON.stringify(Object.fromEntries(recent)));
+      picturePaletteStorageOK=true;
+    }catch(e){picturePaletteStorageOK=false;}
+  }
+  function startPicturePalette(){
+    planSamplePoint=null;planActiveId=null;planPlaceId=null;
+    picturePaletteEpoch++;
+    picturePalette={ids:[],enabled:true};
+    // A small pixel fingerprint restores the same photo, regardless of filename.
+    const c=document.createElement('canvas');c.width=48;c.height=48;
+    const ctx=c.getContext('2d');ctx.drawImage(sourceCanvas,0,0,48,48);
+    const data=ctx.getImageData(0,0,48,48).data;
+    let hash=2166136261,hash2=5381;
+    for(const v of data){hash=Math.imul(hash^v,16777619);hash2=Math.imul(hash2,33)^v;}
+    picturePaletteId=sourceCanvas.width+'x'+sourceCanvas.height+'-'+(hash>>>0).toString(16)+'-'+(hash2>>>0).toString(16);
+    try{
+      const saved=JSON.parse(localStorage.getItem(PICTURE_PALETTE_KEY)||'{}')[picturePaletteId];
+      if(!studioManaged&&saved&&Array.isArray(saved.ids))picturePalette={ids:[...new Set(saved.ids.filter(x=>typeof x==='string'))],enabled:saved.enabled!==false};
+      picturePaletteStorageOK=true;
+    }catch(e){picturePaletteStorageOK=false;}
+    loadPalettePlan();
+    mixResults.replaceChildren();surfaceResults.replaceChildren();surfaceBaseResults.replaceChildren();
+    surfaceBaseIndex=0;surfaceBaseRevision++;surfaceBaseRecipes=[];surfaceBaseSuggestionCache.clear();
+    lastSmartColor=null;lastAverageColor=null;correctionRecipeHint=null;
+    renderPicturePalettePanels();
+  }
+  function pictureRecipeIds(recipe,key){
+    if(recipe.tubeIds)return recipe.tubeIds;
+    return recipe.items.map(c=>pictureTubeId(key,c));
+  }
+  // 4.53: Bei fast gleich guten Bildschirmmischungen muss die Helligkeit
+  // stimmen, bevor die Bevorzugung eines einfacheren Rezepts greift.
+  // Niemals die angezeigte Mischfarbe kuenstlich auf das Ziel aufhellen:
+  // nur REALE Rezept-Kandidaten der vorhandenen Palette anders sortieren.
+  function oilLightnessPreference(a,b,targetLabLightness){
+    if(targetLabLightness===null||!a.rgb||!b.rgb)return 0;
+    const da=Math.abs(rgbToLabFast(a.rgb)[0]-targetLabLightness);
+    const db=Math.abs(rgbToLabFast(b.rgb)[0]-targetLabLightness);
+    // Stabile Tonwert-Klassen: bis ±1,5 L* sehr nah, danach 1,5er-Schritte.
+    // Unter Kandidaten mit aehnlicher Gesamtnähe kommt die bessere Klasse zuerst.
+    const band=d=>d<=1.5?0:Math.ceil((d-1.5)/1.5);
+    return band(da)-band(db);
+  }
+  function rankPictureRecipes(recipes,key,target=null){
+    if(!recipes.length)return recipes;
+    const used=pictureUsedIds(key);
+    const best=Math.max(...recipes.map(m=>m.score));
+    const targetLabLightness=key==='artisan'&&target?rgbToLabFast(target)[0]:null;
+    recipes.forEach(m=>{m.referenceBest=best;});
+    const count=m=>pictureRecipeIds(m,key).filter(id=>!used.has(id)).length;
+    const colors=m=>m.color_count||m.items?.length||m.names?.length||0;
+    return recipes.sort((a,b)=>{
+      const nearA=a.score>=best-5,nearB=b.score>=best-5;
+      if(nearA!==nearB)return nearA?-1:1;
+      if(nearA&&nearB){
+        const brightness=oilLightnessPreference(a,b,targetLabLightness);
+        if(brightness)return brightness;
+      }
+      if(nearA&&colors(a)!==colors(b))return colors(a)-colors(b);
+      // At equal pigment count, prefer previously saved tubes.
+      if(nearA&&used.size&&count(a)!==count(b))return count(a)-count(b);
+      return b.score-a.score;
+    });
+  }
+  function chooseMixes(target,key){
+    const pal=effectivePaletteColors(key),used=pictureUsedIds(key);
+    const full=chooseMixesRaw(target,key,pal);
+    if(!used.size)return full.slice(0,3);
+    const restricted=pal.filter(c=>used.has(pictureTubeId(key,c)));
+    const onlyUsed=restricted.length&&restricted.length<pal.length?chooseMixesRaw(target,key,restricted):[];
+    const unique=new Map();
+    for(const m of [...full,...onlyUsed]){
+      const id=[...m.tubeIds].sort().join('|'),old=unique.get(id);
+      if(!old||m.score>old.score)unique.set(id,{...m});
+    }
+    return rankPictureRecipes([...unique.values()],key,target).slice(0,3);
+  }
+  // 3.29: Cross-area saved-premix comparison. A saved mixture is treated as
+  // a physical premix, not silently replaced by its original tube recipe.
+  // 3.30: compare stored physical premixes, pairs of premixes, and small tube corrections.
+  function savedPremixOptions(target,key){
+    const sources=[], seen=new Set();
+    const add=(sample,area)=>{
+      if(sample?.key!==key||!sample.recipe?.parts?.length)return;
+      const rgb=sample.recipe.rgb;
+      if(!Array.isArray(rgb)||rgb.length!==3||rgb.some(v=>!Number.isFinite(v)))return;
+      const identity=(sample.recipe.tubeIds||[]).join('|')+'@'+sample.recipe.parts.join(',');
+      if(seen.has(identity))return;
+      seen.add(identity);sources.push({rgb,name:sample.name||'Gespeicherte Farbe',area,identity});
+    };
+    // 3.37: Fresh target samples are NOT physically prepared premixes.
+    // Never recycle samples from the current area as if the user had mixed them.
+    // Only propose recipes recorded in a different, previously worked area.
+    // A new project's first area consequently starts without any premix suggestions.
+    const activeArea=studioManaged?studioProject?.active:null;
+    for(const [areaIndex,area] of (studioProject?.areas||[]).entries()){
+      if(areaIndex===activeArea)continue;
+      for(const sample of area.plan?.samples||[])add(sample,area.name||'Bereich');
+      for(const sample of area.fullView?.plan?.samples||[])add(sample,area.name||'Bereich');
+    }
+    // 3.32: A stored ready-to-paint colour that already matches extremely well
+    // must be reused as-is, not mixed with itself, other premixes or tubes.
+    const direct=sources.map(base=>({score:similarityPct(target,base.rgb),rgb:base.rgb,bases:[base],weights:[1],add:null,ratio:0}));
+    const ready=direct.filter(option=>option.score>=98);
+    // Keep excellent ready-made colours as candidates, but still compare alternatives.
+    // An early return here hid potentially better matching recipes.
+    const palette=effectivePaletteColors(key), out=[...direct];
+    const test=(bases,weights)=>{
+      const colors=bases.map(x=>x.rgb), total=weights.reduce((a,b)=>a+b,0);
+      const baseRgb=colors.length===1?colors[0]:pigmentMix(colors,weights,key);
+      let best={score:similarityPct(target,baseRgb),rgb:baseRgb,bases,weights,add:null,ratio:0};
+      // A correction is deliberately small: never overwhelm the saved mixture.
+      for(const tube of palette){
+        for(const amount of [1,2,3,4,6]){
+          const rgb=pigmentMix([...colors,tube[1]],[...weights,amount],key);
+          const score=similarityPct(target,rgb);
+          if(score>best.score)best={score,rgb,bases,weights,add:tube[0],ratio:amount};
+        }
+      }
+      out.push(best);
+    };
+    // Rank by target similarity instead of insertion order; cap pair search on iPad.
+    const pool=[...sources].sort((a,b)=>similarityPct(target,b.rgb)-similarityPct(target,a.rgb)).slice(0,24);
+    for(const base of pool)test([base],[16]);
+    // Two prepared mixtures may together match where neither works alone.
+    for(let i=0;i<pool.length;i++)for(let j=i+1;j<pool.length;j++){
+      for(const weights of [[12,4],[8,8],[4,12]])test([pool[i],pool[j]],weights);
+    }
+    const bestScore=Math.max(...out.map(o=>o.score));
+    return out.sort((a,b)=>{
+      const nearA=a.score>=bestScore-5,nearB=b.score>=bestScore-5;
+      if(nearA!==nearB)return nearA?-1:1;
+      const complexity=o=>o.bases.length+Number(!!o.add);
+      if(nearA&&complexity(a)!==complexity(b))return complexity(a)-complexity(b);
+      return b.score-a.score;
+    }).slice(0,5);
+  }
+  function renderPremixComparison(target,key,normal){
+    if(!showBaseSuggestions)return;
+    const options=savedPremixOptions(target,key);
+    const wrap=document.createElement('div');wrap.className='mix-card';
+    const heading=document.createElement('h3');heading.textContent='Mischungen aus anderen Bereichen · 3.40';wrap.appendChild(heading);
+    const bestNormal=Math.max(0,...normal.map(x=>x.score));
+    if(!options.length){const msg=document.createElement('p');msg.textContent='Keine Mischungen aus anderen Bereichen vorhanden. Die gerade aufgenommenen Zielfarben werden nicht als fertige Mischungen behandelt. Für eine gemeinsame Farbbasis bitte im Mischplan beide Farben auswählen.';wrap.appendChild(msg);mixResults.prepend(wrap);return;}
+    const best=options[0], prefer=best.score>=bestNormal-5;
+    const summary=document.createElement('p');summary.textContent='Neue Tubenmischung: '+bestNormal+'/100 · Beste Wiederverwendung: '+best.score+'/100. '+(prefer?'Vorhandene Mischung ist innerhalb von 5 Punkten und kann bevorzugt werden.':'Neue Tubenmischung ist derzeit näher am Ziel.');wrap.appendChild(summary);
+    for(const option of options){
+      const row=document.createElement('div');row.style.cssText='border-top:1px solid #bbb;padding:8px 0';
+      const label=document.createElement('strong');label.textContent=option.bases.map(x=>x.name+' ('+x.area+')').join(' + ')+' · '+option.score+'/100';row.appendChild(label);
+      const detail=document.createElement('p');detail.textContent=option.weights.map((n,i)=>n+' Teile '+option.bases[i].name).join(' + ')+(option.add?' + '+option.ratio+' Teile '+option.add:' · ohne Tubenkorrektur');row.appendChild(detail);
+      const sw=document.createElement('div');sw.style.cssText='display:flex;gap:12px';
+      for(const [name,rgb] of [['Ziel',target],['Vorschau',option.rgb]]){const cell=document.createElement('div');cell.textContent=name;const color=document.createElement('div');color.style.cssText='width:72px;height:42px;border:1px solid #888;background:'+rgbHex(rgb);cell.appendChild(color);sw.appendChild(cell);}row.appendChild(sw);wrap.appendChild(row);
+    }
+    const note=document.createElement('small');note.textContent='Simulation anhand gespeicherter Bildschirmfarben, keine echte Pigmentmessung. Die Vorschläge sind zusätzliche Mischwege; zuerst kleine Farbproben testen.';wrap.appendChild(note);
+    mixResults.prepend(wrap);
+  }
+
+  function appendPictureUseButton(box,m,key,target){
+    if(target&&m.rgb){
+      const mixRgb=m.rgb.slice(), reference=target.slice();
+      const correct=document.createElement('button');correct.type='button';correct.className='secondary';
+      correct.style.marginTop='8px';correct.textContent='Diese Mischung korrigieren';
+      correct.onclick=()=>{
+        takeCorrectionColor(mixRgb,reference,m,key);
+        if(typeof window.activateToolPage==='function')window.activateToolPage('correctionStudioPanel');
+        document.getElementById('corrCompare').scrollIntoView({behavior:'smooth',block:'nearest'});
+      };
+      box.appendChild(correct);
+    }
+    const epoch=picturePaletteEpoch;
+    const ids=m.tubeIds||[];
+    if(!ids.length)return;
+    const note=document.createElement('div');note.className='tiny';note.style.marginTop='6px';
+    const used=pictureUsedIds(key),added=ids.filter(id=>!used.has(id));
+    note.textContent=!picturePalette.enabled?'Bildpalette ausgeschaltet.':!used.size?'Mit dieser Mischung die Bildpalette beginnen.':!added.length?'Verwendet nur Farben deiner Bildpalette.':'Zusätzlich nötig: '+added.map(id=>id.split('::').slice(1).join('::')).join(', ')+'.';
+    box.appendChild(note);
+    const button=document.createElement('button');button.type='button';button.className='secondary';button.style.marginTop='6px';
+    const point=planSamplePoint&&planSamplePoint.pictureId===picturePaletteId&&planSamplePoint.rgb?.every((v,i)=>v===target?.[i])?{...planSamplePoint}:null;
+    const signature=planSignature(m,key,target,point);
+    const stored=planBook.samples.find(s=>s.signature===signature);
+    const nameLabel=document.createElement('label');nameLabel.textContent='Stelle benennen';
+    nameLabel.style.cssText='display:block;margin-top:10px';
+    const placeName=document.createElement('input');placeName.type='text';placeName.maxLength=100;
+    placeName.placeholder='z. B. linke Wange oder Stirnlicht';placeName.value=stored?.name||'';
+    placeName.setAttribute('aria-label','Stelle für diese Farbprobe benennen');
+    placeName.style.cssText='display:block;width:100%;box-sizing:border-box;margin-top:5px;min-height:42px';
+    nameLabel.appendChild(placeName);box.appendChild(nameLabel);
+    button.textContent=stored?'Diese Farbe ist gemerkt':'Diese Farbe merken';
+    placeName.oninput=()=>{button.textContent=planBook.samples.some(s=>s.signature===signature)?'Namen speichern':'Diese Farbe merken';};
+    placeName.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();button.click();placeName.blur();}};
+    button.disabled=!picturePaletteId||!target;
+    button.onclick=()=>{
+      if(epoch!==picturePaletteEpoch||!picturePaletteId)return;
+      picturePalette.ids=[...new Set([...picturePalette.ids,...ids])];
+      planRemember(m,key,target,placeName.value,point);
+      savePicturePalette();renderPicturePalettePanels();
+      button.textContent='Diese Farbe ist gemerkt';
+      const saved=planBook.samples.find(s=>s.signature===signature);
+      placeName.value=saved?.name||placeName.value;
+      note.textContent='„'+placeName.value+'“ ist mit Farbprobe und Rezept im Palettenplan gespeichert.';
+    };
+    box.appendChild(button);
+  }
+  function refreshPictureRecipes(){
+    renderPicturePalettePanels();
+    if(lastSmartColor||lastAverageColor)showMixes();
+    if(build32Data&&build32Selected!==null)updateBuild32Recipe();
+    if(surfaceClusters.length&&surfaceResults.childElementCount)renderSurface(surfaceClusters);
+  }
+  function renderPicturePalettePanels(){
+    document.querySelectorAll('[data-picture-palette]').forEach(panel=>{
+      const key=document.getElementById(panel.dataset.picturePalette).value;
+      const available=new Set(effectivePaletteColors(key).map(c=>pictureTubeId(key,c)));
+      const ids=picturePalette.ids.filter(id=>available.has(id));
+      const wasOpen=panel.open;panel.replaceChildren();panel.open=wasOpen;
+      const title=document.createElement('summary');title.textContent='Palette für dieses Bild · '+ids.length+' Tubenfarben';panel.appendChild(title);
+      const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=picturePalette.enabled;
+      check.onchange=()=>{picturePalette.enabled=check.checked;savePicturePalette();refreshPictureRecipes();};
+      label.append(check,document.createTextNode(' Bereits verwendete Farben bevorzugen'));panel.appendChild(label);
+      const help=document.createElement('p');help.className='tiny';
+      help.textContent=!picturePaletteId?'Zuerst ein Foto öffnen.':!picturePaletteStorageOK?'Die Bildpalette bleibt in dieser Sitzung erhalten; dauerhaftes Speichern ist hier nicht verfügbar.':'Mit „Diese Farbe merken“ werden Farbprobe, Rezept und Tubenfarben gemeinsam gespeichert. Neue Tubenfarben nur bei deutlich besserer Farbtreue (Toleranz: 5 Punkte Bildschirmnähe).';panel.appendChild(help);
+      for(const id of ids){
+        const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.style.margin='3px';
+        const brand=id.slice(0,id.indexOf('::')),name=id.slice(id.indexOf('::')+2);
+        remove.textContent=name+(key==='watercolor'?' ('+brand+')':'')+' ×';remove.setAttribute('aria-label',name+' aus der Bildpalette entfernen');
+        remove.onclick=()=>{picturePalette.ids=picturePalette.ids.filter(x=>x!==id);savePicturePalette();refreshPictureRecipes();};panel.appendChild(remove);
+      }
+      const clear=document.createElement('button');clear.type='button';clear.className='secondary';clear.textContent='Bildpalette neu beginnen';clear.disabled=!ids.length;
+      clear.onclick=()=>{picturePalette.ids=picturePalette.ids.filter(id=>!available.has(id));savePicturePalette();refreshPictureRecipes();};panel.appendChild(clear);
+    });
+  }
+
+  // Keep the sampled reference separate from the edited screen colour.
+  function correctionMixes(target,hint,key){
+    // Search only for the edited colour. The original is a comparison,
+    // never a competing search target that can displace the correction.
+    return chooseMixes(hint,key).map(m=>({...m,
+      score:similarityPct(target,m.rgb),
+      correctionScore:similarityPct(hint,m.rgb)
+    } )).sort((a,b)=>{
+      const delta=a.correctionScore-b.correctionScore;
+      if(Math.abs(delta)<=5){
+        const brightness=key==='artisan'?oilLightnessPreference(a,b,rgbToLabFast(hint)[0]):0;
+        if(brightness)return brightness;
+        if(a.color_count!==b.color_count)return a.color_count-b.color_count;
+      }
+      return -delta;
+    });
+  }
+  // Nachmischen statt Neumischen: eine fertige Grundmischung als reale
+  // Portion behandeln. Eine RGB-Simulation ist KEINE Pigmentmessung.
+  function correctionAdditions(base,target,key){
+    const pigments=effectivePaletteColors(key);
+    if(!pigments.length)return [];
+    const portions=[0.25,0.5,1,2,3,4,6,8,10,12,15,20,25,30];
+    const options=[];
+    const originalScore=similarityPct(target,base);
+    const baseline={score:originalScore,rgb:base.slice(),adds:[],count:0};
+    options.push(baseline);
+    for(const tube of pigments){
+      for(const n of portions){
+        const rgb=pigmentMix([base,tube[1]],[30,n],key);
+        options.push({score:similarityPct(target,rgb),rgb,adds:[{name:tube[0],part:n}],count:1});
+      }
+    }
+    const firstPass=options.filter(x=>x.count===1).sort((a,b)=>b.score-a.score).slice(0,12);
+    for(const first of firstPass){
+      const firstTube=pigments.find(t=>t[0]===first.adds[0].name);
+      if(!firstTube)continue;
+      for(const second of pigments){
+        if(second[0]===firstTube[0])continue;
+        for(const n of [0.5,1,2,4,6,10,15]){
+          const p1=first.adds[0].part;
+          const rgb=pigmentMix([base,firstTube[1],second[1]],[30,p1,n],key);
+          options.push({score:similarityPct(target,rgb),rgb,adds:[first.adds[0],{name:second[0],part:n}],count:2});
+        }
+      }
+    }
+    const bestScore=Math.max(...options.map(x=>x.score));
+    return options.filter(x=>x.score>=bestScore-5).sort((a,b)=>a.count-b.count || b.score-a.score || a.adds.reduce((sum,x)=>sum+x.part,0)-b.adds.reduce((sum,x)=>sum+x.part,0)).slice(0,3);
+  }
+  function renderCorrectionAdditions(target,key){
+    if(!correctionRecipeHint||!correctionBase)return;
+    const block=document.createElement('section');block.className='mix-card';
+    const header=document.createElement('h3');header.textContent='Zuerst: vorhandene Mischung korrigieren';block.appendChild(header);
+    const intro=document.createElement('p');intro.className='tiny';
+    intro.textContent='Du hast bereits eine fertige Mischung. Diese Vorschläge geben an, was du zu 30 Teilen DEINER fertigen Farbe hinzufügen kannst. Die Mengen sind Näherungen für eine kleine Probe, keine exakte Pigmentberechnung.';block.appendChild(intro);
+    // Das ursprüngliche Rezept ist die Bezugsgröße der Zugaben.
+    const original=correctionOriginalRecipe;
+    const recipeBox=document.createElement('div');
+    recipeBox.style.cssText='padding:10px;margin:9px 0;border:1px solid #999;border-radius:8px';
+    const recipeTitle=document.createElement('strong');recipeTitle.textContent='Deine ursprüngliche Mischung';recipeBox.appendChild(recipeTitle);
+    if(original&&original.names.length&&original.parts.length){
+      const sum=original.parts.reduce((n,x)=>n+(Number(x)||0),0);
+      const recipeLine=document.createElement('p');
+      recipeLine.textContent=original.names.map((name,i)=>String(Number(original.parts[i]).toLocaleString('de-DE'))+' Teile '+name).join(' + ');
+      recipeBox.appendChild(recipeLine);
+      const amount=document.createElement('p');amount.className='tiny';
+      amount.textContent='Originalrezept: '+sum.toLocaleString('de-DE')+' Teile zusammen. Für die Korrektur wird davon eine fertige Portion von 30 Teilen als Ausgangsmenge angenommen; die Tubenanteile werden dabei proportional mitgerechnet.';
+      recipeBox.appendChild(amount);
+    }else{
+      const unknown=document.createElement('p');unknown.className='tiny';
+      unknown.textContent='Ausgangsfarbe: '+rgbHex(correctionBase)+'. Die Einzelanteile der ursprünglichen Mischung sind hier nicht gespeichert. Die Empfehlung bezieht sich auf 30 gleich große Teile der bereits fertigen Farbe.';
+      recipeBox.appendChild(unknown);
+    }
+    const explain=document.createElement('p');explain.className='tiny';
+    explain.textContent='Beispiel: ½ Teil Zugabe bedeutet 0,5 Teil auf 30 Teile fertiger Ausgangsmischung – also 1/60 der vorhandenen Menge. Du kannst etwa 30 kleine gleich große Portionen abzählen oder sämtliche Angaben im selben Verhältnis verkleinern.';
+    recipeBox.appendChild(explain);block.appendChild(recipeBox);
+    const options=correctionAdditions(correctionBase,correctionRecipeHint,key);
+    if(!options.length){const m=document.createElement('p');m.textContent='Keine Farben in der Palette verfügbar.';block.appendChild(m);mixResults.prepend(block);return;}
+    options.forEach((o,i)=>{
+      const row=document.createElement('div');row.style.cssText='border-top:1px solid #aaa;padding:9px 0';
+      const heading=document.createElement('strong');heading.textContent=i===0?'Empfehlung':'Alternative '+(i+1);row.appendChild(heading);
+      const description=document.createElement('p');
+      description.textContent=o.adds.length?'30 Teile vorhandene Mischung + '+o.adds.map(a=>a.part.toLocaleString('de-DE')+' Teile '+a.name).join(' + '):'Vorhandene Mischung nicht verändern – bereits nah genug am Korrekturziel.';
+      row.appendChild(description);
+      const swatch=document.createElement('div');swatch.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap';
+      for(const [name,rgb] of [['Vorhanden',correctionBase],['Nach Zugabe',o.rgb],['Ziel',correctionRecipeHint]]){
+        const item=document.createElement('div');item.className='tiny';item.textContent=name;
+        const square=document.createElement('div');square.style.cssText='width:65px;height:34px;border:1px solid #888;background:'+rgbHex(rgb);item.appendChild(square);swatch.appendChild(item);
+      }
+      const similarity=document.createElement('span');similarity.className='tiny';similarity.textContent=o.score+'/100 Bildschirmnähe';swatch.appendChild(similarity);row.appendChild(swatch);block.appendChild(row);
+    });
+    const warning=document.createElement('p');warning.className='tiny';warning.textContent='Erst eine kleine Probe abteilen. Simulierte RGB-/Spektralfarben ersetzen keine tatsächlichen Pigmentmessungen; bei Öl und Aquarell können die realen Mischungen deutlich abweichen. Die Zugabe bezieht sich auf 30 Teile bereits fertige Mischung, nicht auf 30 Teile Tubenfarbe.';block.appendChild(warning);
+    mixResults.prepend(block);
+  }
+  function calculateCorrectionRecipe(){
+    const hint=correctedColor();
+    if(!hint||!correctionTarget)return;
+    // setMixTarget clears stale correction state for all normal new targets.
+    setMixTarget(correctionTarget,'Ursprüngliche Zielfarbe');
+    correctionRecipeHint=hint.slice();
+    showStudioMixPage();
+  }
+
+  // Central palette selector: use the existing medium/palette logic, not a parallel mixing engine.
+  (function(){
+    const main=document.getElementById('mainPaletteSelect');
+    const source=document.getElementById('paintPalette');
+    const sync=()=>{ main.value=source.value; };
+    main.addEventListener('change',()=>{
+      const key=main.value;
+      setMedium(key==='artisan'?'oil':key==='system3'?'acrylic':'water');
+      source.value=key;
+      source.dispatchEvent(new Event('change',{bubbles:true}));
+      for(const id of ['build32MixPalette','surfaceMixPalette','advisorOwnPalette']){
+        const el=document.getElementById(id);
+        if(el && [...el.options].some(o=>o.value===key)){
+          el.value=key;el.dispatchEvent(new Event('change',{bubbles:true}));
+        }
+      }
+      sync();
+    });
+    source.addEventListener('change',sync);
+    ['mediumOilBtn','mediumWaterBtn','mediumAcrylicBtn'].forEach(id=>document.getElementById(id)?.addEventListener('click',()=>setTimeout(sync,0)));
+    sync();
+  })();
+
+  function showMixes(){
+    const target=lastSmartColor || lastAverageColor;
+    if(!target){
+      targetInfo.textContent='Bitte zuerst mit Pipette, Maler-Pipette oder Flächenberater eine Farbe aufnehmen.';
+      return;
+    }
+    updateAutoMixSurround(target);
+    const paletteKey=paintPalette.value;
+const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,paletteKey):chooseMixes(target,paletteKey);
+    mixResults.innerHTML=mixes.length?'':'<p>Bitte zuerst vorhandene Farben in der Palette auswählen.</p>';
+    const paletteHeading=document.createElement('p');
+    paletteHeading.style.cssText='font-weight:700;margin:8px 0';
+    paletteHeading.textContent='Mischpalette: '+({artisan:'Winsor & Newton Artisan · Öl',system3:'Daler-Rowney System3 · Acryl',horadam:'Schmincke Horadam · Aquarell',akademie:'Schmincke Akademie · Aquarell'}[paletteKey]||paletteKey);
+    mixResults.appendChild(paletteHeading);
+    if(!selectedPaletteColors(paletteKey).length){
+      mixResults.innerHTML+='<p class="tiny">Keine persönliche Auswahl aktiv: Vorschläge aus der Standardpalette'+(paletteKey==='artisan'?' ohne Schwarz':'')+'. Unter Palette kannst du deine vorhandenen Farben auswählen.</p>';
+    }
+    if(correctionRecipeHint){
+      const note=document.createElement('p');note.className='tiny';
+      note.textContent=`Rezepte für deine Korrektur ${rgbHex(correctionRecipeHint)}. Die ursprüngliche Zielfarbe ${rgbHex(target)} bleibt als Vergleich erhalten. Beide Werte beschreiben die Bildschirmnähe der simulierten Mischung.`;
+      mixResults.appendChild(note);
+      renderCorrectionAdditions(correctionRecipeHint,paletteKey);
+      const alt=document.createElement('h3');alt.textContent='Alternative: komplett neu mischen';mixResults.appendChild(alt);
+    }
+    const alternatives=(!correctionRecipeHint&&mixes.length>1)?document.createElement('details'):null;
+    if(alternatives){
+      alternatives.id='mixAlternatives';
+      const summary=document.createElement('summary');
+      summary.textContent='Weitere individuelle Mischrezepte ('+(mixes.length-1)+')';
+      alternatives.appendChild(summary);
+    }
+    mixes.forEach((m,idx)=>{
+      const card=document.createElement('div');
+      card.className='mix-card';
+      const targetHex=rgbHex(target), mixHex=rgbHex(m.rgb);
+      const valueTarget=correctionRecipeHint||target;
+      const brightnessDelta=rgbToLabFast(m.rgb)[0]-rgbToLabFast(valueTarget)[0];
+      const brightnessText=Math.abs(brightnessDelta)<=1.5?'Helligkeit: sehr nah am Ziel':
+        'Helligkeit: '+Math.abs(brightnessDelta).toFixed(1).replace('.',',')+' L* '+(brightnessDelta<0?'zu dunkel':'zu hell')+' (Simulation)';
+      card.innerHTML=`
+        <div class="mix-head"><b>${correctionRecipeHint?'Korrekturrezept':'Vorschlag'} ${idx+1}</b><span>${correctionRecipeHint?`${m.correctionScore}/100 zur Korrektur<br>${m.score}/100 zur ursprünglichen Zielfarbe`:`${m.score}/100 Bildschirmnähe`}</span></div>
+        <div class="mix-swatches" ${correctionRecipeHint?'style="grid-template-columns:repeat(3,minmax(0,1fr))"':''}>
+          <div><div class="tiny">${correctionRecipeHint?'Ursprüngliche Zielfarbe':'Zielfarbe'}</div><div class="mix-swatch" style="background:${targetHex}"></div><div class="tiny" style="margin-top:6px">${targetHex} · RGB ${target.join(', ')}</div></div>
+          ${correctionRecipeHint?`<div><div class="tiny">Deine Korrektur</div><div class="mix-swatch" style="background:${rgbHex(correctionRecipeHint)}"></div><div class="tiny" style="margin-top:6px">${rgbHex(correctionRecipeHint)}</div></div>`:''}
+          <div><div class="tiny">Mischung</div><div class="mix-swatch" style="background:${mixHex}"></div><div class="tiny" style="margin-top:6px">${brightnessText}</div></div>
+        </div>
+        <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i].toLocaleString('de-DE')} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)':paletteKey==='system3'?'Acryl · angenäherte Farbwerte, keine gemessenen Mischspektren; Mengen als Startrezept':'Öl · angenäherte Pigmentfarben, keine gemessenen Mischspektren; Mengen als Startrezept'}. Auf Papier/Palette prüfen.</span></div>
+      `;
+      appendPictureUseButton(card,m,paletteKey,target);
+      (alternatives&&idx>0?alternatives:mixResults).appendChild(card);
+    });
+    if(alternatives)mixResults.appendChild(alternatives);
+    if(!correctionRecipeHint&&showBaseSuggestions)renderPremixComparison(target,paletteKey,mixes);
+    if(mixSurroundMode==='auto'&&mixGrayLevel!==null){
+      mixResults.querySelectorAll('.mix-swatches').forEach(el=>el.dataset.grayLevel=String(mixGrayLevel));
+    }
+  }
+
+  function setMedium(m){
+    paintMedium=m;
+    mediumOilBtn.classList.toggle('active',m==='oil');
+    mediumOilBtn.classList.toggle('secondary',m!=='oil');
+    mediumWaterBtn.classList.toggle('active',m==='water');
+    mediumWaterBtn.classList.toggle('secondary',m!=='water');
+    mediumAcrylicBtn.classList.toggle('active',m==='acrylic');
+    mediumAcrylicBtn.classList.toggle('secondary',m!=='acrylic');
+    if(m==='oil'){
+      paintPalette.value='artisan';
+      [...paintPalette.options].forEach(o=>o.disabled=(o.value!=='artisan'));
+    }else if(m==='acrylic'){
+      paintPalette.value='system3';
+      [...paintPalette.options].forEach(o=>o.disabled=(o.value!=='system3'));
+    }else{
+      [...paintPalette.options].forEach(o=>o.disabled=(o.value==='artisan'||o.value==='system3'));
+      if(paintPalette.value==='artisan'||paintPalette.value==='system3') paintPalette.value='horadam';
+    }
+    mixResults.innerHTML='';
+    updateStandardPaletteInfo();
+    if(m==='acrylic'){
+      // A single deliberate acrylic choice should also be reflected in the other mixing panels.
+      for(const id of ['build32MixPalette','surfaceMixPalette','advisorOwnPalette']){
+        const field=document.getElementById(id);
+        if(field)field.value='system3';
+      }
+    }
+    document.getElementById('system3AccuracyNote').hidden=m!=='acrylic';
+    setTimeout(updateOwnedSummary,0);
+  }
+
+  function updatePickerCircle(clientX,clientY,show=true){
+    if(!pickerCircle) return;
+    if(!show){ pickerCircle.style.display='none'; return; }
+    const rect=canvas.getBoundingClientRect();
+    const radius=Number(pickerRadius.value);
+    pickerCircle.style.display='block';
+    pickerCircle.style.width=(radius*2)+'px';
+    pickerCircle.style.height=(radius*2)+'px';
+    pickerCircle.style.left=(clientX-rect.left-radius)+'px';
+    pickerCircle.style.top=(clientY-rect.top-radius)+'px';
+  }
+
+  function sampleCircle(clientX,clientY,smart=false){
+    if(!loaded) return;
+    const p=canvasPoint(clientX,clientY);
+    const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
+    if(ix<0||iy<0||ix>=img.width||iy>=img.height) return;
+    const radiusScreen=Number(pickerRadius.value);
+    const visible=pickerSource.value!=='original';
+    const sampleCtx=visible?renderPickerDisplay():sourceContextForPicker();
+    const dpr=Math.max(1,window.devicePixelRatio||1);
+    const cx=visible?p.x*dpr:ix,cy=visible?p.y*dpr:iy;
+    const radius=visible?radiusScreen*dpr:Math.max(2,Math.round(radiusScreen/Math.max(scale,0.01)));
+    const x0=Math.max(0,Math.floor(cx-radius)), y0=Math.max(0,Math.floor(cy-radius));
+    const x1=Math.min(sampleCtx.canvas.width,Math.ceil(cx+radius)), y1=Math.min(sampleCtx.canvas.height,Math.ceil(cy+radius));
+    const w=Math.max(1,x1-x0), h=Math.max(1,y1-y0);
+    const data=readImageDataSRGB(sampleCtx,x0,y0,w,h).data;
+    const samples=[];
+    const step=visible?1:Math.max(1,Math.floor(Math.sqrt((w*h)/900)));
+    for(let y=0;y<h;y+=step){
+      for(let x=0;x<w;x+=step){
+        const dx=(x+x0-cx), dy=(y+y0-cy);
+        if(dx*dx+dy*dy>radius*radius) continue;
+        // Im Kreis ausserhalb des Motivs niemals den grauen Viewer-Hintergrund mitmessen.
+        if(visible){
+          const imageX=((x+x0+.5)/dpr-offsetX)/scale;
+          const imageY=((y+y0+.5)/dpr-offsetY)/scale;
+          if(imageX<0||imageY<0||imageX>=img.width||imageY>=img.height)continue;
+        }
+        const i=(y*w+x)*4;
+        if(data[i+3]>20) samples.push([data[i],data[i+1],data[i+2]]);
+      }
+    }
+    if(!samples.length) return;
+    // Original-Messwert und automatisch angepasster Malton bleiben getrennt.
+    // Sonst landet die Aufhellung nur als optischer Effekt im Farbfeld und
+    // nicht in den tatsächlichen Studio-Mischrezepten.
+    const avg=linearAverageRGB(samples);
+    const robust=robustSmartColor(samples);
+    const circleBase=smart && robust ? robust.smart : avg;
+    const paintingColor=painterAreaLift(circleBase);
+    correctionRecipeHint=null;
+    correctionOriginalRecipe=null;
+    planActiveId=null; // Eigenständige Kreisprobe, keine alte gemerkte Nummer
+    lastAverageColor=avg;
+    lastSmartColor=paintingColor;
+    planSamplePoint={...planPointAt(ix,iy),rgb:lastSmartColor.slice()};
+    // Kreisaufnahme aktualisiert auch die normale Pipettenfarbe und verwirft alte Isolierungen.
+    surfaceSelectedIndex=null;
+    cancelIsolation();
+    colorBox.style.background=rgbHex(adaptiveDisplayColor(lastSmartColor));
+    colorText.innerHTML=`RGB: ${lastSmartColor.join(', ')}<br>HEX: ${rgbHex(lastSmartColor)} · Kreis-Malton`;
+    avgTargetBox.style.background=rgbHex(adaptiveDisplayColor(avg));
+    smartTargetBox.style.background=rgbHex(adaptiveDisplayColor(lastSmartColor));
+    targetInfo.innerHTML=`Gemessener Kreis-Durchschnitt ${rgbHex(avg)} · RGB ${avg.join(', ')}<br>`+
+      `Aktiver Malton ${rgbHex(lastSmartColor)} · RGB ${lastSmartColor.join(', ')}<br>`+
+      `<span class="tiny">${smart ? 'Maler-Pipette' : 'Kreis-Pipette'} · automatisch leicht aufgehellt · ${samples.length} Messpunkte. Die Punkt-Pipette misst unverändert.</span>`;
+    // also update the existing smart color display for consistency
+    if(robust) showSmartColor(robust);
+    takeCorrectionColor(lastSmartColor); ideasBase=[...lastSmartColor]; refreshIdea();
+    showStudioMixPage();
+  }
+
+
+  function targetArray(){
+    if(lastSmartColor) return [...lastSmartColor];
+    if(lastAverageColor) return [...lastAverageColor];
+    return null;
+  }
+
+  function showStudioMixPage(){
+    showMixes();
+    if(typeof window.activateToolPage==='function'){
+      window.activateToolPage('paintMixPanel');
+    }
+    setTimeout(()=>{
+      if(mixResults && typeof mixResults.scrollIntoView==='function'){
+        mixResults.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+    },30);
+  }
+
+  function setMixTarget(rgb, label='Zielfarbe',point=null,rememberedSampleId=null){
+    // Neues Pipettenziel hebt eine frühere Nummernwahl auf. Nur der Aufruf
+    // einer gemerkten Farbnummer behält deren Zuordnung für die Isolation.
+    planActiveId=rememberedSampleId;
+    planSamplePoint=point&&rgb?{...point,rgb:rgb.slice()}:null;
+    if(!rgb) return;
+    correctionRecipeHint=null;
+    correctionOriginalRecipe=null;
+    lastAverageColor=[...rgb];
+    lastSmartColor=[...rgb];
+    const hx=rgbHex(rgb);
+    const displayHx=rgbHex(adaptiveDisplayColor(rgb));
+    avgTargetBox.style.background=displayHx;
+    smartTargetBox.style.background=displayHx;
+    targetInfo.innerHTML=`${label} ${hx} · RGB ${rgb.join(', ')}`;
+  }
+
+
+  function journeyBlend(a,b,amount){
+    // Weiche Zwischenfarben in sRGB; nur Anzeige/Zielwerte der Farbreise.
+    // Die eigentliche Tubenmischung wird weiterhin von der bestehenden
+    // Studio-Mischung berechnet.
+    return [0,1,2].map(i=>Math.round(a[i]+(b[i]-a[i])*amount));
+  }
+
+  function journeyCurrentColor(){
+    return targetArray();
+  }
+
+  function renderColorJourney(){
+    journeyStartSwatch.style.background=journeyStartColor ? rgbHex(adaptiveDisplayColor(journeyStartColor)) : '#808080';
+    journeyTargetSwatch.style.background=journeyTargetColor ? rgbHex(adaptiveDisplayColor(journeyTargetColor)) : '#808080';
+
+    if(!journeyStartColor || !journeyTargetColor){
+      journeyResults.innerHTML='';
+      journeyInfo.textContent=!journeyStartColor
+        ? 'Direkt ins Bild tippen: zuerst die vorhandene Grundfarbe.'
+        : 'Grundfarbe gespeichert. Jetzt direkt die Zielfarbe antippen.';
+      return;
+    }
+
+    const base=[...journeyStartColor];
+    const target=[...journeyTargetColor];
+    const paletteKey=paintPalette.value;
+    const available=effectivePaletteColors(paletteKey);
+    journeyResults.innerHTML='';
+
+    if(!available || available.length<2){
+      journeyInfo.textContent='Für die Farbreise müssen mindestens zwei Farben deiner Palette aktiv sein.';
+      return;
+    }
+
+    // PC-Prinzip: zuerst wird die vorhandene Ausgangsfarbe als Studio-Mischung berechnet.
+    const startSuggestions=chooseMixes(base,paletteKey);
+    if(!startSuggestions.length){
+      journeyInfo.textContent='Für die Grundfarbe konnte keine Ausgangsmischung berechnet werden.';
+      return;
+    }
+    const startMix=startSuggestions[0];
+
+    const isWater=paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie';
+    const candidates=available.map(([name,rgb,series])=>({name,rgb,series}));
+
+    function paintRgb(c){
+      return isWater ? paletteMixRgb(c.name,c.rgb,paletteKey) : c.rgb;
+    }
+    function weightedRgb(items,parts){
+      return pigmentMix(items.map(c=>paintRgb(c)),parts,paletteKey);
+    }
+    function targetCost(rgb){
+      return deltaE76FromLab(rgbToLabFast(rgb),rgbToLabFast(target));
+    }
+    function matchPct(cost){
+      return Math.max(0,Math.min(100,Math.round(100-cost*1.55)));
+    }
+
+    // Reconstruct the calculated start mixture as paint items.
+    const startItems=[];
+    const startParts=[];
+    for(let i=0;i<startMix.names.length;i++){
+      const cleanName=startMix.names[i].replace(/\s+\((Horadam|Akademie)\)$/,'');
+      const found=candidates.find(c=>c.name===cleanName);
+      if(found){
+        startItems.push(found);
+        startParts.push(startMix.parts[i]||1);
+      }
+    }
+    if(!startItems.length){
+      journeyInfo.textContent='Die Ausgangsmischung konnte nicht mit deiner Palette verknüpft werden.';
+      return;
+    }
+
+    // PC-artige Farbentwicklung:
+    // Teile der vorhandenen Ausgangsmischung + 1 oder 2 zusätzliche Tubenfarben.
+    const found=[];
+    const startUseOptions=[4,5,6,8,10,12,15,18,20];
+    const addOptions=[1,2,3,4,5,6,8,10];
+
+    function scaledStartParts(startUse){
+      const total=startParts.reduce((a,b)=>a+b,0)||1;
+      return startParts.map(v=>v/total*startUse);
+    }
+
+    function testAddition(addColors, addParts, startUse){
+      const items=startItems.concat(addColors);
+      const parts=scaledStartParts(startUse).concat(addParts);
+      const rgb=weightedRgb(items,parts);
+      found.push({
+        rgb,
+        cost:targetCost(rgb),
+        startUse,
+        addColors,
+        addParts
+      });
+    }
+
+    for(const c of candidates){
+      for(const su of startUseOptions){
+        for(const ap of addOptions) testAddition([c],[ap],su);
+      }
+    }
+
+    const pool=candidates.slice(0,Math.min(18,candidates.length));
+    for(let i=0;i<pool.length;i++){
+      for(let j=i+1;j<pool.length;j++){
+        for(const su of [6,8,10,12,15,18]){
+          for(const a1 of [1,2,3,4,5]){
+            for(const a2 of [1,2,3,4,5]){
+              testAddition([pool[i],pool[j]],[a1,a2],su);
+            }
+          }
+        }
+      }
+    }
+
+    found.sort((x,y)=>x.cost-y.cost || (x.addParts.reduce((a,b)=>a+b,0)-y.addParts.reduce((a,b)=>a+b,0)));
+
+    const best=[];
+    const seen=new Set();
+    for(const r of found){
+      const sig=r.addColors.map(c=>c.name).sort().join('|');
+      if(seen.has(sig)) continue;
+      seen.add(sig);
+      best.push(r);
+      if(best.length>=3) break;
+    }
+
+    const startRecipe=startMix.names.map((n,i)=>`${startMix.parts[i]} Teil${startMix.parts[i]!==1?'e':''} ${n}`).join('<br>');
+    journeyInfo.innerHTML=`<b>Vorhandene Ausgangsmischung:</b><br>${startRecipe}`;
+
+    best.forEach((r,idx)=>{
+      const totalAddition=r.addParts.reduce((a,b)=>a+b,0);
+      const changeLarge=totalAddition >= r.startUse*0.75;
+      const additions=r.addColors.map((c,i)=>`+ ${r.addParts[i]} Teil${r.addParts[i]!==1?'e':''} ${c.name}`).join('<br>');
+      const card=document.createElement('div');
+      card.className='mix-card';
+      card.innerHTML=`
+        <div class="mix-head">
+          <b>${idx===0?'Beste Weiterentwicklung':'Alternative '+(idx+1)}</b>
+          <span>${matchPct(r.cost)}% Übereinstimmung</span>
+        </div>
+        <div class="mix-swatches">
+          <div><div class="tiny">Berechnetes Ergebnis</div><div class="mix-swatch" style="background:${rgbHex(adaptiveDisplayColor(r.rgb))}"></div></div>
+          <div><div class="tiny">Zielfarbe</div><div class="mix-swatch" style="background:${rgbHex(adaptiveDisplayColor(target))}"></div></div>
+        </div>
+        <div class="mix-lines">
+          <b>Davon verwenden:</b><br>
+          ${r.startUse} Teile Ausgangsmischung<br>
+          ${additions}
+        </div>
+        <div class="tiny" style="margin-top:7px;">
+          ${changeLarge
+            ? 'Die Veränderung ist groß. Eine neue Mischung könnte sauberer sein.'
+            : 'Gute praktische Weiterentwicklung der vorhandenen Mischung.'}
+        </div>
+      `;
+      journeyResults.appendChild(card);
+    });
+  }
+
+  function resetColorJourney(){
+    journeyStartColor=null;
+    journeyTargetColor=null;
+    renderColorJourney();
+  }
+
+  function readImageDataSRGB(context,x,y,w,h){
+    try{
+      return context.getImageData(x,y,w,h,{colorSpace:'srgb'});
+    }catch(e){
+      return context.getImageData(x,y,w,h);
+    }
+  }
+
+  // Sample the same artwork composition as the viewer, without grid/selection outlines.
+  const pickerArtworkCanvas=document.createElement('canvas');
+  const pickerArtworkCtx=pickerArtworkCanvas.getContext('2d',{colorSpace:'srgb',willReadFrequently:true});
+  function sourceContextForPicker(){
+    flushToneImage();
+    if(pickerSource && pickerSource.value==='original') return sourceCtx;
+    if(pickerArtworkCanvas.width!==sourceCanvas.width) pickerArtworkCanvas.width=sourceCanvas.width;
+    if(pickerArtworkCanvas.height!==sourceCanvas.height) pickerArtworkCanvas.height=sourceCanvas.height;
+    pickerArtworkCtx.clearRect(0,0,pickerArtworkCanvas.width,pickerArtworkCanvas.height);
+    // Die Isolation darf niemals ihre eigene vorherige Maske als Bildquelle verwenden.
+    // Sonst kann ein Regler nur Flächen entfernen, nicht wieder hinzufügen.
+    const previousIsolation=surfaceMarkCanvas;
+    try{
+      surfaceMarkCanvas=null;
+      renderCurrentArtwork(pickerArtworkCtx,false);
+    }finally{
+      surfaceMarkCanvas=previousIsolation;
+    }
+    return pickerArtworkCtx;
+  }
+
+  // 2.89: sample the actual display resolution and interpolation, not a
+  // separate full-resolution rendering. This also flattens transparent pixels
+  // against the same background as the viewer. No grid or selection marks.
+  const pickerDisplayCanvas=document.createElement('canvas');
+  const pickerDisplayCtx=pickerDisplayCanvas.getContext('2d',{colorSpace:'srgb',willReadFrequently:true});
+  function renderPickerDisplay(){
+    flushToneImage();
+    if(pickerDisplayCanvas.width!==canvas.width)pickerDisplayCanvas.width=canvas.width;
+    if(pickerDisplayCanvas.height!==canvas.height)pickerDisplayCanvas.height=canvas.height;
+    const pc=pickerDisplayCtx,dpr=Math.max(1,window.devicePixelRatio||1);
+    pc.setTransform(1,0,0,1,0,0);
+    pc.clearRect(0,0,pickerDisplayCanvas.width,pickerDisplayCanvas.height);
+    pc.fillStyle=getComputedStyle(viewer).backgroundColor;
+    pc.fillRect(0,0,pickerDisplayCanvas.width,pickerDisplayCanvas.height);
+    pc.save();pc.setTransform(dpr,0,0,dpr,0,0);
+    paintArtworkAtView(pc,false);
+    pc.restore();
+    return pc;
+  }
+  function sampleDisplayedPixel(ix,iy){
+    if(pickerSource.value==='original'){
+      return readImageDataSRGB(sourceCtx,Math.floor(ix),Math.floor(iy),1,1).data.slice(0,3);
+    }
+    const pc=renderPickerDisplay(),dpr=Math.max(1,window.devicePixelRatio||1);
+    const x=Math.max(0,Math.min(pc.canvas.width-1,Math.floor((offsetX+ix*scale)*dpr)));
+    const y=Math.max(0,Math.min(pc.canvas.height-1,Math.floor((offsetY+iy*scale)*dpr)));
+    return readImageDataSRGB(pc,x,y,1,1).data.slice(0,3);
+  }
+
+  function drawGridOverlay(targetCtx, w, h, density, highContrast=false){
+    const n=Math.max(2,Number(density)||8);
+    targetCtx.save();
+
+    const {cellX,cellY,firstX,firstY}=gridGeometry(w,h,density);
+
+    targetCtx.globalCompositeOperation=highContrast?'source-over':'difference';
+    targetCtx.strokeStyle='rgba(255,255,255,.88)';
+    // Keep the overlay fine in screen pixels, independent of crop magnification.
+    const transform=targetCtx.getTransform();
+    const pixelRatio=targetCtx===ctx?Math.max(1,window.devicePixelRatio||1):1;
+    const gridWidth=pixelRatio/(Math.hypot(transform.a,transform.b)||1);
+    targetCtx.lineWidth=gridWidth;
+    function strokeGridLine(){
+      if(highContrast){
+        targetCtx.strokeStyle='rgba(255,255,255,.95)';
+        targetCtx.lineWidth=gridWidth*2;
+        targetCtx.stroke();
+        targetCtx.strokeStyle='rgba(25,25,25,.95)';
+        targetCtx.lineWidth=gridWidth;
+        targetCtx.stroke();
+      }else{
+        targetCtx.stroke();
+      }
+    }
+
+    for(let x=firstX; x<=w+0.001; x+=cellX){
+      const px=Math.round(x)+0.5;
+      if(px<=0.5 || px>=w+0.5) continue;
+      targetCtx.beginPath();
+      targetCtx.moveTo(px,0);
+      targetCtx.lineTo(px,h);
+      strokeGridLine();
+    }
+
+    for(let y=firstY; y<=h+0.001; y+=cellY){
+      const py=Math.round(y)+0.5;
+      if(py<=0.5 || py>=h+0.5) continue;
+      targetCtx.beginPath();
+      targetCtx.moveTo(0,py);
+      targetCtx.lineTo(w,py);
+      strokeGridLine();
+    }
+    targetCtx.restore();
+  }
+
+  function drawOriginalGridOverlay(targetCtx,w,h){
+    if(!originalGridEnabled||!originalGridGeometry)return;
+    const g=originalGridGeometry;
+    if(!(g.cellX>0&&g.cellY>0))return;
+    targetCtx.save();
+    // The fine grid uses 'difference'. Drawing the original grid with the
+    // same blend operation made coinciding horizontal lines almost vanish
+    // (double inversion). Draw the original boundaries LAST in source-over,
+    // with a subtle dark outline and light center for contrast on any photo.
+    targetCtx.globalCompositeOperation='source-over';
+    const t=targetCtx.getTransform();
+    const pixelRatio=targetCtx===ctx?Math.max(1,window.devicePixelRatio||1):1;
+    const screenPixel=pixelRatio/(Math.hypot(t.a,t.b)||1);
+    targetCtx.beginPath();
+    for(let x=g.firstX;x<=w+.001;x+=g.cellX){
+      if(x>=-0.001&&x<=w+0.001){targetCtx.moveTo(Math.max(0,Math.min(w,x)),0);targetCtx.lineTo(Math.max(0,Math.min(w,x)),h);}
+    }
+    for(let y=g.firstY;y<=h+.001;y+=g.cellY){
+      if(y>=-0.001&&y<=h+0.001){targetCtx.moveTo(0,Math.max(0,Math.min(h,y)));targetCtx.lineTo(w,Math.max(0,Math.min(h,y)));}
+    }
+    targetCtx.strokeStyle='rgba(24,24,24,.55)';
+    targetCtx.lineWidth=2.55*screenPixel;
+    targetCtx.stroke();
+    targetCtx.strokeStyle='rgba(255,255,255,.78)';
+    targetCtx.lineWidth=1.05*screenPixel;
+    targetCtx.stroke();
+    targetCtx.restore();
+  }
+  function drawVisibleGrids(targetCtx,w,h,includeGrid=true,highContrast=false){
+    if(!includeGrid)return;
+    if(gridEnabled)drawGridOverlay(targetCtx,w,h,gridDensity.value,highContrast);
+    // Draw thicker original-square boundaries last. Both overlays are visual
+    // only: colour sampling and pixel data are always raster-free.
+    drawOriginalGridOverlay(targetCtx,w,h);
+  }
+
+  function rgbToHsv(rgb){
+    let [r,g,b]=rgb.map(v=>v/255), mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+    let h=0;
+    if(d){ if(mx===r)h=((g-b)/d)%6; else if(mx===g)h=(b-r)/d+2; else h=(r-g)/d+4; h*=60;if(h<0)h+=360; }
+    return [h,mx===0?0:d/mx,mx];
+  }
+  function hsvToRgb(h,s,v){
+    const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;let q=[0,0,0];
+    if(h<60)q=[c,x,0]; else if(h<120)q=[x,c,0]; else if(h<180)q=[0,c,x]; else if(h<240)q=[0,x,c]; else if(h<300)q=[x,0,c]; else q=[c,0,x];
+    return q.map(z=>Math.round((z+m)*255));
+  }
+
+  function glazeClamp(v){return Math.max(0,Math.min(255,Math.round(v)));}
+
+  function glazeApply(base,paint,strength,medium){
+    let a=Math.max(0,Math.min(1,strength/100));
+    // Aquarell bleibt bewusst sanfter als eine reine Bildschirm-Überblendung.
+    // Öl darf etwas stärker wirken.
+    const effective=medium==='water' ? a*0.72 : medium==='acrylic' ? a*0.80 : a*0.88;
+    return [0,1,2].map(i=>glazeClamp(base[i]*(1-effective)+paint[i]*effective));
+  }
+
+  function glazeDistance(a,b){
+    const la=rgbToLabFast(a), lb=rgbToLabFast(b);
+    return deltaE76FromLab(la,lb);
+  }
+
+  function glazeMatchPercent(rgb,target){
+    return Math.max(0,Math.min(100,Math.round((1-glazeDistance(rgb,target)/100)*100)));
+  }
+
+  function glazeActiveColors(){
+    return effectivePaletteColors(glazePalette.value);
+  }
+
+  function refreshGlazePaletteStatus(){
+    const key=glazePalette.value;
+    const total=key==='watercolor'
+      ? (PALETTES.horadam||[]).length+(PALETTES.akademie||[]).length
+      : (PALETTES[key]||[]).length;
+    const active=selectedPaletteColors(key).length;
+    const names={watercolor:'Meine Aquarellfarben · Horadam + Akademie',horadam:'Schmincke Horadam',akademie:'Schmincke Akademie',artisan:'Winsor & Newton Artisan',system3:'Daler-Rowney System3 Original · Acryl'};
+    glazePaletteStatus.textContent=`${names[key]||key} – ${active} von ${total} Farben aktiv`;
+  }
+
+  function refreshGlazeColors(){
+    glazeBaseSwatch.style.background=glazeBase?rgbHex(glazeBase):'#808080';
+    glazeTargetSwatch.style.background=glazeTarget?rgbHex(glazeTarget):'#808080';
+    if(glazeBase && glazeTarget){
+      glazeColorInfo.innerHTML=`Gemälde ${rgbHex(glazeBase)} · RGB ${glazeBase.join(', ')}<br>`+
+        `Original ${rgbHex(glazeTarget)} · RGB ${glazeTarget.join(', ')}`;
+    }else if(glazeOriginalImg && glazePaintingImg){
+      glazeColorInfo.textContent='Beide Bilder geladen. Im Gemälde beliebig viele Stellen antippen.';
+    }else{
+      glazeColorInfo.textContent='Bitte Originalfoto und Gemälde laden.';
+    }
+  }
+
+  function rotateGlazeNorm(p,deg){
+    const a=deg*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a);
+    const x=p.x-.5,y=p.y-.5;
+    return {x:.5+x*ca-y*sa,y:.5+x*sa+y*ca};
+  }
+
+  function paintingToOriginalNorm(p){
+    const r=rotateGlazeNorm(p,glazeAlign.rotation||0);
+    return {
+      x:.5+(r.x-.5)*glazeAlign.scale+glazeAlign.dx,
+      y:.5+(r.y-.5)*glazeAlign.scale+glazeAlign.dy
+    };
+  }
+
+  function originalToPaintingNorm(p){
+    const q={
+      x:.5+(p.x-glazeAlign.dx-.5)/glazeAlign.scale,
+      y:.5+(p.y-glazeAlign.dy-.5)/glazeAlign.scale
+    };
+    return rotateGlazeNorm(q,-(glazeAlign.rotation||0));
+  }
+
+
+  function drawTinyMarker(c,px,py,idx,active,dpr=1){
+    c.save();
+    const r=active?5*dpr:4*dpr;
+    c.strokeStyle=active?'#ffd21f':'#ffffff';
+    c.lineWidth=Math.max(1.2,1.5*dpr);
+    c.shadowColor='rgba(0,0,0,.9)';
+    c.shadowBlur=2*dpr;
+    c.beginPath();
+    c.moveTo(px-r,py); c.lineTo(px+r,py);
+    c.moveTo(px,py-r); c.lineTo(px,py+r);
+    c.stroke();
+    c.fillStyle=active?'#ffd21f':'#fff';
+    c.beginPath(); c.arc(px,py,1.4*dpr,0,Math.PI*2); c.fill();
+    c.restore();
+  }
+
+  function drawGlazePreview(canvas,image,which){
+    const rect=canvas.getBoundingClientRect();
+    const dpr=window.devicePixelRatio||1;
+    const w=Math.max(2,Math.round(rect.width*dpr));
+    const h=Math.max(2,Math.round(rect.height*dpr));
+    if(canvas.width!==w) canvas.width=w;
+    if(canvas.height!==h) canvas.height=h;
+    const c=canvas.getContext('2d');
+    c.clearRect(0,0,w,h);
+    if(!image) return;
+
+    const fit=Math.min(w/image.width,h/image.height);
+    const dw=image.width*fit, dh=image.height*fit;
+    const ox=(w-dw)/2, oy=(h-dh)/2;
+
+    if(which==='painting'){
+      const refW=dw*glazeAlign.scale, refH=dh*glazeAlign.scale;
+      const cx=ox+dw/2+glazeAlign.dx*dw;
+      const cy=oy+dh/2+glazeAlign.dy*dh;
+      c.save();
+      c.translate(cx,cy);
+      c.rotate((glazeAlign.rotation||0)*Math.PI/180);
+      c.drawImage(image,-refW/2,-refH/2,refW,refH);
+      c.restore();
+    }else{
+      c.drawImage(image,ox,oy,dw,dh);
+    }
+
+    glazePoints.forEach((pt,idx)=>{
+      const q=pt.originalPoint;
+      drawTinyMarker(c,ox+q.x*dw,oy+q.y*dh,idx,idx===glazeActivePoint,dpr);
+    });
+  }
+
+  function redrawGlazePreviews(){
+    drawGlazePreview(glazeOriginalCanvas,glazeOriginalImg,'original');
+    drawGlazePreview(glazePaintingCanvas,glazePaintingImg,'painting');
+    if(typeof redrawGlazeFullscreen==='function') redrawGlazeFullscreen();
+  }
+
+
+  function drawGlazeFullscreenCanvas(canvas,image,which){
+    const rect=canvas.getBoundingClientRect();
+    const dpr=window.devicePixelRatio||1;
+    const w=Math.max(2,Math.round(rect.width*dpr));
+    const h=Math.max(2,Math.round(rect.height*dpr));
+    if(canvas.width!==w) canvas.width=w;
+    if(canvas.height!==h) canvas.height=h;
+    const c=canvas.getContext('2d');
+    c.fillStyle='#1b1b1b'; c.fillRect(0,0,w,h);
+    if(!image) return;
+
+    const baseFit=Math.min(w/image.width,h/image.height);
+    const fit=baseFit*glazeFsView.zoom;
+    const dw=image.width*fit,dh=image.height*fit;
+    const ox=(w-dw)/2+glazeFsView.panX*dpr;
+    const oy=(h-dh)/2+glazeFsView.panY*dpr;
+
+    if(which==='painting'){
+      const refW=dw*glazeAlign.scale,refH=dh*glazeAlign.scale;
+      const cx=ox+dw/2+glazeAlign.dx*dw;
+      const cy=oy+dh/2+glazeAlign.dy*dh;
+      c.save();
+      c.translate(cx,cy);
+      c.rotate((glazeAlign.rotation||0)*Math.PI/180);
+      c.drawImage(image,-refW/2,-refH/2,refW,refH);
+      c.restore();
+    }else{
+      c.drawImage(image,ox,oy,dw,dh);
+    }
+
+    glazePoints.forEach((pt,idx)=>{
+      const q=pt.originalPoint;
+      drawTinyMarker(c,ox+q.x*dw,oy+q.y*dh,idx,idx===glazeActivePoint,dpr);
+    });
+  }
+
+  function redrawGlazeFullscreen(){
+    if(glazeFullscreen.style.display==='none') return;
+    drawGlazeFullscreenCanvas(glazeFsOriginalCanvas,glazeOriginalImg,'original');
+    drawGlazeFullscreenCanvas(glazeFsPaintingCanvas,glazePaintingImg,'painting');
+    glazeFsAlignInfo.textContent=glazeAlignInfo.textContent;
+    glazeFsPointInfo.textContent=glazeActivePoint>=0?`Aktiver Messpunkt: ${glazeActivePoint+1} · insgesamt ${glazePoints.length}`:`Messpunkte: ${glazePoints.length}`;
+  }
+
+  function openGlazeFullscreen(){
+    glazeFullscreen.style.display='block';
+    glazeFsView={zoom:1,panX:0,panY:0};
+    glazeFsRadius.value=glazeSampleRadius.value;
+    glazeFsRadiusVal.textContent=glazeFsRadius.value+' px';
+    setTimeout(redrawGlazeFullscreen,30);
+  }
+
+  function fullscreenOriginalPoint(clientX,clientY){
+    if(!glazePaintingImg) return null;
+    const canvas=glazeFsPaintingCanvas;
+    const rect=canvas.getBoundingClientRect();
+    const dpr=window.devicePixelRatio||1;
+    const w=canvas.width,h=canvas.height;
+    const sx=(clientX-rect.left)*dpr, sy=(clientY-rect.top)*dpr;
+    const fit=Math.min(w/glazePaintingImg.width,h/glazePaintingImg.height)*glazeFsView.zoom;
+    const dw=glazePaintingImg.width*fit,dh=glazePaintingImg.height*fit;
+    const ox=(w-dw)/2+glazeFsView.panX*dpr;
+    const oy=(h-dh)/2+glazeFsView.panY*dpr;
+    return {x:(sx-ox)/dw,y:(sy-oy)/dh};
+  }
+
+  function addGlazePointFromOriginalNorm(originalPoint){
+    if(!glazePaintingImg||!glazeOriginalImg) return;
+    if(!originalPoint||originalPoint.x<0||originalPoint.y<0||originalPoint.x>1||originalPoint.y>1) return;
+    const paintingPoint=originalToPaintingNorm(originalPoint);
+    if(paintingPoint.x<0||paintingPoint.y<0||paintingPoint.x>1||paintingPoint.y>1){
+      glazeFsPointInfo.textContent='Stelle liegt außerhalb des ausgerichteten Gemäldes.';
+      return;
+    }
+    const rad=Number(glazeFsRadius.value||glazeSampleRadius.value);
+    const base=sampleImageNormalized(glazePaintingImg,paintingPoint,rad);
+    const target=sampleImageNormalized(glazeOriginalImg,originalPoint,rad*(glazeOriginalImg.width/glazePaintingImg.width));
+    if(!base||!target) return;
+    glazePoints.push({originalPoint,paintingPoint,base,target});
+    glazeActivePoint=glazePoints.length-1;
+    glazePoint=originalPoint;glazeBase=[...base];glazeTarget=[...target];
+    renderGlazePoints();refreshGlazeColors();redrawGlazePreviews();redrawGlazeFullscreen();
+    glazeResults.innerHTML='<span class="tiny">Punkt '+glazePoints.length+' aufgenommen.</span>';
+  }
+
+  function loadGlazeImage(file,which){
+    if(!file) return;
+    const url=URL.createObjectURL(file);
+    const im=new Image();
+    im.onload=()=>{
+      if(which==='original') glazeOriginalImg=im;
+      else glazePaintingImg=im;
+      glazePoints=[]; glazeActivePoint=-1; glazePoint=null; glazeBase=null; glazeTarget=null;
+      glazeAlign={scale:1,rotation:0,dx:0,dy:0,score:null};
+      renderGlazePoints();
+      redrawGlazePreviews(); refreshGlazeColors();
+      glazeAlignInfo.textContent='Noch nicht ausgerichtet.';
+      glazeResults.innerHTML='<span class="tiny">Bild geladen. Beide Bilder laden, automatisch ausrichten und Messpunkte setzen.</span>';
+      URL.revokeObjectURL(url);
+    };
+    im.src=url;
+  }
+
+  function imageGrayThumb(image,size=96){
+    const c=document.createElement('canvas');
+    c.width=size;c.height=size;
+    const cc=c.getContext('2d',{willReadFrequently:true});
+    cc.fillStyle='#fff';cc.fillRect(0,0,size,size);
+    const fit=Math.min(size/image.width,size/image.height);
+    const dw=image.width*fit,dh=image.height*fit,ox=(size-dw)/2,oy=(size-dh)/2;
+    cc.drawImage(image,ox,oy,dw,dh);
+    const d=cc.getImageData(0,0,size,size).data;
+    const out=new Float32Array(size*size);
+    for(let i=0,j=0;i<d.length;i+=4,j++) out[j]=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    return out;
+  }
+
+  function alignScore(ref,mov,size,scale,rotation,dx,dy){
+    let err=0,n=0;
+    const a=-(rotation||0)*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a);
+    for(let y=9;y<size-9;y+=2){
+      for(let x=9;x<size-9;x+=2){
+        const qx=(x-size/2-dx)/scale;
+        const qy=(y-size/2-dy)/scale;
+        const ux=qx*ca-qy*sa+size/2;
+        const uy=qx*sa+qy*ca+size/2;
+        const ix=Math.round(ux),iy=Math.round(uy);
+        if(ix<1||iy<1||ix>=size-1||iy>=size-1)continue;
+        const av=ref[y*size+x],bv=mov[iy*size+ix],diff=av-bv;
+        const ax=Math.abs(ref[y*size+x+1]-ref[y*size+x-1]);
+        const ay=Math.abs(ref[(y+1)*size+x]-ref[(y-1)*size+x]);
+        const wt=1+Math.min(3,(ax+ay)/25);
+        err+=diff*diff*wt;n+=wt;
+      }
+    }
+    return n?err/n:Infinity;
+  }
+
+  function autoAlignGlaze(){
+    if(!glazeOriginalImg||!glazePaintingImg){
+      glazeAlignInfo.textContent='Bitte zuerst beide Bilder laden.';
+      return;
+    }
+    glazeAutoAlignBtn.disabled=true;
+    if(glazeFsAutoAlign)glazeFsAutoAlign.disabled=true;
+    glazeAlignInfo.textContent='Ausrichtung wird berechnet…';
+    if(glazeFsAlignInfo)glazeFsAlignInfo.textContent='Ausrichtung wird berechnet…';
+
+    setTimeout(()=>{
+      const size=84;
+      const ref=imageGrayThumb(glazeOriginalImg,size);
+      const mov=imageGrayThumb(glazePaintingImg,size);
+      let best={score:Infinity,scale:1,rotation:0,dx:0,dy:0};
+
+      // Konservatives Alignment: Bei nahezu identischen Fotos darf die App
+      // nur kleine Lagekorrekturen vornehmen. Große Skalierungen/Drehungen
+      // würden ein zweites, fast identisches Foto unnötig verformen.
+      const aspectA=glazeOriginalImg.width/glazeOriginalImg.height;
+      const aspectB=glazePaintingImg.width/glazePaintingImg.height;
+      const aspectClose=Math.abs(aspectA-aspectB)/Math.max(aspectA,aspectB)<0.025;
+      const scaleMin=aspectClose?.97:.90, scaleMax=aspectClose?1.03:1.10;
+      const rotMax=aspectClose?2:5, shiftMax=aspectClose?8:14;
+      const rotStep=aspectClose?1:2, scaleStep=aspectClose?.01:.03, shiftStep=aspectClose?2:4;
+      for(let rotation=-rotMax;rotation<=rotMax;rotation+=rotStep){
+        for(let scale=scaleMin;scale<=scaleMax+0.001;scale+=scaleStep){
+          for(let dy=-shiftMax;dy<=shiftMax;dy+=shiftStep){
+            for(let dx=-shiftMax;dx<=shiftMax;dx+=shiftStep){
+              const score=alignScore(ref,mov,size,scale,rotation,dx,dy);
+              if(score<best.score)best={score,scale,rotation,dx,dy};
+            }
+          }
+        }
+      }
+      const coarse={...best};
+      for(let rotation=coarse.rotation-(aspectClose?1:.75);rotation<=coarse.rotation+(aspectClose?1:.75)+.001;rotation+=.25){
+        for(let scale=Math.max(aspectClose?.96:.86,coarse.scale-(aspectClose?.015:.03));scale<=Math.min(aspectClose?1.04:1.14,coarse.scale+(aspectClose?.015:.03))+.001;scale+=.005){
+          for(let dy=coarse.dy-(aspectClose?3:4);dy<=coarse.dy+(aspectClose?3:4);dy+=1){
+            for(let dx=coarse.dx-(aspectClose?3:4);dx<=coarse.dx+(aspectClose?3:4);dx+=1){
+              const score=alignScore(ref,mov,size,scale,rotation,dx,dy);
+              if(score<best.score)best={score,scale,rotation,dx,dy};
+            }
+          }
+        }
+      }
+      if(aspectClose){
+        best.scale=Math.max(.97,Math.min(1.03,best.scale));
+        best.rotation=Math.max(-2,Math.min(2,best.rotation));
+        best.dx=Math.max(-8,Math.min(8,best.dx));
+        best.dy=Math.max(-8,Math.min(8,best.dy));
+      }
+
+      glazeAlign={
+        scale:best.scale,
+        rotation:best.rotation,
+        dx:best.dx/size,
+        dy:best.dy/size,
+        score:best.score
+      };
+
+      glazePoints=[];glazeActivePoint=-1;glazePoint=null;glazeBase=null;glazeTarget=null;
+      renderGlazePoints();refreshGlazeColors();redrawGlazePreviews();redrawGlazeFullscreen();
+
+      const quality=best.score<350?'sehr gut':best.score<900?'gut':best.score<1800?'mittel':'unsicher';
+      glazeAlignInfo.textContent=`Automatisch ausgerichtet · Qualität: ${quality} · Größe ${Math.round(best.scale*100)} % · Drehung ${best.rotation.toFixed(1)}° · Verschiebung ${Math.round(best.dx)} / ${Math.round(best.dy)} px`;
+      if(glazeFsAlignInfo)glazeFsAlignInfo.textContent=glazeAlignInfo.textContent;
+      glazeAutoAlignBtn.disabled=false;
+      if(glazeFsAutoAlign)glazeFsAutoAlign.disabled=false;
+      glazeResults.innerHTML='<span class="tiny">Ausrichtung fertig. Jetzt mehrere Stellen aufnehmen.</span>';
+    },30);
+  }
+
+  function sampleImageNormalized(image,point,radiusPx){
+    if(!image||!point||point.x<0||point.y<0||point.x>1||point.y>1) return null;
+    const c=document.createElement('canvas');
+    c.width=image.width;c.height=image.height;
+    const cc=c.getContext('2d',{willReadFrequently:true});
+    cc.drawImage(image,0,0);
+    const cx=Math.round(point.x*image.width), cy=Math.round(point.y*image.height);
+    const r=Math.max(1,Math.round(radiusPx));
+    const x0=Math.max(0,cx-r), y0=Math.max(0,cy-r);
+    const x1=Math.min(image.width,cx+r+1), y1=Math.min(image.height,cy+r+1);
+    const w=Math.max(1,x1-x0), h=Math.max(1,y1-y0);
+    const d=cc.getImageData(x0,y0,w,h).data;
+    const vals=[];
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const dx=x+x0-cx,dy=y+y0-cy;
+      if(dx*dx+dy*dy>r*r)continue;
+      const i=(y*w+x)*4;if(d[i+3]>20) vals.push([d[i],d[i+1],d[i+2]]);
+    }
+    if(!vals.length)return null;
+    // Robust average: remove darkest/lightest 10% by luminance.
+    vals.sort((a,b)=>(a[0]+a[1]+a[2])-(b[0]+b[1]+b[2]));
+    const cut=Math.floor(vals.length*.10), use=vals.slice(cut,Math.max(cut+1,vals.length-cut));
+    return [0,1,2].map(ch=>Math.round(use.reduce((sum,v)=>sum+v[ch],0)/use.length));
+  }
+
+  function activateGlazePoint(index){
+    if(index<0||index>=glazePoints.length)return;
+    glazeActivePoint=index;
+    const pt=glazePoints[index];
+    glazePoint=pt.originalPoint;
+    glazeBase=[...pt.base];
+    glazeTarget=[...pt.target];
+    refreshGlazeColors();renderGlazePoints();redrawGlazePreviews();redrawGlazeFullscreen();
+    glazeResults.innerHTML='<span class="tiny">Messpunkt '+(index+1)+' aktiv. Lasur kann berechnet werden.</span>';
+  }
+
+  function renderGlazePoints(){
+    glazePointsList.innerHTML='';
+    if(!glazePoints.length){
+      glazePointsList.innerHTML='<div class="tiny">Noch keine Messpunkte.</div>';
+      return;
+    }
+    glazePoints.forEach((pt,i)=>{
+      const row=document.createElement('div');
+      row.className='mix-card';
+      row.style.padding='7px';
+      row.style.cursor='pointer';
+      const resultText=pt.glazeResult
+        ? `<div class="tiny" style="margin-top:3px;"><b>${pt.glazeResult.recipe}</b> · ${pt.glazeResult.match}%</div>`
+        : '';
+      row.innerHTML=`<div class="mix-head"><b>Punkt ${i+1}</b><span>${i===glazeActivePoint?'aktiv':''}</span></div>
+        <div class="tiny">Gemälde ${rgbHex(pt.base)} → Original ${rgbHex(pt.target)}</div>${resultText}`;
+      row.addEventListener('click',()=>activateGlazePoint(i));
+      glazePointsList.appendChild(row);
+    });
+  }
+
+  function pickGlazeComparisonPoint(clientX,clientY,source='painting'){
+    if(!glazePaintingImg||!glazeOriginalImg){
+      glazeColorInfo.textContent='Bitte zuerst Originalfoto und Gemälde laden.';
+      return;
+    }
+    const r=glazePaintingCanvas.getBoundingClientRect();
+    const dpr=window.devicePixelRatio||1;
+    const cw=glazePaintingCanvas.width,ch=glazePaintingCanvas.height;
+    const sx=(clientX-r.left)*dpr, sy=(clientY-r.top)*dpr;
+
+    // Because the painting preview is displayed in aligned/original coordinates,
+    // a tap directly specifies the original normalized location.
+    const fit=Math.min(cw/glazePaintingImg.width,ch/glazePaintingImg.height);
+    const dw=glazePaintingImg.width*fit,dh=glazePaintingImg.height*fit;
+    const ox=(cw-dw)/2,oy=(ch-dh)/2;
+    const originalPoint={x:(sx-ox)/dw,y:(sy-oy)/dh};
+    if(originalPoint.x<0||originalPoint.y<0||originalPoint.x>1||originalPoint.y>1)return;
+
+    const paintingPoint=originalToPaintingNorm(originalPoint);
+    if(paintingPoint.x<0||paintingPoint.y<0||paintingPoint.x>1||paintingPoint.y>1){
+      glazeColorInfo.textContent='Diese Stelle liegt nach der Ausrichtung außerhalb des Gemäldefotos.';
+      return;
+    }
+
+    const rad=Number(glazeSampleRadius.value);
+    const base=sampleImageNormalized(glazePaintingImg,paintingPoint,rad);
+    const target=sampleImageNormalized(glazeOriginalImg,originalPoint,rad*(glazeOriginalImg.width/glazePaintingImg.width));
+    if(!base||!target)return;
+
+    const pt={originalPoint,paintingPoint,base,target};
+    glazePoints.push(pt);
+    glazeActivePoint=glazePoints.length-1;
+    glazePoint=originalPoint;glazeBase=[...base];glazeTarget=[...target];
+    renderGlazePoints();redrawGlazePreviews();refreshGlazeColors();
+    glazeResults.innerHTML='<span class="tiny">Punkt '+glazePoints.length+' aufgenommen. Weitere Punkte können sofort hinzugefügt werden.</span>';
+  }
+
+  function pickGlazeFromOriginal(clientX,clientY){
+    if(!glazePaintingImg||!glazeOriginalImg){
+      glazeColorInfo.textContent='Bitte zuerst Originalfoto und Gemälde laden.';
+      return;
+    }
+    const r=glazeOriginalCanvas.getBoundingClientRect();
+    const dpr=window.devicePixelRatio||1;
+    const cw=glazeOriginalCanvas.width,ch=glazeOriginalCanvas.height;
+    const sx=(clientX-r.left)*dpr, sy=(clientY-r.top)*dpr;
+    const fit=Math.min(cw/glazeOriginalImg.width,ch/glazeOriginalImg.height);
+    const dw=glazeOriginalImg.width*fit,dh=glazeOriginalImg.height*fit;
+    const ox=(cw-dw)/2,oy=(ch-dh)/2;
+    const originalPoint={x:(sx-ox)/dw,y:(sy-oy)/dh};
+    if(originalPoint.x<0||originalPoint.y<0||originalPoint.x>1||originalPoint.y>1)return;
+    const paintingPoint=originalToPaintingNorm(originalPoint);
+    if(paintingPoint.x<0||paintingPoint.y<0||paintingPoint.x>1||paintingPoint.y>1){
+      glazeColorInfo.textContent='Diese Stelle liegt nach der Ausrichtung außerhalb des Gemäldefotos.';
+      return;
+    }
+    const rad=Number(glazeSampleRadius.value);
+    const target=sampleImageNormalized(glazeOriginalImg,originalPoint,rad);
+    const base=sampleImageNormalized(glazePaintingImg,paintingPoint,rad*(glazePaintingImg.width/glazeOriginalImg.width));
+    if(!base||!target)return;
+    glazePoints.push({originalPoint,paintingPoint,base,target});
+    glazeActivePoint=glazePoints.length-1;
+    glazePoint=originalPoint;glazeBase=[...base];glazeTarget=[...target];
+    renderGlazePoints();redrawGlazePreviews();refreshGlazeColors();redrawGlazeFullscreen();
+    glazeResults.innerHTML='<span class="tiny">Punkt '+glazePoints.length+' aufgenommen: Original + Gemälde.</span>';
+  }
+
+  function setGlazeMedium(m){
+    glazeMedium=m;
+    glazeWaterBtn.classList.toggle('active',m==='water');
+    glazeWaterBtn.classList.toggle('secondary',m!=='water');
+    glazeOilBtn.classList.toggle('active',m==='oil');
+    glazeOilBtn.classList.toggle('secondary',m!=='oil');
+    glazeAcrylicBtn.classList.toggle('active',m==='acrylic');
+    glazeAcrylicBtn.classList.toggle('secondary',m!=='acrylic');
+    [...glazePalette.options].forEach(o=>{
+      if(m==='oil') o.disabled=o.value!=='artisan';
+      else if(m==='acrylic') o.disabled=o.value!=='system3';
+      else o.disabled=o.value==='artisan'||o.value==='system3';
+    });
+    if(m==='oil') glazePalette.value='artisan';
+    else if(m==='acrylic') glazePalette.value='system3';
+    else if(glazePalette.value==='artisan'||glazePalette.value==='system3') glazePalette.value='horadam';
+
+    // Praxisnah sanfter Startwert.
+    glazeMaxStrength.value=m==='water'?'18':m==='acrylic'?'20':'22';
+    glazeMaxStrengthVal.textContent=glazeMaxStrength.value+' %';
+    glazeResults.innerHTML='<span class="tiny">Originalfoto und Gemälde vergleichen.</span>';
+  }
+
+  function bestSingleGlazes(colors,maxStrength){
+    const out=[];
+    if(!glazeBase||!glazeTarget) return out;
+    const step=2;
+    for(const [name,rgb,series] of colors){
+      let best=null;
+      for(let strength=2;strength<=maxStrength;strength+=step){
+        const result=glazeApply(glazeBase,rgb,strength,glazeMedium);
+        const d=glazeDistance(result,glazeTarget);
+        if(!best||d<best.d) best={type:1,name1:name,rgb1:rgb,s1:strength,result,d};
+      }
+      if(best) out.push(best);
+    }
+    return out.sort((a,b)=>a.d-b.d);
+  }
+
+  function bestDoubleGlazes(colors,maxStrength,singleBest){
+    // Nur die stärksten Einzelkandidaten kombinieren, damit es auf dem iPad flüssig bleibt.
+    const pool=singleBest.slice(0,Math.min(16,singleBest.length));
+    const out=[];
+    const strengths=[];
+    for(let v=4;v<=maxStrength;v+=4) strengths.push(v);
+
+    for(let i=0;i<pool.length;i++){
+      for(let j=0;j<pool.length;j++){
+        if(i===j) continue;
+        const a=pool[i], b=pool[j];
+        let best=null;
+        for(const s1 of strengths){
+          const first=glazeApply(glazeBase,a.rgb1,s1,glazeMedium);
+          for(const s2 of strengths){
+            const result=glazeApply(first,b.rgb1,s2,glazeMedium);
+            const d=glazeDistance(result,glazeTarget);
+            if(!best||d<best.d){
+              best={
+                type:2,
+                name1:a.name1,rgb1:a.rgb1,s1,
+                name2:b.name1,rgb2:b.rgb1,s2,
+                first,result,d
+              };
+            }
+          }
+        }
+        if(best)out.push(best);
+      }
+    }
+    return out.sort((a,b)=>a.d-b.d);
+  }
+
+  function bestTripleGlazes(colors,maxStrength,singleBest,doubleBest){
+    // Drei Lasuren nur aus den überzeugendsten bisherigen Kandidaten aufbauen.
+    // Dadurch bleibt die Suche trotz großer persönlicher Palette praktikabel.
+    const singles=singleBest.slice(0,Math.min(12,singleBest.length));
+    const doubles=doubleBest.slice(0,Math.min(14,doubleBest.length));
+    const strengths=[];
+    for(let v=4;v<=maxStrength;v+=4) strengths.push(v);
+
+    const out=[];
+    for(const d2 of doubles){
+      for(const c of singles){
+        // Nicht dreimal dieselbe Farbe; gleiche Farbe als zweite Verstärkung ist okay,
+        // aber drei identische Schritte bringen keinen praktischen Mehrwert.
+        const sameCount=[d2.name1,d2.name2].filter(n=>n===c.name1).length;
+        if(sameCount>=2)continue;
+
+        let best=null;
+        for(const s3 of strengths){
+          const result=glazeApply(d2.result,c.rgb1,s3,glazeMedium);
+          const dist=glazeDistance(result,glazeTarget);
+          if(!best||dist<best.d){
+            best={
+              type:3,
+              name1:d2.name1,rgb1:d2.rgb1,s1:d2.s1,
+              name2:d2.name2,rgb2:d2.rgb2,s2:d2.s2,
+              name3:c.name1,rgb3:c.rgb1,s3,
+              first:d2.first,
+              second:d2.result,
+              result,
+              d:dist
+            };
+          }
+        }
+        if(best)out.push(best);
+      }
+    }
+    return out.sort((a,b)=>a.d-b.d);
+  }
+
+  function glazeStrengthText(v){
+    if(v<=8) return 'sehr dünn';
+    if(v<=16) return 'dünn';
+    if(v<=24) return 'mittel';
+    return 'kräftiger';
+  }
+
+  function renderGlazeCard(item,rank,bestSingleDistance){
+    const match=glazeMatchPercent(item.result,glazeTarget);
+    const card=document.createElement('div');
+    card.className='mix-card';
+    const isBest=rank===0;
+    const title=isBest?'Beste Lösung':`Alternative ${rank+1}`;
+    let recipe='';
+    let progress='';
+
+    if(item.type===1){
+      recipe=`<b>Eine Lasur</b><br>${item.name1} · ${item.s1}% Farbwirkung (${glazeStrengthText(item.s1)})`;
+      const mid=glazeApply(glazeBase,item.rgb1,item.s1,glazeMedium);
+      progress=`
+        <div class="mix-swatches" style="margin-top:7px;">
+          <div><div class="tiny">Grundfarbe</div><div class="mix-swatch" style="background:${rgbHex(glazeBase)}"></div></div>
+          <div><div class="tiny">1. Lasur</div><div class="mix-swatch" style="background:${rgbHex(mid)}"></div></div>
+          <div><div class="tiny">Ziel</div><div class="mix-swatch" style="background:${rgbHex(glazeTarget)}"></div></div>
+        </div>`;
+    }else if(item.type===2){
+      recipe=`<b>Zwei Lasuren</b><br>1. ${item.name1} · ${item.s1}%<br>2. ${item.name2} · ${item.s2}%`;
+      progress=`
+        <div class="mix-swatches" style="margin-top:7px;">
+          <div><div class="tiny">Grundfarbe</div><div class="mix-swatch" style="background:${rgbHex(glazeBase)}"></div></div>
+          <div><div class="tiny">1. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.first)}"></div></div>
+          <div><div class="tiny">2. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.result)}"></div></div>
+          <div><div class="tiny">Ziel</div><div class="mix-swatch" style="background:${rgbHex(glazeTarget)}"></div></div>
+        </div>`;
+    }else{
+      recipe=`<b>Drei Lasuren</b><br>1. ${item.name1} · ${item.s1}%<br>2. ${item.name2} · ${item.s2}%<br>3. ${item.name3} · ${item.s3}%`;
+      progress=`
+        <div class="mix-swatches" style="margin-top:7px;">
+          <div><div class="tiny">Grundfarbe</div><div class="mix-swatch" style="background:${rgbHex(glazeBase)}"></div></div>
+          <div><div class="tiny">1. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.first)}"></div></div>
+          <div><div class="tiny">2. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.second)}"></div></div>
+          <div><div class="tiny">3. Lasur</div><div class="mix-swatch" style="background:${rgbHex(item.result)}"></div></div>
+          <div><div class="tiny">Ziel</div><div class="mix-swatch" style="background:${rgbHex(glazeTarget)}"></div></div>
+        </div>`;
+    }
+
+    card.innerHTML=`
+      <div class="mix-head"><b>${title}</b><span>${match}% Annäherung</span></div>
+      <div style="margin-top:6px;">${recipe}</div>
+      ${progress}
+      <div class="tiny" style="margin-top:6px;">Berechnetes Ergebnis: ${rgbHex(item.result)} · RGB ${item.result.join(', ')}</div>
+    `;
+    return card;
+  }
+
+  function computeGlazeSuggestionFor(base,target){
+    const saveBase=glazeBase,saveTarget=glazeTarget;
+    glazeBase=base;glazeTarget=target;
+    try{
+      const colors=glazeActiveColors();
+      if(!colors.length)return null;
+      const maxStrength=Number(glazeMaxStrength.value);
+      const singles=bestSingleGlazes(colors,maxStrength);
+      if(!singles.length)return null;
+      const doubles=bestDoubleGlazes(colors,maxStrength,singles);
+      const triples=bestTripleGlazes(colors,maxStrength,singles,doubles);
+
+      const bestSingle=singles[0];
+      const bestDouble=doubles[0];
+      const bestTriple=triples[0];
+
+      // Einfach vor komplex, aber keine künstliche Begrenzung auf eine Farbe:
+      // 2 Lasuren dürfen gewinnen, wenn sie ~10% besser sind.
+      // 3 Lasuren dürfen gewinnen, wenn sie gegenüber der besten 2er-Lösung
+      // noch einmal einen klaren sichtbaren Gewinn bringen.
+      let best=bestSingle;
+      if(bestDouble && bestDouble.d < best.d*.90) best=bestDouble;
+      if(bestTriple && bestTriple.d < best.d*.90) best=bestTriple;
+
+      const match=glazeMatchPercent(best.result,target);
+      const recipe=best.type===1
+        ? `${best.name1} ${best.s1}%`
+        : best.type===2
+          ? `${best.name1} ${best.s1}% → ${best.name2} ${best.s2}%`
+          : `${best.name1} ${best.s1}% → ${best.name2} ${best.s2}% → ${best.name3} ${best.s3}%`;
+      return {best,match,recipe};
+    }finally{
+      glazeBase=saveBase;glazeTarget=saveTarget;
+    }
+  }
+
+  function calculateAllGlazePoints(){
+    if(!glazePoints.length){
+      glazeResults.innerHTML='<b>Bitte zuerst Messpunkte setzen.</b>';
+      return;
+    }
+    if(!glazeActiveColors().length){
+      glazeResults.innerHTML='<b>Bitte zuerst vorhandene Farben in der Palette aktivieren.</b>';
+      return;
+    }
+    glazeCalcAllBtn.disabled=true;
+    glazeResults.innerHTML='<span class="tiny">Lasuren für alle Messpunkte werden berechnet…</span>';
+    let index=0;
+    const next=()=>{
+      if(index>=glazePoints.length){
+        glazeCalcAllBtn.disabled=false;
+        renderGlazePoints();
+        glazeResults.innerHTML='<b>Alle Messpunkte berechnet.</b><br><span class="tiny">Die beste Lasur steht jetzt direkt bei jedem Punkt. Einen Punkt antippen, um die ausführlichen Alternativen zu sehen.</span>';
+        return;
+      }
+      const pt=glazePoints[index];
+      pt.glazeResult=computeGlazeSuggestionFor(pt.base,pt.target);
+      index++;
+      renderGlazePoints();
+      glazeResults.innerHTML=`<span class="tiny">Berechnung ${index} von ${glazePoints.length}…</span>`;
+      setTimeout(next,15);
+    };
+    next();
+  }
+
+  function calculateGlazes(){
+    if(!glazeTarget){
+      glazeResults.innerHTML='<b>Bitte zuerst einen Messpunkt im Gemälde auswählen.</b>';
+      return;
+    }
+    const colors=glazeActiveColors();
+    if(!colors.length){
+      glazeResults.innerHTML='<b>In dieser Palette ist noch keine vorhandene Farbe ausgewählt. Bitte zuerst deine Farben in der Palettenverwaltung aktivieren.</b>';
+      return;
+    }
+
+    const maxStrength=Number(glazeMaxStrength.value);
+    glazeResults.innerHTML='<span class="tiny">1-, 2- und 3-Lasuren-Folgen werden berechnet…</span>';
+
+    setTimeout(()=>{
+      const singles=bestSingleGlazes(colors,maxStrength);
+      if(!singles.length){
+        glazeResults.innerHTML='<b>Keine passende Lasur gefunden.</b>';
+        return;
+      }
+
+      const doubles=bestDoubleGlazes(colors,maxStrength,singles);
+      const triples=bestTripleGlazes(colors,maxStrength,singles,doubles);
+
+      const bestSingle=singles[0];
+      const bestDouble=doubles[0];
+      const bestTriple=triples[0];
+
+      // Kandidaten nach praktischer Güte auswählen.
+      // Komplexere Folgen müssen sichtbar besser sein, werden aber nicht ausgeschlossen.
+      let best=bestSingle;
+      if(bestDouble && bestDouble.d < best.d*.90)best=bestDouble;
+      if(bestTriple && bestTriple.d < best.d*.90)best=bestTriple;
+
+      const chosen=[best];
+
+      // Je eine sinnvolle Alternative aus den anderen Komplexitätsstufen.
+      const candidates=[bestSingle,bestDouble,bestTriple].filter(Boolean)
+        .sort((a,b)=>a.d-b.d);
+
+      for(const c of candidates){
+        if(chosen.length>=3)break;
+        const sig=c.type===1
+          ? `1:${c.name1}`
+          : c.type===2
+            ? `2:${c.name1}|${c.name2}`
+            : `3:${c.name1}|${c.name2}|${c.name3}`;
+        const exists=chosen.some(x=>{
+          const xs=x.type===1?`1:${x.name1}`:x.type===2?`2:${x.name1}|${x.name2}`:`3:${x.name1}|${x.name2}|${x.name3}`;
+          return xs===sig;
+        });
+        if(!exists)chosen.push(c);
+      }
+
+      // Falls noch Platz: nächstbeste andere Farbrezepte.
+      for(const arr of [singles,doubles,triples]){
+        for(const c of arr.slice(1,5)){
+          if(chosen.length>=3)break;
+          const names=c.type===1?[c.name1]:c.type===2?[c.name1,c.name2]:[c.name1,c.name2,c.name3];
+          if(!chosen.some(x=>{
+            const xn=x.type===1?[x.name1]:x.type===2?[x.name1,x.name2]:[x.name1,x.name2,x.name3];
+            return JSON.stringify(xn)===JSON.stringify(names);
+          }))chosen.push(c);
+        }
+        if(chosen.length>=3)break;
+      }
+
+      glazeResults.innerHTML='';
+      chosen.slice(0,3).forEach((item,i)=>glazeResults.appendChild(renderGlazeCard(item,i,bestSingle.d)));
+
+      if(glazeActivePoint>=0&&glazePoints[glazeActivePoint]){
+        const b=chosen[0];
+        glazePoints[glazeActivePoint].glazeResult={
+          best:b,
+          match:glazeMatchPercent(b.result,glazeTarget),
+          recipe:b.type===1
+            ? `${b.name1} ${b.s1}%`
+            : b.type===2
+              ? `${b.name1} ${b.s1}% → ${b.name2} ${b.s2}%`
+              : `${b.name1} ${b.s1}% → ${b.name2} ${b.s2}% → ${b.name3} ${b.s3}%`
+        };
+        renderGlazePoints();
+      }
+
+      const note=document.createElement('div');
+      note.className='tiny';
+      note.style.marginTop='8px';
+      note.innerHTML=glazeMedium==='water'
+        ? 'Aquarell: bis zu drei nacheinander aufgetragene, transparente Lasuren. Jede Schicht trocknen lassen. Die einfachere Folge bleibt vorne, wenn zusätzliche Lasuren kaum verbessern.'
+        : glazeMedium==='acrylic' ? 'Acryl: bis zu drei dünne, transparente Lasuren als Bildschirmvorschau. Schichten trocknen lassen; Pigmentdeckkraft und Acrylmedium bestimmen die echte Transparenz.'
+        : 'Öl: bis zu drei transparente Lasuren. Zwischen den Schichten ausreichend trocknen lassen; Deckkraft und Malmittel verändern das reale Ergebnis.';
+      glazeResults.appendChild(note);
+    },30);
+  }
+
+  let oilTintSelected=null;
+  function oilTintSeries(base){
+    const white=(PALETTES.artisan.find(([name])=>name==='Titanium White')||['Titanweiß',[245,245,241]])[1];
+    return [[1,0],[8,1],[4,1],[2,1],[1,1],[1,2],[1,4]].map(parts=>({
+      parts,rgb:parts[1]?pigmentMix([base,white],parts,'artisan'):[...base]
+    }));
+  }
+  function renderOilTintSeries(){
+    const base=correctedColor()||targetArray(),status=document.getElementById('oilTintStatus');
+    if(!base){status.textContent='Bitte zuerst eine Farbe mit der Pipette aufnehmen.';return;}
+    oilTintSelected=null;document.getElementById('oilTintUse').disabled=true;
+    const box=document.getElementById('oilTintColors');box.replaceChildren();
+    box.style.background=document.getElementById('corrBackground').value;
+    status.textContent='Grundmischung '+rgbHex(base)+' gespeichert · eine Stufe auswählen. Änderungen an der Grundfarbe erst mit „Reihe erstellen“ übernehmen.';
+    oilTintSeries(base).forEach((entry,index)=>{
+      const button=document.createElement('button');button.type='button';button.className='secondary';
+      button.style.cssText='min-width:0;padding:8px;background:#fff;color:#111;border:3px solid transparent;border-radius:8px';
+      button.setAttribute('aria-pressed','false');
+      const label=index===0?'Grundmischung':entry.parts.join(' : ');
+      button.setAttribute('aria-label',label+' · '+rgbHex(entry.rgb));
+      const swatch=document.createElement('span');swatch.style.cssText='display:block;height:90px;margin-bottom:8px;background:'+rgbHex(entry.rgb);
+      const caption=document.createElement('span');caption.textContent=label;
+      button.append(swatch,caption);
+      button.addEventListener('click',()=>{
+        oilTintSelected={rgb:[...entry.rgb],label};
+        for(const b of box.children){const active=b===button;b.setAttribute('aria-pressed',String(active));b.style.borderColor=active?'#222':'transparent';}
+        status.textContent=label+' · '+rgbHex(entry.rgb)+' · Verhältnis Grundmischung : Titanweiß';
+        document.getElementById('oilTintUse').disabled=false;
+      });box.appendChild(button);
+    });
+  }
+  document.getElementById('oilTintMake').addEventListener('click',renderOilTintSeries);
+  document.getElementById('oilTintUse').addEventListener('click',()=>{
+    if(!oilTintSelected)return;
+    paintPalette.value='artisan';
+    setMixTarget(oilTintSelected.rgb,'Öl-Aufhellung '+oilTintSelected.label);
+    showStudioMixPage();
+  });
+  function takeCorrectionColor(rgb,target=rgb,recipe=null,paletteKey=null){
+    correctionOriginalRecipe=recipe?{rgb:rgb.slice(),names:[...(recipe.names||[])],parts:[...(recipe.parts||[])],paletteKey:paletteKey||paintPalette.value}:null;
+    correctionBase=[...rgb];
+    correctionTarget=[...target];
+    for(const id of ['corrLight','corrWarm','corrSat','corrHue'])document.getElementById(id).value=0;
+    refreshCorrection();
+  }
+  // Fine control near zero, with the full correction range at the endpoints.
+  function correctionFineValue(value,limit){
+    const x=Math.max(-1,Math.min(1,Number(value)/limit));
+    return Math.sign(x)*x*x*limit;
+  }
+  function correctionFineLabel(value,limit){
+    const v=correctionFineValue(value,limit);
+    return (Math.abs(v)<0.05?0:v).toFixed(1).replace('.',',');
+  }
+  function correctedColor(){
+    if(!correctionBase)return null;
+    const light=correctionFineValue(corrLight.value,100)/100,warm=correctionFineValue(corrWarm.value,100)/100,sat=correctionFineValue(corrSat.value,100)/100,hue=correctionFineValue(document.getElementById('corrHue').value,180);
+    if(!light&&!warm&&!sat&&!hue)return [...correctionBase];
+    let rgb=correctionBase.map((v,i)=>Math.max(0,Math.min(255,v+warm*[65,12,-65][i])));
+    let [h,sv,v]=rgbToHsv(rgb);
+    sv=sat>=0?sv+(1-sv)*sat:sv*(1+sat);
+    rgb=hsvToRgb((h+hue+360)%360,sv,v);
+    return rgb.map(v=>Math.round(light>=0?v+(255-v)*light:v*(1+light)));
+  }
+  function refreshCorrection(){
+    const c=correctedColor();
+    corrLightVal.textContent=correctionFineLabel(corrLight.value,100);
+    corrWarmVal.textContent=correctionFineLabel(corrWarm.value,100);
+    corrSatVal.textContent=correctionFineLabel(corrSat.value,100);
+    document.getElementById('corrHueVal').textContent=correctionFineLabel(document.getElementById('corrHue').value,180)+'°';
+    if(!correctionBase||!c){corrInfo.textContent='Noch keine Farbe übernommen.';return;}
+    document.getElementById('corrTargetSwatch').style.background=rgbHex(correctionTarget||correctionBase);
+    corrOriginal.style.background=rgbHex(correctionBase);
+    corrResult.style.background=rgbHex(c);
+    corrInfo.textContent=`Zielfarbe ${rgbHex(correctionTarget||correctionBase)} · Ausgang ${rgbHex(correctionBase)} · Korrektur ${rgbHex(c)} · ${similarityPct(correctionTarget||correctionBase,c)}/100 Bildschirmnähe der Korrektur zur ursprünglichen Zielfarbe (noch kein Pigmentrezept)`;
+  }
+
+  function clusterArea(cx,cy,size,shape){
+    // Pixelgenau in dem Bereich messen, den der weiße Kreis auf dem iPad
+    // TATSÄCHLICH umschließt. Früher wurde mindestens ein Radius von 12
+    // BILDpixeln verwendet: bei 20x Zoom waren das 480 DISPLAYpixel
+    // Durchmesser statt der sichtbaren 84px – Farben von weit außerhalb.
+    // Die sichtbare Bildkomposition ohne Kreis/Raster liegt bereits in der
+    // hochauflösenden Picker-Anzeige (einschließlich Zoom-Interpolation).
+    const display=renderPickerDisplay();
+    const pixelRatio=Math.max(1,window.devicePixelRatio||1);
+    const centerX=(offsetX+cx*scale)*pixelRatio;
+    const centerY=(offsetY+cy*scale)*pixelRatio;
+    // 'size' ist in Bildkoordinaten übergeben; genau wie beim Zeichnen.
+    const radius=Math.max(0,size*scale*pixelRatio/2);
+    if(!(radius>0))return [];
+    const x0=Math.max(0,Math.floor(centerX-radius));
+    const x1=Math.min(display.canvas.width-1,Math.ceil(centerX+radius)-1);
+    const y0=Math.max(0,Math.floor(centerY-radius));
+    const y1=Math.min(display.canvas.height-1,Math.ceil(centerY+radius)-1);
+    if(x1<x0||y1<y0)return [];
+    const width=x1-x0+1;
+    const pixels=readImageDataSRGB(display,x0,y0,width,y1-y0+1).data;
+    // Circa 5.000 echte Anzeige-Pixel pro Auswahl, selbst auf Retina-iPads.
+    const step=Math.max(1,Math.ceil(radius/45));
+    const pts=[];
+    const isolatedLab=activeIsolatedColor?rgbToLabFast(activeIsolatedColor):null;
+    const isolatedTolerance=currentColorTolerance();
+    for(let y=y0;y<=y1;y+=step)for(let x=x0;x<=x1;x+=step){
+      const dx=x+.5-centerX,dy=y+.5-centerY;
+      if(shape==='circle' && dx*dx+dy*dy>radius*radius)continue;
+      // An den Bildrändern keine grauen/weißen Viewer-Hintergrundpixel zählen.
+      const ix=((x+.5)/pixelRatio-offsetX)/scale;
+      const iy=((y+.5)/pixelRatio-offsetY)/scale;
+      if(ix<0||iy<0||ix>=sourceCanvas.width||iy>=sourceCanvas.height)continue;
+      const k=((y-y0)*width+x-x0)*4;
+      if(pixels[k+3]<16)continue;
+      const rgb=[pixels[k],pixels[k+1],pixels[k+2]];
+      if(isolatedLab && deltaE76FromLab(rgbToLabFast(rgb),isolatedLab)>isolatedTolerance)continue;
+      pts.push(rgb);
+    }
+    // Ein winziger Kreis kann bei starkem Zoom nur eine einzige Farbe
+    // enthalten. Niemals andere Bildstellen hinzufügen, nur um 8 zu erzwingen.
+    if(!pts.length)return [];
+
+    // Seed by color separation, not pixel positions: repeated stripes must
+    // not produce identical centers and collapse to a single average.
+    const distance=(a,b)=>a.reduce((sum,v,i)=>sum+(v-b[i])**2,0);
+    const labs=pts.map(rgbToLabFast);
+    const mean=labs.reduce((a,c)=>a.map((v,i)=>v+c[i]/labs.length),[0,0,0]);
+    let first=0;
+    labs.forEach((c,i)=>{if(distance(c,mean)<distance(labs[first],mean))first=i;});
+    const seeds=[first];
+    while(seeds.length<8){
+      let best=-1,bestDistance=9;
+      labs.forEach((c,i)=>{
+        const d=Math.min(...seeds.map(j=>distance(c,labs[j])));
+        if(d>bestDistance){bestDistance=d;best=i;}
+      });
+      if(best<0)break;
+      seeds.push(best);
+    }
+    let centers=seeds.map(i=>[...pts[i]]);
+    for(let it=0;it<6;it++){
+      const sums=centers.map(()=>[0,0,0,0]);
+      for(const q of pts){let bi=0,bd=Infinity;centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});sums[bi][0]+=q[0];sums[bi][1]+=q[1];sums[bi][2]+=q[2];sums[bi][3]++;}
+      centers=sums.map((a,j)=>a[3]?[a[0]/a[3],a[1]/a[3],a[2]/a[3]]:centers[j]);
+    }
+    const counts=centers.map(()=>0);
+    for(const q of pts){let bi=0,bd=Infinity;centers.forEach((c,j)=>{const d=(q[0]-c[0])**2+(q[1]-c[1])**2+(q[2]-c[2])**2;if(d<bd){bd=d;bi=j}});counts[bi]++;}
+
+    const result=centers.map((c,i)=>({rgb:c.map(v=>Math.round(v)),pct:100*counts[i]/pts.length})).filter(c=>c.pct>0);
+    // Jede Hauptfarbe und jede feine Nuance wird nach wahrgenommener Helligkeit
+    // (CIELAB L*: 100 = weiß, 0 = schwarz) sortiert, NICHT nach Häufigkeit,
+    // RGB-Kanalsumme oder Farbton. Die Reihenfolge gilt auch für die Auswahl
+    // von Basisfarbe, Zoom, Bildisolierung und alle Mischvorschläge.
+    return result.sort((a,b)=>{
+      const la=rgbToLabFast(a.rgb)[0],lb=rgbToLabFast(b.rgb)[0];
+      return lb-la || b.pct-a.pct;
+    });
+  }
+
+
+  // Wahrnehmungsnähere Farbsuche für "Nur diese Farbe zeigen".
+  // CIELAB/Delta-E trennt ähnliche Helligkeiten und Farbtöne zuverlässiger
+  // als ein einfacher RGB-Abstand.
+  function rgbToLabFast(rgb){
+    let [r,g,b]=rgb.map(v=>v/255);
+    const lin=v=>v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);
+    r=lin(r); g=lin(g); b=lin(b);
+    let x=(r*.4124564+g*.3575761+b*.1804375)/.95047;
+    let y=(r*.2126729+g*.7151522+b*.0721750);
+    let z=(r*.0193339+g*.1191920+b*.9503041)/1.08883;
+    const f=v=>v>.008856?Math.cbrt(v):(7.787*v+16/116);
+    const fx=f(x), fy=f(y), fz=f(z);
+    return [116*fy-16,500*(fx-fy),200*(fy-fz)];
+  }
+
+  function deltaE76FromLab(a,b){
+    const d0=a[0]-b[0],d1=a[1]-b[1],d2=a[2]-b[2];
+    return Math.sqrt(d0*d0+d1*d1+d2*d2);
+  }
+
+  // Quantization is shared by the background worker and its fallback.
+  function quantizeBuild32Pure(data){
+    const pixels=new Uint8ClampedArray(data.pixels);
+    const toLab=rgb=>{
+      const v=rgb.map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;});
+      const f=x=>x>.008856?Math.cbrt(x):7.787*x+16/116;
+      const x=f((v[0]*.4124564+v[1]*.3575761+v[2]*.1804375)/.95047),y=f(v[0]*.2126729+v[1]*.7151522+v[2]*.0721750),z=f((v[0]*.0193339+v[1]*.1191920+v[2]*.9503041)/1.08883);
+      return [116*y-16,500*(x-y),200*(y-z)];
+    };
+    const candidates=data.pureColors.map(c=>({...c,lab:toLab(c.rgb)}));
+    if(!candidates.length)throw new Error('Keine Palettenfarben');
+    const cache=new Map(),raw=new Uint16Array(pixels.length/4),used=new Set();
+    for(let i=0;i<raw.length;i++){
+      const rgb=[pixels[i*4],pixels[i*4+1],pixels[i*4+2]];
+      const key=((rgb[0]>>2)<<12)|((rgb[1]>>2)<<6)|(rgb[2]>>2);
+      let best=cache.get(key);
+      if(best===undefined){
+        const lab=toLab(rgb);let distance=Infinity;best=0;
+        for(let j=0;j<candidates.length;j++){
+          const c=candidates[j].lab,d=(lab[0]-c[0])**2+(lab[1]-c[1])**2+(lab[2]-c[2])**2;
+          if(d<distance){distance=d;best=j;}
+        }
+        cache.set(key,best);
+      }
+      raw[i]=best;used.add(best);
+    }
+    // Reduce only the Artisan simple-mix view; keep actual recipes, never average RGBs.
+    const limit=Number(data.simpleLimit)||0;
+    if(limit>0&&used.size>limit){
+      const ids=[...used],counts=new Uint32Array(candidates.length);
+      for(const id of raw)counts[id]++;
+      const distance=(a,b)=>{const x=candidates[a].lab,y=candidates[b].lab;return (x[0]-y[0])**2+(x[1]-y[1])**2+(x[2]-y[2])**2;};
+      const lightOrder=ids.slice().sort((a,b)=>candidates[a].lab[0]-candidates[b].lab[0]);
+      const selected=[lightOrder[0],lightOrder[lightOrder.length-1]];
+      const nearest=new Float64Array(candidates.length).fill(Infinity);
+      for(const id of ids)for(const center of selected)nearest[id]=Math.min(nearest[id],distance(id,center));
+      while(selected.length<limit){
+        let best=-1,score=-1;
+        for(const id of ids){const value=nearest[id]*Math.pow(counts[id],.65);if(value>score&&!selected.includes(id)){score=value;best=id;}}
+        if(best<0)break;selected.push(best);
+        for(const id of ids)nearest[id]=Math.min(nearest[id],distance(id,best));
+      }
+      // Refine each cluster to an existing recipe nearest its weighted center.
+      for(let pass=0;pass<5;pass++){
+        const groups=selected.map(()=>[]);
+        for(const id of ids){let best=0,d=Infinity;selected.forEach((c,j)=>{const v=distance(id,c);if(v<d){d=v;best=j;}});groups[best].push(id);}
+        for(let j=2;j<selected.length;j++){
+          if(!groups[j].length)continue;
+          const mean=[0,0,0];let total=0;
+          for(const id of groups[j]){const weight=Math.pow(counts[id],.8);total+=weight;candidates[id].lab.forEach((v,k)=>mean[k]+=v*weight);}
+          mean.forEach((v,k)=>mean[k]=v/total);
+          let best=selected[j],d=Infinity;
+          for(const id of groups[j]){const lab=candidates[id].lab,v=lab.reduce((sum,x,k)=>sum+(x-mean[k])**2,0);if(v<d){d=v;best=id;}}
+          selected[j]=best;
+        }
+      }
+      const mapping=new Uint16Array(candidates.length);
+      for(const id of ids){let best=selected[0],d=Infinity;for(const c of selected){const v=distance(id,c);if(v<d){d=v;best=c;}}mapping[id]=best;}
+      used.clear();for(let i=0;i<raw.length;i++){raw[i]=mapping[raw[i]];used.add(raw[i]);}
+    }
+    const order=[...used].sort((a,b)=>candidates[a].lab[0]-candidates[b].lab[0]);
+    const remap=new Map(order.map((id,i)=>[id,i]));
+    const ranks=raw.map(id=>remap.get(id));
+    return {width:data.width,height:data.height,pure:true,palette:order.map(i=>candidates[i].rgb),
+      paintInfo:order.map(i=>({name:candidates[i].name,coverage:candidates[i].coverage,watercolor:data.watercolor,recipe:candidates[i].recipe})),ranks:ranks.buffer};
+  }
+  function build32PureColors(key){
+    const water=['watercolor','horadam','akademie'].includes(key),out=[];
+    for(const [name,rgb,brand] of effectivePaletteColors(key)){
+      for(const coverage of (water?[1,.8,.6,.4,.25,.12,.05]:[1]))
+        out.push({name:(brand?brand+' · ':'')+name,rgb:water?washRgb(rgb,coverage):rgb.slice(),coverage});
+    }
+    if(water)out.push({name:'Papierweiß – aussparen',rgb:[255,255,255],coverage:0});
+    return out;
+  }
+  function build32SimpleColors(paletteKey='artisan'){
+    const paints=effectivePaletteColors(paletteKey);
+    const choose=(preferred,pattern)=>paints.find(c=>c[0]===preferred)||paints.find(c=>pattern.test(c[0]));
+    const white=choose('Titanium White',/white|weiß/i);
+    const yellow=choose('Lemon Yellow',/yellow|gelb/i);
+    const blue=choose(paletteKey==='system3'?'Ultramarine':'French Ultramarine',/blue|blau|ultramarin/i);
+    const out=[],seen=new Set();
+    const add=(items,parts)=>{
+      const active=items.map((c,i)=>({c,part:parts[i]})).filter(x=>x.part>0);
+      const merged=new Map();
+      for(const {c,part} of active){const prior=merged.get(c[0]);if(prior)prior.part+=part;else merged.set(c[0],{c,part});}
+      const entries=[...merged.values()],rgb=entries.length===1?entries[0].c[1].slice():pigmentMix(entries.map(x=>x.c[1]),entries.map(x=>x.part),paletteKey);
+      const key=rgb.join(',');if(seen.has(key))return;seen.add(key);
+      const recipe=entries.map(x=>(Math.round(x.part*1000)/10).toLocaleString('de-DE')+' % '+x.c[0]).join(' + ');
+      out.push({name:entries.map(x=>x.c[0]).join(' + '),rgb,coverage:1,recipe:entries.length===1?'Reine Tubenfarbe':recipe});
+    };
+    // Keep every original tube color available before adding mixtures.
+    for(const base of paints)add([base],[1]);
+    for(const base of paints){
+      const variants=[{items:[base],parts:[1]}];
+      for(const modifier of [yellow,blue]){
+        if(!modifier||modifier[0]===base[0])continue;
+        for(const amount of [.05,.2,.5])variants.push({items:[base,modifier],parts:[1-amount,amount]});
+      }
+      for(const v of variants){
+        add(v.items,v.parts);
+        if(white&&base[0]!==white[0])for(const amount of [.15,.35,.6,.8,.95])
+          add([...v.items,white],[...v.parts.map(n=>n*(1-amount)),amount]);
+      }
+    }
+    return out;
+  }
+  function syncBuild32SimpleLimit(){
+    for(const suffix of ['', 'Side'])document.getElementById('build32SimpleLimitLabel'+suffix).hidden=!build32IsSimple();
+  }
+  for(const id of ['build32SimpleLimit','build32SimpleLimitSide'])document.getElementById(id).addEventListener('change',e=>{
+    for(const other of ['build32SimpleLimit','build32SimpleLimitSide'])document.getElementById(other).value=e.target.value;
+    if(build32IsSimple()&&loaded)document.getElementById('build32Analyze').click();
+  });
+  function build32IsSimple(){return document.getElementById('build32PaintMode').value==='simple';}
+  function build32IsPure(){return document.getElementById('build32PaintMode').value!=='mixed';}
+  for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).addEventListener('change',e=>{
+    for(const other of ['build32PaintMode','build32PaintModeSide'])document.getElementById(other).value=e.target.value;
+    if(build32IsSimple()&&!['artisan','system3'].includes(document.getElementById('build32MixPalette').value))document.getElementById('build32MixPalette').value='artisan';
+    syncBuild32SimpleLimit();
+    for(const other of ['build32Count','build32CountSide'])document.getElementById(other).disabled=build32IsPure();
+    resetBuild32();
+    document.getElementById('build32Analyze').textContent=build32IsSimple()?'Einfache Öl-/Acryl-Mischungen anzeigen':build32IsPure()?'Ungemischte Farben anzeigen':build32ColorCount()+' Farben erkennen';
+    if(loaded)document.getElementById('build32Analyze').click();
+  });
+  function quantizeBuild32(data){
+    const pixels=new Uint8ClampedArray(data.pixels), hist=new Map();
+    // Keep near-white samples exact: 255 must not average down into 248.
+    const key=(r,g,b)=>r>=240&&g>=240&&b>=240
+      ?262144+((r-240)<<8)+((g-240)<<4)+(b-240)
+      :((r>>2)<<12)|((g>>2)<<6)|(b>>2);
+    for(let i=0;i<pixels.length;i+=4){
+      const k=key(pixels[i],pixels[i+1],pixels[i+2]);
+      let h=hist.get(k);if(!h){h=[0,0,0,0,k];hist.set(k,h);}
+      h[0]+=pixels[i];h[1]+=pixels[i+1];h[2]+=pixels[i+2];h[3]++;
+    }
+    const entries=[...hist.values()].map(h=>[h[0]/h[3],h[1]/h[3],h[2]/h[3],h[3],h[4]]);
+    // Finer histogram and area-aware clustering preserve subtle broad gradients.
+    // Sublinear area weights still retain small distinctive accents.
+    const toLab=rgb=>{
+      const v=rgb.map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;});
+      const f=x=>x>.008856?Math.cbrt(x):7.787*x+16/116;
+      const x=f((v[0]*.4124564+v[1]*.3575761+v[2]*.1804375)/.95047),y=f(v[0]*.2126729+v[1]*.7151522+v[2]*.0721750),z=f((v[0]*.0193339+v[1]*.1191920+v[2]*.9503041)/1.08883);
+      return [116*y-16,500*(x-y),200*(y-z)];
+    };
+    const points=entries.map(p=>({rgb:p.slice(0,3),lab:toLab(p.slice(0,3)),count:p[3],key:p[4]}));
+    const distance=(a,b)=>(a[0]-b[0])**2+1.3*((a[1]-b[1])**2+(a[2]-b[2])**2);
+    for(const p of points)p.weight=Math.pow(p.count,.9)*(1+.25*Math.min(1,Math.hypot(p.lab[1],p.lab[2])/80));
+    const k=Math.min(data.colorCount||32,points.length),centers=[];
+    const ordered=[...points].sort((a,b)=>a.lab[0]-b.lab[0]);
+    // Preserve the brightest existing highlight, even when it occupies a tiny area.
+    const highlight=ordered.length&&ordered[ordered.length-1].lab[0]>=90?ordered[ordered.length-1]:null;
+    // Keep the dark endpoint robust; pin bright highlights throughout clustering.
+    const total=points.reduce((sum,p)=>sum+p.count,0);
+    const quantile=q=>{let sum=0;for(const p of ordered){sum+=p.count;if(sum>=total*q)return p;}return ordered[ordered.length-1];};
+    if(k)centers.push([...quantile(.005).lab]);
+    if(k>1)centers.push([...(highlight||quantile(.995)).lab]);
+    while(centers.length<k){
+      let best=points[0],score=-1;
+      for(const p of points){let d=Infinity;for(const c of centers)d=Math.min(d,distance(p.lab,c));const s=d*Math.pow(p.weight,.7);if(s>score){score=s;best=p;}}
+      centers.push([...best.lab]);
+    }
+    const assignments=new Uint8Array(points.length);
+    for(let iteration=0;iteration<18;iteration++){
+      const sums=centers.map(()=>[0,0,0,0]);let changes=0;
+      points.forEach((p,n)=>{
+        let best=Infinity,id=0;centers.forEach((c,i)=>{const d=distance(p.lab,c);if(d<best){best=d;id=i;}});
+        if(assignments[n]!==id)changes++;assignments[n]=id;
+        for(let c=0;c<3;c++)sums[id][c]+=p.lab[c]*p.weight;sums[id][3]+=p.weight;
+      });
+      sums.forEach((v,i)=>{if(highlight&&i===1)return;if(v[3])centers[i]=v.slice(0,3).map(x=>x/v[3]);});
+      if(iteration>1&&!changes)break;
+    }
+    // Use representative image colors, avoiding RGB averages across unrelated hues.
+    const chosen=centers.map((center,id)=>{
+      if(highlight&&id===1)return highlight;
+      let best=null,cost=Infinity;
+      points.forEach((p,n)=>{if(assignments[n]!==id)return;const d=distance(center,p.lab);if(d<cost){cost=d;best=p;}});
+      return best;
+    }).filter(Boolean);
+    const palette=chosen.sort((a,b)=>a.lab[0]-b.lab[0]).map(p=>p.rgb.map(Math.round));
+    const paletteLab=palette.map(toLab),lut=new Uint8Array(266240);
+    for(const p of points){let best=Infinity,id=0;paletteLab.forEach((c,i)=>{const d=distance(p.lab,c);if(d<best){best=d;id=i;}});lut[p.key]=id;}
+    const ranks=new Uint8Array(pixels.length/4);
+    for(let i=0,n=0;i<pixels.length;i+=4,n++)ranks[n]=lut[key(pixels[i],pixels[i+1],pixels[i+2])];
+    if(data.finalStages){
+      // One final partition, ordered by painted area; all five masks use it.
+      const counts=new Uint32Array(palette.length);
+      for(const rank of ranks)counts[rank]++;
+      const order=palette.map((_,i)=>i).sort((a,b)=>counts[b]-counts[a]||a-b);
+      const remap=new Uint8Array(palette.length);
+      order.forEach((old,i)=>{remap[old]=i;});
+      const finalRanks=Uint8Array.from(ranks,i=>remap[i]);
+      return {width:data.width,height:data.height,palette:order.map(i=>palette[i]),
+        ranks:finalRanks.slice().buffer,stages:[finalRanks,finalRanks,finalRanks,finalRanks,finalRanks],
+        stageCounts:[8,16,32,48,64].map(n=>Math.min(n,palette.length)),finalStages:true};
+    }
+    if(data.progressive){
+      // Keep the original 16-color analysis intact. Choose the 8-color
+      // beginning AS A SUBSET of those 16 colors; do not fit a second palette.
+      // This preserves the 16/32/48/64 stage colors while making every later
+      // color a real addition to the first eight.
+      const originalPalette=palette.slice(),originalLab=paletteLab.slice();
+      const counts=new Uint32Array(originalPalette.length);
+      for(const id of ranks)counts[id]++;
+      const chosen=[];
+      if(originalPalette.length){
+        chosen.push(0); // Preserve the darkest endpoint.
+        if(originalPalette.length>1)chosen.push(originalPalette.length-1); // Lightest/paper white.
+      }
+      const baseCount=Math.min(8,originalPalette.length);
+      while(chosen.length<baseCount){
+        let best=-1,bestScore=-1;
+        for(let i=0;i<originalPalette.length;i++){
+          if(chosen.includes(i))continue;
+          let nearest=Infinity;
+          for(const selected of chosen)nearest=Math.min(nearest,distance(originalLab[i],originalLab[selected]));
+          // Favor large important areas, but retain distinct accent colors.
+          const score=nearest*Math.pow(Math.max(1,counts[i]),.55);
+          if(score>bestScore){bestScore=score;best=i;}
+        }
+        if(best<0)break;
+        chosen.push(best);
+      }
+      // Reorder only indexes, NOT RGB values. All original colors are retained.
+      const order=[...chosen,...originalPalette.map((_,i)=>i).filter(i=>!chosen.includes(i))];
+      const remap=new Uint8Array(originalPalette.length);
+      order.forEach((old,i)=>{remap[old]=i;});
+      palette.splice(0,palette.length,...order.map(i=>originalPalette[i]));
+      paletteLab.splice(0,paletteLab.length,...order.map(i=>originalLab[i]));
+      const base8=new Uint8Array(ranks.length);
+      const rank16=Uint8Array.from(ranks,i=>remap[i]);
+      // Map all 16-color pixels to the nearest of the selected eight.
+      const baseMap=new Uint8Array(originalPalette.length);
+      for(let old=0;old<originalPalette.length;old++){
+        let best=0,bestDistance=Infinity;
+        for(let j=0;j<baseCount;j++){
+          const d=distance(originalLab[old],paletteLab[j]);
+          if(d<bestDistance){bestDistance=d;best=j;}
+        }
+        baseMap[old]=best;
+      }
+      for(let i=0;i<ranks.length;i++)base8[i]=baseMap[ranks[i]];
+      const stages=[base8,rank16],stageCounts=[baseCount,palette.length];
+      const usedColors=new Set(palette.map(c=>c.join(",")));
+      const nearest=points.map(p=>Math.min(...paletteLab.map(c=>distance(p.lab,c))));
+      const ids=points.map(p=>remap[lut[p.key]]);
+      for(let stage=2;stage<5;stage++){
+        const target=16*stage; // 32, 48, 64
+        while(palette.length<target){
+          let best=-1,score=0;
+          points.forEach((p,i)=>{const value=nearest[i]*Math.pow(p.weight,.7);if(value>score&&nearest[i]>0.01&&!usedColors.has(p.rgb.map(Math.round).join(","))){score=value;best=i;}});
+          if(best<0)break;
+          const rgb=points[best].rgb.map(Math.round),lab=toLab(rgb),id=palette.length;
+          palette.push(rgb);paletteLab.push(lab);usedColors.add(rgb.join(","));
+          points.forEach((p,i)=>{const d=distance(p.lab,lab);if(d<nearest[i]){nearest[i]=d;ids[i]=id;}});
+        }
+        points.forEach((p,i)=>{lut[p.key]=ids[i];});
+        const next=new Uint8Array(ranks.length);
+        for(let i=0,n=0;i<pixels.length;i+=4,n++)next[n]=lut[key(pixels[i],pixels[i+1],pixels[i+2])];
+        stages.push(next);stageCounts.push(palette.length);
+      }
+      return {width:data.width,height:data.height,palette,ranks:stages[4].slice().buffer,stages,stageCounts};
+    }
+    return {width:data.width,height:data.height,palette,ranks:ranks.buffer};
+  }
+  let build32StageRequest=false,build32StageIndex=0,build32StageView=null;
+  let build32ExtrasBase=null;
+  let build32GrayBlend=0,build32Foreground=null;
+  let build32Smoothing=0,build32RawFrame=null,build32SmoothPending=false;
+  let build32Data=null,build32Canvas=null,build32Active=false,build32Worker=null,build32Generation=0,build32Direction='light',build32Extras=false,build32VisibleMask=null;
+  let build32Selected=null,build32MixRequest=0,build32Additive=false,build32Manual=false;
+  let build32OriginalPalette=null,build32ColorOverrides=new Map(),build32ReplaceArmed=false;
+  // Separate color workspace for the selected detail cell.
+  let build32DetailOriginalPalette=null,build32DetailColorOverrides=new Map();
+  let build32DetailCellArmed=false, build32DetailCell=null, build32DetailCanvas=null, build32DetailBaseCanvas=null, build32DetailLocalRendered=false;
+  let build32LassoArmed=false,build32LassoDraft=null,build32LassoPoints=null,build32LassoRestorePoints=null,build32LassoGlobalState=null,build32SuppressLassoOutline=false;
+  function build32DetailTitle(){return build32DetailCell?.kind==='lasso'?'Lasso-Bereich':'Detail-Kästchen '+(build32DetailCell?.col+1)+' / '+(build32DetailCell?.row+1);}
+  function syncBuild32LassoButtons(){
+    const b=document.getElementById('build32Lasso'),clear=document.getElementById('build32LassoClear'),status=document.getElementById('build32LassoStatus');
+    if(!b)return;
+    b.textContent=build32LassoArmed?'Lasso zeichnen: Ein':'Lasso-Bereich wählen';b.setAttribute('aria-pressed',String(build32LassoArmed));
+    b.classList.toggle('active',build32LassoArmed);b.classList.toggle('secondary',!build32LassoArmed);
+    clear.disabled=!build32LassoPoints&&!build32LassoDraft;
+    status.textContent=build32LassoArmed?'Jetzt auf dem Originalbild mit einem Finger oder der Maus die Fläche umfahren. Zwei Finger zoomen.':
+      build32DetailCell?.kind==='lasso'?'Lasso aktiv · '+build32DetailCell.palette.length+' Farben innerhalb der Kontur. Außerhalb bleibt das Originalfoto sichtbar.':
+      build32LassoPoints?'Lasso markiert · jetzt 8, 16, 32, 48 oder 64 Farben wählen oder „Farben erkennen“ drücken. Die Kontur bleibt erhalten.':
+      'Erst Lasso im Originalbild zeichnen, danach gewünschte Farbanzahl wählen. Kein Raster nötig.';
+  }
+  function drawBuild32LassoOutline(){
+    if(!loaded||build32SuppressLassoOutline)return;
+    const pts=build32LassoDraft||build32LassoPoints;
+    if(!pts||pts.length<2)return;
+    ctx.save();ctx.translate(offsetX,offsetY);ctx.scale(scale,scale);
+    ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+    if(!build32LassoDraft)ctx.closePath();
+    ctx.lineJoin='round';ctx.lineCap='round';ctx.setLineDash([7/scale,5/scale]);
+    ctx.lineWidth=3.5/scale;ctx.strokeStyle='rgba(0,0,0,.95)';ctx.stroke();
+    ctx.lineWidth=1.8/scale;ctx.strokeStyle='rgba(255,255,255,.98)';ctx.lineDashOffset=-6/scale;ctx.stroke();ctx.restore();
+  }
+  const build32Selection=new Set();
+  let build32AllPrevious=null,build32PalettePage=0,build32SoloPrevious=null,build32SoloAdditive=false,build32SimilarAnchor=null;
+  function showBuild32PalettePage(page){
+    const strip=document.getElementById('build32Palette'),total=strip.children.length;
+    build32PalettePage=Math.max(0,Math.min(page,Math.ceil(total/16)-1));
+    [...strip.children].forEach((el,i)=>el.hidden=Math.floor(i/16)!==build32PalettePage);
+    const pages=document.getElementById('build32Pages');pages.replaceChildren();
+    const label=document.createElement('span');label.className='tiny';label.textContent=total+' Farben · Seite wählen:';pages.appendChild(label);
+    for(let p=0;p<Math.ceil(total/16);p++){
+      const button=document.createElement('button');button.type='button';button.className='secondary';
+      button.textContent=(p*16+1)+'–'+Math.min(total,(p+1)*16);
+      button.setAttribute('aria-label','Farben '+button.textContent+' anzeigen');
+      button.setAttribute('aria-pressed',String(p===build32PalettePage));
+      button.addEventListener('click',()=>showBuild32PalettePage(p));pages.appendChild(button);
+    }
+  }
+  function build32GridCellAt(ix,iy){
+    if(!loaded)return null;
+    const {cellX,cellY,firstX,firstY}=gridGeometry(sourceCanvas.width,sourceCanvas.height,gridDensity.value);
+    const col=Math.floor((ix-firstX)/cellX), row=Math.floor((iy-firstY)/cellY);
+    if(col<0||row<0)return null;
+    const x0=Math.max(0,firstX+col*cellX), y0=Math.max(0,firstY+row*cellY);
+    const x1=Math.min(sourceCanvas.width,firstX+(col+1)*cellX), y1=Math.min(sourceCanvas.height,firstY+(row+1)*cellY);
+    if(x1<=x0||y1<=y0||ix<x0||ix>x1||iy<y0||iy>y1)return null;
+    return {col,row,x:Math.floor(x0),y:Math.floor(y0),w:Math.max(1,Math.floor(x1)-Math.floor(x0)),h:Math.max(1,Math.floor(y1)-Math.floor(y0))};
+  }
+  function syncBuild32DetailCellButton(){
+    const b=document.getElementById('build32DetailCell'),status=document.getElementById('build32DetailCellStatus');
+    if(!b)return;
+    b.textContent='Detail-Kästchen auswählen: '+(build32DetailCellArmed?'Ein':'Aus');
+    b.setAttribute('aria-pressed',String(build32DetailCellArmed));
+    b.classList.toggle('active',build32DetailCellArmed);b.classList.toggle('secondary',!build32DetailCellArmed);
+    if(build32DetailCell){
+      status.textContent=build32DetailTitle()+' aktiv · '+build32DetailCell.palette.length+' lokale Farben. Erneute Auswahl ersetzt diese Analyse.';
+    }else{
+      status.textContent=build32DetailCellArmed?'Jetzt ein Raster-Kästchen im Bild antippen. Die globale Farbauswahl bleibt erhalten.':'Raster einschalten → Detail-Kästchen auswählen → ein Kästchen antippen. Die aktuell gewählte 8/16/32/48/64-Farbzahl wird dann nur in diesem Kästchen neu berechnet.';
+    }
+  }
+  function build32ActivePalette(){
+    return build32DetailCell ? build32DetailCell.palette : (build32Data ? build32Data.palette : null);
+  }
+  function build32ActiveOriginalPalette(){
+    return build32DetailCell ? build32DetailOriginalPalette : build32OriginalPalette;
+  }
+  function build32ActiveOverrides(){
+    return build32DetailCell ? build32DetailColorOverrides : build32ColorOverrides;
+  }
+  function renderBuild32PaletteStrip(palette){
+    const strip=document.getElementById('build32Palette');
+    if(!strip)return;
+    strip.replaceChildren();
+    if(!palette)return;
+    palette.forEach((rgb,index)=>{
+      const el=document.createElement('button');el.type='button';
+      el.style.background=rgbHex(rgb);el.style.color=rgbToLabFast(rgb)[0]>55?'#111':'#fff';
+      el.textContent=String(index+1);el.setAttribute('aria-label','Farbe '+(index+1)+' '+rgbHex(rgb));
+      el.setAttribute('aria-pressed','false');
+      el.addEventListener('click',()=>selectBuild32Color(index));
+      strip.appendChild(el);
+    });
+    showBuild32PalettePage(0);
+  }
+  function clearBuild32DetailCell(){
+    build32LassoPoints=null;build32LassoDraft=null;
+    build32DetailCell=null;build32DetailCanvas=null;build32DetailBaseCanvas=null;build32DetailLocalRendered=false;
+    build32DetailOriginalPalette=null;build32DetailColorOverrides.clear();
+    if(build32Data) renderBuild32PaletteStrip(build32Data.palette);
+    syncBuild32DetailCellButton();syncBuild32LassoButtons();
+    if(build32Data) syncBuild32FamilyRanges();
+  }
+  function analyzeBuild32DetailCell(cell){
+    if(!build32Data||!cell)return;
+    try{
+      // Preserve the global display exactly as it was before this local analysis.
+      if(cell.points&&!build32LassoGlobalState&&build32Data&&!build32DetailCell)build32LassoGlobalState=captureBuild32State();
+      // Never bake an older local analysis into the frozen global background.
+      if(build32DetailCell){clearBuild32DetailCell();renderBuild32(build32Direction);}
+      flushToneImage();
+      const crop=document.createElement('canvas');crop.width=cell.w;crop.height=cell.h;
+      const cc=crop.getContext('2d',{willReadFrequently:true});
+      cc.drawImage(sourceCanvas,cell.x,cell.y,cell.w,cell.h,0,0,cell.w,cell.h);
+      const source=cc.getImageData(0,0,cell.w,cell.h).data;
+      let regionMask=null;
+      if(cell.points){
+        // Rasterize the polygon at source resolution; no bounding-box colours
+        // may influence the palette outside the hand-drawn contour.
+        const mc=document.createElement('canvas');mc.width=cell.w;mc.height=cell.h;
+        const c=mc.getContext('2d',{willReadFrequently:true});
+        c.beginPath();cell.points.forEach((point,i)=>i?c.lineTo(point.x-cell.x,point.y-cell.y):c.moveTo(point.x-cell.x,point.y-cell.y));
+        c.closePath();c.fillStyle='#fff';c.fill();
+        const alpha=c.getImageData(0,0,cell.w,cell.h).data;
+        regionMask=new Uint8Array(cell.w*cell.h);for(let i=0;i<regionMask.length;i++)regionMask[i]=alpha[i*4+3]>127?1:0;
+      }
+      const pixelCount=cell.w*cell.h;
+      let selectedCount=0;
+      for(let i=0;i<pixelCount;i++)if(!regionMask||regionMask[i])selectedCount++;
+      if(selectedCount<16){build32Status.textContent='Lasso-Fläche ist zu klein. Bitte einen größeren Bereich umfahren.';return;}
+      // A bounded, uniformly spaced sampling prevents large iPad photos from
+      // freezing without introducing colours from outside the polygon.
+      const sampleEvery=Math.max(1,Math.ceil(selectedCount/350000));
+      const sample=new Uint8ClampedArray(Math.ceil(selectedCount/sampleEvery)*4);
+      let n=0,j=0;
+      for(let i=0;i<pixelCount;i++){
+        if(regionMask&&!regionMask[i])continue;
+        if(n++%sampleEvery)continue;
+        sample.set(source.subarray(i*4,i*4+4),j);j+=4;
+      }
+      const pixels=sample.subarray(0,j);
+      const data={colorCount:Number(document.getElementById('build32Count').value),pixels:pixels.buffer.slice(pixels.byteOffset,pixels.byteOffset+pixels.byteLength),width:j/4,height:1};
+      if(build32IsPure()){
+        const key=document.getElementById('build32MixPalette').value;
+        data.pureColors=build32IsSimple()?build32SimpleColors(key):build32PureColors(key);
+        data.simpleLimit=build32IsSimple()?Number(document.getElementById('build32SimpleLimit').value):0;
+        data.watercolor=['watercolor','horadam','akademie'].includes(key);
+      }
+      const result=build32IsPure()?quantizeBuild32Pure(data):quantizeBuild32(data);
+      if(!result.palette.length)throw new Error('Keine Farben im Lasso');
+      const ranks=new Uint16Array(pixelCount);ranks.fill(65535);
+      if(sampleEvery===1){
+        const indexed=result.pure?new Uint16Array(result.ranks):new Uint8Array(result.ranks);
+        for(let i=0,k=0;i<pixelCount;i++)if(!regionMask||regionMask[i])ranks[i]=indexed[k++];
+      }else{
+        const paletteLab=result.palette.map(rgbToLabFast),cache=new Map();
+        for(let i=0;i<pixelCount;i++){
+          if(regionMask&&!regionMask[i])continue;
+          const r=source[i*4],g=source[i*4+1],b=source[i*4+2],key=((r>>2)<<12)|((g>>2)<<6)|(b>>2);
+          let index=cache.get(key);
+          if(index===undefined){
+            const lab=rgbToLabFast([r,g,b]);let best=Infinity;index=0;
+            for(let a=0;a<paletteLab.length;a++){
+              const q=paletteLab[a],d=(lab[0]-q[0])**2+1.3*((lab[1]-q[1])**2+(lab[2]-q[2])**2);
+              if(d<best){best=d;index=a;}
+            }
+            cache.set(key,index);
+          }
+          ranks[i]=index;
+        }
+      }
+      build32DetailCell={...cell,kind:cell.points?'lasso':'grid',palette:result.palette,ranks,mask:regionMask,pure:!!result.pure,paintInfo:result.paintInfo||null};
+      build32DetailOriginalPalette=result.palette.map(rgb=>[...rgb]);
+      build32DetailColorOverrides.clear();build32Selected=null;build32Selection.clear();build32Manual=false;build32MixRequest++;
+      renderBuild32PaletteStrip(result.palette);
+      build32DetailBaseCanvas=document.createElement('canvas');build32DetailBaseCanvas.width=build32Canvas.width;build32DetailBaseCanvas.height=build32Canvas.height;
+      build32DetailBaseCanvas.getContext('2d').drawImage(build32Canvas,0,0);
+      build32DetailLocalRendered=false;
+      build32DetailCanvas=document.createElement('canvas');build32DetailCanvas.width=cell.w;build32DetailCanvas.height=cell.h;
+      const dc=build32DetailCanvas.getContext('2d'),frame=dc.createImageData(cell.w,cell.h);
+      for(let i=0;i<ranks.length;i++){
+        if(ranks[i]===65535)continue;
+        const rgb=result.palette[ranks[i]]||[128,128,128];
+        frame.data[i*4]=rgb[0];frame.data[i*4+1]=rgb[1];frame.data[i*4+2]=rgb[2];frame.data[i*4+3]=255;
+      }
+      dc.putImageData(frame,0,0);
+      build32LassoPoints=cell.points?cell.points.map(p=>({...p})):null;
+      build32LassoArmed=false;build32DetailCellArmed=false;
+      build32RememberedLight=result.palette.length;build32RememberedDark=0;
+      build32Active=true;syncBuild32DetailCellButton();syncBuild32LassoButtons();
+      syncBuild32FamilyRanges();
+      build32RenderDetailOnly('light');
+      build32Status.textContent=build32DetailTitle()+' · '+result.palette.length+' lokale Farben aus '+selectedCount.toLocaleString('de-DE')+' Bildpunkten. Globale Farbanalyse unverändert.';draw();
+    }catch(err){
+      build32Status.textContent='Lokale Farberkennung fehlgeschlagen: '+(err?.message||'Unbekannter Fehler');
+    }
+  }
+  function analyzeBuild32Lasso(points){
+    if(!build32Data||!points||points.length<3)return;
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    for(const p of points){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);}
+    const x=Math.max(0,Math.floor(minX)),y=Math.max(0,Math.floor(minY));
+    const w=Math.min(sourceCanvas.width,Math.ceil(maxX))-x,h=Math.min(sourceCanvas.height,Math.ceil(maxY))-y;
+    if(w<3||h<3){build32Status.textContent='Lasso zu klein; bitte größere Fläche wählen.';return;}
+    analyzeBuild32DetailCell({x,y,w,h,points});
+  }
+
+  function drawBuild32DetailOverlay(targetCtx){
+    if(build32DetailLocalRendered)return;
+    if(!build32DetailCell||!build32DetailCanvas)return;
+    targetCtx.drawImage(build32DetailCanvas,build32DetailCell.x,build32DetailCell.y,build32DetailCell.w,build32DetailCell.h);
+    targetCtx.save();targetCtx.globalCompositeOperation='difference';targetCtx.strokeStyle='rgba(255,255,255,.95)';targetCtx.lineWidth=Math.max(2,Math.min(sourceCanvas.width,sourceCanvas.height)/700);
+    if(build32DetailCell.points){
+      targetCtx.beginPath();build32DetailCell.points.forEach((p,i)=>i?targetCtx.lineTo(p.x,p.y):targetCtx.moveTo(p.x,p.y));targetCtx.closePath();targetCtx.stroke();
+    }else targetCtx.strokeRect(build32DetailCell.x+.5,build32DetailCell.y+.5,build32DetailCell.w-1,build32DetailCell.h-1);
+    targetCtx.restore();
+  }
+
+  function build32BackgroundValue(automatic){
+    const value=document.getElementById('build32Background').value;
+    return value==='white'?255:value==='gray'?128:automatic;
+  }
+  document.getElementById('build32Background').addEventListener('change',()=>{
+    if(!build32Data)return;
+    const active=build32Active;
+    if(build32StageView&&build32Data.stages)renderBuild32Stage();
+    else if(build32Manual)renderBuild32Selection();
+    else if(build32Extras)showBuild32Extras();
+    else renderBuild32(build32Direction);
+    build32Active=active;syncBuild32ReturnButtons();draw();
+  });
+  let build32Family='all';
+  let build32Families=new Set(['all']);
+  // Helligkeitswerte bleiben auch beim Wechsel der Farbfamilien erhalten.
+  // So kann z. B. erst Hell ausgewählt und danach Ocker/Orange zugeschaltet
+  // werden, ohne die Regler erneut einstellen zu müssen.
+  let build32RememberedLight=0, build32RememberedDark=0;
+  const build32FamilyStates=new Map();
+  function build32IsNeutral(rgb){
+    const lab=rgbToLabFast(rgb);
+    // Require both near-equal channels and very little perceptual color.
+    return Math.max(...rgb)-Math.min(...rgb)<=5&&Math.hypot(lab[1],lab[2])<=3.5;
+  }
+  function build32TintedGrayFamily(rgb){
+    const [h]=rgbToHsv(rgb),[L,a,b]=rgbToLabFast(rgb);
+    if(h>=335||h<22)return h<22&&L<65&&b>0?'brown':'red';
+    if(h<45)return L<60?'brown':'ochre';
+    if(h<=68)return rgb[1]>rgb[0]*1.04?'green':'yellow';
+    if(h<165)return 'green';
+    if(h<195)return 'turquoise';
+    if(h<265)return 'blue';
+    return 'violet';
+  }
+  function build32FamilyOf(rgb){
+    const [h,s]=rgbToHsv(rgb),[L,a,b]=rgbToLabFast(rgb);
+    const chroma=Math.hypot(a,b),[r,g]=rgb;
+    // One owner per swatch, shared by every family filter and palette size.
+    // White belongs to Neutral; it is no longer repeated in every family.
+    if(build32IsNeutral(rgb))return 'neutral';
+    // 2.46: olive can have nearly equal red and green channels. Its dark
+    // yellow hue still has a perceptual green bias; brightness separates it
+    // from luminous yellow. Apply before both gray and earth-tone branches.
+    const olive=h>=50&&h<=68&&L<78&&a<=-2;
+    const greenBias=h>=45&&h<=68&&(g>r*1.04||a<-.34*Math.max(1,b)||olive);
+    if(greenBias)return 'green';
+    if(chroma<14||s<.12)return build32TintedGrayFamily(rgb);
+    // Dark, muted warm reds read as red-brown; saturated crimson stays Red.
+    if(h<25&&L<42&&s<.82&&b>8)return 'brown';
+    if(h>=335||h<8)return 'red';
+    if(h<=68){
+      // Red/pink bias takes priority over neighboring orange/earth colors.
+      if(h<=24&&a>Math.max(4,1.05*b))return 'red';
+      // Strong rust/orange keeps its orange identity at medium lightness.
+      if(h>=12&&h<43&&L>=42&&s>=.72&&chroma>=45)return 'orange';
+      const earthy=L<58||(L<72&&s<.85)||(h<48&&L<90&&s<.55);
+      if(earthy)return L<52||h<25?'brown':'ochre';
+      return h<43?'orange':'yellow';
+    }
+    if(h<165)return 'green';
+    if(h<195)return 'turquoise';
+    if(h<265)return 'blue';
+    return 'violet';
+  }
+  function build32MatchesFamily(rgb,family){
+    return family==='all'||family===build32FamilyOf(rgb);
+  }
+  function build32SelectedFamilies(){
+    return build32Families.has('all') ? ['all'] : [...build32Families];
+  }
+  function build32FamilyOrder(palette,families,direction){
+    const list=Array.isArray(families)?families:(families==='all'?['all']:[families]);
+    if(list.includes('all')){
+      const indices=palette.map((rgb,index)=>({index,light:rgbToLabFast(rgb)[0]}));
+      indices.sort((a,b)=>b.light-a.light || b.index-a.index);
+      if(direction==='dark')indices.reverse();
+      return indices.map(item=>item.index);
+    }
+    const seen=new Set();
+    const indices=[];
+    for(const family of list){
+      palette.forEach((rgb,index)=>{
+        if(seen.has(index))return;
+        if(build32MatchesFamily(rgb,family)){
+          seen.add(index);
+          indices.push({index,family,light:rgbToLabFast(rgb)[0]});
+        }
+      });
+    }
+    indices.sort((a,b)=>b.light-a.light || a.index-b.index);
+    if(direction==='dark')indices.reverse();
+    return indices.map(item=>item.index);
+  }
+  function syncBuild32FamilyButtons(){
+    document.querySelectorAll('.familyChoice').forEach(btn=>{
+      const active=build32Families.has(btn.dataset.family);
+      btn.classList.toggle('active',active);
+      btn.classList.toggle('secondary',!active);
+      btn.setAttribute('aria-pressed',String(active));
+    });
+  }
+  function build32MiddleIndices(palette,value,darkValue=document.getElementById('build32middleDark').value){
+    const order=build32FamilyOrder(palette,build32SelectedFamilies(),'light');
+    if(!order.length)return [];
+    const center=Math.floor((order.length-1)/2);
+    const light=Math.max(0,Math.min(100,-Number(value)||0));
+    const dark=Math.max(0,Math.min(100,Number(darkValue)||0));
+    const left=Math.round(light*center/100);
+    const right=Math.round(dark*(order.length-1-center)/100);
+    return order.slice(center-left,center+right+1);
+  }
+  function syncBuild32Middle(){
+    const palette=build32ActivePalette();
+    const slider=document.getElementById('build32middle');
+    const indices=palette?build32MiddleIndices(palette,slider.value):[];
+    slider.disabled=!indices.length;
+    document.getElementById('build32middleDark').disabled=!indices.length;
+    document.getElementById('build32middleStart').disabled=!indices.length;
+    const active=build32Direction==='middle'&&!build32Manual;
+    const order=palette?build32FamilyOrder(palette,build32SelectedFamilies(),'light'):[];
+    const center=Math.floor((order.length-1)/2);
+    const left=order.length?Math.round(-Number(slider.value)*center/100):0;
+    const right=order.length?Math.round(Number(document.getElementById('build32middleDark').value)*(order.length-1-center)/100):0;
+    document.getElementById('build32middleVal').textContent=indices.length+' Farbe'+(indices.length===1?'':'n')+' · Mitte + '+left+' hellere + '+right+' dunklere'+(active?'':' · noch nicht aktiv');
+  }
+  function startBuild32Middle(reset){
+    if(!build32Data)return;
+    if(reset){document.getElementById('build32middle').value='0';document.getElementById('build32middleDark').value='0';}
+    forgetBuild32AllPrevious();build32SoloPrevious=null;build32SoloAdditive=false;
+    build32RememberedLight=0;build32RememberedDark=0;
+    for(const d of ['light','dark'])document.getElementById('build32'+d).value='0';
+    renderBuild32('middle');
+  }
+  document.getElementById('build32middleDark').addEventListener('input',()=>startBuild32Middle(false));
+  document.getElementById('build32middle').addEventListener('input',()=>startBuild32Middle(false));
+  document.getElementById('build32middleStart').addEventListener('click',()=>startBuild32Middle(true));
+  function syncBuild32FamilyRanges(){
+    const selected=build32SelectedFamilies();
+    const activePalette=build32DetailCell?build32DetailCell.palette:(build32Data?build32Data.palette:null);
+    const max=selected.includes('all')?(activePalette?activePalette.length:build32ColorCount()):activePalette?build32FamilyOrder(activePalette,selected,'light').length:0;
+    for(const d of ['light','dark']){
+      const el=document.getElementById('build32'+d);
+      const remembered=d==='light'?build32RememberedLight:build32RememberedDark;
+      el.max=max;el.disabled=!build32Data||max===0;
+      el.value=String(Math.min(remembered,max));
+      document.getElementById('build32'+d+'Val').textContent=el.value+' / '+max;
+    }
+    syncBuild32FamilyButtons();
+    syncBuild32Middle();
+  }
+  document.querySelectorAll('.familyChoice').forEach(btn=>btn.addEventListener('click',()=>{
+    const family=btn.dataset.family;
+    if(family==='all'){
+      build32Families=new Set(['all']);
+    }else{
+      build32Families.delete('all');
+      if(build32Families.has(family)) build32Families.delete(family); else build32Families.add(family);
+      if(build32Families.size===0) build32Families.add('all');
+    }
+    build32Family=[...build32Families].join(',');
+    build32AllPrevious=null;build32SoloPrevious=null;build32SoloAdditive=false;
+    // Nur die Farbfamilie ändert sich. Die bisherigen Hell-/Dunkelwerte
+    // bleiben gespeichert und werden für die neue Familienauswahl weiterverwendet.
+    syncBuild32FamilyRanges();
+    if(build32Data)renderBuild32(build32Direction==='middle'?'middle':'light');
+  }));
+  function build32ColorCount(){if(build32Data)return build32Data.palette.length;return Number(document.getElementById('build32Count').value);}
+  for(const id of ['build32Count','build32CountSide'])document.getElementById(id).addEventListener('change',e=>{
+    for(const other of ['build32Count','build32CountSide'])document.getElementById(other).value=e.target.value;
+    // The analyze handler owns the reset, and keeps any existing polygon.
+    // Never reset here: it cleared the Lasso before the recalculation could use it.
+    document.getElementById('build32Analyze').textContent=e.target.value+' Farben erkennen';
+    if(loaded)document.getElementById('build32Analyze').click();
+  });
+  let build32CollapsedBeforeFocus=false;
+  function setBuild32Collapsed(collapsed){
+    document.getElementById('build32Dock').classList.toggle('collapsed',collapsed);
+    const button=document.getElementById('build32Collapse');
+    button.textContent=collapsed?'Farben ausklappen':'Farben einklappen';
+    button.setAttribute('aria-expanded',String(!collapsed));
+  }
+  function refitViewerAfterLayout(){
+    requestAnimationFrame(()=>{resizeCanvas();fitImage();});
+  }
+  document.getElementById('imageFocusBtn').addEventListener('click',()=>{
+    const on=document.body.classList.toggle('image-focus'),button=document.getElementById('imageFocusBtn');
+    button.textContent=on?'Werkzeuge anzeigen':'Bild größer';button.setAttribute('aria-pressed',String(on));
+    if(on){
+      build32CollapsedBeforeFocus=document.getElementById('build32Dock').classList.contains('collapsed');
+      setBuild32Collapsed(true);
+    }else setBuild32Collapsed(build32CollapsedBeforeFocus);
+    refitViewerAfterLayout();
+  });
+  document.getElementById('build32Collapse').addEventListener('click',()=>{
+    setBuild32Collapsed(!document.getElementById('build32Dock').classList.contains('collapsed'));
+    refitViewerAfterLayout();
+  });
+  const build32Status=document.getElementById('build32Status');
+  function resetBuild32(){
+    build32StageView=null;syncBuild32StageButtons();document.getElementById("build32StagesControls").hidden=true;
+    document.getElementById("build32StagesStart").disabled=false;
+    build32ExtrasBase=null;
+    document.getElementById('build32DetailCell').disabled=false;
+    document.getElementById('build32middle').value='0';
+    document.getElementById('build32middle').disabled=true;
+    document.getElementById('build32middleDark').value='0';
+    document.getElementById('build32middleDark').disabled=true;
+    document.getElementById('build32middleStart').disabled=true;
+    document.getElementById('build32middleVal').textContent='Mitte: 1 Farbe · noch nicht aktiv';
+    build32FamilyStates.clear();
+    build32Foreground=null;build32RawFrame=null;
+    build32SoloPrevious=null;build32SoloAdditive=false;build32SimilarAnchor=null;build32AllPrevious=null;syncBuild32ReturnButtons();
+    build32Extras=false;document.getElementById('build32Extras').disabled=true;document.getElementById('build32Extras').textContent='Nur Ergänzungen zeigen';
+    build32Selection.clear();build32Manual=false;
+    build32RememberedLight=0;build32RememberedDark=0;
+    build32DetailCellArmed=false;build32DetailCell=null;build32DetailCanvas=null;
+    build32LassoArmed=false;build32LassoDraft=null;build32LassoPoints=null;build32LassoGlobalState=null;syncBuild32DetailCellButton();syncBuild32LassoButtons();
+    build32Selected=null;build32MixRequest++;document.getElementById('build32Dock').hidden=true;
+    build32Generation++;if(build32Worker)build32Worker.terminate();build32Worker=null;
+    build32Data=null;build32Canvas=null;build32Active=false;build32VisibleMask=null;
+    build32OriginalPalette=null;build32ColorOverrides.clear();build32ReplaceArmed=false;build32DetailOriginalPalette=null;build32DetailColorOverrides.clear();
+    document.getElementById('build32Analyze').disabled=false;
+    document.getElementById('build32Replace').setAttribute('aria-pressed','false');
+    document.getElementById('build32Replace').textContent='Originalfarbe ersetzen';
+    document.getElementById('build32ResetColor').disabled=true;
+    for(const d of ['light','dark']){document.getElementById('build32'+d).value=0;document.getElementById('build32'+d).max=build32ColorCount();document.getElementById('build32'+d).disabled=true;document.getElementById('build32'+d+'Val').textContent='0 / '+build32ColorCount();}
+    document.getElementById('build32Palette').replaceChildren();
+    document.getElementById('build32Pages').replaceChildren();build32PalettePage=0;
+    build32Status.textContent='Foto öffnen und Farben erkennen lassen.';
+  }
+  function build32PaletteColor(index){
+    const palette=build32ActivePalette();
+    return palette&&palette[index]?palette[index]:null;
+  }
+  function build32UpdatePaletteButton(index){
+    const el=document.getElementById('build32Palette').children[index];
+    const palette=build32ActivePalette(),overrides=build32ActiveOverrides();
+    if(!el||!palette||!palette[index])return;
+    const rgb=palette[index];
+    el.style.background=rgbHex(rgb);
+    el.style.color=rgbToLabFast(rgb)[0]>55?'#111':'#fff';
+    el.textContent=String(index+1)+(overrides.has(index)?' ✓':'');
+    el.title='Farbe '+(index+1)+(overrides.has(index)?' · eigene Originalfarbe':' · automatisch berechnet');
+  }
+  function build32RenderCurrent(){
+    if(!build32Data)return;
+    if(build32StageView&&build32Data.stages)renderBuild32Stage();
+    else if(build32Manual)renderBuild32Selection();
+    else if(build32Extras)showBuild32Extras();
+    else renderBuild32(build32Direction);
+  }
+  function build32ArmReplace(){
+    if(!build32Data){build32Status.textContent='Bitte zuerst Farben erkennen lassen.';return;}
+    const index=build32Selected;
+    if(index===null||index===undefined){build32Status.textContent='Bitte zuerst eine der Farben antippen, die du ersetzen möchtest.';return;}
+    build32ReplaceArmed=true;
+    build32Active=false;
+    const b=document.getElementById('build32Replace');
+    b.textContent='Originalstelle antippen · Farbe '+(index+1);
+    b.setAttribute('aria-pressed','true');b.classList.add('active');b.classList.remove('secondary');
+    document.getElementById('build32ResetColor').disabled=!build32ColorOverrides.has(index);
+    hint.textContent='Jetzt die gewünschte Stelle im Originalbild antippen. Diese Farbe ersetzt nur Farbe '+(index+1)+'.';
+    syncBuild32ReturnButtons();draw();
+  }
+  function build32ApplyOriginalColor(rgb){
+    const palette=build32ActivePalette(),original=build32ActiveOriginalPalette(),overrides=build32ActiveOverrides();
+    if(!build32Data||!palette||!original||build32Selected===null||!palette[build32Selected])return;
+    const index=build32Selected;
+    if(!overrides.has(index))overrides.set(index,[...original[index]]);
+    palette[index]=[...rgb];
+    build32ReplaceArmed=false;
+    const b=document.getElementById('build32Replace');
+    b.textContent='Originalfarbe ersetzen';b.setAttribute('aria-pressed','false');b.classList.remove('active');b.classList.add('secondary');
+    document.getElementById('build32ResetColor').disabled=false;
+    build32UpdatePaletteButton(index);
+    build32RenderCurrent();
+    hint.textContent='Farbe '+(index+1)+' wurde durch die aufgenommene Originalfarbe ersetzt.';
+  }
+  function build32ResetColor(){
+    const palette=build32ActivePalette(),original=build32ActiveOriginalPalette(),overrides=build32ActiveOverrides();
+    if(!build32Data||!palette||!original||build32Selected===null||!overrides.has(build32Selected))return;
+    const index=build32Selected;
+    palette[index]=[...original[index]];
+    overrides.delete(index);
+    document.getElementById('build32ResetColor').disabled=true;
+    build32UpdatePaletteButton(index);
+    build32RenderCurrent();
+    hint.textContent='Farbe '+(index+1)+' ist wieder die automatisch berechnete Farbe.';
+  }
+  function build32RenderDetailOnly(direction){
+    if(!build32Data||!build32DetailCell)return false;
+    const palette=build32DetailCell.palette, ranks=build32FilledRanks(build32DetailCell);
+    const width=build32DetailCell.w,height=build32DetailCell.h;
+    const selectedFamilies=build32SelectedFamilies();
+    const lightCount=Math.min(Number(document.getElementById('build32light').value)||0,palette.length);
+    const darkCount=Math.min(Number(document.getElementById('build32dark').value)||0,palette.length);
+    const lightOrder=build32FamilyOrder(palette,selectedFamilies,'light');
+    const darkOrder=build32FamilyOrder(palette,selectedFamilies,'dark');
+    const combined=new Set();
+    lightOrder.slice(0,lightCount).forEach(i=>combined.add(i));
+    darkOrder.slice(0,darkCount).forEach(i=>combined.add(i));
+    if(direction==='middle'){combined.clear();build32MiddleIndices(palette,document.getElementById('build32middle').value).forEach(i=>combined.add(i));}
+    build32Selection.clear();combined.forEach(i=>build32Selection.add(i));
+    const bg=build32BackgroundValue((lightCount>0&&darkCount===0)?128:(darkCount>0&&lightCount===0?255:128));
+    const dc=build32DetailCanvas.getContext('2d'),frame=dc.createImageData(width,height);
+    for(let i=0;i<ranks.length;i++){
+      const rank=ranks[i];if(rank===65535)continue;
+      const show=build32Selection.has(rank),rgb=show?palette[rank]:[bg,bg,bg];
+      frame.data[i*4]=rgb[0];frame.data[i*4+1]=rgb[1];frame.data[i*4+2]=rgb[2];frame.data[i*4+3]=255;
+    }
+    // Apply the smoothing slider locally to the selected cell only.
+    if(build32Smoothing>0){
+      const localMask=new Uint8Array(ranks.length);
+      for(let i=0;i<ranks.length;i++) localMask[i]=ranks[i]!==65535&&build32Selection.has(ranks[i])?1:0;
+      const smoothed=smoothBuild32Pixels(frame.data,localMask,width,height,build32Smoothing);
+      frame.data.set(smoothed);
+    }
+    dc.putImageData(frame,0,0);
+    // Keep the local palette in sync with the actual colors currently visible
+    // in the selected detail cell. Slider changes must visibly select the
+    // corresponding palette swatches, even when additive mode is off.
+    [...document.getElementById('build32Palette').children].forEach((el,i)=>{
+      const show=build32Selection.has(i);
+      el.setAttribute('aria-pressed',String(show));
+      el.textContent=String(i+1)+(build32DetailColorOverrides.has(i)?' ✓':'');
+      el.title='Lokale Farbe '+(i+1)+(show?' · aktuell sichtbar':' · ausgeblendet');
+    });
+    // Important: the global quantized canvas may be only 1600px wide, while
+    // the Lasso and detail cells use ORIGINAL source-image coordinates.
+    // Never paste a full-resolution local crop into this smaller canvas.
+    // renderCurrentArtwork() composites the masked crop in source coordinates
+    // over the untouched original (Lasso) or global view (grid detail).
+    build32VisibleMask=new Uint8Array(build32Data.ranks.length);
+    build32DetailLocalRendered=true;build32Active=true;
+    const max=palette.length;
+    for(const d of ['light','dark']){
+      const el=document.getElementById('build32'+d);el.max=max;el.disabled=false;
+      document.getElementById('build32'+d+'Val').textContent=el.value+' / '+max;
+    }
+    build32Status.textContent=build32DetailTitle()+' · Hell: '+lightCount+' + Dunkel: '+darkCount+' · '+build32Selection.size+' lokale Farben sichtbar. Nur innerhalb der Auswahl.';
+    if(direction==='middle')build32Status.textContent=build32DetailTitle()+' · '+document.getElementById('build32middleVal').textContent;
+    syncBuild32ReturnButtons();draw();
+    return true;
+  }
+  function renderBuild32(direction){
+    if(!build32Data)return;
+    build32StageView=null;syncBuild32StageButtons();
+    build32Direction=direction;build32Manual=false;
+    syncBuild32Middle();
+    if(build32DetailCell && build32DetailBaseCanvas){ build32RenderDetailOnly(direction); return; }
+    if(!build32Data)return;
+    syncBuild32FamilyRanges();
+    build32Manual=false;
+    build32Selected=null;build32MixRequest++;document.getElementById('build32Recipe').textContent='Farbfläche im Bild antippen: Palettenfarbe und Mischung anzeigen. Farbfeld unten antippen: Farbe im Bild auswählen.';
+    document.getElementById('build32Extras').textContent=build32Extras?'Farbaufbau wieder anzeigen':'Nur Ergänzungen zeigen';
+    document.getElementById('build32Extras').disabled=!build32Extras&&(direction==='middle'||!build32SelectedFamilies().includes('all')||Number(document.getElementById('build32light').value)!==build32ColorCount());
+    build32Direction=direction;build32Active=true;
+    const {palette,width,height}=build32Data,ranks=build32FilledRanks(build32Data);
+    const lightCount=Number(document.getElementById('build32light').value);
+    const darkCount=Number(document.getElementById('build32dark').value);
+    for(const d of ['light','dark']){
+      document.getElementById('build32'+d+'Val').textContent=document.getElementById('build32'+d).value+' / '+document.getElementById('build32'+d).max;
+      document.getElementById('build32'+d).parentElement.style.fontWeight='700';
+    }
+    // Both sliders are cumulative and independent. The visible set is the
+    // union of the lightest N and darkest N colors. Moving either slider
+    // therefore adds colors instead of replacing the previous selection.
+    const lightOrder=build32FamilyOrder(palette,build32SelectedFamilies(),'light');
+    const darkOrder=build32FamilyOrder(palette,build32SelectedFamilies(),'dark');
+    const nLight=build32SelectedFamilies().includes('all')
+      ? (build32Extras?lightCount:Math.ceil(lightCount*palette.length/build32ColorCount()))
+      : Math.min(lightCount,lightOrder.length);
+    const nDark=build32SelectedFamilies().includes('all')
+      ? (build32Extras?darkCount:Math.ceil(darkCount*palette.length/build32ColorCount()))
+      : Math.min(darkCount,darkOrder.length);
+    // Build one persistent visible set from BOTH sliders. The second slider
+    // only adds/removes its own end of the scale; it never replaces the first.
+    const combinedSelection=new Set();
+    lightOrder.slice(0,nLight).forEach(i=>combinedSelection.add(i));
+    darkOrder.slice(0,nDark).forEach(i=>combinedSelection.add(i));
+    if(direction==='middle'){combinedSelection.clear();build32MiddleIndices(palette,document.getElementById('build32middle').value).forEach(i=>combinedSelection.add(i));}
+    build32Selection.clear();
+    combinedSelection.forEach(i=>build32Selection.add(i));
+    const bg=build32BackgroundValue((lightCount>0&&darkCount===0)?128:(darkCount>0&&lightCount===0?255:128));
+    const c=build32Canvas.getContext('2d'),frame=c.createImageData(width,height);
+    build32VisibleMask=new Uint8Array(ranks.length);
+    for(let i=0;i<ranks.length;i++){
+      const rank=ranks[i],show=build32Selection.has(rank);
+      build32VisibleMask[i]=show?1:0;
+      const rgb=show?build32DisplayColor(rank,i):[bg,bg,bg];
+      frame.data[i*4]=rgb[0];frame.data[i*4+1]=rgb[1];frame.data[i*4+2]=rgb[2];frame.data[i*4+3]=255;
+    }
+    c.putImageData(frame,0,0);rebuildBuild32Foreground(frame);
+    [...document.getElementById('build32Palette').children].forEach((el,i)=>{
+      const show=build32Selection.has(i);el.style.opacity='1';el.setAttribute('aria-pressed',String(show));el.title='Farbe '+(i+1)+(show?' · sichtbar':' · ausgeblendet');
+    });
+    const familyLabel=build32SelectedFamilies().includes('all')?'Alle Farbfamilien':build32SelectedFamilies().map(f=>({yellow:'Gelb',ochre:'Ocker',orange:'Orange',red:'Rot / Rosa',brown:'Braun / Siena / Umbra',green:'Grün',turquoise:'Türkis',blue:'Blau',violet:'Violett',neutral:'Neutral'}[f]||f)).join(' + ');
+    const visibleCount=build32Selection.size;
+    build32Status.textContent='Hell: '+nLight+' + Dunkel: '+nDark+' · '+visibleCount+' verschiedene Farben sichtbar · '+(bg===255?'Weiß':'Mittelgrau')+' · '+familyLabel+(visibleCount===0?' · Keine Farben ausgewählt':'');
+    if(direction==='middle')build32Status.textContent=document.getElementById('build32middleVal').textContent+' · '+familyLabel;
+    build32ExtrasNotice();syncBuild32ReturnButtons();draw();
+  }
+
+  // Relabel small connected islands; never turn them into background pixels.
+  // Work from immutable source ranks so every setting is reversible.
+  function build32FilledRanks(data,amount=Number(document.getElementById('build32Spots').value)){
+    const ranks=data.ranks;
+    if(!amount)return ranks;
+    if(data.filledCache?.amount===amount)return data.filledCache.ranks;
+    const width=data.width||data.w,n=ranks.length,threshold=Math.max(2,Math.round(n*amount*amount/1000000));
+    const ids=new Int32Array(n);ids.fill(-1);
+    const queue=new Int32Array(n),components=[];
+    const neighbors=(i,visit)=>{const x=i%width;if(x)visit(i-1);if(x+1<width)visit(i+1);if(i>=width)visit(i-width);if(i+width<n)visit(i+width);};
+    for(let start=0;start<n;start++){
+      if(ids[start]!==-1||ranks[start]===65535)continue;
+      const id=components.length,rank=ranks[start];let head=0,tail=1;queue[0]=start;ids[start]=id;
+      while(head<tail)neighbors(queue[head++],j=>{if(ids[j]===-1&&ranks[j]===rank){ids[j]=id;queue[tail++]=j;}});
+      components.push({rank,size:tail,border:new Map()});
+    }
+    for(let i=0;i<n;i++){
+      const id=ids[i];if(id<0||components[id].size>=threshold)continue;
+      neighbors(i,j=>{const other=ids[j];if(other<0||other===id||components[other].size<threshold)return;
+        const r=components[other].rank,m=components[id].border;m.set(r,(m.get(r)||0)+1);
+      });
+    }
+    const replacements=components.map(c=>{let rank=c.rank,best=0;for(const [r,v] of c.border)if(v>best){rank=r;best=v;}return rank;});
+    const filled=new ranks.constructor(ranks);
+    for(let i=0;i<n;i++)if(ids[i]>=0)filled[i]=replacements[ids[i]];
+    data.filledCache={amount,ranks:filled};return filled;
+  }
+  document.getElementById('build32Spots').addEventListener('input',e=>{
+    document.getElementById('build32SpotsVal').textContent=Number(e.target.value)?e.target.value+' / 10':'Aus';
+  });
+  document.getElementById('build32Spots').addEventListener('change',()=>{
+    if(build32Data){if(build32Manual)renderBuild32Selection();else renderBuild32(build32Direction);}
+  });
+
+  function acceptBuild32(result,generation){
+    if(generation!==build32Generation)return;
+    build32Data={...result,ranks:result.pure?new Uint16Array(result.ranks):new Uint8Array(result.ranks)};
+    build32OriginalPalette=result.palette.map(rgb=>[...rgb]);
+    build32ColorOverrides.clear();build32ReplaceArmed=false;
+    document.getElementById('build32ResetColor').disabled=true;
+    document.getElementById('build32Replace').setAttribute('aria-pressed','false');
+    document.getElementById('build32Replace').textContent='Originalfarbe ersetzen';
+    build32Canvas=document.createElement('canvas');build32Canvas.width=result.width;build32Canvas.height=result.height;
+    document.getElementById('build32Analyze').disabled=false;
+    const strip=document.getElementById('build32Palette');strip.replaceChildren();
+    result.palette.forEach((rgb,index)=>{const el=document.createElement('button');el.type='button';el.style.background=rgbHex(rgb);el.style.color=rgbToLabFast(rgb)[0]>55?'#111':'#fff';el.textContent=String(index+1);el.setAttribute('aria-label','Farbe '+(index+1)+' '+(result.pure?result.paintInfo[index].name+' ':'')+rgbHex(rgb));el.setAttribute('aria-pressed','false');el.addEventListener('click',()=>selectBuild32Color(index));strip.appendChild(el);});
+    showBuild32PalettePage(0);
+    document.getElementById('build32Dock').hidden=false;
+    if(!result.pure)document.getElementById('build32MixPalette').value=paintPalette.value;
+    requestAnimationFrame(()=>{resizeCanvas();fitImage();});
+    build32RememberedLight=0;build32RememberedDark=0;
+    build32DetailCell=null;build32DetailCanvas=null;build32DetailBaseCanvas=null;build32DetailLocalRendered=false;build32DetailCellArmed=false;syncBuild32DetailCellButton();
+    for(const d of ['light','dark']){document.getElementById('build32'+d).disabled=false;document.getElementById('build32'+d).value=0;}
+    if(result.pure){build32Families=new Set(['all']);build32Family='all';build32RememberedLight=build32ColorCount();syncBuild32FamilyRanges();document.getElementById('build32light').value=build32ColorCount();}
+    renderBuild32('light');
+    if(result.stages){build32StageIndex=0;build32StageView='all';document.getElementById('build32StagesControls').hidden=false;renderBuild32Stage();}
+    const restore=build32LassoRestorePoints;build32LassoRestorePoints=null;
+    if(restore&&!result.stages)analyzeBuild32Lasso(restore);
+    document.getElementById('build32StagesStart').disabled=false;
+  }
+
+  function syncBuild32StageButtons(){
+    document.querySelectorAll('[data-paint-stage]').forEach(b=>{const on=!!build32StageView&&Number(b.dataset.paintStage)===build32StageIndex;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
+    document.querySelectorAll('[data-paint-view]').forEach(b=>{const on=b.dataset.paintView===build32StageView;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));b.disabled=build32StageIndex===0&&b.dataset.paintView==='before';});
+    const fixed=!!build32StageView&&!!build32Data?.finalStages;
+    document.getElementById('build32Smooth').disabled=false;
+    document.getElementById('build32Smooth').title=fixed?'Übergänge werden am vollständigen Zielbild geglättet und bleiben beim Stufenwechsel gleich.':'';
+    const toggle=document.getElementById('build32StagesToggle');toggle.disabled=build32StageIndex===0;toggle.textContent=build32StageView==='all'?'Neue Farben ausblenden':'Neue Farben einblenden';
+  }
+  function renderBuild32Stage(){
+    if(!build32Data?.stages)return;
+    const data=build32Data,stage=build32StageIndex,view=build32StageView||'all';build32StageView=view;build32MixRequest++;
+    const previous=stage?data.stageCounts[stage-1]:0,end=data.stageCounts[stage];
+    const ranks=data.stages[view==='before'?Math.max(0,stage-1):stage];
+    data.ranks=ranks;delete data.filledCache;
+    build32Extras=false;build32ExtrasBase=null;build32Manual=false;build32Active=true;build32Selected=null;build32AllPrevious=null;build32SoloPrevious=null;
+    build32Selection.clear();for(let i=view==='new'?previous:0;i<(view==='before'?previous:end);i++)build32Selection.add(i);
+    const c=build32Canvas.getContext('2d'),frame=c.createImageData(data.width,data.height),bg=build32BackgroundValue(128);
+    build32VisibleMask=new Uint8Array(ranks.length);
+    for(let i=0;i<ranks.length;i++){const show=data.finalStages?build32Selection.has(ranks[i]):(view!=='new'||ranks[i]>=previous);build32VisibleMask[i]=show?1:0;const rgb=show?data.palette[ranks[i]]:[bg,bg,bg];frame.data.set([...rgb,255],i*4);}
+    c.putImageData(frame,0,0);rebuildBuild32Foreground(frame);
+    [...document.getElementById('build32Palette').children].forEach((b,i)=>{b.setAttribute('aria-pressed',String(build32Selection.has(i)));b.style.opacity=build32Selection.has(i)?'1':'.4';});
+    document.getElementById('build32Extras').disabled=true;
+    const message=(data.finalStages?'Endgültige Farben · ':'')+'Malstufe '+(stage+1)+' · '+(view==='before'?previous+' bisherige Farben':view==='new'?(end-previous)+' neue Farben (Nr. '+(previous+1)+'–'+end+')':end+' Farben zusammen');
+    build32Status.textContent=message;document.getElementById('build32StagesInfo').textContent=message+(end===previous?' · Keine weiteren Farben im Motiv.':data.finalStages?' · Freie Flächen bleiben ausgespart. Größte Farbflächen zuerst.':'');
+    document.getElementById('build32Recipe').textContent='Farbfeld antippen für die Mischung. Mit den Stufenknöpfen zurück zum Malaufbau.';
+    syncBuild32StageButtons();syncBuild32ReturnButtons();draw();
+  }
+  document.getElementById('build32StagesStart').addEventListener('click',()=>{
+    if(!loaded){build32Status.textContent='Bitte zuerst ein Foto öffnen.';return;}
+    for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).value='mixed';
+    syncBuild32SimpleLimit();
+    for(const id of ['build32Count','build32CountSide'])document.getElementById(id).value='64';
+    if(document.getElementById('build32StagesMode').value==='final'&&build32Smoothing===0){build32Smoothing=11;document.getElementById('build32Smooth').value='11';document.getElementById('build32SmoothVal').textContent='11 %';}
+    document.getElementById('build32Analyze').textContent='64 Farben erkennen';build32StageRequest=document.getElementById('build32StagesMode').value;document.getElementById('build32Analyze').click();
+    build32Status.textContent='Fünf Malstufen (8 bis 64 Farben) werden vorbereitet …';
+  });
+  document.querySelectorAll('[data-paint-stage]').forEach(b=>b.addEventListener('click',()=>{
+    if(!build32Data?.stages)return;
+    if(build32DetailCell)clearBuild32DetailCell();
+    build32StageIndex=Number(b.dataset.paintStage);build32StageView='all';renderBuild32Stage();
+  }));
+  document.querySelectorAll('[data-paint-view]').forEach(b=>b.addEventListener('click',()=>{
+    if(build32DetailCell)clearBuild32DetailCell();
+    build32StageView=b.dataset.paintView;renderBuild32Stage();
+  }));
+  document.getElementById('build32StagesToggle').addEventListener('click',()=>{
+    if(build32DetailCell)clearBuild32DetailCell();
+    build32StageView=build32StageView==='all'?'before':'all';renderBuild32Stage();
+  });
+
+  function updateBuild32Recipe(){
+    const index=build32Selected,request=++build32MixRequest;
+    if(index===null||!build32Data)return;
+    const palette=build32ActivePalette();
+    const rgb=palette&&palette[index],key=document.getElementById('build32MixPalette').value;
+    if(!rgb)return;
+    const box=document.getElementById('build32Recipe');
+    if(build32DetailCell?.pure||(!build32DetailCell&&build32Data.pure)){const info=(build32DetailCell?.paintInfo||build32Data.paintInfo)[index];box.textContent=info.recipe?info.recipe+' · Öl · Farbanteile als Startrezept (Simulation)':info.name+' · '+(info.watercolor?(info.coverage===0?'Papierweiß erhalten':Math.round(info.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)'):'Reine Tubenfarbe · ohne Mischung');return;}
+    box.textContent='Mischung für Farbe '+(index+1)+' wird berechnet …';
+    setTimeout(()=>{
+      if(request!==build32MixRequest)return;
+      try{
+        const m=chooseMixes(rgb,key)[0];
+        if(!m){box.textContent='Bitte zuerst vorhandene Farben unter Mischen auswählen.';return;}
+        box.replaceChildren();
+        const title=document.createElement('b');title.textContent='Farbe '+(index+1)+' · '+m.score+'/100 Bildschirmnähe';box.appendChild(title);
+        const line=document.createElement('div');line.textContent=m.names.map((n,i)=>m.parts[i].toLocaleString('de-DE')+' Teil'+(m.parts[i]!==1?'e':'')+' '+n).join(' + ');box.appendChild(line);
+        const note=document.createElement('div');note.className='tiny';note.textContent=m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (kein Wasserverhältnis).':'Öl · Mengen als Startrezept.';box.appendChild(note);
+        appendPictureUseButton(box,m,key,rgb);
+      }catch(e){box.textContent='Mischung konnte nicht berechnet werden. Bitte eine andere Palette wählen.';}
+    },30);
+  }
+  function build32ImageIndexAt(ix,iy,data,detail,sourceWidth,sourceHeight){
+    if(ix<0||iy<0||ix>=sourceWidth||iy>=sourceHeight)return null;
+    let x,y,width,height;
+    if(detail){
+      if(ix<detail.x||iy<detail.y||ix>=detail.x+detail.w||iy>=detail.y+detail.h)return null;
+      x=Math.floor(ix-detail.x);y=Math.floor(iy-detail.y);width=detail.w;height=detail.h;
+      if(detail.mask&&!detail.mask[y*width+x])return null;
+    }else{
+      width=data.width;height=data.height;
+      x=Math.floor(ix*width/sourceWidth);y=Math.floor(iy*height/sourceHeight);
+    }
+    return y*width+x;
+  }
+  function inspectBuild32ImageColor(e){
+    if(!build32Active||!build32Data||sketchActive||document.getElementById('build32Dock').hidden)return false;
+    const p=canvasPoint(e.clientX,e.clientY),ix=(p.x-offsetX)/scale,iy=(p.y-offsetY)/scale;
+    const data=build32DetailCell||build32Data;
+    const pixel=build32ImageIndexAt(ix,iy,build32Data,build32DetailCell,sourceCanvas.width,sourceCanvas.height);
+    if(pixel===null){
+      if(build32DetailCell)hint.textContent='Für die lokale Palette bitte innerhalb der gewählten Fläche antippen.';
+      return true;
+    }
+    if((build32DetailCell?!build32Selection.has(build32FilledRanks(build32DetailCell)[pixel]):(build32VisibleMask&&build32VisibleMask[pixel]===0))){
+      hint.textContent='Hier ist die Farbe ausgeblendet. Bitte eine sichtbare Farbfläche antippen oder „Alle Farben“ anzeigen.';
+      return true;
+    }
+    const index=build32FilledRanks(data)[pixel],palette=build32ActivePalette();
+    if(!palette?.[index])return true;
+    // Inspect the indexed colour without changing the visible colour selection.
+    build32Selected=index;
+    setBuild32Collapsed(false);showBuild32PalettePage(Math.floor(index/16));
+    [...document.getElementById('build32Palette').children].forEach((button,i)=>{
+      button.dataset.imagePicked=String(i===index);
+    });
+    document.getElementById('build32ResetColor').disabled=!build32ActiveOverrides().has(index);
+    setMixTarget(palette[index],'Bildfarbe '+(index+1),planPointAt(ix,iy));updateBuild32Recipe();
+    hint.textContent='Bildfarbe '+(index+1)+' · unten blau umrandet, mit Mischrezept. Die Bildansicht bleibt erhalten.';
+    const dock=document.getElementById('build32Dock');
+    requestAnimationFrame(()=>{
+      const recipe=document.getElementById('build32Recipe');
+      dock.scrollTop=Math.max(0,recipe.offsetTop-dock.offsetTop-dock.clientHeight+recipe.clientHeight+12);
+    });
+    return true;
+  }
+  function selectBuild32Color(index){
+    if(!build32Data)return;
+    [...document.getElementById('build32Palette').children].forEach(button=>delete button.dataset.imagePicked);
+    if(build32DetailCell){
+      const palette=build32ActivePalette();
+      if(!palette||!palette[index])return;
+      const remove=build32Selection.has(index)&&(build32Additive||build32Manual);
+      if(!build32Additive)build32Selection.clear();
+      if(remove){
+        build32Selection.delete(index);
+        if(build32Selected===index||!build32Selection.has(build32Selected))build32Selected=[...build32Selection].pop()??null;
+      }else{build32Selection.add(index);build32Selected=index;}
+      build32Manual=true;renderBuild32Selection();
+      document.getElementById('build32ResetColor').disabled=!build32DetailColorOverrides.has(index);
+      build32Status.textContent='Detail-Kästchen · Farbe '+(index+1)+' ausgewählt. Nur lokale Farbe/Mischung wird verwendet.';
+      return;
+    }
+    if(build32SoloPrevious&&!build32SoloAdditive){
+      forgetBuild32AllPrevious();build32Selection.clear();build32Selection.add(index);
+      build32SimilarAnchor=index;build32Selected=index;build32Manual=true;renderBuild32Selection();return;
+    }
+    forgetBuild32AllPrevious();
+    const additive=build32SoloPrevious?build32SoloAdditive:build32Additive;
+    const remove=build32Selection.has(index)&&(additive||build32Manual);
+    if(!additive)build32Selection.clear();
+    if(remove){
+      build32Selection.delete(index);
+      if(build32Selected===index||!build32Selection.has(build32Selected))build32Selected=[...build32Selection].pop()??null;
+    }else{build32Selection.add(index);build32Selected=index;}
+    build32Manual=true;renderBuild32Selection();
+    document.getElementById('build32ResetColor').disabled=!build32ColorOverrides.has(index);
+    syncBuild32ReturnButtons();
+    build32Status.textContent='Farbe '+(index+1)+' ausgewählt · jetzt „Originalfarbe ersetzen“ antippen.';
+  }
+  function renderBuild32Selection(){
+    if(!build32Data)return;
+    build32StageView=null;syncBuild32StageButtons();
+    syncBuild32Middle();
+    if(build32DetailCell){
+      const palette=build32DetailCell.palette,ranks=build32FilledRanks(build32DetailCell),width=build32DetailCell.w,height=build32DetailCell.h;
+      build32Active=true;build32Manual=true;
+      const bg=build32BackgroundValue(build32Selected!==null&&rgbToLabFast(palette[build32Selected])[0]<55?255:128);
+      const dc=build32DetailCanvas.getContext('2d'),frame=dc.createImageData(width,height);
+      build32VisibleMask=new Uint8Array(ranks.length);
+      for(let i=0;i<ranks.length;i++){if(ranks[i]===65535)continue;const show=build32Selection.has(ranks[i]),rgb=show?palette[ranks[i]]:[bg,bg,bg];build32VisibleMask[i]=show?1:0;frame.data.set([...rgb,255],i*4);}
+      dc.putImageData(frame,0,0);
+      // Local detail is composited at full source resolution in renderCurrentArtwork.
+      // Keep the global palette canvas untouched when clicking local swatches.
+      [...document.getElementById('build32Palette').children].forEach((el,i)=>{el.setAttribute('aria-pressed',String(build32Selection.has(i)));el.textContent=String(i+1)+(build32DetailColorOverrides.has(i)?' ✓':'');});
+      if(build32Selected!==null){setMixTarget(palette[build32Selected],'Detail Farbe '+(build32Selected+1));updateBuild32Recipe();}
+      else{build32MixRequest++;document.getElementById('build32Recipe').textContent='Keine lokale Farbe ausgewählt.';}
+      build32Status.textContent=build32DetailTitle()+' · '+build32Selection.size+' von '+palette.length+' lokalen Farben sichtbar. Farbwerkzeuge wirken nur hier.';
+      syncBuild32ReturnButtons();draw();
+      return;
+    }
+    build32Active=true;
+    document.getElementById('build32Extras').disabled=!build32Extras;
+    document.getElementById('build32Extras').textContent=build32Extras?'Farbaufbau wieder anzeigen':'Nur Ergänzungen zeigen';
+    const {palette,width,height}=build32Data,ranks=build32FilledRanks(build32Data),c=build32Canvas.getContext('2d'),frame=c.createImageData(width,height);
+    const bg=build32BackgroundValue(build32Selected!==null&&rgbToLabFast(palette[build32Selected])[0]<55?255:128);
+    build32VisibleMask=new Uint8Array(ranks.length);
+    for(let i=0;i<ranks.length;i++){const show=build32Selection.has(ranks[i]),rgb=show?build32DisplayColor(ranks[i],i):[bg,bg,bg];build32VisibleMask[i]=show?1:0;frame.data.set([...rgb,255],i*4);}
+    c.putImageData(frame,0,0);rebuildBuild32Foreground(frame);
+    [...document.getElementById('build32Palette').children].forEach((el,i)=>{el.style.opacity='1';el.setAttribute('aria-pressed',String(build32Selection.has(i)));});
+    build32Status.textContent=build32Selection.size+' von '+palette.length+' Farben sichtbar · auf '+(bg===255?'Weiß':'Mittelgrau');
+    if(build32Selected!==null){setMixTarget(palette[build32Selected],'Farbe '+(build32Selected+1));updateBuild32Recipe();}
+    else{build32MixRequest++;document.getElementById('build32Recipe').textContent='Keine Farbe ausgewählt. Eine Farbe antippen, um sie einzublenden.';}
+    build32ExtrasNotice();syncBuild32ReturnButtons();draw();
+  }
+  document.getElementById('build32Add').addEventListener('click',()=>{
+    if(build32SoloPrevious){
+      build32SoloAdditive=!build32SoloAdditive;
+      if(!build32SoloAdditive){build32Selection.clear();if(build32Selected!==null){build32Selection.add(build32Selected);build32SimilarAnchor=build32Selected;}}
+      renderBuild32Selection();return;
+    }
+    forgetBuild32AllPrevious();
+    build32Additive=!build32Additive;
+    const button=document.getElementById('build32Add');
+    button.textContent='Farben zuschalten: '+(build32Additive?'Ein':'Aus');
+    button.setAttribute('aria-pressed',String(build32Additive));
+    button.classList.toggle('active',build32Additive);button.classList.toggle('secondary',!build32Additive);
+    if(build32Manual){
+      if(!build32Additive){build32Selection.clear();if(build32Selected!==null)build32Selection.add(build32Selected);}
+      renderBuild32Selection();
+    }
+    else [...document.getElementById('build32Palette').children].forEach((el,i)=>el.setAttribute('aria-pressed',String(build32Additive&&build32Selection.has(i))));
+  });
+  document.getElementById('build32MixPalette').addEventListener('change',()=>{if(build32IsSimple()&&!['artisan','system3'].includes(document.getElementById('build32MixPalette').value)){for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).value='pure';document.getElementById('build32Analyze').textContent='Ungemischte Farben anzeigen';syncBuild32SimpleLimit();}if(build32IsPure()){document.getElementById('build32Analyze').click();}else updateBuild32Recipe();});
+  document.getElementById('build32Solo').addEventListener('click',()=>{
+    if(!build32Data)return;
+    if(build32SoloPrevious){
+      const previous=build32SoloPrevious;build32SoloPrevious=null;
+      build32SoloAdditive=false;build32SimilarAnchor=null;
+      build32AllPrevious=previous.allPrevious;restoreBuild32State(previous.state);
+    }else{
+      build32SoloPrevious={state:captureBuild32State(),allPrevious:build32AllPrevious};
+      build32AllPrevious=null;build32SoloAdditive=false;
+      const index=build32Selected??[...build32Selection].pop()??0;
+      build32SimilarAnchor=index;
+      build32Selection.clear();build32Selection.add(index);build32Selected=index;
+      build32Manual=true;renderBuild32Selection();
+    }
+    syncBuild32ReturnButtons();
+  });
+  function nearestBuild32Colors(palette,index){
+    const target=rgbToLabFast(palette[index]);
+    return palette.map((rgb,i)=>({index:i,distance:deltaE76FromLab(target,rgbToLabFast(rgb))}))
+      .filter(item=>item.index!==index).sort((a,b)=>a.distance-b.distance||a.index-b.index).slice(0,6).map(item=>item.index);
+  }
+  function renderBuild32Similar(){
+    const box=document.getElementById('build32Similar');
+    box.hidden=!build32SoloPrevious||!build32Data||build32SimilarAnchor===null;
+    if(box.hidden){box.replaceChildren();return;}
+    box.replaceChildren();
+    const label=document.createElement('div');label.className='tiny';label.textContent='Ähnliche Farben zu Nr. '+(build32SimilarAnchor+1)+' · antippen zum Zu-/Ausschalten';box.appendChild(label);
+    const row=document.createElement('div');row.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-top:4px';box.appendChild(row);
+    const palette=build32ActivePalette();
+    for(const index of nearestBuild32Colors(palette,build32SimilarAnchor)){
+      const rgb=palette[index],button=document.createElement('button');button.type='button';
+      button.textContent=String(index+1);button.style.cssText='min-width:44px;border:2px solid '+(build32Selection.has(index)?'#111':'transparent');
+      button.style.background=rgbHex(rgb);button.style.color=rgbToLabFast(rgb)[0]>55?'#111':'#fff';
+      button.setAttribute('aria-label','Ähnliche Farbe '+(index+1)+' zuschalten oder ausschalten');button.setAttribute('aria-pressed',String(build32Selection.has(index)));
+      button.addEventListener('click',()=>{build32SoloAdditive=true;selectBuild32Color(index);});row.appendChild(button);
+    }
+  }
+  function build32OpaqueSelection(frame,mask){
+    const pixels=new Uint8ClampedArray(frame.data);
+    for(let i=0;i<mask.length;i++)pixels[i*4+3]=mask[i]?255:0;
+    return pixels;
+  }
+  function smoothBuild32Pixels(pixels,mask,width,height,amount){
+    const out=new Uint8ClampedArray(pixels),size=width*height;
+    if(amount<=0||!size)return out;
+    // Propagate each two-color boundary into its own color region.
+    // Each output pixel blends only its original color and one adjacent color.
+    const radius=Math.max(1,Math.round(32*Math.max(0,Math.min(1,amount/100))));
+    const distance=new Uint8Array(size).fill(255),opposite=new Int32Array(size).fill(-1),queue=new Int32Array(size);
+    const same=(a,b)=>pixels[a*4]===pixels[b*4]&&pixels[a*4+1]===pixels[b*4+1]&&pixels[a*4+2]===pixels[b*4+2];
+    let head=0,tail=0;
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+      const i=y*width+x;if(!mask[i])continue;
+      let best=-1,bestDifference=-1;
+      const inspect=n=>{
+        if(!mask[n]||same(i,n))return;
+        const j=i*4,k=n*4,d=(pixels[j]-pixels[k])**2+(pixels[j+1]-pixels[k+1])**2+(pixels[j+2]-pixels[k+2])**2;
+        if(d>bestDifference){bestDifference=d;best=n;}
+      };
+      if(x>0)inspect(i-1);if(x+1<width)inspect(i+1);if(y>0)inspect(i-width);if(y+1<height)inspect(i+width);
+      if(best>=0){distance[i]=0;opposite[i]=best;queue[tail++]=i;}
+    }
+    while(head<tail){
+      const i=queue[head++],d=distance[i]+1;if(d>=radius)continue;
+      const x=i%width,y=Math.floor(i/width);
+      const visit=n=>{if(mask[n]&&distance[n]===255&&same(i,n)){distance[n]=d;opposite[n]=opposite[i];queue[tail++]=n;}};
+      if(x>0)visit(i-1);if(x+1<width)visit(i+1);if(y>0)visit(i-width);if(y+1<height)visit(i+width);
+    }
+    for(let n=0;n<tail;n++){
+      const i=queue[n],j=i*4,k=opposite[i]*4;
+      // Symmetric smoothstep across the interface: 50:50 at the boundary,
+      // returning smoothly to the unchanged region color at the outer edge.
+      const u=Math.max(0,1-(distance[i]+.5)/radius),mix=.5*u*u*(3-2*u);
+      for(let c=0;c<3;c++)out[j+c]=Math.round(pixels[j+c]*(1-mix)+pixels[k+c]*mix);
+    }
+    return out;
+  }
+  function build32FinalSmoothPixels(data,backgroundFrame,mask,amount){
+    // Smooth the complete final painting once, then mask it. Never smooth each
+    // partial view separately: adding a group must not change painted pixels.
+    const key=amount+'|'+data.palette.map(c=>c.join(',')).join(';');
+    if(!data.finalSmoothCache||data.finalSmoothCache.key!==key){
+      const ranks=data.stages[data.stages.length-1],pixels=new Uint8ClampedArray(ranks.length*4);
+      for(let i=0;i<ranks.length;i++)pixels.set([...data.palette[ranks[i]],255],i*4);
+      const fullMask=new Uint8Array(ranks.length).fill(1);
+      data.finalSmoothCache={key,pixels:smoothBuild32Pixels(pixels,fullMask,data.width,data.height,amount)};
+    }
+    const output=new Uint8ClampedArray(backgroundFrame),smoothed=data.finalSmoothCache.pixels;
+    for(let i=0;i<mask.length;i++)if(mask[i])output.set(smoothed.subarray(i*4,i*4+4),i*4);
+    return output;
+  }
+  function applyBuild32Smoothing(){
+    if(!build32RawFrame||!build32Canvas||!build32VisibleMask)return;
+    const {width,height}=build32Canvas,c=build32Canvas.getContext('2d');
+    const frame=c.createImageData(width,height);
+    if(build32StageView&&build32Data?.finalStages){
+      frame.data.set(build32FinalSmoothPixels(build32Data,build32RawFrame.data,build32VisibleMask,build32Smoothing));
+    }else frame.data.set(smoothBuild32Pixels(build32RawFrame.data,build32VisibleMask,width,height,build32Smoothing));
+    c.putImageData(frame,0,0);
+    if(!build32Foreground)build32Foreground=document.createElement('canvas');
+    build32Foreground.width=width;build32Foreground.height=height;
+    const fc=build32Foreground.getContext('2d'),output=fc.createImageData(width,height);
+    output.data.set(build32OpaqueSelection(frame,build32VisibleMask));fc.putImageData(output,0,0);
+  }
+  function rebuildBuild32Foreground(frame){
+    build32RawFrame=frame;
+    applyBuild32Smoothing();
+  }
+  document.getElementById('build32Smooth').addEventListener('input',e=>{
+    build32Smoothing=Math.max(0,Math.min(20,Number(e.target.value)));
+    document.getElementById('build32SmoothVal').textContent=build32Smoothing.toLocaleString('de-DE')+' %';
+    if(build32SmoothPending)return;
+    build32SmoothPending=true;
+    requestAnimationFrame(()=>{build32SmoothPending=false;applyBuild32Smoothing();draw();});
+  });
+  document.getElementById('build32GrayBlend').addEventListener('input',e=>{
+    build32GrayBlend=Number(e.target.value);
+    document.getElementById('build32GrayBlendVal').textContent=build32GrayBlend+' %';
+    if(build32Data)build32Active=true;
+    syncBuild32ReturnButtons();draw();
+  });
+  document.getElementById('build32Replace').addEventListener('click',()=>{
+    if(build32ReplaceArmed){build32ReplaceArmed=false;const b=document.getElementById('build32Replace');b.textContent='Originalfarbe ersetzen';b.setAttribute('aria-pressed','false');b.classList.remove('active');b.classList.add('secondary');hint.textContent='Auswahl aufgehoben.';draw();return;}
+    build32ArmReplace();
+  });
+  document.getElementById('build32ResetColor').addEventListener('click',build32ResetColor);
+  document.getElementById('build32SW').addEventListener('click',()=>{
+    if(!build32Data)return;
+    build32GrayBlend=build32GrayBlend>=100?0:100;
+    const slider=document.getElementById('build32GrayBlend');
+    slider.value=String(build32GrayBlend);
+    document.getElementById('build32GrayBlendVal').textContent=build32GrayBlend+' %';
+    build32Active=true;
+    syncBuild32ReturnButtons();draw();
+  });
+  function syncBuild32ReturnButtons(){
+    const solo=document.getElementById('build32Solo');
+    solo.textContent=build32SoloPrevious?'Zurück zur Auswahl':'Eine Farbe ansehen';
+    solo.setAttribute('aria-pressed',String(!!build32SoloPrevious));
+    const add=document.getElementById('build32Add'),adding=build32SoloPrevious?build32SoloAdditive:build32Additive;
+    add.disabled=false;add.textContent='Farben zuschalten: '+(adding?'Ein':'Aus');
+    add.setAttribute('aria-pressed',String(adding));add.classList.toggle('active',adding);add.classList.toggle('secondary',!adding);
+    renderBuild32Similar();
+    const all=document.getElementById('build32All');
+    all.textContent=build32AllPrevious?'Zurück zur Farbauswahl':'Alle Farben';
+    all.setAttribute('aria-pressed',String(!!build32AllPrevious));
+    const original=document.getElementById('build32Original');
+    original.textContent=build32Data&&!build32Active?'Zurück zum Farbaufbau':'Zur Arbeitsansicht';
+    original.setAttribute('aria-pressed',String(!!build32Data&&!build32Active));
+    const sw=document.getElementById('build32SW');
+    sw.textContent='S/W-Effekt: '+(build32GrayBlend>=100?'Ein':'Aus');
+    sw.setAttribute('aria-pressed',String(build32GrayBlend>=100));
+    sw.classList.toggle('active',build32GrayBlend>=100);
+    sw.classList.toggle('secondary',build32GrayBlend<100);
+    const replace=document.getElementById('build32Replace');
+    replace.disabled=!build32Data||build32Selected===null;
+    if(!build32ReplaceArmed){replace.textContent='Originalfarbe ersetzen';replace.setAttribute('aria-pressed','false');replace.classList.remove('active');replace.classList.add('secondary');}
+    document.getElementById('build32ResetColor').disabled=!(build32Data&&build32Selected!==null&&build32ColorOverrides.has(build32Selected));
+  }
+  function forgetBuild32AllPrevious(){build32AllPrevious=null;syncBuild32ReturnButtons();}
+  function captureBuild32State(){
+    return {family:build32Family, families:[...build32Families],manual:build32Manual,selection:[...build32Selection],selected:build32Selected,
+      direction:build32Direction,extras:build32Extras,active:build32Active,
+      middle:document.getElementById('build32middle').value,middleDark:document.getElementById('build32middleDark').value,
+      light:document.getElementById('build32light').value,dark:document.getElementById('build32dark').value,
+      difference:document.getElementById('build32Difference').value,rememberedLight:build32RememberedLight,rememberedDark:build32RememberedDark};
+  }
+  function restoreBuild32State(state){
+    build32Extras=!!state.extras&&!!build32ExtrasBase;
+    document.getElementById('build32middle').value=state.middle??'0';
+    document.getElementById('build32middleDark').value=state.middleDark??'0';
+    build32Families=new Set(state.families&&state.families.length?state.families:['all']); build32Family=[...build32Families].join(',');
+    build32RememberedLight=Number(state.rememberedLight??state.light)||0;
+    build32RememberedDark=Number(state.rememberedDark??state.dark)||0;
+    syncBuild32FamilyRanges();
+    document.getElementById('build32light').value=state.light;
+    document.getElementById('build32dark').value=state.dark;
+    // Abweichung is a persistent preference, not part of a temporary view snapshot.
+    syncBuild32DifferenceLabel();
+    build32Direction=state.direction;build32Manual=state.manual;build32Selected=state.selected;
+    build32Selection.clear();state.selection.forEach(i=>build32Selection.add(i));
+    if(state.manual)renderBuild32Selection();
+    else if(state.extras)renderBuild32(state.direction);
+    else renderBuild32(state.direction);
+    syncBuild32Middle();
+    build32Active=state.active;syncBuild32ReturnButtons();draw();syncBuild32ReturnButtons();
+  }
+  document.getElementById('build32All').addEventListener('click',()=>{
+    if(!build32Data)return;
+    if(build32AllPrevious){const previous=build32AllPrevious;build32AllPrevious=null;restoreBuild32State(previous);}
+    else{build32AllPrevious=captureBuild32State();build32Families=new Set(['all']);build32Family='all';build32RememberedLight=build32ColorCount();syncBuild32FamilyRanges();document.getElementById('build32light').value=build32ColorCount();renderBuild32('light');}
+    syncBuild32ReturnButtons();
+  });
+  document.getElementById('build32Analyze').addEventListener('click',()=>{
+    if(!loaded){build32Status.textContent='Bitte zuerst ein Foto öffnen.';return;}
+    const progressive=build32StageRequest;build32StageRequest=false;
+    // Keep the SAME source-image polygon when calculating a different count.
+    // Both count changes and a direct press on "Farben erkennen" come here.
+    const savedLasso=(build32LassoPoints||build32LassoRestorePoints);
+    const savedPoints=savedLasso?.map(p=>({x:p.x,y:p.y}))||null;
+    resetBuild32();
+    build32LassoRestorePoints=savedPoints;
+    build32LassoPoints=savedPoints; // outline stays visible while analysing
+    syncBuild32LassoButtons();
+    const generation=build32Generation;
+    document.getElementById('build32StagesStart').disabled=true;
+    build32Status.textContent=(savedPoints?'Nur Lasso-Bereich: ':'')+build32ColorCount()+' Farben werden ermittelt …';document.getElementById('build32Analyze').disabled=true;
+    const work=document.createElement('canvas'),ratio=Math.min(1,(progressive==='final'?2400:1600)/Math.max(sourceCanvas.width,sourceCanvas.height));
+    work.width=Math.max(1,Math.round(sourceCanvas.width*ratio));work.height=Math.max(1,Math.round(sourceCanvas.height*ratio));
+    const wc=work.getContext('2d');wc.fillStyle='#fff';wc.fillRect(0,0,work.width,work.height);wc.drawImage(sourceCanvas,0,0,work.width,work.height);
+    const data={progressive:progressive==='layer',finalStages:progressive==='final',colorCount:progressive==='layer'?16:build32ColorCount(),pixels:wc.getImageData(0,0,work.width,work.height).data.buffer,width:work.width,height:work.height};
+    if(build32IsSimple()&&!['artisan','system3'].includes(document.getElementById('build32MixPalette').value))document.getElementById('build32MixPalette').value='artisan';
+    const key=document.getElementById('build32MixPalette').value;
+    const quantizer=build32IsPure()?quantizeBuild32Pure:quantizeBuild32;
+    if(build32IsPure()){data.pureColors=build32IsSimple()?build32SimpleColors(key):build32PureColors(key);data.simpleLimit=build32IsSimple()?Number(document.getElementById('build32SimpleLimit').value):0;data.watercolor=['watercolor','horadam','akademie'].includes(key);build32Status.textContent=build32IsSimple()?'Einfache Öl-/Acryl-Mischungen werden zugeordnet …':'Ungemischte Palettenfarben werden zugeordnet …';}
+    const fail=()=>{if(generation!==build32Generation)return;document.getElementById('build32Analyze').disabled=false;document.getElementById('build32StagesStart').disabled=false;build32Status.textContent='Farberkennung fehlgeschlagen. Bitte erneut versuchen.';};
+    const fallback=()=>setTimeout(()=>{if(generation!==build32Generation)return;try{acceptBuild32(quantizer(data),generation);}catch(e){fail();}},20);
+    try{
+      const url=URL.createObjectURL(new Blob(['self.onmessage=e=>{const r=('+quantizer.toString()+')(e.data);self.postMessage(r,[r.ranks]);};'],{type:'text/javascript'}));
+      try{build32Worker=new Worker(url);}finally{URL.revokeObjectURL(url);}
+      build32Worker.onmessage=e=>{build32Worker.terminate();build32Worker=null;acceptBuild32(e.data,generation);};
+      build32Worker.onerror=()=>{if(build32Worker)build32Worker.terminate();build32Worker=null;fallback();};
+      build32Worker.postMessage(data);
+    }catch(e){fallback();}
+  });
+  // Hell/Dunkel sind kumulativ und die Werte bleiben beim Wechsel der
+  // Farbfamilien erhalten. Jede Änderung betrifft nur ihren eigenen Regler.
+  for(const d of ['light','dark'])document.getElementById('build32'+d).addEventListener('input',e=>{
+    const value=Number(e.target.value)||0;
+    if(d==='light') build32RememberedLight=value; else build32RememberedDark=value;
+    forgetBuild32AllPrevious();
+    if(build32Data) renderBuild32(d);
+  });
+  document.getElementById('build32Original').addEventListener('click',()=>{
+    if(!build32Data)return;
+    build32Active=!build32Active;syncBuild32ReturnButtons();draw();syncBuild32ReturnButtons();
+  });
+
+  function build32DifferenceMask(reference,palette,ranks,threshold,background){
+    const output=new Uint8ClampedArray(reference.length),visible=new Uint8Array(ranks.length),labs=palette.map(rgbToLabFast);
+    let changed=0;
+    for(let i=0,n=0;i<reference.length;i+=4,n++){
+      const rgb=[reference[i],reference[i+1],reference[i+2]];
+      const show=deltaE76FromLab(rgbToLabFast(rgb),labs[ranks[n]])>threshold;
+      if(show)changed++;visible[n]=show?1:0;
+      output[i]=show?rgb[0]:background;output[i+1]=show?rgb[1]:background;output[i+2]=show?rgb[2]:background;output[i+3]=255;
+    }
+    return {pixels:output,changed,visible};
+  }
+  function build32DisplayColor(rank,pixel){
+    if(build32Extras && build32Data.reference && rank===build32Data.ranks[pixel] && !build32ColorOverrides.has(rank))
+      return build32Data.reference.subarray(pixel*4,pixel*4+3);
+    return build32Data.palette[rank];
+  }
+  function build32ExtrasNotice(){
+    if(!build32Extras)return;
+    build32Status.textContent='Nur Ergänzungen · Schwelle '+document.getElementById('build32Difference').value+' · '+build32Status.textContent;
+  }
+  function showBuild32Extras(){
+    if(!build32Data)return;
+    const entering=!build32ExtrasBase;
+    if(entering){
+      clearBuild32DetailCell();
+      build32ExtrasBase={data:build32Data,state:captureBuild32State(),original:build32OriginalPalette,overrides:build32ColorOverrides};
+    }
+    const base=build32ExtrasBase.data;
+    const threshold=Number(document.getElementById('build32Difference').value);
+    if(entering || build32Data.threshold!==threshold){
+      flushToneImage();
+      const {width,height,palette,ranks}=base;
+      const reference=document.createElement('canvas');reference.width=width;reference.height=height;
+      const rc=reference.getContext('2d');rc.fillStyle='#fff';rc.fillRect(0,0,width,height);
+      rc.drawImage(surfaceMarkCanvas||processedCanvas,0,0,width,height);
+      if(originalBlendPercent>0){
+        rc.globalAlpha=originalBlendPercent/100;
+        const overlay=toneOriginalModeValue==='gray'?(toneView==='off'?toneGrayCanvas:toneGrayBackgroundCanvas):sourceCanvas;
+        rc.drawImage(overlay,0,0,width,height);rc.globalAlpha=1;
+      }
+      const pixels=rc.getImageData(0,0,width,height).data;
+      const difference=build32DifferenceMask(pixels,palette,ranks,threshold,128);
+      // Analyze only supplement pixels; excluded base pixels never enter the palette.
+      const compact=new Uint8ClampedArray(difference.changed*4);
+      for(let i=0,j=0;i<ranks.length;i++)if(difference.visible[i]){compact.set(pixels.subarray(i*4,i*4+4),j);j+=4;}
+      const count=Number(document.getElementById('build32Count').value)||32;
+      const result=difference.changed?quantizeBuild32({pixels:compact,width:difference.changed,height:1,colorCount:count}):{palette:[],ranks:new ArrayBuffer(0)};
+      const localRanks=new Uint8Array(result.ranks),mapped=new Uint16Array(ranks.length).fill(65535);
+      for(let i=0,j=0;i<ranks.length;i++)if(difference.visible[i])mapped[i]=localRanks[j++];
+      build32Data={width,height,palette:result.palette,ranks:mapped,reference:pixels,threshold};
+      build32OriginalPalette=result.palette.map(rgb=>[...rgb]);build32ColorOverrides=new Map();
+      build32Selected=null;build32Manual=false;build32Selection.clear();
+      build32AllPrevious=null;build32SoloPrevious=null;build32SoloAdditive=false;build32SimilarAnchor=null;
+      renderBuild32PaletteStrip(result.palette);
+      if(entering){
+        build32Families=new Set(['all']);build32Family='all';build32Direction='light';
+        build32RememberedLight=result.palette.length;build32RememberedDark=0;
+      }
+    }
+    build32Extras=true;build32Active=true;
+    document.getElementById('build32DetailCell').disabled=true;
+    syncBuild32DifferenceLabel();
+    if(build32Manual)renderBuild32Selection();else renderBuild32(build32Direction);
+  }
+  function leaveBuild32Extras(){
+    const base=build32ExtrasBase;if(!base)return;
+    build32Extras=false;build32ExtrasBase=null;
+    build32Data=base.data;build32OriginalPalette=base.original;build32ColorOverrides=base.overrides;
+    build32AllPrevious=null;build32SoloPrevious=null;build32SoloAdditive=false;
+    document.getElementById('build32DetailCell').disabled=false;
+    renderBuild32PaletteStrip(build32Data.palette);restoreBuild32State(base.state);
+  }
+  document.getElementById('build32Extras').addEventListener('click',()=>{forgetBuild32AllPrevious();if(build32Extras)leaveBuild32Extras();else showBuild32Extras();});
+  let build32DifferenceTimer=null;
+  function syncBuild32DifferenceLabel(){
+    document.getElementById('build32DifferenceVal').textContent=Number(document.getElementById('build32Difference').value).toLocaleString('de-DE',{maximumFractionDigits:1});
+  }
+  function setBuild32Difference(value,immediate=false){
+    const number=Number(value);
+    if(!Number.isFinite(number))return;
+    const threshold=Math.round(Math.max(1,Math.min(20,number)));
+    document.getElementById('build32Difference').value=String(threshold);
+    syncBuild32DifferenceLabel();
+    try{localStorage.setItem('atelierai-build32-difference',String(threshold));}catch(e){}
+    clearTimeout(build32DifferenceTimer);build32DifferenceTimer=null;
+    // Quantizing every touch movement blocked the slider on the iPad.
+    // Only update the number while dragging; calculate after release.
+    if(build32Extras&&immediate){
+      const apply=()=>{build32DifferenceTimer=null;if(build32Extras)showBuild32Extras();};
+      build32DifferenceTimer=setTimeout(apply,0);
+    }
+  }
+  document.getElementById('build32Difference').addEventListener('input',e=>setBuild32Difference(e.target.value));
+  document.getElementById('build32Difference').addEventListener('change',e=>setBuild32Difference(e.target.value,true));
+  try{
+    const saved=localStorage.getItem('atelierai-build32-difference');
+    if(saved!==null&&Number.isFinite(Number(saved)))setBuild32Difference(saved);
+  }catch(e){}
+  syncBuild32DifferenceLabel();
+
+  function sampleBuild32Color(ix,iy){
+    if(!build32Canvas || !build32VisibleMask)return null;
+    const x=Math.floor(ix/sourceCanvas.width*build32Canvas.width),y=Math.floor(iy/sourceCanvas.height*build32Canvas.height);
+    if(x<0||y<0||x>=build32Canvas.width||y>=build32Canvas.height||!build32VisibleMask[y*build32Canvas.width+x])return null;
+    return Array.from(sampleDisplayedPixel(ix,iy));
+  }
+  function syncBuild32Grid(){
+    const button=document.getElementById('build32Grid');
+    button.textContent=gridEnabled?'Feinraster aus':'Feinraster ein';button.classList.toggle('active',gridEnabled);button.classList.toggle('secondary',!gridEnabled);
+    document.getElementById('build32GridDensity').value=gridDensity.value;
+    document.getElementById('build32GridDensityVal').textContent=gridDensity.value;
+  }
+  document.getElementById('build32Grid').addEventListener('click',()=>{gridToggleBtn.click();syncBuild32Grid();});
+  document.getElementById('build32GridDensity').addEventListener('input',e=>{gridDensity.value=e.target.value;gridDensity.dispatchEvent(new Event('input'));syncBuild32Grid();clearBuild32DetailCell();draw();});
+  document.getElementById('build32Lasso').addEventListener('click',()=>{
+    if(!loaded){build32Status.textContent='Bitte zuerst ein Foto öffnen.';return;}
+    build32LassoArmed=!build32LassoArmed;
+    if(build32LassoArmed){
+      build32DetailCellArmed=false;syncBuild32DetailCellButton();
+      // Draw on the real image, independently of any previously computed palette.
+      // When a global view exists, temporarily show the original for accuracy.
+      build32Active=false;
+      setMode('move');hint.textContent='Lasso: Originalbild mit einem Finger frei umfahren. Danach 8/16/32/48/64 Farben wählen.';
+    }else build32LassoDraft=null;
+    syncBuild32LassoButtons();draw();
+  });
+  document.getElementById('build32LassoClear').addEventListener('click',()=>{
+    build32LassoArmed=false;build32LassoRestorePoints=null;
+    if(build32DetailCell?.kind==='lasso'){
+      const state=build32LassoGlobalState;
+      clearBuild32DetailCell();build32Manual=false;build32Selection.clear();build32Selected=null;
+      if(build32Data){if(state)restoreBuild32State(state);else renderBuild32(build32Direction);}
+    }
+    build32LassoGlobalState=null;build32LassoPoints=null;build32LassoDraft=null;syncBuild32LassoButtons();draw();
+  });
+  document.getElementById('build32DetailCell').addEventListener('click',()=>{
+    if(!build32Data){build32Status.textContent='Bitte zuerst Farben erkennen lassen.';return;}
+    build32DetailCellArmed=!build32DetailCellArmed;
+    if(build32DetailCellArmed){build32LassoArmed=false;build32LassoDraft=null;syncBuild32LassoButtons();
+      if(!gridEnabled){gridEnabled=true;syncBuild32Grid();}
+      setMode('picker');hint.textContent='Jetzt ein Raster-Kästchen antippen. Nur dieses Kästchen wird mit der gewählten Farbzahl neu berechnet.';
+    }else{
+      clearBuild32DetailCell();hint.textContent='Detail-Kästchen-Auswahl ausgeschaltet.';
+    }
+    syncBuild32DetailCellButton();draw();
+  });
+  document.getElementById('build32Pick').addEventListener('click',()=>{
+    if(!build32Data){build32Status.textContent='Bitte zuerst Farben erkennen lassen.';return;}
+    if(build32Manual)renderBuild32Selection();else if(build32Extras)showBuild32Extras();else renderBuild32(build32Direction);
+    areaPickerMode=null;smartPickerArmed=false;surfaceMode=null;surfacePreview=null;
+    for(const id of ['areaPickerBtn','smartAreaPickerBtn','smartPickerBtn']){const b=document.getElementById(id);if(b){b.classList.remove('active');b.classList.add('secondary');}}
+    setMode('picker');hint.textContent='Sichtbare Farbe antippen – Mischvorschläge werden geöffnet.';
+  });
+
+  function currentColorTolerance(){
+    return Number(pickerColorTolerance ? pickerColorTolerance.value : 12);
+  }
+
+  let activeIsolatedColor=null;
+  let activeIsolatedLabel='Farbe';
+
+  let isolationLightness=0;
+  for(const prefix of ['picker','surface']){
+    const slider=document.getElementById(prefix+'LightnessRange');
+    slider.style.touchAction='manipulation';
+    const resetLightness=()=>{
+      slider.value='0';
+      slider.dispatchEvent(new Event('input',{bubbles:true}));
+    };
+    slider.addEventListener('dblclick',e=>{e.preventDefault();resetLightness();});
+    let lastTap=null, tapStart=null;
+    slider.addEventListener('pointerdown',e=>{tapStart={x:e.clientX,y:e.clientY,time:performance.now()};});
+    slider.addEventListener('pointercancel',()=>{tapStart=null;lastTap=null;});
+    slider.addEventListener('pointerup',e=>{
+      const now=performance.now();
+      if(tapStart && now-tapStart.time<300 && Math.hypot(e.clientX-tapStart.x,e.clientY-tapStart.y)<12){
+        if(lastTap && now-lastTap.time<380 && Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<28){resetLightness();lastTap=null;}
+        else lastTap={time:now,x:e.clientX,y:e.clientY};
+      }else lastTap=null;
+      tapStart=null;
+    });
+    document.getElementById(prefix+'LightnessRange').addEventListener('input',e=>{
+      isolationLightness=Number(e.target.value);
+      for(const other of ['picker','surface']){
+        document.getElementById(other+'LightnessRange').value=String(isolationLightness);
+        document.getElementById(other+'LightnessRangeVal').textContent=isolationLightness===0?'Nur Auswahl':(isolationLightness>0?'Heller +':'Dunkler +')+Math.abs(isolationLightness);
+      }
+      refreshIsolationSmooth();
+    });
+  }
+  // Kennfarben für einzelne Flächen, unabhängig davon, wie ähnlich die Zielfarben sind.
+  const isolationDisplayColors=['#00a9db','#efae18','#35bb6d','#ec6f27','#4874e4','#93b52c','#ef6879','#18ada6'];
+  let multiIsolatedIds=[]; // Farbnummern, die in der Mehrfachansicht sichtbar sind
+  let isolationGray=false;
+  const isolationBackgroundColor=[247,247,247];
+  let isolationRevision=0, isolationSerial=0;
+  let isolationRequest=null, isolationBusy=false, isolationSentKey=null;
+  let isolationWorker=null, isolationFallback=null, isolationFailed=false;
+
+  // The processor owns one source image and one distance map. Moving the
+  // tolerance slider only thresholds this map; source pixels remain intact.
+  function createIsolationProcessor(){
+    let pixels=null, distances=null, projections=null, whiteLength=0, blackLength=0, width=0, height=0;
+    function lab(r,g,b){
+      const lin=v=>{v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);};
+      r=lin(r);g=lin(g);b=lin(b);
+      const f=v=>v>.008856?Math.cbrt(v):7.787*v+16/116;
+      const x=f((r*.4124564+g*.3575761+b*.1804375)/.95047);
+      const y=f(r*.2126729+g*.7151522+b*.0721750);
+      const z=f((r*.0193339+g*.1191920+b*.9503041)/1.08883);
+      return [116*y-16,500*(x-y),200*(y-z)];
+    }
+    return function(message){
+      if(message.pixels){
+        pixels=new Uint8ClampedArray(message.pixels);
+        width=message.width;height=message.height;
+        // Im normalen Modus werden nur die sichtbaren Ziele geprüft.
+        // Im Bereichs-Mischmodul kann zusätzlich eine vollständige Zuordnung
+        // über alle gespeicherten Farbnummern angefordert werden.
+        const rawTargets=(message.partition&&message.allTargets&&message.allTargets.length?message.allTargets:(message.targets&&message.targets.length?message.targets:[message.target]));
+        const targets=rawTargets.map(t=>lab(...t));
+        distances=new Float32Array(width*height*targets.length);
+        projections=new Float32Array(width*height*targets.length*2);
+        whiteLength=new Float32Array(targets.length);
+        blackLength=new Float32Array(targets.length);
+        targets.forEach((t,j)=>{
+          const white=[100-t[0],-t[1],-t[2]],black=[-t[0],-t[1],-t[2]];
+          whiteLength[j]=white.reduce((sum,v)=>sum+v*v,0);
+          blackLength[j]=black.reduce((sum,v)=>sum+v*v,0);
+        });
+        for(let n=0,i=0;n<width*height;n++,i+=4){
+          const c=lab(pixels[i],pixels[i+1],pixels[i+2]);
+          for(let j=0;j<targets.length;j++){
+            const t=targets[j],white=[100-t[0],-t[1],-t[2]],black=[-t[0],-t[1],-t[2]];
+            const d=n*targets.length+j;
+            projections[d*2]=(c[0]-t[0])*white[0]+(c[1]-t[1])*white[1]+(c[2]-t[2])*white[2];
+            projections[d*2+1]=(c[0]-t[0])*black[0]+(c[1]-t[1])*black[1]+(c[2]-t[2])*black[2];
+            distances[d]=(c[0]-t[0])**2+(c[1]-t[1])**2+(c[2]-t[2])**2;
+          }
+        }
+      }
+      if(!pixels)throw new Error('Keine Bilddaten');
+      const output=new Uint8ClampedArray(pixels.length);
+      const limit=message.tolerance**2,background=message.gray?[128,128,128]:(message.backgroundColor||[247,247,247]);
+      const count=(message.targets&&message.targets.length)||1;
+      const mask=new Uint8Array(width*height);
+      const singleCounts=new Uint32Array(count);
+      const displayColors=[[0,169,219],[239,174,24],[53,187,109],[236,111,39],[72,116,228],[147,181,44],[239,104,121],[24,173,166]];
+      let overlapPixels=0,overlapStrongPixels=0,visiblePixels=0;
+      for(let n=0;n<mask.length;n++){
+        const extension=Number(message.lightness)||0;
+        let hits=0,firstHit=-1;
+        for(let j=0;j<count;j++){
+          const d=n*count+j;
+          const length=extension>=0?whiteLength[j]:blackLength[j];
+          const dot=projections[d*2+(extension>=0?0:1)];
+          const fraction=length>0?Math.max(0,Math.min(Math.abs(extension)/100,dot/length)):0;
+          const extendedDistance=Math.max(0,distances[d]-2*fraction*dot+fraction*fraction*length);
+          if(distances[d]<=limit || (extension!==0 && extendedDistance<=limit)){hits++;if(firstHit<0)firstHit=j;}
+        }
+        if(hits){
+          // 1..N = nur eine bestimmte Farbe; 253/254 = gemeinsame Flächen.
+          // Jeder Treffer wird unabhängig geprüft, also keine Verdrängung.
+          mask[n]=!message.showOverlaps?1:(hits>=3?254:(hits===2?253:firstHit+1));
+          if(hits===1 && firstHit>=0)singleCounts[firstHit]++;
+          visiblePixels++;
+          if(hits===2)overlapPixels++;
+          else if(hits>=3)overlapStrongPixels++;
+        }
+      }
+      for(let n=0,i=0;n<mask.length;n++,i+=4){
+        if(!mask[n]){
+          output[i]=background[0];
+          output[i+1]=background[1];
+          output[i+2]=background[2];
+          output[i+3]=255;
+          continue;
+        }
+        if(message.showOverlaps && mask[n]===253){
+          // 2-fach-Überdeckung: rotviolett – Übergangsbereich zwischen zwei Mischfarben.
+          output[i]=Math.round(pixels[i]*.35+228*.65);
+          output[i+1]=Math.round(pixels[i+1]*.35+48*.65);
+          output[i+2]=Math.round(pixels[i+2]*.35+161*.65);
+        }else if(message.showOverlaps && mask[n]===254){
+          // 3+-fach-Überdeckung: kräftiger violett/dunkler – mehrere Mischfarben passen.
+          output[i]=Math.round(pixels[i]*.22+126*.78);
+          output[i+1]=Math.round(pixels[i+1]*.22+33*.78);
+          output[i+2]=Math.round(pixels[i+2]*.22+219*.78);
+        }else if(message.showOverlaps){
+          const shade=displayColors[(mask[n]-1)%displayColors.length];
+          // Foto-Details bleiben dezent sichtbar, Nummern bleiben klar unterscheidbar.
+          output[i]=Math.round(pixels[i]*.22+shade[0]*.78);
+          output[i+1]=Math.round(pixels[i+1]*.22+shade[1]*.78);
+          output[i+2]=Math.round(pixels[i+2]*.22+shade[2]*.78);
+        }else{
+          output[i]=pixels[i];output[i+1]=pixels[i+1];output[i+2]=pixels[i+2];
+        }
+        output[i+3]=255;
+      }
+      return {id:message.id,width,height,pixels:output.buffer,overlapPixels,overlapStrongPixels,visiblePixels,singleCounts:Array.from(singleCounts)};
+    };
+  }
+
+  function finishIsolation(result){
+    isolationBusy=false;
+    if(isolationRequest && result.id===isolationRequest.id){
+      const out=surfaceMarkCanvas||document.createElement('canvas');
+      if(out.width!==result.width)out.width=result.width;
+      if(out.height!==result.height)out.height=result.height;
+      const oc=out.getContext('2d');
+      const frame=oc.createImageData(result.width,result.height);
+      frame.data.set(new Uint8ClampedArray(result.pixels));
+      oc.putImageData(frame,0,0);
+      surfaceMarkCanvas=out;
+      hint.textContent=multiIsolatedIds.length>1
+        ? (multiIsolatedIds.length===2
+          ? `2 Farben sichtbar · ${(result.overlapPixels||0)} gemeinsame Pixel pink markiert · Legende beim Ähnlichkeitsregler`
+          : `${multiIsolatedIds.length} Farben sichtbar · Überlappungsvergleich nur mit zwei Farben`)
+        : multiIsolatedIds.length?'1 Farbnummer sichtbar – weitere Nummern antippen':`${activeIsolatedLabel}: ähnliche Farbe im ganzen Bild sichtbar`;
+      draw();
+    }else{
+      // At most one task is in flight. Skip intermediate slider positions.
+      dispatchIsolation();
+    }
+  }
+
+  function dispatchIsolation(){
+    if(isolationBusy||!isolationRequest)return;
+    if(!isolationWorker&&!isolationFailed){
+      try{
+        const code='const process=('+createIsolationProcessor.toString()+')();self.onmessage=e=>{const r=process(e.data);self.postMessage(r,[r.pixels]);};';
+        const url=URL.createObjectURL(new Blob([code],{type:'text/javascript'}));
+        try{isolationWorker=new Worker(url);}finally{URL.revokeObjectURL(url);}
+        isolationWorker.onmessage=e=>finishIsolation(e.data);
+        isolationWorker.onerror=()=>{
+          isolationWorker.terminate();isolationWorker=null;isolationFailed=true;
+          isolationBusy=false;isolationSentKey=null;dispatchIsolation();
+        };
+      }catch(e){isolationFailed=true;}
+    }
+    const request=isolationRequest;
+    const message={id:request.id,target:request.target,targets:request.targets,tolerance:request.tolerance,gray:request.gray,backgroundColor:request.backgroundColor,lightness:request.lightness,showOverlaps:!!request.showOverlaps,partition:!!request.partition,allTargets:request.allTargets,selectedIndices:request.selectedIndices};
+    // Jede neue Auswahl vollständig berechnen. Sonst kann der Worker
+    // die Abstandskarte der vorherigen (einzelnen) Zielfarbe verwenden.
+    const c=request.context.canvas;
+    const frame=request.context.getImageData(0,0,c.width,c.height);
+    Object.assign(message,{width:c.width,height:c.height,pixels:frame.data.buffer});
+    isolationSentKey=request.key;
+    isolationBusy=true;
+    if(isolationWorker){
+      try{isolationWorker.postMessage(message,message.pixels?[message.pixels]:[]);}
+      catch(e){
+        isolationWorker.terminate();isolationWorker=null;isolationFailed=true;
+        isolationBusy=false;isolationSentKey=null;dispatchIsolation();
+      }
+    }else{
+      if(!isolationFallback)isolationFallback=createIsolationProcessor();
+      setTimeout(()=>finishIsolation(isolationFallback(message)),0);
+    }
+  }
+
+  function cancelIsolation(){
+    isolationRequest=null;
+    activeIsolatedColor=null;
+    multiIsolatedIds=[];
+    surfaceMarkCanvas=null;
+  }
+
+  function isolateColorAcrossImage(target,label='Farbe'){
+    if(!loaded||!target){cancelIsolation();draw();return;}
+    activeIsolatedColor=[...target];activeIsolatedLabel=label;
+    const context=sourceContextForPicker();
+    const targets=multiIsolatedIds.length?multiIsolatedIds.map(id=>planBook.samples.find(s=>s.id===id)?.target).filter(t=>Array.isArray(t)&&t.length===3):[[...target]];
+    const key=[isolationRevision,context===sourceCtx?'original':'processed',...targets.flat()].join(':');
+    isolationRequest={id:++isolationSerial,key,context,target:[...target],targets,tolerance:currentColorTolerance(),gray:isolationGray,backgroundColor:[...isolationBackgroundColor],lightness:isolationLightness};
+    dispatchIsolation();
+  }
+
+  function isolatePlanSampleAreas(label='Ausgewählte Farben'){
+    if(!loaded){cancelIsolation();draw();return;}
+    const samples=planBook.samples.filter(s=>Array.isArray(s.target)&&s.target.length===3);
+    if(!samples.length){cancelIsolation();draw();return;}
+    let selectedIds=multiIsolatedIds.length?multiIsolatedIds.slice():(planActiveId?[planActiveId]:[]);
+    if(!selectedIds.length){cancelIsolation();draw();return;}
+    const selectedIndexSet=new Set();
+    samples.forEach((s,i)=>{if(selectedIds.includes(s.id))selectedIndexSet.add(i);});
+    const selectedIndices=[...selectedIndexSet];
+    if(!selectedIndices.length){cancelIsolation();draw();return;}
+    const first=samples[selectedIndices[0]];
+    activeIsolatedColor=[...first.target];
+    activeIsolatedLabel=label;
+    const context=sourceContextForPicker();
+    const targets=selectedIndices.map(i=>[...samples[i].target]);
+    // Vereinigungsmenge der individuell tolerierten Farbflächen:
+    // Jeder Punkt bleibt sichtbar, wenn mindestens eine gewählte Farbnummer passt.
+    // Keine gegenseitige Verdrängung durch ähnlichere, aber nicht gewählte Farben.
+    const key=[isolationRevision,context===sourceCtx?'original':'processed','union',...targets.flat(),currentColorTolerance(),isolationLightness,isolationGray?1:0,...isolationBackgroundColor].join(':');
+    isolationRequest={id:++isolationSerial,key,context,target:[...first.target],targets,showOverlaps:targets.length===2,tolerance:currentColorTolerance(),gray:isolationGray,backgroundColor:[...isolationBackgroundColor],lightness:isolationLightness};
+    dispatchIsolation();
+  }
+
+  function toggleIsolationBackground(){
+    isolationGray=!isolationGray;
+    for(const id of ['isolationGrayBtn','surfaceIsolationGrayBtn']){
+      const button=document.getElementById(id);
+      button.textContent='Mittelgrauer Hintergrund: '+(isolationGray?'An':'Aus');
+      button.setAttribute('aria-pressed',String(isolationGray));
+      button.classList.toggle('active',isolationGray);
+      button.classList.toggle('secondary',!isolationGray);
+    }
+    if(activeIsolatedColor){
+      if(multiIsolatedIds.length)isolatePlanSampleAreas(activeIsolatedLabel);
+      else isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
+    }
+  }
+  document.getElementById('isolationGrayBtn').addEventListener('click',toggleIsolationBackground);
+  document.getElementById('surfaceIsolationGrayBtn').addEventListener('click',toggleIsolationBackground);
+
+
+  function surfaceInsideSelection(x,y){
+    if(!surfacePreview) return false;
+    const dx=x-surfacePreview.x, dy=y-surfacePreview.y;
+    const half=Number(surfaceSize.value)/(2*Math.max(scale,.0001));
+    if(surfacePreview.shape==='circle') return dx*dx+dy*dy <= half*half;
+    return Math.abs(dx)<=half && Math.abs(dy)<=half;
+  }
+
+  function buildSurfaceMark(index){
+    surfaceSelectedIndex=index;
+    if(!loaded || !surfaceClusters[index]){ surfaceMarkCanvas=null; draw(); return; }
+    isolateColorAcrossImage(surfaceClusters[index].rgb,`Flächenberater · Hauptfarbe ${index+1}`);
+  }
+
+  function zoomSurfaceCluster(index){
+    if(!loaded || !surfaceClusters[index]) return;
+    const target=surfaceClusters[index].rgb;
+    const targetLab=rgbToLabFast(target);
+    const tolerance=currentColorTolerance();
+    const src=sourceContextForPicker();
+    const w=processedCanvas.width, h=processedCanvas.height;
+    const d=src.getImageData(0,0,w,h).data;
+
+    let minX=w,minY=h,maxX=-1,maxY=-1;
+    const step=Math.max(1,Math.floor(Math.max(w,h)/900));
+    for(let y=0;y<h;y+=step){
+      for(let x=0;x<w;x+=step){
+        const i=(y*w+x)*4;
+        const lab=rgbToLabFast([d[i],d[i+1],d[i+2]]);
+        if(deltaE76FromLab(lab,targetLab)<=tolerance){
+          if(x<minX)minX=x;if(x>maxX)maxX=x;
+          if(y<minY)minY=y;if(y>maxY)maxY=y;
+        }
+      }
+    }
+    if(maxX<minX || maxY<minY) return;
+
+    const pad=Math.max(12,Math.round(Math.min(w,h)*.025));
+    minX=Math.max(0,minX-pad); minY=Math.max(0,minY-pad);
+    maxX=Math.min(w,maxX+pad); maxY=Math.min(h,maxY+pad);
+
+    const vr=viewer.getBoundingClientRect();
+    const bw=Math.max(1,maxX-minX), bh=Math.max(1,maxY-minY);
+    const desired=Math.min(vr.width/bw,vr.height/bh)*.78;
+    scale=Math.max(.05,Math.min(24,desired));
+    const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+    offsetX=vr.width/2-cx*scale;
+    offsetY=vr.height/2-cy*scale;
+    isolateColorAcrossImage(target,`Flächenberater · Hauptfarbe ${index+1}`);
+  }
+
+  function clearSurfaceMark(){
+    surfaceSelectedIndex=null;
+    cancelIsolation();
+    draw();
+  }
+
+  // Flächenberater: Eine der acht Hauptfarben als WIRKLICHES Vormischrezept
+  // zubereiten und nur sinnvolle weitere Farben daraus entwickeln. Das ist
+  // keine RGB-Zielfarbe als fertige Farbe; Grundlage ist das Tubenrezept.
+  function renderSurfaceBase(){
+    const token=++surfaceBaseRevision;
+    surfaceBaseResults.replaceChildren();
+    if(!showBaseSuggestions||!surfaceClusters.length)return;
+    const key=document.getElementById('surfaceMixPalette').value;
+    const baseIndex=Math.min(surfaceBaseIndex,surfaceClusters.length-1);
+    const target=surfaceClusters[baseIndex].rgb;
+    const title=document.createElement('h4');title.textContent='Mischvorschläge aus Basisfarbe · '+(baseIndex+1);
+    title.style.margin='4px 0 7px';surfaceBaseResults.appendChild(title);
+    const info=document.createElement('p');info.className='tiny';
+    info.textContent='Als Basis wird das Tubenrezept der gewählten Farbe vorbereitet. Danach lassen sich verwandte Farben aus jeweils 30 Teilen der FERTIGEN Basis durch Zugaben mischen. Jede Farbkarte hat einen Knopf „Als Basisfarbe wählen“. Keine Zielfarbe wird als fertiges Pigment vorausgesetzt.';
+    surfaceBaseResults.appendChild(info);
+    const baseLine=document.createElement('div');baseLine.className='swatch-line';
+    const swatch=document.createElement('div');swatch.className='small-swatch';swatch.style.background=rgbHex(target);
+    baseLine.appendChild(swatch);
+    const recipeLabel=document.createElement('div');recipeLabel.className='tiny';recipeLabel.textContent='Basisrezept wird berechnet …';baseLine.appendChild(recipeLabel);
+    surfaceBaseResults.appendChild(baseLine);
+    const results=document.createElement('div');results.style.marginTop='8px';surfaceBaseResults.appendChild(results);
+    const caution=document.createElement('p');caution.className='tiny';
+    caution.textContent='Mengen sind Startvorschläge aus einer Bildschirm-/Pigmentsimulation. Eine Zugabe von 1 Teil bedeutet 1 Teil auf 30 Teile der fertigen Basismischung. Bei Aquarell Wasser und Papierweiß separat berücksichtigen. Erst kleine Farbproben prüfen.';
+    surfaceBaseResults.appendChild(caution);
+    // Nicht auf jeder Bildauswahl unnötig alle Korrekturen gleichzeitig rechnen.
+    setTimeout(()=>{
+      if(token!==surfaceBaseRevision||!results.isConnected)return;
+      let baseMix;
+      try{baseMix=surfaceBaseRecipes[baseIndex]||chooseMixes(target,key)[0];}
+      catch(e){recipeLabel.textContent='Basisrezept nicht verfügbar.';return;}
+      if(!baseMix){recipeLabel.textContent='Für die gewählte Palette ist keine Basisfarbe verfügbar.';return;}
+      surfaceBaseRecipes[baseIndex]=baseMix;
+      recipeLabel.textContent='Basis '+(baseIndex+1)+': '+baseMix.names.map((n,j)=>baseMix.parts[j]+' Teile '+n).join(' + ')+'.';
+      let j=0;
+      const next=()=>{
+        if(token!==surfaceBaseRevision||!results.isConnected)return;
+        if(j>=surfaceClusters.length)return;
+        const index=j++,cluster=surfaceClusters[index];
+        const line=document.createElement('div');line.style.cssText='border-top:1px solid #aaa;padding:7px 0';
+        const name=document.createElement('strong');name.textContent='Farbe '+(index+1)+(index===baseIndex?' · Basis':'');line.appendChild(name);
+        const desc=document.createElement('div');desc.className='tiny';desc.style.marginTop='4px';line.appendChild(desc);
+        results.appendChild(line);
+        if(index===baseIndex){desc.textContent='Diese fertige Basisfarbe direkt verwenden.';setTimeout(next,0);return;}
+        const baseRgb=baseMix.rgb;
+        const shadeDelta=deltaE76FromLab(rgbToLabFast(baseRgb),rgbToLabFast(cluster.rgb));
+        if(shadeDelta>75){desc.textContent='Diese Farbe liegt weit von der Basis entfernt. Eigenes Mischrezept oben verwenden.';setTimeout(next,0);return;}
+        try{
+          const cacheKey=[key,baseIndex,index,...baseRgb,...cluster.rgb].join(':');
+          let options=surfaceBaseSuggestionCache.get(cacheKey);
+          if(!options){options=correctionAdditions(baseRgb,cluster.rgb,key);surfaceBaseSuggestionCache.set(cacheKey,options);}
+          const best=options[0];
+          // 5 Punkte Farbnähe als Toleranz statt zahlloser Minimalzugaben.
+          const direct=surfaceBaseRecipes[index];
+          const directScore=direct?.score??(direct?similarityPct(cluster.rgb,direct.rgb):87);
+          const enough=best&&best.score>=75&&best.score>=directScore-5;
+          if(enough){
+            const fmt=v=>Number(v).toLocaleString('de-DE');
+            desc.textContent=best.adds.length
+              ?'30 Teile fertige Basis '+(baseIndex+1)+' + '+best.adds.map(a=>fmt(a.part)+' Teile '+a.name).join(' + ')+'. · Ca. '+best.score+'/100 Farbähnlichkeit.'
+              :'Basis '+(baseIndex+1)+' unverändert verwenden · ca. '+best.score+'/100 Farbähnlichkeit.';
+          }else{
+            desc.textContent='Aus dieser Basis keine ausreichend passende einfache Zugabe gefunden. Eigenes Mischrezept oben verwenden.';
+          }
+        }catch(e){desc.textContent='Kein belastbarer Basisvorschlag; Einzelrezept verwenden.';}
+        setTimeout(next,0);
+      };
+      next();
+    },30);
+  }
+
+  function renderSurface(clusters){
+    const nuanceMode=!!activeIsolatedColor;
+    // Auch bereits vorhandene Analyse nach Palettenwechsel gleich sortieren.
+    surfaceClusters=clusters.map(c=>({rgb:[...c.rgb],pct:c.pct})).sort((a,b)=>
+      rgbToLabFast(b.rgb)[0]-rgbToLabFast(a.rgb)[0] || b.pct-a.pct);
+    clusters=surfaceClusters;
+    surfaceSelectedIndex=null;
+    surfaceBaseRevision++;
+    surfaceBaseRecipes=[];
+    surfaceBaseSuggestionCache.clear();
+    surfaceBaseResults.innerHTML=showBaseSuggestions?'<span class="tiny">Basisvorschläge werden nach den Mischrezepten berechnet …</span>':'';
+    const renderId=++surfaceRenderRevision;
+    if(!nuanceMode) surfaceMarkCanvas=null;
+    surfaceResults.innerHTML='';
+    if(nuanceMode && !clusters.length){
+      surfaceResults.innerHTML='<span class="tiny">In diesem Bereich sind zu wenige Pixel der angezeigten Farbe. Kreis etwas größer machen oder auf einen stärker sichtbaren Bereich setzen.</span>';
+      surfaceBaseResults.replaceChildren();
+      return;
+    }
+    const paletteKey=document.getElementById('surfaceMixPalette').value;
+    const summary=document.createElement('p');summary.className='tiny';
+    summary.textContent=clusters.length+' Farben ausschließlich im sichtbaren '+(surfacePreview?.shape==='circle'?'Kreis':'Rechteck')+' erkannt · hell → dunkel (L*) · Anteile nur dieser Fläche · Mischungen als Startrezepte prüfen.';
+    surfaceResults.appendChild(summary);
+    clusters.forEach((c,i)=>{
+      const row=document.createElement('div');row.className='pc-card';
+      row.innerHTML=`
+        <div class="swatch-line">
+          <div class="small-swatch" style="background:${rgbHex(c.rgb)}"></div>
+          <div><b>${nuanceMode ? 'Nuance' : 'Hauptfarbe'} ${i+1}</b><br><span class="tiny">Helligkeit L* ${rgbToLabFast(c.rgb)[0].toFixed(1).replace('.',',')} / 100 · ${Math.round(c.pct)}% · ${rgbHex(c.rgb)} · RGB ${c.rgb.join(', ')}</span></div>
+        </div>
+        <div class="grid2" style="margin-top:7px;">
+          <button class="surfaceMarkBtn secondary">Nur diese Farbe zeigen</button>
+          <button class="surfaceZoomBtn secondary">Bereich vergrößern</button>
+        </div>
+        <button class="surfaceBaseBtn secondary" style="width:100%;margin-top:6px;">Als Basisfarbe wählen</button>
+        <div class="surfaceRecipe" style="margin-top:8px">Mischrezept wird berechnet …</div><button class="surfaceMixBtn" style="width:100%;margin-top:6px;">Weitere Mischvorschläge</button>`;
+      row.querySelector('.surfaceMarkBtn').onclick=()=>buildSurfaceMark(i);
+      row.querySelector('.surfaceZoomBtn').onclick=()=>zoomSurfaceCluster(i);
+      const baseBtn=row.querySelector('.surfaceBaseBtn');
+      if(i===surfaceBaseIndex){baseBtn.textContent='Gewählte Basisfarbe ✓';baseBtn.className='surfaceBaseBtn active';}
+      baseBtn.onclick=()=>{
+        surfaceBaseIndex=i;
+        surfaceResults.querySelectorAll('.surfaceBaseBtn').forEach((b,j)=>{
+          b.textContent=j===i?'Gewählte Basisfarbe ✓':'Als Basisfarbe wählen';
+          b.className=j===i?'surfaceBaseBtn active':'surfaceBaseBtn secondary';
+        });
+        renderSurfaceBase();
+      };
+      row.querySelector('.surfaceMixBtn').onclick=()=>{
+        setMedium(paletteKey==='artisan'?'oil':paletteKey==='system3'?'acrylic':'water');paintPalette.value=paletteKey;
+        setMixTarget(c.rgb,`${nuanceMode ? 'Nuance' : 'Hauptfarbe'} ${i+1}`);
+        takeCorrectionColor(c.rgb);
+        showStudioMixPage();
+      };
+      surfaceResults.appendChild(row);
+      setTimeout(()=>{
+        if(!row.isConnected||renderId!==surfaceRenderRevision)return;
+        const box=row.querySelector('.surfaceRecipe');
+        try{
+          const m=chooseMixes(c.rgb,paletteKey)[0];
+          if(!m){box.textContent='Keine passende Palettenfarbe verfügbar.';return;}
+          surfaceBaseRecipes[i]=m;
+          if(showBaseSuggestions&&i===clusters.length-1 && !surfaceBaseResults.querySelector('h4'))renderSurfaceBase();
+          box.replaceChildren();
+          const recipe=document.createElement('div');
+          recipe.textContent=m.names.map((n,j)=>m.parts[j].toLocaleString('de-DE')+' Teil'+(m.parts[j]!==1?'e':'')+' '+n).join(' + ');
+          box.appendChild(recipe);
+          const note=document.createElement('div');note.className='tiny';
+          note.textContent=m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis).':'Öl · Mengen als Startrezept.';
+          box.appendChild(note);
+          appendPictureUseButton(box,m,paletteKey,c.rgb);
+        }catch(error){box.textContent='Mischung konnte nicht berechnet werden. Bitte andere Palette wählen.';}
+      },40+i*40);
+    });
+  }
+  document.getElementById('surfaceMixPalette').addEventListener('change',()=>{
+    if(surfaceClusters.length)renderSurface(surfaceClusters);
+  });
+
+
+  function ideaColor(){
+    if(!ideasBase)return null;
+    let [h,sv,v]=rgbToHsv(ideasBase);
+    v=Math.max(0,Math.min(1,v+Number(ideaLight.value)/100));
+    sv=Math.max(0,Math.min(1,sv+Number(ideaSat.value)/100));
+    h=(h+Number(ideaWarm.value)*0.55+360)%360;
+    return hsvToRgb(h,sv,v);
+  }
+  function refreshIdea(){
+    ideaLightVal.textContent=ideaLight.value;
+    ideaWarmVal.textContent=ideaWarm.value;
+    ideaSatVal.textContent=ideaSat.value;
+    const c=ideaColor();
+    if(!ideasBase||!c){ideaInfo.textContent='Pipettenfarbe übernehmen.';return;}
+    ideaBase.style.background=rgbHex(ideasBase);ideaResult.style.background=rgbHex(c);
+    ideaInfo.textContent=`${rgbHex(c)} · RGB ${c.join(', ')}`;
+  }
+
+
+  let selectedPairMix=null;
+  let selectedAdjustColor=null;
+
+  function pairMixRgb(a,b,pct){
+    const f=Math.max(0,Math.min(100,Number(pct)));
+    return pigmentMix([a,b],[f,100-f],paintPalette.value);
+  }
+  function pairLum(rgb){return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];}
+  function pairClamp(v){return Math.max(0,Math.min(255,Math.round(v)));}
+  function pairLight(rgb,v){
+    const t=Math.max(-1,Math.min(1,Number(v)/100));
+    return rgb.map(x=>t>=0?pairClamp(x+(255-x)*t):pairClamp(x*(1+t)));
+  }
+  function pairAdd(rgb,c,amount){
+    const f=Math.max(0,Math.min(100,Number(amount)));
+    return pigmentMix([rgb,c],[100-f,f],paintPalette.value);
+  }
+  function pairColorByName(name){
+    const colors=effectivePaletteColors(paintPalette.value);
+    const hit=colors.find(x=>x[0]===name);
+    return hit ? hit[1] : null;
+  }
+  function pairCandidates(base,kind){
+    const amount=Number(pairEditAmount.value);
+    const baseL=pairLum(base);
+    return effectivePaletteColors(paintPalette.value).map(c=>{
+      const rgb=pairAdd(base,c[1],amount);
+      return {name:c[0],rgb:c[1],out:rgb,delta:pairLum(rgb)-baseL};
+    }).filter(x=>kind==='lighter'?x.delta>1:x.delta<-1)
+      .sort((a,b)=>kind==='lighter'?a.delta-b.delta:b.delta-a.delta)
+      .slice(0,8);
+  }
+  function renderPairCandidates(container,items){
+    container.innerHTML='';
+    if(!items.length){container.innerHTML='<span class="tiny">Keine passende aktive Farbe.</span>';return;}
+    items.forEach(item=>{
+      const b=document.createElement('button');
+      b.type='button'; b.className='secondary';
+      b.style.cssText='width:100%;display:flex;align-items:center;gap:7px;margin:3px 0;text-align:left;';
+      b.innerHTML=`<span style="width:24px;height:24px;border-radius:5px;border:1px solid #777;background:${rgbHex(item.rgb)};display:inline-block"></span><span>${item.name}</span>`;
+      b.addEventListener('click',()=>{selectedAdjustColor=item;refreshPairEditor();});
+      container.appendChild(b);
+    });
+  }
+  function refreshPairEditor(){
+    if(!selectedPairMix)return;
+    const c1=pairColorByName(selectedPairMix.n1), c2=pairColorByName(selectedPairMix.n2);
+    if(!c1||!c2)return;
+    const ratio=Number(pairEditRatio.value), other=100-ratio;
+    let base=pairMixRgb(c1,c2,ratio);
+    base=pairLight(base,Number(pairEditLight.value));
+    let out=[...base];
+    if(selectedAdjustColor)out=pairAdd(base,selectedAdjustColor.rgb,Number(pairEditAmount.value));
+
+    pairEditBase.style.background=rgbHex(base);
+    pairEditResult.style.background=rgbHex(out);
+    pairEditInfo.textContent=`${selectedPairMix.n1} + ${selectedPairMix.n2}`;
+    pairEditRatioVal.textContent=`${ratio.toFixed(0)} : ${other.toFixed(0)}`;
+
+    const lv=Number(pairEditLight.value);
+    pairEditLightVal.textContent=Math.abs(lv)<3?'Original':(lv>0?`${Math.abs(lv)} % heller`:`${Math.abs(lv)} % dunkler`);
+    pairEditAmountVal.textContent=`${Number(pairEditAmount.value).toFixed(0)} %`;
+
+    const p1=ratio, p2=other;
+    let txt=`${p1} Teile ${selectedPairMix.n1} · ${p2} Teile ${selectedPairMix.n2}`;
+    if(lv>3)txt+=(paintPalette.value==='artisan'||paintPalette.value==='system3')?' · Helligkeit nur Vorschau; Weißzugabe separat erproben':' · heller durch verdünnten Auftrag auf weißem Papier';
+    if(lv<-3)txt+=' · vorsichtig mit dunkler Tubenfarbe vertiefen';
+    if(selectedAdjustColor)txt+=` · + ${Number(pairEditAmount.value).toFixed(0)} % ${selectedAdjustColor.name}`;
+    pairEditRecipe.textContent=txt;
+
+    renderPairCandidates(pairEditLighter,pairCandidates(base,'lighter'));
+    renderPairCandidates(pairEditDarker,pairCandidates(base,'darker'));
+  }
+  function openPairEditor(m){
+    selectedPairMix=m; selectedAdjustColor=null;
+    pairEditRatio.value=String(m.p1);
+    pairEditLight.value='0'; pairEditAmount.value='20';
+    pairEditBox.style.display='block';
+    refreshPairEditor();
+    setTimeout(()=>pairEditBox.scrollIntoView({behavior:'smooth',block:'nearest'}),20);
+  }
+  [pairEditRatio,pairEditLight,pairEditAmount].forEach(el=>el.addEventListener('input',refreshPairEditor));
+  pairEditReset.addEventListener('click',()=>{
+    if(!selectedPairMix)return;
+    selectedAdjustColor=null;
+    pairEditRatio.value=String(selectedPairMix.p1);
+    pairEditLight.value='0'; pairEditAmount.value='20';
+    refreshPairEditor();
+  });
+
+  function calculatePairPalette(){
+    const target=targetArray();
+    if(!target){
+      pairResults.innerHTML='<span class="tiny">Bitte zuerst mit Pipette, Maler-Pipette oder Flächenberater eine Zielfarbe aufnehmen.</span>';
+      return;
+    }
+    const colors=effectivePaletteColors(paintPalette.value);
+    if(colors.length<2){
+      pairResults.innerHTML='<span class="tiny">Mindestens zwei aktive Tubenfarben nötig.</span>';
+      return;
+    }
+
+    const rows=[];
+    for(let i=0;i<colors.length;i++){
+      for(let j=i+1;j<colors.length;j++){
+        let best=null;
+        // Malerisch brauchbare Abstufungen statt nur 50:50:
+        // für jedes Farbpaar automatisch 10:90 bis 90:10 prüfen.
+        for(let pct=10;pct<=90;pct+=5){
+          const a=pct/100, b=1-a;
+          const rgb=pairMixRgb(colors[i][1],colors[j][1],pct);
+          const score=similarityPct(target,rgb);
+          if(!best || score>best.score){
+            best={n1:colors[i][0],n2:colors[j][0],rgb,score,p1:pct,p2:100-pct};
+          }
+        }
+        rows.push(best);
+      }
+    }
+
+    rows.sort((x,y)=>y.score-x.score);
+    const shown=rows.slice(0,8);
+    pairResults.innerHTML='';
+    pairEditBox.style.display='none'; selectedPairMix=null; selectedAdjustColor=null;
+
+    const intro=document.createElement('div');
+    intro.className='tiny';
+    intro.style.marginBottom='8px';
+    intro.innerHTML='Bildschirmnähe bewertet nur die Simulation. Mengen sind Startvorschläge, keine gemessenen Rezepte. Aquarell hier als unverdünnte Mischung; helle Lasuren siehe Studio-Mischung.';
+    pairResults.appendChild(intro);
+
+    shown.forEach((m,i)=>{
+      const el=document.createElement('div');
+      el.className='pc-card';
+      let quality = m.score>=90 ? 'sehr nah' : (m.score>=80 ? 'gut' : (m.score>=70 ? 'Annäherung' : 'nur grobe Annäherung'));
+      el.innerHTML=`
+        <div class="swatch-line">
+          <div class="small-swatch" style="background:${rgbHex(m.rgb)}"></div>
+          <div style="min-width:0">
+            <b>Bildschirmnähe ${m.score}/100</b> <span class="tiny">(${quality})</span><br>
+            <span class="tiny"><b>${m.p1} %</b> ${m.n1}<br><b>${m.p2} %</b> ${m.n2}</span>
+          </div>
+        </div>`;
+      el.style.cursor='pointer';
+      el.title='Antippen: Mischung weiter korrigieren';
+      el.addEventListener('click',()=>openPairEditor(m));
+      pairResults.appendChild(el);
+    });
+
+    if(shown.length && shown[0].score<70){
+      const warn=document.createElement('div');
+      warn.className='tiny';
+      warn.style.marginTop='8px';
+      warn.textContent='Kein gutes Zweierpaar gefunden. Für diese Zielfarbe ist die Studio-Mischung mit 3–5 Farben wahrscheinlich sinnvoller.';
+      pairResults.appendChild(warn);
+    }
+  }
+
+
+  function resizeCanvas(){
+    const r = viewer.getBoundingClientRect();
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const width=Math.round(r.width*dpr), height=Math.round(r.height*dpr);
+    if(canvas.width!==width) canvas.width=width;
+    if(canvas.height!==height) canvas.height=height;
+    canvas.style.width = r.width+'px';
+    canvas.style.height = r.height+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    draw();
+  }
+
+  function fitImage(){
+    if(!loaded) return;
+    const r = viewer.getBoundingClientRect();
+    scale = Math.min(r.width/img.width, r.height/img.height);
+    offsetX = (r.width-img.width*scale)/2;
+    offsetY = (r.height-img.height*scale)/2;
+    refreshSurfaceAfterZoom();
+    draw(); syncGlobalViewControls();
+  }
+
+  function setMode(next, sampleShape='circle'){
+    mode = next;
+    if(mode==='picker')pickerSampleShape=sampleShape==='point'?'point':'circle';
+    moveMode.classList.toggle('active',mode==='move');
+    moveMode.classList.toggle('secondary',mode!=='move');
+    pickerMode.classList.toggle('active',mode==='picker'&&pickerSampleShape==='circle');
+    pickerMode.classList.toggle('secondary',mode!=='picker'||pickerSampleShape!=='circle');
+    pointPickerMode.classList.toggle('active',mode==='picker'&&pickerSampleShape==='point');
+    pointPickerMode.classList.toggle('secondary',mode!=='picker'||pickerSampleShape!=='point');
+    hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':
+      (pickerSampleShape==='circle'?'Kreis-Pipette: Bild antippen · Ziehen: Verschieben · Zwei Finger: Zoom':'Punkt-Pipette: Bild antippen · Ziehen: Verschieben · Zwei Finger: Zoom');
+    syncGlobalViewControls();
+  }
+
+  function setPaintMode(next){
+    paintMode = next;
+    waterMode.classList.toggle('active', paintMode==='water');
+    oilMode.classList.toggle('active', paintMode==='oil');
+    waterMode.classList.toggle('secondary', paintMode!=='water');
+    oilMode.classList.toggle('secondary', paintMode!=='oil');
+    rebuildToneImage();
+  }
+
+  function setToneView(next){
+    toneView = next;
+    [toneAll,toneOnly,toneOff].forEach(b=>{b.classList.add('secondary'); b.classList.remove('active');});
+    const map={all:toneAll,only:toneOnly,off:toneOff};
+    map[next].classList.remove('secondary'); map[next].classList.add('active');
+    rebuildToneImage();
+  }
+
+  let formsApplyBusy=false;
+  function syncFormsOriginal(){
+    document.getElementById('formsApply').disabled=formsApplyBusy||!loaded||formLevel===0||formsOriginalPreview;
+    formsOriginal.textContent=workingFromTemplate?'Originalfoto wiederherstellen':formsOriginalPreview?'Zurück zu Großformen':'Zurück zum Original';
+    formsOriginal.setAttribute('aria-pressed',String(!workingFromTemplate&&formsOriginalPreview));
+    formsOriginal.disabled=!loaded||(!workingFromTemplate&&formLevel===0);
+  }
+  async function applyFormsTemplate(){
+    if(formsApplyBusy||!loaded||!formLevel||formsOriginalPreview)return;
+    const button=document.getElementById('formsApply'),status=document.getElementById('formsApplyStatus');
+    const revision=photoLoadRevision;
+    formsApplyBusy=true;syncFormsOriginal();status.textContent='Großformen werden übernommen …';
+    let snapshot=null;
+    try{
+      clearTimeout(formsSquintTimer);
+      rebuildForms();
+      // Capture the artwork itself, independent of zoom, grid and other module overlays.
+      snapshot=document.createElement('canvas');snapshot.width=formCanvas.width;snapshot.height=formCanvas.height;
+      snapshot.getContext('2d').drawImage(formCanvas,0,0);
+      const blob=await new Promise((resolve,reject)=>{
+        const timer=setTimeout(()=>reject(Error('Bitte erneut versuchen: Die Bildübernahme dauert zu lange.')),30000);
+        snapshot.toBlob(value=>{clearTimeout(timer);value?resolve(value):reject(Error('Das Bild konnte nicht erstellt werden.'));},'image/png');
+      });
+      if(revision!==photoLoadRevision)throw Error('Inzwischen wurde ein anderes Bild geöffnet. Bitte erneut wählen.');
+      await new Promise((resolve,reject)=>loadPhoto(blob,true,error=>error?reject(error):resolve()));
+      setMode('move');
+      status.textContent='Großformen als Malvorlage übernommen. Du kannst jetzt in einem anderen Modul weiterarbeiten.';
+      hint.textContent=status.textContent;
+    }catch(error){status.textContent='Nicht übernommen: '+error.message;}
+    finally{if(snapshot)snapshot.width=snapshot.height=1;formsApplyBusy=false;syncFormsOriginal();}
+  }
+  document.getElementById('formsApply').addEventListener('click',applyFormsTemplate);
+  // 3.69: Gemeinsame Arbeitsvorlage aus jeder aktiven Bildansicht.
+  // renderCurrentArtwork ist auch die Basis des Bildexports; Rasterlinien bleiben aus.
+  const applyAllModulesBtn=document.getElementById('applyAllModulesBtn');
+  function syncApplyAllModules(){applyAllModulesBtn.disabled=!loaded||applyAllModulesBtn.dataset.busy==='true';}
+  applyAllModulesBtn.addEventListener('click',async()=>{
+    if(!loaded||applyAllModulesBtn.dataset.busy==='true')return;
+    const revision=photoLoadRevision;
+    applyAllModulesBtn.dataset.busy='true';syncApplyAllModules();
+    const previousLabel=applyAllModulesBtn.textContent;
+    applyAllModulesBtn.textContent='Bild wird übernommen …';
+    let snapshot=null;
+    try{
+      // Abgeschlossene Bildberechnung vor dem Snapshot abwarten.
+      flushToneImage();
+      snapshot=document.createElement('canvas');
+      snapshot.width=sourceCanvas.width;snapshot.height=sourceCanvas.height;
+      if(!snapshot.width||!snapshot.height)throw Error('Kein Bild vorhanden.');
+      const context=snapshot.getContext('2d');
+      if(!context)throw Error('Bildspeicher nicht verfügbar.');
+      renderCurrentArtwork(context,false);
+      const blob=await new Promise((resolve,reject)=>{
+        const timer=setTimeout(()=>reject(Error('Die Bildübernahme dauert zu lange.')),30000);
+        snapshot.toBlob(result=>{clearTimeout(timer);result?resolve(result):reject(Error('Bild konnte nicht erstellt werden.'));},'image/png');
+      });
+      if(revision!==photoLoadRevision)throw Error('Inzwischen wurde ein anderes Bild geöffnet.');
+      await new Promise((resolve,reject)=>loadPhoto(blob,true,error=>error?reject(error):resolve()));
+      setMode('move');
+      hint.textContent='Aktuelle Bilddarstellung für alle Module übernommen (ohne Raster). Das ursprüngliche Foto bleibt erhalten.';
+    }catch(error){hint.textContent='Nicht übernommen: '+error.message;}
+    finally{
+      if(snapshot)snapshot.width=snapshot.height=1;
+      applyAllModulesBtn.dataset.busy='false';applyAllModulesBtn.textContent=previousLabel;syncApplyAllModules();
+    }
+  });
+
+  function toggleFormsOriginal(){
+    if(!loaded)return;
+    // Nach der Übernahme ist die Arbeitsvorlage nicht mehr das echte Ursprungsfoto.
+    // In diesem Zustand muss der Knopf das getrennt aufbewahrte Foto zurückholen.
+    if(workingFromTemplate){restoreInitialPhoto();return;}
+    if(!formLevel)return;
+    clearTimeout(formsSquintTimer);formsOriginalPreview=!formsOriginalPreview;
+    syncFormsOriginal();rebuildForms();rebuildToneImage();
+  }
+  function setFormLevel(level){
+    formsOriginalPreview=false;
+    formLevel = +level;
+    syncFormsOriginal();
+    formsSlider.value = formLevel;
+    formsValue.textContent = formLevel===0 ? 'Aus' : String(formLevel);
+    formBtns.forEach(b=>{
+      const active = +b.dataset.level===formLevel;
+      b.classList.toggle('active', active);
+      b.classList.toggle('secondary', !active);
+    });
+    rebuildForms();
+    rebuildToneImage();
+  }
+
+  function luminance(r,g,b){
+    return 0.2126*r + 0.7152*g + 0.0722*b;
+  }
+
+  function toneStrength(lum, band, sliderVal){
+    const v = sliderVal/100;
+    if(v>=0.999) return 1;
+
+    // Aquarell-Aufbau:
+    // Dunkel: bisheriges Verhalten – die dunkelsten Anteile verschwinden zuerst.
+    // Mittel + Hell: beim Zurücknehmen verschwinden die dunkleren Anteile zuerst,
+    // sodass innerhalb der jeweiligen Gruppe die hellsten Stellen bis zuletzt sichtbar bleiben.
+    if(paintMode==='water'){
+      let t;
+      if(band==='light'){
+        t=(lum-170)/85;                 // heller = größer
+        t=Math.max(0,Math.min(1,t));
+        return t>=(1-v)?1:0;
+      }
+      if(band==='mid'){
+        t=(lum-85)/85;                  // dunkler Mittelton -> heller Mittelton
+        t=Math.max(0,Math.min(1,t));
+        return t>=(1-v)?1:0;
+      }
+      t=(85-lum)/85;                    // dunkel: bisherige Richtung beibehalten
+      t=Math.max(0,Math.min(1,t));
+      return t<=v?1:0;
+    }
+
+    // Ölmodus unverändert.
+    let t;
+    if(band==='light') t=(lum-170)/85;
+    else if(band==='mid') t=1-Math.abs(lum-128)/90;
+    else t=(85-lum)/85;
+    t=Math.max(0,Math.min(1,t));
+    return t>=(1-v)?1:0;
+  }
+
+  let toneSourcePixels=null, toneOutputPixels=null, toneBackgroundPixels=null;
+  let formsSquintPreview=false,formsSquintTimer=null;
+  let renderedFormMode=null;
+  let renderedFormLevel=null, renderedFormSpots=null, formsBasePixels=null, formsRankData=null;
+  function renderFormsFilled(){
+    if(!formsBasePixels)return;
+    const amount=document.getElementById('formsSquint').checked && formsSquintPreview ? 0 : Number(document.getElementById('formsSpots').value);
+    const base=formsBasePixels,work=document.createElement('canvas');
+    work.width=base.width;work.height=base.height;
+    const ctx=work.getContext('2d'),out=ctx.createImageData(base.width,base.height);
+    out.data.set(base.data);
+    if(amount){
+      if(!formsRankData){
+        const palette=[],lookup=new Map(),ranks=new Uint32Array(base.width*base.height);
+        for(let i=0;i<ranks.length;i++){
+          const k=i*4,key=(base.data[k]<<16)|(base.data[k+1]<<8)|base.data[k+2];
+          if(!lookup.has(key)){lookup.set(key,palette.length);palette.push([base.data[k],base.data[k+1],base.data[k+2]]);}
+          ranks[i]=lookup.get(key);
+        }
+        formsRankData={width:base.width,ranks,palette};
+      }
+      const ranks=build32FilledRanks(formsRankData,amount);
+      for(let i=0;i<ranks.length;i++){
+        const rgb=formsRankData.palette[ranks[i]],k=i*4;
+        out.data[k]=rgb[0];out.data[k+1]=rgb[1];out.data[k+2]=rgb[2];
+      }
+    }
+    ctx.putImageData(out,0,0);
+    formCtx.clearRect(0,0,formCanvas.width,formCanvas.height);
+    // Flat squint forms also need interpolation, including at the coarsest level.
+    formCtx.imageSmoothingEnabled=formLevel!==1 || document.getElementById('formsSquint').checked;formCtx.imageSmoothingQuality='high';
+    formCtx.drawImage(work,0,0,formCanvas.width,formCanvas.height);
+    renderedFormSpots=amount;toneSourcePixels=null;
+  }
+  function finishForms(base){
+    formsBasePixels=base;formsRankData=null;renderFormsFilled();
+  }
+  // Separable, edge-clamped box blur: independent of Canvas.filter support in Safari.
+  function squintBlurPixels(input,w,h,radius){
+    let data=new Float32Array(input);
+    for(let pass=0;pass<3;pass++)for(let axis=0;axis<2;axis++){
+      const out=new Float32Array(data.length),length=axis?h:w,lines=axis?w:h;
+      for(let line=0;line<lines;line++)for(let c=0;c<4;c++){
+        const at=t=>((axis?Math.max(0,Math.min(length-1,t))*w+line:line*w+Math.max(0,Math.min(length-1,t)))*4+c);
+        let sum=0;for(let t=-radius;t<=radius;t++)sum+=data[at(t)];
+        for(let t=0;t<length;t++){out[at(t)]=sum/(2*radius+1);sum+=data[at(t+radius+1)]-data[at(t-radius)];}
+      }
+      data=out;
+    }
+    return data;
+  }
+  // Continuous interpolation avoids the old mandatory jump to radius 1.
+  function squintSoftBlur(input,w,h,strength){
+    const value=Math.max(0,Math.min(12,Number(strength)||0));
+    const radius=(value*value/12)*Math.min(w,h)/300;
+    const low=Math.floor(radius),fraction=radius-low;
+    const a=low?squintBlurPixels(input,w,h,low):new Float32Array(input);
+    if(fraction<1e-8)return a;
+    const b=squintBlurPixels(input,w,h,low+1);
+    for(let i=0;i<a.length;i++)a[i]+=(b[i]-a[i])*fraction;
+    return a;
+  }
+  function squintDistance(a,b){
+    return (a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2;
+  }
+  function squintColorWeight(lab,amount){
+    const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+    const [L,a,b]=lab,chroma=Math.hypot(a,b);
+    // Favor actual light, softly colored samples; pure whites and grays do not dominate.
+    const pastel=smooth(42,76,L)*(1-smooth(94,100,L))*smooth(3,15,chroma)*(1-smooth(42,72,chroma));
+    return 1+11*Math.max(0,Math.min(1,amount/100))*pastel;
+  }
+  function squintPalette(data,count,lightPreference=0){
+    // Preference acts during seeding and clustering, before pixel-to-palette assignment.
+    const samples=[];
+    const stride=Math.max(1,Math.floor(data.length/4/6000))*4;
+    for(let i=0;i<data.length;i+=stride){
+      const rgb=[data[i],data[i+1],data[i+2]].map(Math.round);
+      const lab=rgbToLabFast(rgb);
+      samples.push({rgb,lab,weight:squintColorWeight(lab,lightPreference)});
+    }
+    const sorted=samples.slice().sort((a,b)=>a.lab[0]-b.lab[0]);
+    const palette=[sorted[Math.floor(sorted.length/2)]];
+    // Keep a representative deep shadow as a tonal anchor when preference is active.
+    const shadow=sorted[Math.floor(sorted.length*.02)];
+    const protectShadow=lightPreference>0 && count>1 && shadow.lab[0]<30 && palette[0].lab[0]-shadow.lab[0]>12;
+    if(protectShadow)palette.push(shadow);
+    const nearest=new Float64Array(samples.length).fill(Infinity);
+    if(protectShadow)for(let i=0;i<samples.length;i++)nearest[i]=squintDistance(samples[i].lab,palette[0].lab);
+    while(palette.length<count){
+      let best=0,score=0;const last=palette[palette.length-1];
+      for(let i=0;i<samples.length;i++){nearest[i]=Math.min(nearest[i],squintDistance(samples[i].lab,last.lab));const weighted=nearest[i]*samples[i].weight;if(weighted>score){score=weighted;best=i;}}
+      if(score<1)break;palette.push(samples[best]);
+    }
+    for(let pass=0;pass<5;pass++){
+      const sums=palette.map(()=>[0,0,0,0]),groups=palette.map(()=>[]);
+      for(let i=0;i<samples.length;i++){
+        const sample=samples[i];let best=0,d=Infinity;
+        for(let j=0;j<palette.length;j++){const n=squintDistance(sample.lab,palette[j].lab);if(n<d){d=n;best=j;}}
+        for(let k=0;k<3;k++)sums[best][k]+=sample.lab[k]*sample.weight;sums[best][3]+=sample.weight;groups[best].push(i);
+      }
+      sums.forEach((v,j)=>{
+        if((protectShadow&&j===1)||!v[3])return;const center=v.slice(0,3).map(n=>n/v[3]);let best=palette[j],d=Infinity;
+        for(const i of groups[j]){const n=squintDistance(samples[i].lab,center);if(n<d){d=n;best=samples[i];}}
+        palette[j]=best;
+      });
+    }
+    const result=palette.map(c=>c.rgb.slice());
+    result.matchingLab=palette.map(c=>c.lab);
+    return result;
+  }
+  // Merge actual palette entries, then remove small label islands. No brightness filter.
+  function squintGroupPalette(palette,amount){
+    const t=Math.max(0,Math.min(1,amount/100));
+    if(!t)return palette;
+    const labs=palette.matchingLab,groups=palette.map((rgb,i)=>[i]);
+    const limit=18*t;
+    const compatible=(a,b)=>{
+      if(Math.abs(a[0]-b[0])>10*t)return false;
+      if((a[0]<30)!==(b[0]<30))return false;
+      const ca=Math.hypot(a[1],a[2]),cb=Math.hypot(b[1],b[2]);
+      if(ca>10&&cb>10&&(a[1]*b[1]+a[2]*b[2])/(ca*cb)<.9)return false;
+      return squintDistance(a,b)<=limit*limit;
+    };
+    // Complete linkage prevents a chain of intermediate tones erasing strong edges.
+    while(true){
+      let pair=null,best=Infinity;
+      for(let a=0;a<groups.length;a++)for(let b=a+1;b<groups.length;b++){
+        let max=0,ok=true;
+        for(const i of groups[a])for(const j of groups[b]){
+          if(!compatible(labs[i],labs[j]))ok=false;
+          max=Math.max(max,squintDistance(labs[i],labs[j]));
+        }
+        if(ok&&max<best){best=max;pair=[a,b];}
+      }
+      if(!pair)break;
+      groups[pair[0]].push(...groups[pair[1]]);groups.splice(pair[1],1);
+    }
+    const indices=groups.map(group=>{
+      const center=[0,0,0];
+      for(const i of group)for(let k=0;k<3;k++)center[k]+=labs[i][k]/group.length;
+      let best=group[0],score=Infinity;
+      for(const i of group){
+        const d=squintDistance(labs[i],center)-t*2*(squintColorWeight(labs[i],100)-1);
+        if(d<score){score=d;best=i;}
+      }
+      return best;
+    });
+    const result=indices.map(i=>palette[i]);result.matchingLab=indices.map(i=>labs[i]);
+    return result;
+  }
+  function squintJoinNeighbors(ranks,labs,paletteLab,w,h,amount){
+    const t=Math.max(0,Math.min(1,amount/100));
+    if(!t)return ranks;
+    let current=ranks;
+    for(let pass=0;pass<2;pass++){
+      const next=current.slice();
+      for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+        const i=y*w+x,own=current[i],votes=new Map();
+        for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+          if(!dx&&!dy)continue;
+          const id=current[i+dy*w+dx];votes.set(id,(votes.get(id)||0)+1);
+        }
+        let best=own,count=0;
+        for(const [id,n] of votes)if(n>count){best=id;count=n;}
+        if(best===own||count<5)continue;
+        const a=paletteLab[own],b=paletteLab[best],src=labs[i];
+        if((a[0]<30)!==(b[0]<30)||Math.abs(a[0]-b[0])>10*t)continue;
+        if(squintDistance(a,b)>(20*t)**2)continue;
+        if(squintDistance(src,b)>squintDistance(src,a)+(14*t)**2)continue;
+        next[i]=best;
+      }
+      current=next;
+    }
+    return current;
+  }
+  // Remove tiny *connected* color islands rather than voting over square blocks.
+  // Four-neighbour regions retain contours; only areas below an adaptive size
+  // are assigned to the closest touching color, with strong light/dark boundaries protected.
+  function formsMergeSmallRegions(image,w,h,minSize){
+    if(minSize<2)return image;
+    const data=image.data,n=w*h,seen=new Uint8Array(n),queue=new Int32Array(n);
+    const result=new Uint8ClampedArray(data),min=Math.max(2,Math.round(minSize));
+    for(let start=0;start<n;start++){
+      if(seen[start])continue;
+      const k=start*4,r=data[k],g=data[k+1],b=data[k+2];
+      let head=0,tail=1;queue[0]=start;seen[start]=1;
+      const neighbors=new Map();
+      while(head<tail){
+        const at=queue[head++],y=(at/w)|0,x=at-y*w;
+        const check=q=>{
+          const j=q*4;
+          if(data[j]===r&&data[j+1]===g&&data[j+2]===b){
+            if(!seen[q]){seen[q]=1;queue[tail++]=q;}
+          }else{
+            const key=(data[j]<<16)|(data[j+1]<<8)|data[j+2];
+            neighbors.set(key,(neighbors.get(key)||0)+1);
+          }
+        };
+        if(x>0)check(at-1);if(x<w-1)check(at+1);
+        if(y>0)check(at-w);if(y<h-1)check(at+w);
+      }
+      if(tail>=min||!neighbors.size)continue;
+      let winner=-1,score=Infinity;
+      const ownL=.2126*r+.7152*g+.0722*b;
+      for(const [key,contacts] of neighbors){
+        const nr=(key>>>16)&255,ng=(key>>>8)&255,nb=key&255;
+        const L=.2126*nr+.7152*ng+.0722*nb;
+        if(Math.abs(L-ownL)>48)continue;
+        const dr=nr-r,dg=ng-g,db=nb-b;
+        const cost=(dr*dr+dg*dg+db*db)/(1+Math.sqrt(contacts));
+        if(cost<score){score=cost;winner=key;}
+      }
+      if(winner<0)continue;
+      for(let j=0;j<tail;j++){
+        const k=queue[j]*4;result[k]=(winner>>>16)&255;
+        result[k+1]=(winner>>>8)&255;result[k+2]=winner&255;
+      }
+    }
+    image.data.set(result);return image;
+  }
+  function rebuildSquintForms(){
+    // Higher working resolution keeps curved and diagonal boundaries clean on iPad.
+    // Blur radius already scales with dimensions, preserving the squint strength.
+    const w=sourceCanvas.width,h=sourceCanvas.height,scale=Math.min(1,960/Math.max(w,h));
+    const work=document.createElement('canvas');work.width=Math.max(1,Math.round(w*scale));work.height=Math.max(1,Math.round(h*scale));
+    const c=work.getContext('2d',{willReadFrequently:true});
+    c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
+    c.drawImage(sourceCanvas,0,0,work.width,work.height);
+    const pixels=c.getImageData(0,0,work.width,work.height);
+    const strength=+document.getElementById('formsSquintBlur').value;
+    const blurred=squintSoftBlur(pixels.data,work.width,work.height,strength);
+    const status=document.getElementById('formsSquintGrouping');
+    if(formsSquintPreview){status.textContent='Weiche Vorschau – Flächenwirkung unter „Farbflächen ansehen“ sichtbar.';pixels.data.set(blurred);finishForms(pixels);return;}
+    const amount=+document.getElementById('formsSquintLight').value;
+    const initial=squintPalette(blurred,[20,24,28,34,40][formLevel-1],0);
+    const palette=squintGroupPalette(initial,amount);
+    const paletteLab=palette.matchingLab;
+    const labs=[],ranks=new Uint16Array(pixels.data.length/4);
+    for(let i=0;i<pixels.data.length;i+=4){
+      const lab=rgbToLabFast([blurred[i],blurred[i+1],blurred[i+2]]);
+      labs.push(lab);let best=0,distance=Infinity;
+      for(let j=0;j<palette.length;j++){const d=squintDistance(lab,paletteLab[j]);if(d<distance){distance=d;best=j;}}
+      ranks[i/4]=best;
+    }
+    const joined=squintJoinNeighbors(ranks,labs,paletteLab,work.width,work.height,amount);
+    for(let i=0;i<joined.length;i++){
+      const rgb=palette[joined[i]],k=i*4;
+      pixels.data[k]=rgb[0];pixels.data[k+1]=rgb[1];pixels.data[k+2]=rgb[2];
+    }
+    formsMergeSmallRegions(pixels,work.width,work.height,Math.max(9,Math.round(work.width*work.height/17000)));
+    status.textContent=amount ? 'Farbgruppen: '+initial.length+' → '+palette.length+' · ähnliche Nachbarflächen beruhigt' : 'Farbgruppen: '+initial.length+' · ursprüngliche Erkennung';
+    finishForms(pixels);
+  }
+  function formsCropSettings(){
+    return {level:formLevel,squint:document.getElementById('formsSquint').checked,
+      blur:document.getElementById('formsSquintBlur').value,
+      light:document.getElementById('formsSquintLight').value,
+      spots:document.getElementById('formsSpots').value,soft:formsSquintPreview,poster:document.getElementById('formsPosterize').checked,posterSteps:document.getElementById('formsPosterizeSteps').value,posterGray:document.getElementById('formsPosterizeGray').checked};
+  }
+  function captureCroppedForms(cell){
+    if(!formLevel)return null;
+    const preview=formsOriginalPreview;
+    formsOriginalPreview=false;rebuildForms();
+    const canvas=document.createElement('canvas');canvas.width=cell.w;canvas.height=cell.h;
+    canvas.getContext('2d').drawImage(formCanvas,cell.x,cell.y,cell.w,cell.h,0,0,cell.w,cell.h);
+    formsOriginalPreview=preview;
+    return {canvas,settings:formsCropSettings(),preview};
+  }
+  function restoreCroppedForms(snapshot){
+    if(!snapshot)return;
+    croppedFormsSnapshot=snapshot;
+    const settings=snapshot.settings;
+    document.getElementById('formsSquint').checked=settings.squint;
+    document.getElementById('formsSquintBlur').value=settings.blur;
+    document.getElementById('formsSquintLight').value=settings.light;
+    document.getElementById('formsSpots').value=settings.spots;
+    document.getElementById('formsPosterize').checked=!!settings.poster;
+    document.getElementById('formsPosterizeSteps').value=settings.posterSteps||5;
+    document.getElementById('formsPosterizeStepsVal').textContent=settings.posterSteps||5;
+    document.getElementById('formsPosterizeGray').checked=!!settings.posterGray;
+    formsSquintPreview=settings.soft;syncSquintPreview();
+    setFormLevel(settings.level);
+    if(snapshot.preview)toggleFormsOriginal();
+  }
+  function rebuildPosterizeForms(){
+    // Analyze at a bounded size for responsive iPad/Safari rendering.
+    const w=sourceCanvas.width,h=sourceCanvas.height;
+    const scale=Math.min(1,1200/Math.max(w,h));
+    const ww=Math.max(1,Math.round(w*scale)),wh=Math.max(1,Math.round(h*scale));
+    const work=document.createElement('canvas');work.width=ww;work.height=wh;
+    const cx=work.getContext('2d',{willReadFrequently:true});
+    cx.imageSmoothingEnabled=true;cx.imageSmoothingQuality='high';
+    cx.drawImage(sourceCanvas,0,0,ww,wh);
+    const src=cx.getImageData(0,0,ww,wh);
+    const steps=Math.max(3,Math.min(8,Number(document.getElementById('formsPosterizeSteps').value)||5));
+    const gray=document.getElementById('formsPosterizeGray').checked;
+    const data=src.data;
+    // sRGB lightness representation: equal bins in perceptual Lab L*.
+    const toLinear=v=>{v/=255;return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);};
+    const toSrgb=v=>{v=Math.max(0,Math.min(1,v));return Math.round(255*(v<=0.0031308?12.92*v:1.055*Math.pow(v,1/2.4)-0.055));};
+    const levels=Array.from({length:steps},(_,i)=>{
+      const L=(i+.5)*100/steps;
+      const y=L>8?Math.pow((L+16)/116,3):L/903.2963;
+      return toSrgb(y);
+    });
+    for(let i=0;i<data.length;i+=4){
+      const r=data[i],g=data[i+1],b=data[i+2];
+      const Y=.2126*toLinear(r)+.7152*toLinear(g)+.0722*toLinear(b);
+      const L=Y>0.0088564517?116*Math.cbrt(Y)-16:903.2963*Y;
+      const bin=Math.min(steps-1,Math.floor(L*steps/100));
+      const target=levels[bin];
+      if(gray){data[i]=target;data[i+1]=target;data[i+2]=target;}
+      else{
+        // Retain each pixel's hue/saturation while snapping overall brightness.
+        const current=toSrgb(Y),ratio=target/Math.max(1,current);
+        data[i]=Math.min(255,Math.round(r*ratio));
+        data[i+1]=Math.min(255,Math.round(g*ratio));
+        data[i+2]=Math.min(255,Math.round(b*ratio));
+      }
+    }
+    // Posterize has sharp boundaries, not blurred or merged color regions.
+    cx.putImageData(src,0,0);
+    formCtx.imageSmoothingEnabled=true;formCtx.imageSmoothingQuality='high';
+    formCtx.drawImage(work,0,0,w,h);
+    formsBasePixels=null;formsRankData=null;renderedFormSpots=0;
+  }
+  function rebuildForms(){
+    if(!loaded) return;
+    if(croppedFormsSnapshot && formLevel && !formsOriginalPreview){
+      if(JSON.stringify(formsCropSettings())===JSON.stringify(croppedFormsSnapshot.settings)){
+        formCanvas.width=sourceCanvas.width;formCanvas.height=sourceCanvas.height;
+        formCtx.drawImage(croppedFormsSnapshot.canvas,0,0);
+        formsBasePixels=null;formsRankData=null;renderedFormLevel=null;toneSourcePixels=null;
+        return;
+      }
+      croppedFormsSnapshot=null;renderedFormLevel=null;
+    }
+    const mode=formsOriginalPreview?'original':document.getElementById('formsPosterize').checked?'posterize:'+document.getElementById('formsPosterizeSteps').value+':'+document.getElementById('formsPosterizeGray').checked:document.getElementById('formsSquint').checked?'squint:'+document.getElementById('formsSquintBlur').value+':'+formsSquintPreview+':'+document.getElementById('formsSquintLight').value:'classic';
+    if(renderedFormLevel===formLevel && renderedFormMode===mode){
+      if(formLevel && renderedFormSpots!==Number(document.getElementById('formsSpots').value))renderFormsFilled();
+      return;
+    }
+    formsBasePixels=null;formsRankData=null;renderedFormSpots=null;
+    renderedFormLevel=formLevel;renderedFormMode=mode;
+    toneSourcePixels=null;
+
+    const w = sourceCanvas.width, h = sourceCanvas.height;
+    formCanvas.width = w; formCanvas.height = h;
+    formCtx.clearRect(0,0,w,h);
+
+    if(formLevel===0 || formsOriginalPreview){
+      formCtx.drawImage(sourceCanvas,0,0);
+      return;
+    }
+
+    if(mode.startsWith('posterize:')){rebuildPosterizeForms();return;}
+    if(mode.startsWith('squint:')){ rebuildSquintForms(); return; }
+
+    // Schnellere Großformen:
+    // Analyse auf begrenzter Arbeitsauflösung, danach kantenschonend hochskalieren.
+    const cfg = {
+      1:{step:52, spatial:4, passes:1, workLong:280},
+      2:{step:40, spatial:5, passes:1, workLong:420},
+      3:{step:28, spatial:8, passes:2, workLong:760},
+      4:{step:20, spatial:6, passes:1, workLong:900},
+      5:{step:14, spatial:4, passes:1, workLong:1100}
+    }[formLevel];
+
+    const longSide = Math.max(w,h);
+    const scaleDown = Math.min(1, cfg.workLong / longSide);
+    const ww = Math.max(32, Math.round(w*scaleDown));
+    const wh = Math.max(32, Math.round(h*scaleDown));
+
+    const work = document.createElement('canvas');
+    work.width = ww; work.height = wh;
+    const wctx = work.getContext('2d', {willReadFrequently:true});
+    wctx.imageSmoothingEnabled = true;
+    wctx.imageSmoothingQuality = 'high';
+    wctx.drawImage(sourceCanvas,0,0,w,h,0,0,ww,wh);
+
+    const src = wctx.getImageData(0,0,ww,wh);
+    const out = wctx.createImageData(ww,wh);
+
+    // Small edge-aware color averaging before quantization: avoid random
+    // neighboring pixels falling in different RGB bins, without washing out edges.
+    const smooth=new Uint8ClampedArray(src.data);
+    const radiusSmooth=formLevel<=2?2:1;
+    for(let y=0;y<wh;y++)for(let x=0;x<ww;x++){
+      const k=(y*ww+x)*4,r=src.data[k],g=src.data[k+1],b=src.data[k+2];
+      let sr=0,sg=0,sb=0,total=0;
+      for(let dy=-radiusSmooth;dy<=radiusSmooth;dy++)for(let dx=-radiusSmooth;dx<=radiusSmooth;dx++){
+        const xx=x+dx,yy=y+dy;if(xx<0||xx>=ww||yy<0||yy>=wh)continue;
+        const j=(yy*ww+xx)*4,dr=r-src.data[j],dg=g-src.data[j+1],db=b-src.data[j+2];
+        const d=dr*dr+dg*dg+db*db;
+        if(d>3400)continue;
+        const weight=1/(1+.35*(dx*dx+dy*dy));
+        sr+=src.data[j]*weight;sg+=src.data[j+1]*weight;sb+=src.data[j+2]*weight;total+=weight;
+      }
+      smooth[k]=sr/total;smooth[k+1]=sg/total;smooth[k+2]=sb/total;
+    }
+    // 1) Farbquantisierung: ähnliche Farben zu Malflächen bündeln.
+    const q = cfg.step;
+    for(let i=0;i<src.data.length;i+=4){
+      const r=smooth[i], g=smooth[i+1], b=smooth[i+2];
+      out.data[i]   = Math.max(0,Math.min(255,Math.round(r/q)*q));
+      out.data[i+1] = Math.max(0,Math.min(255,Math.round(g/q)*q));
+      out.data[i+2] = Math.max(0,Math.min(255,Math.round(b/q)*q));
+      out.data[i+3] = src.data[i+3];
+    }
+
+    function dist3(a,b,c,d,e,f){
+      const dr=a-d,dg=b-e,db=c-f;
+      return dr*dr+dg*dg+db*db;
+    }
+
+    let cur = out;
+    const radius = cfg.spatial;
+    const threshold2 = (cfg.step*1.7)*(cfg.step*1.7);
+
+    // Stufe 1: extrem grob und sehr schnell.
+    // Keine große Nachbarschaftssuche; nur Farbflächen quantisieren.
+    if(formLevel===1){
+      formsMergeSmallRegions(cur,ww,wh,Math.max(6,Math.round(ww*wh/10000)));
+      finishForms(cur);
+      return;
+    }
+
+    // Kompakte Zähler statt einer neuen Map für jeden Bildpunkt.
+    // Besuchsmarken ersetzen das Leeren der Zähler. Die Reihenfolge und
+    // die Entscheidung bei Gleichstand entsprechen exakt der bisherigen Suche.
+    const levels=Math.round(255/q)+1;
+    const channelBins=new Uint16Array(256);
+    for(let v=0;v<256;v++) channelBins[v]=Math.round(v/q);
+    const counts=new Uint16Array(levels*levels*levels);
+    const visited=new Uint32Array(counts.length);
+    const labels=new Uint16Array(ww*wh);
+
+    // 2) Kleine Inseln entfernen, starke Kanten respektieren.
+    for(let pass=0; pass<cfg.passes; pass++){
+      const next = wctx.createImageData(ww,wh);
+      next.data.set(cur.data);
+      visited.fill(0);
+      for(let i=0,p=0;i<cur.data.length;i+=4,p++){
+        labels[p]=(channelBins[cur.data[i]]*levels+channelBins[cur.data[i+1]])*levels+channelBins[cur.data[i+2]];
+      }
+
+      for(let y=0;y<wh;y++){
+        for(let x=0;x<ww;x++){
+          const idx=(y*ww+x)*4;
+          const cr=cur.data[idx], cg=cur.data[idx+1], cb=cur.data[idx+2];
+
+          const visit=y*ww+x+1;
+          let bestCount=0;
+          let br=cr,bg=cg,bb=cb;
+
+          const y0=Math.max(0,y-radius), y1=Math.min(wh-1,y+radius);
+          const x0=Math.max(0,x-radius), x1=Math.min(ww-1,x+radius);
+
+          // gröberes Sampling spart auf dem iPad sehr viel Rechenzeit
+          const sampleStep = formLevel===1 ? 4 : (formLevel===2 ? 3 : 2);
+
+          for(let yy=y0; yy<=y1; yy+=sampleStep){
+            for(let xx=x0; xx<=x1; xx+=sampleStep){
+              const j=(yy*ww+xx)*4;
+              const rr=cur.data[j], gg=cur.data[j+1], bb2=cur.data[j+2];
+              if(dist3(cr,cg,cb,rr,gg,bb2) > threshold2) continue;
+
+              const key=labels[yy*ww+xx];
+              const n=visited[key]===visit ? counts[key]+1 : 1;
+              visited[key]=visit;
+              counts[key]=n;
+              if(n>bestCount){
+                bestCount=n; br=rr; bg=gg; bb=bb2;
+              }
+            }
+          }
+
+          next.data[idx]=br;
+          next.data[idx+1]=bg;
+          next.data[idx+2]=bb;
+          next.data[idx+3]=cur.data[idx+3];
+        }
+      }
+      cur=next;
+    }
+
+    formsMergeSmallRegions(cur,ww,wh,Math.max(6,Math.round(ww*wh/14500)));
+    finishForms(cur);
+  }
+  let toneUpdateFrame=0;
+  function scheduleToneImage(){
+    if(toneUpdateFrame) return;
+    toneUpdateFrame=requestAnimationFrame(()=>{
+      toneUpdateFrame=0;
+      rebuildToneImage();
+    });
+  }
+  function flushToneImage(){
+    if(toneUpdateFrame) rebuildToneImage();
+  }
+  function rebuildToneImage(){
+    if(toneUpdateFrame){cancelAnimationFrame(toneUpdateFrame);toneUpdateFrame=0;}
+    if(!loaded) return;
+
+    const w=formCanvas.width, h=formCanvas.height;
+    if(processedCanvas.width!==w) processedCanvas.width=w;
+    if(processedCanvas.height!==h) processedCanvas.height=h;
+
+    if(!toneSourcePixels) toneSourcePixels=formCtx.getImageData(0,0,w,h);
+    const src=toneSourcePixels;
+    if(!toneOutputPixels || toneOutputPixels.width!==w || toneOutputPixels.height!==h){
+      toneOutputPixels=processedCtx.createImageData(w,h);
+      toneBackgroundPixels=toneGrayBackgroundCtx.createImageData(w,h);
+    }
+    const out=toneOutputPixels;
+
+    // Graustufen-Hintergrund für Tonwerte:
+    // Nicht ausgewählte Tonwerte werden Schwarz-Weiß,
+    // ausgewählte Tonwerte bleiben hier transparent und behalten dadurch ihre Farbe.
+    if(toneGrayBackgroundCanvas.width!==w) toneGrayBackgroundCanvas.width=w;
+    if(toneGrayBackgroundCanvas.height!==h) toneGrayBackgroundCanvas.height=h;
+    const grayBg=toneBackgroundPixels;
+
+    const lv=+lightSlider.value, mv=+midSlider.value, dv=+darkSlider.value;
+
+    for(let i=0;i<src.data.length;i+=4){
+      const r=src.data[i], g=src.data[i+1], b=src.data[i+2], a=src.data[i+3];
+      const lum=luminance(r,g,b);
+      let band;
+      if(lum>=170) band='light';
+      else if(lum>=85) band='mid';
+      else band='dark';
+
+      const strength =
+        band==='light' ? toneStrength(lum,'light',lv) :
+        band==='mid' ? toneStrength(lum,'mid',mv) :
+        toneStrength(lum,'dark',dv);
+
+      if(strength>0 && toneView!=='off'){
+        // Dieser Tonwert soll farbig sichtbar bleiben.
+        grayBg.data[i]=0; grayBg.data[i+1]=0; grayBg.data[i+2]=0; grayBg.data[i+3]=0;
+      }else{
+        const gray=Math.round(lum);
+        grayBg.data[i]=gray; grayBg.data[i+1]=gray; grayBg.data[i+2]=gray; grayBg.data[i+3]=255;
+      }
+
+      if(toneView==='off'){
+        out.data[i]=r; out.data[i+1]=g; out.data[i+2]=b; out.data[i+3]=a;
+      }else if(toneView==='only'){
+        if(strength>0){
+          const gray=Math.round(lum);
+          out.data[i]=gray; out.data[i+1]=gray; out.data[i+2]=gray; out.data[i+3]=255;
+        }else{
+          out.data[i]=245; out.data[i+1]=245; out.data[i+2]=242; out.data[i+3]=255;
+        }
+      }else{
+        if(strength>0){
+          out.data[i]=r; out.data[i+1]=g; out.data[i+2]=b; out.data[i+3]=a;
+        }else{
+          const wash=244;
+          out.data[i]=Math.round(r*.18+wash*.82);
+          out.data[i+1]=Math.round(g*.18+wash*.82);
+          out.data[i+2]=Math.round(b*.18+wash*.82);
+          out.data[i+3]=255;
+        }
+      }
+    }
+    applyFamilyVisibility(out);
+    processedCtx.putImageData(out,0,0);
+    isolationRevision++;
+    isolationSentKey=null;
+    if(activeIsolatedColor){isolationRequest=null;refreshIsolationSmooth();}
+    toneGrayBackgroundCtx.putImageData(grayBg,0,0);
+    draw();
+  }
+
+
+  function syncGlobalViewControls(){
+    if(!loaded){globalZoomVal.textContent='–';return;}
+    const pct=Math.round(scale*100);
+    globalZoom.value=String(Math.max(25,Math.min(600,pct)));
+    globalZoomVal.textContent=`${pct} %`;
+    globalMoveBtn.classList.toggle('active',mode==='move');
+    globalMoveBtn.classList.toggle('secondary',mode!=='move');
+  }
+
+  function setGlobalZoom(percent){
+    if(!loaded)return;
+    const vr=viewer.getBoundingClientRect();
+    const cx=(vr.width/2-offsetX)/scale;
+    const cy=(vr.height/2-offsetY)/scale;
+    const ns=Math.max(.25,Math.min(6,Number(percent)/100));
+    scale=ns;
+    offsetX=vr.width/2-cx*scale;
+    offsetY=vr.height/2-cy*scale;
+    syncGlobalViewControls();
+    // Während der Schieber gezogen wird, nur die Anzeige aktualisieren.
+    // Die kostspieligen acht Mischrezepte erst beim Loslassen neu berechnen.
+    draw();
+  }
+
+  let surfaceAnalyzedZoom=null;
+  function refreshSurfaceAfterZoom(){
+    if(!surfaceMode||!surfacePreview||!surfaceClusters.length||!loaded)return;
+    if(surfaceAnalyzedZoom!==null && Math.abs(scale-surfaceAnalyzedZoom)<0.000001)return;
+    const realSize=Number(surfaceSize.value)/Math.max(scale,.0001);
+    surfacePreview.size=realSize;
+    surfaceAnalyzedZoom=scale;
+    renderSurface(clusterArea(surfacePreview.x,surfacePreview.y,realSize,surfacePreview.shape));
+  }
+  let drawFrame=0;
+  function draw(){
+    if(drawFrame) return;
+    drawFrame=requestAnimationFrame(()=>{
+      drawFrame=0;
+      paintViewer();
+    });
+  }
+  // Shared composition keeps display and export in sync in every photo module.
+  function renderCurrentArtwork(ctx,includeGrid=true){
+    // 1.13: Original stufenlos über die aktuelle Arbeitsansicht blenden.
+    if(build32Active && build32Canvas){
+      ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
+      // A Lasso always means LOCAL color reduction, with the *original*
+      // untouched everywhere outside the polygon. The global palette view
+      // can be grey or downsampled and must not bleed into the Lasso view.
+      const localLasso=build32DetailLocalRendered&&build32DetailCell?.kind==='lasso';
+      if(localLasso)ctx.drawImage(sourceCanvas,0,0,sourceCanvas.width,sourceCanvas.height);
+      else ctx.drawImage(build32Canvas,0,0,sourceCanvas.width,sourceCanvas.height);
+      drawBuild32DetailOverlay(ctx);
+      if(build32GrayBlend>0){
+        if(build32DetailLocalRendered&&build32DetailCell){
+          ctx.save();
+          ctx.beginPath();
+          if(build32DetailCell.points){build32DetailCell.points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();}
+          else ctx.rect(build32DetailCell.x,build32DetailCell.y,build32DetailCell.w,build32DetailCell.h);
+          ctx.clip();
+          ctx.globalAlpha=build32GrayBlend/100;ctx.drawImage(toneGrayCanvas,0,0);
+          ctx.restore();
+        }else{
+          ctx.save();ctx.globalAlpha=build32GrayBlend/100;ctx.drawImage(toneGrayCanvas,0,0);ctx.restore();
+          if(build32Foreground)ctx.drawImage(build32Foreground,0,0,sourceCanvas.width,sourceCanvas.height);
+        }
+      }
+      // Detail-Kästchen zuletzt nochmals zeichnen: Die lokal ausgewählten
+      // Hell-/Dunkelfarben müssen im Kästchen sichtbar bleiben, auch wenn
+      // danach noch Tonwert-/Original-Überblendungen verarbeitet wurden.
+      if(build32DetailLocalRendered&&build32DetailCell&&build32DetailCanvas){
+        ctx.drawImage(build32DetailCanvas,build32DetailCell.x,build32DetailCell.y,build32DetailCell.w,build32DetailCell.h);
+      }
+    }
+    else if(sketchActive){
+      if(sketchOriginalPreview)ctx.drawImage(sourceCanvas,0,0);
+      else if(sketchCanvas)ctx.drawImage(sketchCanvas,0,0,sourceCanvas.width,sourceCanvas.height);
+      else {ctx.fillStyle='#fff';ctx.fillRect(0,0,sourceCanvas.width,sourceCanvas.height);}
+    }
+    else if(surfaceMarkCanvas) ctx.drawImage(surfaceMarkCanvas,0,0);
+    else ctx.drawImage(processedCanvas,0,0);
+
+    if(originalBlendPercent>0 && !sketchActive && !build32Active){
+      ctx.save();
+      ctx.globalAlpha=originalBlendPercent/100;
+      if(toneOriginalModeValue==='gray'){
+        if(toneView==='off'){
+          // Bei Originalansicht darf das ganze Bild Schwarz-Weiß werden.
+          ctx.drawImage(toneGrayCanvas,0,0);
+        }else{
+          // Nur der Hintergrund wird Schwarz-Weiß eingeblendet.
+          // Die ausgewählten farbigen Tonwerte bleiben vollständig erhalten.
+          ctx.drawImage(toneGrayBackgroundCanvas,0,0);
+        }
+      }else{
+        ctx.drawImage(sourceCanvas,0,0);
+      }
+      ctx.restore();
+    }
+    drawVisibleGrids(ctx,processedCanvas.width,processedCanvas.height,includeGrid,(build32Active || (!!surfaceMarkCanvas && isolationGray && !sketchActive)));
+  }
+
+  function paintArtworkAtView(targetCtx,includeGrid){
+    targetCtx.save();
+    targetCtx.imageSmoothingEnabled=true;
+    targetCtx.imageSmoothingQuality='high';
+    targetCtx.translate(offsetX,offsetY);
+    targetCtx.scale(scale,scale);
+    renderCurrentArtwork(targetCtx,includeGrid);
+    targetCtx.restore();
+  }
+
+  function paintViewer(){
+    const r=viewer.getBoundingClientRect();
+    ctx.clearRect(0,0,r.width,r.height);
+    if(!loaded) return;
+    paintArtworkAtView(ctx,true);
+    drawBuild32LassoOutline();
+    drawGridCropSelection();
+    drawPlanMarkers();
+    if(surfacePreview && !sketchActive && !build32Active){
+      const sx=offsetX+surfacePreview.x*scale, sy=offsetY+surfacePreview.y*scale;
+      const sz=Number(surfaceSize.value);
+      ctx.save();
+      ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=3;
+      ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=3;
+      ctx.setLineDash([10,6]);
+      ctx.beginPath();
+      if(surfacePreview.shape==='circle') ctx.arc(sx,sy,sz/2,0,Math.PI*2);
+      else ctx.rect(sx-sz/2,sy-sz/2,sz,sz);
+      ctx.stroke(); ctx.restore();
+    }
+  }
+
+  function canvasPoint(clientX,clientY){
+    const r=canvas.getBoundingClientRect();
+    return {x:clientX-r.left,y:clientY-r.top};
+  }
+
+  function pickColor(clientX,clientY){
+    if(!loaded) return;
+    if(build32ReplaceArmed&&build32Data&&build32Selected!==null){
+      const p=canvasPoint(clientX,clientY);
+      const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
+      if(ix<0||iy<0||ix>=img.width||iy>=img.height)return;
+      flushToneImage();
+      const d=readImageDataSRGB(sourceCtx,Math.floor(ix),Math.floor(iy),1,1).data;
+      build32ApplyOriginalColor([d[0],d[1],d[2]]);
+      return;
+    }
+    const p=canvasPoint(clientX,clientY);
+    const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
+    if(ix<0||iy<0||ix>=img.width||iy>=img.height) return;
+    let rgb;
+    if(build32Active && build32Canvas){
+      rgb=sampleBuild32Color(ix,iy);
+      if(!rgb){hint.textContent='Bitte eine eingeblendete Farbfläche antippen, nicht den Hintergrund.';return;}
+    }else{
+      rgb=Array.from(sampleDisplayedPixel(ix,iy));
+    }
+    surfaceSelectedIndex=null;
+    cancelIsolation();
+    const hex=rgbHex(rgb);
+    colorBox.style.background=rgbHex(adaptiveDisplayColor(rgb));
+    colorText.innerHTML=`RGB: ${rgb.join(', ')}<br>HEX: ${hex}`;
+    setMixTarget(rgb,'Pipette',planPointAt(ix,iy));
+    takeCorrectionColor(rgb); ideasBase=[...rgb]; refreshIdea();
+    showMixes();
+
+    // Farbreise: ohne Umschalten zwei Farben nacheinander aufnehmen.
+    const journeyOpen=document.getElementById('colorJourneyPanel')?.classList.contains('tool-page-active');
+    if(journeyOpen){
+      if(!journeyStartColor || journeyTargetColor){
+        journeyStartColor=[...rgb];
+        journeyTargetColor=null;
+        journeyInfo.textContent='Grundfarbe gespeichert. Jetzt direkt die Zielfarbe antippen.';
+        setMode('picker');
+      }else{
+        journeyTargetColor=[...rgb];
+      }
+      renderColorJourney();
+      return;
+    }
+
+    // Außerhalb der Farbreise bleibt das bewährte Verhalten unverändert.
+    if(typeof window.activateToolPage==='function'){
+      window.activateToolPage('paintMixPanel');
+    }
+    setTimeout(()=>{
+      const target=document.getElementById('mixResults');
+      if(target && typeof target.scrollIntoView==='function'){
+        target.scrollIntoView({behavior:'smooth',block:'nearest'});
+      }
+    },40);
+  }
+
+
+  globalMoveBtn.addEventListener('click',()=>setMode('move'));
+  globalFitBtn.addEventListener('click',()=>fitImage());
+  globalZoom.addEventListener('input',()=>setGlobalZoom(globalZoom.value));
+  globalZoom.addEventListener('change',refreshSurfaceAfterZoom);
+
+  [lightSlider,midSlider,darkSlider].forEach(sl=>{
+    sl.addEventListener('input',()=>{
+      lightValue.textContent=lightSlider.value;
+      midValue.textContent=midSlider.value;
+      darkValue.textContent=darkSlider.value;
+      scheduleToneImage();
+    });
+  });
+
+  document.getElementById('formsSpots').addEventListener('input',e=>{
+    document.getElementById('formsSpotsVal').textContent=Number(e.target.value)?e.target.value+' / 10':'Aus';
+  });
+  document.getElementById('formsSpots').addEventListener('change',()=>{
+    setFormLevel(formLevel);
+  });
+  function syncSquintPreview(){
+    const enabled=document.getElementById('formsSquint').checked;
+    for(const [id,active] of [['formsSquintSoft',formsSquintPreview],['formsSquintFlat',!formsSquintPreview]]){
+      const button=document.getElementById(id);button.classList.toggle('active',enabled&&active);button.classList.toggle('secondary',!enabled||!active);button.setAttribute('aria-pressed',String(enabled&&active));
+    }
+    document.getElementById('formsSpots').disabled=enabled&&formsSquintPreview;
+  }
+  function chooseSquintPreview(soft){
+    clearTimeout(formsSquintTimer);formsSquintPreview=soft;document.getElementById('formsSquint').checked=true;
+    syncSquintPreview();setFormLevel(formLevel||3);
+  }
+  document.getElementById('formsSquintSoft').addEventListener('click',()=>chooseSquintPreview(true));
+  document.getElementById('formsSquintFlat').addEventListener('click',()=>chooseSquintPreview(false));
+  document.getElementById('formsSquint').addEventListener('change',()=>{clearTimeout(formsSquintTimer);syncSquintPreview();setFormLevel(formLevel||3);});
+  document.getElementById('formsSquintBlur').addEventListener('input',e=>{
+    document.getElementById('formsSquintBlurVal').textContent=Number(e.target.value).toLocaleString('de-DE',{maximumFractionDigits:1});
+    clearTimeout(formsSquintTimer);
+    if(document.getElementById('formsSquint').checked&&formsSquintPreview){formsSquintTimer=setTimeout(()=>{if(loaded)setFormLevel(formLevel||3);},100);}
+  });
+  document.getElementById('formsSquintBlur').addEventListener('change',()=>{
+    clearTimeout(formsSquintTimer);if(document.getElementById('formsSquint').checked)setFormLevel(formLevel||3);
+  });
+  document.getElementById('formsSquintLight').addEventListener('input',e=>{document.getElementById('formsSquintLightVal').textContent=e.target.value+' %';});
+  document.getElementById('formsSquintLight').addEventListener('change',()=>{if(document.getElementById('formsSquint').checked&&!formsSquintPreview)setFormLevel(formLevel||3);});
+  syncSquintPreview();
+  document.getElementById('formsPosterize').addEventListener('change',()=>setFormLevel(formLevel||3));
+  document.getElementById('formsPosterizeSteps').addEventListener('input',e=>{document.getElementById('formsPosterizeStepsVal').textContent=e.target.value;});
+  document.getElementById('formsPosterizeSteps').addEventListener('change',()=>{if(document.getElementById('formsPosterize').checked)setFormLevel(formLevel||3);});
+  document.getElementById('formsPosterizeGray').addEventListener('change',()=>{if(document.getElementById('formsPosterize').checked)setFormLevel(formLevel||3);});
+  formsOriginal.addEventListener('click',toggleFormsOriginal);
+  syncFormsOriginal();
+  formsSlider.addEventListener('input',()=>setFormLevel(formsSlider.value));
+  formBtns.forEach(b=>b.addEventListener('click',()=>setFormLevel(b.dataset.level)));
+
+
+  selectBasicColors.addEventListener('click',applyBasicArtisanPalette);
+  saveStandardPalette.addEventListener('click',saveStandardArtisanPalette);
+  loadStandardPalette.addEventListener('click',loadStandardArtisanPalette);
+  deleteStandardPalette.addEventListener('click',deleteStandardArtisanPalette);
+  updateStandardPaletteInfo();
+
+  managePaletteBtn.addEventListener('click',()=>{paletteManager.style.display='block';paletteSearch.value='';renderPaletteChecklist();});
+  closePaletteBtn.addEventListener('click',()=>{paletteManager.style.display='none';updateOwnedSummary();mixResults.innerHTML='';refreshGlazePaletteStatus();if(build32IsPure()&&loaded)document.getElementById('build32Analyze').click();});
+  paletteSearch.addEventListener('input',renderPaletteChecklist);
+  selectAllColors.addEventListener('click',()=>{
+    const key=currentCatalogueKey(),o=loadOwned();
+    (PALETTES[key]||[]).forEach(([n])=>o[paletteId(key,n)]=true);
+    saveOwned(o);renderPaletteChecklist();updateOwnedSummary();
+  });
+  selectNoColors.addEventListener('click',()=>{
+    const key=currentCatalogueKey(),o=loadOwned();
+    (PALETTES[key]||[]).forEach(([n])=>o[paletteId(key,n)]=false);
+    saveOwned(o);renderPaletteChecklist();updateOwnedSummary();
+  });
+  addCustomColor.addEventListener('click',()=>{
+    const name=customColorName.value.trim(); if(!name)return;
+    const h=customColorValue.value;
+    const rgb=[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+    const c=loadCustom();c.push({name,rgb,enabled:true});saveCustom(c);
+    customColorName.value='';renderCustomColors();updateOwnedSummary();
+  });
+  paintPalette.addEventListener('change',()=>{document.getElementById('build32MixPalette').value=paintPalette.value;if(build32IsPure()&&loaded)document.getElementById('build32Analyze').click();updateOwnedSummary();if(paletteManager.style.display!=='none')renderPaletteChecklist();});
+  updateOwnedSummary();
+
+  function autoStudioMixAfterPick(){
+    window.setTimeout(()=>{
+      try{
+        if(typeof showMixes==='function') showMixes();
+      }catch(e){
+        console.error('Atelier Mischberechnung',e);
+        mixResults.textContent='Die Mischberechnung konnte nicht abgeschlossen werden. Bitte erneut berechnen oder die aktive Palette prüfen.';
+      }
+    },0);
+  }
+  pickerRadius.addEventListener('input',()=>{ pickerRadiusVal.textContent=pickerRadius.value+' px (Ø '+(2*Number(pickerRadius.value))+')'; });
+  areaPickerBtn.addEventListener('click',()=>{
+    areaPickerMode = areaPickerMode==='avg' ? null : 'avg';
+    areaPickerBtn.classList.toggle('active',areaPickerMode==='avg');
+    areaPickerBtn.classList.toggle('secondary',areaPickerMode!=='avg');
+    smartAreaPickerBtn.classList.remove('active'); smartAreaPickerBtn.classList.add('secondary');
+    hint.textContent=areaPickerMode ? 'Kreis-Pipette: im Bild antippen' : (mode==='move'?'Modus: Verschieben / Zoom':'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger');
+  });
+  smartAreaPickerBtn.addEventListener('click',()=>{
+    areaPickerMode = areaPickerMode==='smart' ? null : 'smart';
+    smartAreaPickerBtn.classList.toggle('active',areaPickerMode==='smart');
+    smartAreaPickerBtn.classList.toggle('secondary',areaPickerMode!=='smart');
+    areaPickerBtn.classList.remove('active'); areaPickerBtn.classList.add('secondary');
+    hint.textContent=areaPickerMode ? 'Smart-Kreis: im Bild antippen' : (mode==='move'?'Modus: Verschieben / Zoom':'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger');
+  });
+  mediumOilBtn.addEventListener('click',()=>setMedium('oil'));
+  mediumWaterBtn.addEventListener('click',()=>setMedium('water'));
+  mediumAcrylicBtn.addEventListener('click',()=>setMedium('acrylic'));
+  calcMixesBtn.addEventListener('click',showMixes);
+  paintPalette.addEventListener('change',()=>{ mixResults.innerHTML=''; });
+  setMedium('oil');
+
+  familySliders.forEach(sl=>{
+    sl.addEventListener('input',()=>{
+      familyValues[sl.dataset.family]=Number(sl.value);
+      const value=sl.parentElement.querySelector('.family-value');
+      if(value) value.textContent=sl.value+'%';
+      scheduleToneImage();
+    });
+  });
+
+  familiesReset.addEventListener('click',()=>{
+    familySliders.forEach(sl=>{
+      sl.value=100;
+      familyValues[sl.dataset.family]=100;
+      const value=sl.parentElement.querySelector('.family-value');
+      if(value) value.textContent='100%';
+    });
+    rebuildToneImage();
+  });
+
+  smartPickerBtn.addEventListener('click',()=>{
+    smartPickerArmed=!smartPickerArmed;
+    smartPickerBtn.classList.toggle('active',smartPickerArmed);
+    smartPickerBtn.classList.toggle('secondary',!smartPickerArmed);
+    hint.textContent=smartPickerArmed ? 'Smart-Pipette: im Bild antippen' : (mode==='move' ? 'Modus: Verschieben / Zoom' : 'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger');
+  });
+
+
+
+  function syncColorTolerance(value){
+    const v=String(value);
+    pickerColorTolerance.value=v;
+    surfaceColorTolerance.value=v;
+    pickerColorToleranceVal.textContent=v;
+    surfaceColorToleranceVal.textContent=v;
+  }
+  let isolationRAF=0;
+  function refreshIsolationSmooth(){
+    if(!activeIsolatedColor) return;
+    if(isolationRAF) cancelAnimationFrame(isolationRAF);
+    isolationRAF=requestAnimationFrame(()=>{
+      isolationRAF=0;
+      if(multiIsolatedIds.length)isolatePlanSampleAreas(activeIsolatedLabel);
+      else isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
+    });
+  }
+  pickerColorTolerance.addEventListener('input',()=>{
+    syncColorTolerance(pickerColorTolerance.value);
+    refreshIsolationSmooth();
+  });
+  surfaceColorTolerance.addEventListener('input',()=>{
+    syncColorTolerance(surfaceColorTolerance.value);
+    refreshIsolationSmooth();
+  });
+  syncColorTolerance(12);
+
+  toneOriginalBlend.addEventListener('input',()=>setOriginalBlend(toneOriginalBlend.value,'tone'));
+  toneOriginalColorBtn?.addEventListener('click',()=>setToneOriginalMode('color'));
+  toneOriginalGrayBtn?.addEventListener('click',()=>setToneOriginalMode('gray'));
+  isolationOriginalBlend.addEventListener('input',()=>setOriginalBlend(isolationOriginalBlend.value,'isolation'));
+
+  pickerShowOnlyBtn.addEventListener('click',()=>{
+    const sample=planBook.samples.find(s=>s.id===planActiveId);
+    multiIsolatedIds=sample?[sample.id]:[];
+    const t=sample?.target||targetArray();
+    if(sample&&t)isolatePlanSampleAreas('Farbe '+(planBook.samples.indexOf(sample)+1));
+    else if(t)isolateColorAcrossImage(t,'Pipettenfarbe');
+    renderPalettePlan();
+  });
+  pickerShowAllBtn.addEventListener('click',()=>{
+    surfaceSelectedIndex=null;
+    cancelIsolation();
+    renderPalettePlan();
+    draw();
+    hint.textContent=mode==='move'?'Modus: Verschieben / Zoom':'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger';
+  });
+
+  surfaceSize.addEventListener('input',()=>{
+    surfaceSizeVal.textContent=surfaceSize.value;
+    if(surfacePreview){surfacePreview.size=Number(surfaceSize.value)/Math.max(scale,.0001);draw();}
+  });
+  // Bei geänderter Kreisgröße dürfen keine Ergebnisse vom alten Kreis stehen.
+  surfaceSize.addEventListener('change',()=>{
+    if(surfaceMode&&surfacePreview&&surfaceClusters.length){
+      surfaceAnalyzedZoom=scale;
+      renderSurface(clusterArea(surfacePreview.x,surfacePreview.y,
+        Number(surfaceSize.value)/Math.max(scale,.0001),surfacePreview.shape));
+    }
+  });
+  surfaceCircleBtn.addEventListener('click',()=>{
+    surfaceMode='circle'; areaPickerMode=null; smartPickerArmed=false; surfaceSelectedIndex=null;
+    if(!activeIsolatedColor) surfaceMarkCanvas=null;
+    if(loaded) surfacePreview={shape:'circle',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
+    hint.textContent=activeIsolatedColor
+      ? 'Flächenberater: Kreis auf die sichtbare Farbe setzen – es werden bis zu 8 Nuancen dieser Farbe bestimmt'
+      : 'Flächenberater: Kreis ist sichtbar – gewünschte Stelle antippen';
+    draw();
+  });
+  surfaceRectBtn.addEventListener('click',()=>{
+    surfaceMode='rect'; areaPickerMode=null; smartPickerArmed=false; surfaceSelectedIndex=null;
+    if(!activeIsolatedColor) surfaceMarkCanvas=null;
+    if(loaded) surfacePreview={shape:'rect',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
+    hint.textContent=activeIsolatedColor
+      ? 'Flächenberater: Bereich auf die sichtbare Farbe setzen – es werden bis zu 8 Nuancen dieser Farbe bestimmt'
+      : 'Flächenberater: Rechteck ist sichtbar – gewünschte Stelle antippen';
+    draw();
+  });
+  surfaceClearMarkBtn.addEventListener('click',clearSurfaceMark);
+  surfaceResetBtn.addEventListener('click',()=>{
+    surfaceMode=null; surfacePreview=null; surfaceClusters=[]; surfaceSelectedIndex=null; surfaceAnalyzedZoom=null; cancelIsolation();
+    surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';
+    surfaceBaseIndex=0;surfaceBaseRecipes=[];
+    surfaceBaseResults.innerHTML='<span class="tiny">Zuerst einen Bereich analysieren.</span>';
+    surfaceBaseRevision++;
+    draw();
+  });
+
+  function pickSurfaceAt(e){
+    if(!surfaceMode||!loaded||sketchActive)return false;
+    const p=canvasPoint(e.clientX,e.clientY);
+    const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
+    if(ix<0||iy<0||ix>=img.width||iy>=img.height)return true;
+    const realSize=Number(surfaceSize.value)/Math.max(scale,.0001);
+    surfacePreview={shape:surfaceMode,x:ix,y:iy,size:realSize};
+    const clusters=clusterArea(ix,iy,realSize,surfaceMode);
+    surfaceAnalyzedZoom=scale;
+    surfaceBaseIndex=0;
+    renderSurface(clusters);
+    // Keep the advisor armed for another circle instead of falling back to the average pipette.
+    if(activeIsolatedColor){
+      isolateColorAcrossImage(activeIsolatedColor,activeIsolatedLabel);
+      hint.textContent='Nuancen der angezeigten Farbe bestimmt';
+    }else{
+      draw();
+      hint.textContent=clusters.length+' Hauptfarben mit eigenen Mischungen erkannt · Für einen neuen Bereich erneut antippen';
+    }
+    return true;
+  }
+
+
+  glazeWaterBtn.addEventListener('click',()=>setGlazeMedium('water'));
+  glazeOilBtn.addEventListener('click',()=>setGlazeMedium('oil'));
+  glazeAcrylicBtn.addEventListener('click',()=>setGlazeMedium('acrylic'));
+  glazeOriginalInput.addEventListener('change',e=>loadGlazeImage(e.target.files&&e.target.files[0],'original'));
+  glazePaintingInput.addEventListener('change',e=>loadGlazeImage(e.target.files&&e.target.files[0],'painting'));
+  glazeAutoAlignBtn.addEventListener('click',autoAlignGlaze);
+
+  glazeOriginalCanvas.addEventListener('pointerup',e=>{
+    pickGlazeFromOriginal(e.clientX,e.clientY);
+    e.preventDefault();
+  });
+  glazePaintingCanvas.addEventListener('pointerup',e=>{
+    pickGlazeComparisonPoint(e.clientX,e.clientY);
+    e.preventDefault();
+  });
+
+  glazeClearPointsBtn.addEventListener('click',()=>{
+    glazePoints=[];glazeActivePoint=-1;glazePoint=null;glazeBase=null;glazeTarget=null;
+    renderGlazePoints();refreshGlazeColors();redrawGlazePreviews();
+    glazeResults.innerHTML='<span class="tiny">Messpunkte gelöscht.</span>';
+  });
+
+
+  glazeOpenFullscreenBtn.addEventListener('click',openGlazeFullscreen);
+  glazeCompareBiggerBtn.addEventListener('click',openGlazeFullscreen);
+  glazeFsClose.addEventListener('click',()=>{glazeFullscreen.style.display='none';});
+  glazeFsFit.addEventListener('click',()=>{glazeFsView={zoom:1,panX:0,panY:0};redrawGlazeFullscreen();});
+  glazeFsAutoAlign.addEventListener('click',()=>{autoAlignGlaze();setTimeout(redrawGlazeFullscreen,80);});
+  glazeFsClear.addEventListener('click',()=>{
+    glazePoints=[];glazeActivePoint=-1;glazePoint=null;glazeBase=null;glazeTarget=null;
+    renderGlazePoints();refreshGlazeColors();redrawGlazePreviews();redrawGlazeFullscreen();
+  });
+  glazeFsRadius.addEventListener('input',()=>{
+    glazeFsRadiusVal.textContent=glazeFsRadius.value+' px';
+    glazeSampleRadius.value=glazeFsRadius.value;
+    glazeSampleRadiusVal.textContent=glazeFsRadius.value+' px';
+  });
+
+  function installGlazeFsGestures(canvas,allowPick){
+    canvas.addEventListener('pointerdown',e=>{
+      canvas.setPointerCapture?.(e.pointerId);
+      glazeFsTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(glazeFsTouches.size===1){
+        glazeFsGesture={type:'maybeTap',x:e.clientX,y:e.clientY,panX:glazeFsView.panX,panY:glazeFsView.panY,canvas,allowPick};
+      }else if(glazeFsTouches.size===2){
+        const pts=[...glazeFsTouches.values()];
+        glazeFsGesture={type:'pinch',dist:Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y),zoom:glazeFsView.zoom,
+          panX:glazeFsView.panX,panY:glazeFsView.panY};
+      }
+    });
+    canvas.addEventListener('pointermove',e=>{
+      if(!glazeFsTouches.has(e.pointerId))return;
+      glazeFsTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(glazeFsTouches.size===1&&glazeFsGesture){
+        const q=[...glazeFsTouches.values()][0],dx=q.x-glazeFsGesture.x,dy=q.y-glazeFsGesture.y;
+        if(Math.hypot(dx,dy)>8){
+          glazeFsGesture.type='pan';
+          glazeFsView.panX=glazeFsGesture.panX+dx;
+          glazeFsView.panY=glazeFsGesture.panY+dy;
+          redrawGlazeFullscreen();
+        }
+      }else if(glazeFsTouches.size===2){
+        const pts=[...glazeFsTouches.values()];
+        const dist=Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y);
+        if(glazeFsGesture?.type!=='pinch'){
+          glazeFsGesture={type:'pinch',dist,zoom:glazeFsView.zoom,panX:glazeFsView.panX,panY:glazeFsView.panY};
+        }
+        glazeFsView.zoom=Math.max(.5,Math.min(6,glazeFsGesture.zoom*dist/Math.max(1,glazeFsGesture.dist)));
+        redrawGlazeFullscreen();
+      }
+    });
+    canvas.addEventListener('pointerup',e=>{
+      const g=glazeFsGesture;
+      const wasTap=g&&g.type==='maybeTap'&&g.canvas===canvas&&g.allowPick;
+      glazeFsTouches.delete(e.pointerId);
+      if(wasTap&&glazeFsTouches.size===0){
+        addGlazePointFromOriginalNorm(fullscreenOriginalPoint(e.clientX,e.clientY));
+      }
+      if(glazeFsTouches.size===0)glazeFsGesture=null;
+    });
+    canvas.addEventListener('pointercancel',e=>{
+      glazeFsTouches.delete(e.pointerId);
+      if(!glazeFsTouches.size)glazeFsGesture=null;
+    });
+  }
+  installGlazeFsGestures(glazeFsOriginalCanvas,false);
+  installGlazeFsGestures(glazeFsPaintingCanvas,true);
+
+  glazeSampleRadius.addEventListener('input',()=>{
+    glazeSampleRadiusVal.textContent=glazeSampleRadius.value+' px';
+  });
+  glazeMaxStrength.addEventListener('input',()=>{glazeMaxStrengthVal.textContent=glazeMaxStrength.value+' %';});
+  glazeCalcBtn.addEventListener('click',calculateGlazes);
+  glazeCalcAllBtn.addEventListener('click',calculateAllGlazePoints);
+  glazePalette.addEventListener('change',()=>{
+    refreshGlazePaletteStatus();
+    glazeResults.innerHTML='<span class="tiny">Palette geändert. Es werden nur deine aktiv ausgewählten Farben verwendet.</span>';
+  });
+  window.addEventListener('resize',redrawGlazePreviews);
+  renderGlazePoints();
+  refreshGlazeColors();
+  refreshGlazePaletteStatus();
+  setGlazeMedium('water');
+
+  [corrLight,corrWarm,corrSat,document.getElementById('corrHue')].forEach(x=>{x.addEventListener('input',refreshCorrection);x.addEventListener('dblclick',()=>{x.value=0;refreshCorrection();});});
+  corrTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){takeCorrectionColor(t);}});
+  corrMixBtn.addEventListener('click',calculateCorrectionRecipe);
+  corrResetBtn.addEventListener('click',()=>{corrLight.value=0;corrWarm.value=0;corrSat.value=0;document.getElementById('corrHue').value=0;refreshCorrection();});
+  function setCorrectionBackground(hex){
+    const box=document.getElementById('corrCompare'),rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
+    box.style.background=hex;box.style.color=luminance(...rgb)>145?'#111':'#fff';document.getElementById('corrBackground').value=hex;
+  }
+  document.getElementById('corrBackground').addEventListener('input',e=>setCorrectionBackground(e.target.value));
+  document.getElementById('corrGray').addEventListener('click',()=>setCorrectionBackground('#808080'));
+  document.getElementById('corrUseSurround').addEventListener('click',()=>setCorrectionBackground(document.getElementById('mixSurroundColor').value));
+
+
+
+  [ideaLight,ideaWarm,ideaSat].forEach(x=>x.addEventListener('input',refreshIdea));
+  ideaTakeBtn.addEventListener('click',()=>{const t=targetArray();if(t){ideasBase=[...t];refreshIdea();}});
+  ideaMixBtn.addEventListener('click',()=>{const c=ideaColor();if(c){setMixTarget(c,'Farbidee');showStudioMixPage();}});
+  ideaResetBtn.addEventListener('click',()=>{ideaLight.value=0;ideaWarm.value=0;ideaSat.value=0;refreshIdea();});
+  journeyTakeStartBtn.addEventListener('click',()=>{
+    const c=journeyCurrentColor();
+    if(!c){
+      journeyInfo.textContent='Bitte zuerst eine Farbe mit der Pipette oder Maler-Pipette aufnehmen.';
+      return;
+    }
+    journeyStartColor=[...c];
+    renderColorJourney();
+  });
+
+  journeyTakeTargetBtn.addEventListener('click',()=>{
+    const c=journeyCurrentColor();
+    if(!c){
+      journeyInfo.textContent='Bitte zuerst die gewünschte Zielfarbe mit der Pipette aufnehmen.';
+      return;
+    }
+    journeyTargetColor=[...c];
+    renderColorJourney();
+  });
+
+  journeyResetBtn.addEventListener('click',resetColorJourney);
+
+  pairCalcBtn.addEventListener('click',calculatePairPalette);
+
+  gridToggleBtn.addEventListener('click',()=>{gridEnabled=!gridEnabled;gridToggleBtn.textContent=gridEnabled?'Feinraster aus':'Feinraster ein';gridToggleBtn.classList.toggle('active',gridEnabled);gridToggleBtn.classList.toggle('secondary',!gridEnabled);syncBuild32Grid();draw();studioDirty();});
+  syncOriginalGridButtons();
+
+  gridDensity.addEventListener('input',()=>{gridDensityVal.textContent=gridDensity.value;if(build32DetailCell){clearBuild32DetailCell();build32Manual=false;build32Selection.clear();build32Selected=null;renderBuild32(build32Direction);}syncBuild32Grid();draw();});
+  document.querySelectorAll('[data-grid-adjust]').forEach(el=>el.addEventListener('input',()=>{
+    if(gridAdjust.locked)return;
+    gridAdjust[el.dataset.gridAdjust]=Number(el.value);gridGeometryChanged();
+  }));
+  document.querySelectorAll('[data-grid-adjust]').forEach(el=>el.addEventListener('change',()=>{centerGridControls();syncGridAdjust();}));
+  document.querySelectorAll('[data-grid-precision]').forEach(el=>el.addEventListener('click',()=>{
+    if(gridAdjust.locked)return;gridFine=!gridFine;centerGridControls();syncGridAdjust();
+  }));
+  document.querySelectorAll('[data-grid-nudge]').forEach(el=>el.addEventListener('click',()=>{
+    if(gridAdjust.locked)return;
+    nudgeGridValue(el.dataset.gridNudge,Number(el.dataset.direction));centerGridControls();gridGeometryChanged();
+  }));
+  document.querySelectorAll('[data-grid-lock]').forEach(el=>el.addEventListener('click',()=>{gridAdjust.locked=!gridAdjust.locked;syncGridAdjust();}));
+  document.querySelectorAll('[data-grid-reset]').forEach(el=>el.addEventListener('click',()=>{
+    if(gridAdjust.locked)return;
+    Object.assign(gridAdjust,{size:100,x:0,y:0,width:100,height:100});centerGridControls();gridGeometryChanged();
+  }));
+  syncGridAdjust();
+  const exportDialog=document.createElement('dialog');
+  exportDialog.id='exportDialog';
+  exportDialog.setAttribute('aria-labelledby','exportTitle');
+  exportDialog.style.cssText='width:min(680px,90vw);max-height:90dvh;overflow:auto;border:1px solid #888;border-radius:16px;padding:18px;background:#f7f5f0;color:#222;';
+  exportDialog.innerHTML=`<h3 id="exportTitle" style="margin-top:0">Aktuelle Ansicht speichern</h3>
+    <label id="exportScopeLabel">Bildbereich <select id="exportScope"><option value="full">Ganzes Bild mit aktuellen Einstellungen</option><option value="viewport">Sichtbarer Ausschnitt (Zoom und Position)</option></select></label>
+    <label id="exportGridLabel" style="display:flex;align-items:center;gap:8px;margin:10px 0"><input id="exportIncludeGrid" type="checkbox"> Raster in gespeichertes Bild übernehmen</label>
+    <p id="exportInfo" style="font-size:14px">Sichtbare Farben, Hintergrund, Überblendungen und Raster werden übernommen.</p>
+    <img id="exportPreview" alt="Vorschau des zu speichernden Bildes" style="display:block;max-width:100%;max-height:48dvh;margin:12px auto;object-fit:contain">
+    <p id="exportStatus" role="status" style="font-size:14px"></p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="exportShare" type="button">Teilen / In Fotos sichern</button><a id="exportDownload" style="padding:12px;color:#174c75" download>PNG herunterladen</a><button id="exportClose" type="button" class="secondary">Menü schließen</button></div>
+    <p style="font-size:13px">Auf dem iPad: „Teilen“ → „Bild sichern“ oder „In Dateien sichern“. Alternativ die Vorschau länger berühren.</p>`;
+  document.body.appendChild(exportDialog);
+  const exportScope=document.getElementById('exportScope');
+  const exportIncludeGrid=document.getElementById('exportIncludeGrid');
+  const exportPreview=document.getElementById('exportPreview');
+  const exportStatus=document.getElementById('exportStatus');
+  const exportShare=document.getElementById('exportShare');
+  const exportDownload=document.getElementById('exportDownload');
+  let exportUrl=null,exportFile=null,exportType='image/png',exportGlaze=false,exportFullscreen=false,exportRequest=0,exportReturnFocus=null;
+
+  function composeCurrentExport(){
+    const out=document.createElement('canvas');
+    if(exportGlaze){
+      // Snapshot the actual two comparison views, including alignment and markers.
+      if(exportFullscreen)redrawGlazeFullscreen();else redrawGlazePreviews();
+      const left=exportFullscreen?glazeFsOriginalCanvas:glazeOriginalCanvas;
+      const right=exportFullscreen?glazeFsPaintingCanvas:glazePaintingCanvas;
+      const gap=16,heading=36;
+      out.width=left.width+right.width+gap;out.height=Math.max(left.height,right.height)+heading;
+      const c=out.getContext('2d');c.fillStyle='#222';c.fillRect(0,0,out.width,out.height);
+      c.fillStyle='#fff';c.font='18px sans-serif';c.fillText('Original / Ziel',10,25);c.fillText('Aktuelles Gemälde',left.width+gap+10,25);
+      c.drawImage(left,0,heading);c.drawImage(right,left.width+gap,heading);
+    }else{
+      flushToneImage();
+      if(exportScope.value==='viewport'){
+        const previousGrid=gridEnabled,previousOriginal=originalGridEnabled;
+        try{gridEnabled=previousGrid&&exportIncludeGrid.checked;originalGridEnabled=previousOriginal&&exportIncludeGrid.checked;build32SuppressLassoOutline=true;paintViewer();out.width=canvas.width;out.height=canvas.height;}
+        finally{build32SuppressLassoOutline=false;gridEnabled=previousGrid;originalGridEnabled=previousOriginal;draw();}
+        const c=out.getContext('2d');c.fillStyle=getComputedStyle(viewer).backgroundColor;c.fillRect(0,0,out.width,out.height);c.drawImage(canvas,0,0);
+      }else{
+        out.width=sourceCanvas.width;out.height=sourceCanvas.height;
+        const c=out.getContext('2d');c.fillStyle=getComputedStyle(viewer).backgroundColor;c.fillRect(0,0,out.width,out.height);renderCurrentArtwork(c,exportIncludeGrid.checked);
+      }
+    }
+    return out;
+  }
+  function refreshExportPreview(){
+    const request=++exportRequest;
+    exportFile=null;exportShare.disabled=true;exportDownload.hidden=true;
+    exportPreview.removeAttribute('src');exportStatus.textContent='Vorschau wird erstellt …';
+    try{
+      const out=composeCurrentExport();
+      out.toBlob(blob=>{
+        if(request!==exportRequest||!exportDialog.open)return;
+        if(!blob){exportStatus.textContent='Bild konnte nicht erstellt werden. Bitte erneut versuchen.';return;}
+        if(exportUrl)URL.revokeObjectURL(exportUrl);
+        exportUrl=URL.createObjectURL(blob);
+        const ext=exportType==='image/jpeg'?'jpg':'png';
+        const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+        exportFile=new File([blob],`AtelierAI_Ansicht_${stamp}.${ext}`,{type:exportType});
+        exportPreview.src=exportUrl;exportDownload.href=exportUrl;exportDownload.download=exportFile.name;
+        exportDownload.textContent=ext.toUpperCase()+' herunterladen';exportDownload.hidden=false;
+        exportShare.disabled=!(navigator.canShare&&navigator.canShare({files:[exportFile]}));
+        exportStatus.textContent=out.width+' × '+out.height+' Pixel'+(exportShare.disabled?' · Zum Speichern „Herunterladen“ wählen.':'');
+      },exportType,0.95);
+    }catch(error){exportStatus.textContent='Speichern nicht möglich: '+error.message;}
+  }
+  function saveAtelierImage(type='image/png',withGrid=(gridEnabled||originalGridEnabled)){
+    exportFullscreen=glazeFullscreen.style.display!=='none';
+    exportGlaze=exportFullscreen||document.getElementById('glazePanel').classList.contains('tool-page-active');
+    if(exportGlaze?(!glazeOriginalImg&&!glazePaintingImg):!loaded){alert('Bitte zuerst ein Foto öffnen.');return;}
+    exportType=type;exportReturnFocus=document.activeElement;
+    exportIncludeGrid.checked=!!withGrid;document.getElementById('exportGridLabel').hidden=exportGlaze;
+    document.getElementById('exportScopeLabel').hidden=exportGlaze;
+    document.getElementById('exportInfo').textContent=exportGlaze?'Beide Lasurenansichten mit aktueller Ausrichtung und Messpunkten.':'Sichtbare Farben, Hintergrund, Überblendungen und Raster werden übernommen.';
+    exportDialog.showModal();refreshExportPreview();
+  }
+  exportScope.addEventListener('change',refreshExportPreview);
+  exportIncludeGrid.addEventListener('change',refreshExportPreview);
+  document.getElementById('exportClose').addEventListener('click',()=>exportDialog.close());
+  exportDialog.addEventListener('close',()=>{
+    ++exportRequest;exportFile=null;exportPreview.removeAttribute('src');exportDownload.removeAttribute('href');
+    if(exportUrl){URL.revokeObjectURL(exportUrl);exportUrl=null;}
+    exportReturnFocus?.focus();
+  });
+  exportShare.addEventListener('click',async()=>{
+    if(!exportFile)return;
+    try{await navigator.share({files:[exportFile]});}
+    catch(error){if(error.name!=='AbortError')exportStatus.textContent='Teilen nicht möglich. Bitte „Herunterladen“ wählen oder die Vorschau länger berühren.';}
+  });
+  document.getElementById('mainExportBtn').addEventListener('click',()=>saveAtelierImage('image/png',false));
+  document.getElementById('saveCurrentViewBtn').addEventListener('click',()=>saveAtelierImage());
+  document.getElementById('glazeFsSave').addEventListener('click',()=>saveAtelierImage());
+  savePngBtn.addEventListener('click',()=>saveAtelierImage('image/png'));
+  saveJpegBtn.addEventListener('click',()=>saveAtelierImage('image/jpeg'));
+
+
+
+
+  function setupCompactSidebar(){
+    const side=document.querySelector('aside.side');
+    if(!side) return;
+
+    const sections=[...side.querySelectorAll(':scope > .section')].filter(sec=>!['colorIdeasPanel','colorAnalysisPanel'].includes(sec.id));
+    if(!sections.length) return;
+
+    // 1.9 hatte die Bereiche bereits als Accordion umgebaut.
+    // Für 1.10 holen wir den Inhalt wieder aus diesem Verhalten heraus
+    // und zeigen immer genau eine Werkzeugseite.
+    const labels={
+      toolPanel:'Werkzeug',
+      formsPanel:'Großformen',
+      build32Panel:'32 / 48 / 64 Farben',
+      sketchPanel:'Vorzeichnung',
+      tonesPanel:'Tonwerte',
+      paintMixPanel:'Mischen',
+      colorAdvisorPanel:'Farbmischpult',
+      colorJourneyPanel:'Farbreise',
+      surfaceAdvisorPanel:'Flächenberater',
+      glazePanel:'Lasuren',
+      correctionStudioPanel:'Korrektur',
+      mixPalettePanel:'Mischpalette',
+      gridSavePanel:'Raster & Speichern',
+      sampleColorPanel:'Farbe'
+    };
+
+    const nav=document.createElement('div');
+    nav.className='toolnav-wrap';
+    const strip=document.createElement('div');
+    strip.className='toolnav';
+    nav.appendChild(strip);
+    side.insertBefore(nav,side.firstChild);
+
+    let active=null;
+
+    function sectionName(sec){
+      if(labels[sec.id]) return labels[sec.id];
+      const oldTitle=sec.querySelector(':scope > h3');
+      if(oldTitle) return oldTitle.textContent.trim();
+      const accTitle=sec.querySelector(':scope > .accordion-head .acc-title');
+      if(accTitle) return accTitle.textContent.trim();
+      return 'Werkzeug';
+    }
+
+    function normalize(sec){
+      sec.classList.add('tool-page');
+      sec.classList.remove('open');
+
+      const head=sec.querySelector(':scope > .accordion-head');
+      const body=sec.querySelector(':scope > .accordion-body');
+      const name=sectionName(sec);
+
+      if(head) head.style.display='none';
+      if(body){
+        body.style.display='block';
+        body.style.padding='0';
+        // sichtbare Überschrift im Werkzeugfenster
+        if(!body.querySelector(':scope > .tool-page-title')){
+          const t=document.createElement('div');
+          t.className='tool-page-title';
+          t.textContent=name;
+          body.prepend(t);
+        }
+      } else {
+        const h=sec.querySelector(':scope > h3');
+        if(h){ h.classList.add('tool-page-title'); }
+      }
+      return name;
+    }
+
+    function show(sec,btn){
+      const previousSection=active;
+      sections.forEach(x=>x.classList.remove('tool-page-active'));
+      [...strip.querySelectorAll('button')].forEach(b=>b.classList.remove('active'));
+      sec.classList.add('tool-page-active');
+      if(btn) btn.classList.add('active');
+      active=sec;
+      if(sec.id!=='surfaceAdvisorPanel'){surfaceMode=null;surfacePreview=null;}
+      else if(loaded){surfaceCircleBtn.click();}
+      document.getElementById('build32Dock').hidden=sec.id!=='build32Panel'||!build32Data;
+      // Bei erneuter Aktivierung derselben Werkzeugseite die Scrollposition rechts erhalten.
+      if(previousSection!==sec)side.scrollTop=0;
+      selectSketchTool(sec.id);
+      if(sec.id!=='build32Panel' && build32Active){build32Active=false;draw();}
+      if(sec.id==='build32Panel'){setMode('move');syncBuild32Grid();if(build32Data){build32RenderCurrent();}}
+
+      // 1.9: Farbreise ist wirklich sofort aufnahmebereit.
+      // Nicht nur den Modus setzen, sondern denselben Pipetten-Klick auslösen
+      // wie bei manueller Bedienung. So bleibt kein alter Verschieben-Zustand aktiv.
+      if(sec.id==='colorJourneyPanel'){
+        setMode('picker');
+        if(pickerMode && typeof pickerMode.click==='function' && !pickerMode.classList.contains('active')){
+          pickerMode.click();
+        }
+        window.setTimeout(()=>{
+          if(!sec.classList.contains('tool-page-active'))return;
+          setMode('picker');
+          renderColorJourney();
+        },0);
+      }
+    }
+
+    window.activateToolPage=function(id){
+      const sec=sections.find(x=>x.id===id);
+      if(!sec) return false;
+      const btn=[...strip.querySelectorAll('button')].find(b=>b.dataset.targetId===id);
+      show(sec,btn||null);
+      return true;
+    };
+
+    sections.forEach((sec,i)=>{
+      const name=normalize(sec);
+      const b=document.createElement('button');
+      b.type='button';
+      b.textContent=name;
+      b.className='secondary';
+      b.dataset.targetId=sec.id||'';
+      b.addEventListener('click',()=>show(sec,b));
+      strip.appendChild(b);
+      if(i===0) show(sec,b);
+    });
+  }
+  document.getElementById('sketchWaterBtn').addEventListener('click',()=>sketchPreset('water'));
+  document.getElementById('sketchOilBtn').addEventListener('click',()=>sketchPreset('oil'));
+  [sketchDetails,sketchStrength,sketchWidth].forEach(control=>{
+    control.addEventListener('input',()=>scheduleSketch());
+  });
+  sketchCompareBtn.addEventListener('click',()=>{
+    sketchOriginalPreview=!sketchOriginalPreview;syncSketchControls();draw();
+  });
+  sketchSaveBtn.addEventListener('click',()=>saveSketchImage());
+  syncSketchControls();
+
+  setupCompactSidebar();
+
+
+  // Punkt-Pipette wird nach einem echten Tippen beim Loslassen verarbeitet.
+
+  // Keep the uploaded original across internal colour-template applications.
+  let visibleCropWhole=null,visibleCropGrid=null,gridCellCropArmed=false;
+  const gridCropSelection=new Map();
+  let gridCropGeometryKey='';
+  function studioWholeIndex(){
+    const id=studioProject?.areas[studioProject.active]?.returnAreaId;
+    return id?studioProject.areas.findIndex(a=>a.id===id):-1;
+  }
+  async function studioBeginCrop(defaultName,box){
+    const choice=prompt('Ausschnitt übernehmen:\nLeer lassen = im aktuellen Bereich arbeiten.\nFür einen NEUEN Bereich hier den gewünschten Namen eingeben.\nAbbrechen = unverändert zurück.','');
+    if(choice===null)return null;
+    await studioPersist();
+    const current=studioProject.areas[studioProject.active];
+    const name=choice.trim().slice(0,80);
+    if(name){
+      // A new named area needs an independent full image even when its parent is cropped.
+      const returnAreaId=current.returnAreaId||current.id;
+      const area={id:studioId(),name,returnAreaId};
+      studioProject.areas.push(area);studioProject.active=studioProject.areas.length-1;
+      return area;
+    }
+    const oldMap=current.cropMap||{x:0,y:0,w:1,h:1};
+    if(!current.fullView)current.fullView=studioClone(current);
+    else studioMergeCropSamples(current);
+    current.cropMap={x:oldMap.x+box.x/sourceCanvas.width*oldMap.w,y:oldMap.y+box.y/sourceCanvas.height*oldMap.h,w:box.w/sourceCanvas.width*oldMap.w,h:box.h/sourceCanvas.height*oldMap.h};
+    return current;
+  }
+  function studioMergeCropSamples(area){
+    const full=area.fullView,map=area.cropMap;if(!full||!map)return;
+    full.plan=full.plan||{name:area.name,samples:[]};
+    for(const sample of area.plan?.samples||[]){
+      const copy=studioClone(sample);
+      if(copy.point){copy.point.x=map.x+copy.point.x*map.w;copy.point.y=map.y+copy.point.y*map.h;}
+      const index=full.plan.samples.findIndex(s=>s.id&&s.id===copy.id);
+      if(index>=0)full.plan.samples[index]=copy;else full.plan.samples.push(copy);
+    }
+    full.palette={ids:[...new Set([...(full.palette?.ids||[]),...(area.palette?.ids||[])])],enabled:area.palette?.enabled!==false};
+  }
+  async function studioFinishCrop(area){
+    planBook={name:area.name,samples:[],markers:true};
+    planSamplePoint=null;planActiveId=null;planPlaceId=null;
+    renderPalettePlan();studioRender();syncVisibleCrop();await studioPersist();
+  }
+  function rememberCropWhole(){
+    if(visibleCropWhole)return;
+    visibleCropWhole=img;
+    visibleCropGrid={reference:gridReference?{...gridReference}:null,adjust:{...gridAdjust},density:gridDensity.value,enabled:gridEnabled,
+      originalGeometry:originalGridGeometry?{...originalGridGeometry}:null,originalEnabled:originalGridEnabled};
+  }
+  function selectedGridCropBounds(cells){
+    if(!cells.length)return null;
+    const cols=cells.map(c=>c.col),rows=cells.map(c=>c.row);
+    if((Math.max(...cols)-Math.min(...cols)+1)*(Math.max(...rows)-Math.min(...rows)+1)!==cells.length)return null;
+    const x=Math.min(...cells.map(c=>c.x)),y=Math.min(...cells.map(c=>c.y));
+    return {x,y,w:Math.max(...cells.map(c=>c.x+c.w))-x,h:Math.max(...cells.map(c=>c.y+c.h))-y};
+  }
+  function checkGridCropGeometry(){
+    const key=JSON.stringify(gridGeometry(sourceCanvas.width,sourceCanvas.height,gridDensity.value));
+    if(key!==gridCropGeometryKey){
+      gridCropSelection.clear();gridCropGeometryKey=key;syncGridCellCrop();
+    }
+  }
+  function syncGridCellCrop(){
+    const button=document.getElementById('gridCellCropBtn');
+    button.disabled=!loaded;
+    button.textContent=gridCellCropArmed?'Kästchenauswahl abbrechen':'Rasterkästchen als Malvorlage auswählen';
+    button.setAttribute('aria-pressed',String(gridCellCropArmed));
+    button.classList.toggle('active',gridCellCropArmed);
+    const apply=document.getElementById('gridCellCropApply');
+    apply.hidden=!gridCellCropArmed;
+    apply.disabled=!selectedGridCropBounds([...gridCropSelection.values()]);
+    apply.textContent='Als Malvorlage übernehmen ('+gridCropSelection.size+')';
+  }
+  document.getElementById('gridCellCropBtn').addEventListener('click',()=>{
+    if(!loaded)return;
+    gridCellCropArmed=!gridCellCropArmed;gridCropSelection.clear();
+    if(gridCellCropArmed){
+      setMode('move');
+      if(!gridEnabled)gridToggleBtn.click();
+      syncBuild32Grid();checkGridCropGeometry();
+      hint.textContent='Beliebig viele Kästchen nacheinander antippen. Erneutes Antippen wählt ab. Danach „Als Malvorlage übernehmen“. Die Kästchen müssen ein Rechteck bilden.';
+    }else hint.textContent='Kästchenauswahl abgebrochen.';
+    syncGridCellCrop();draw();
+  });
+  function drawGridCropSelection(){
+    if(!gridCellCropArmed)return;
+    checkGridCropGeometry();
+    ctx.save();ctx.translate(offsetX,offsetY);ctx.scale(scale,scale);
+    ctx.fillStyle='rgba(0,175,255,.22)';ctx.strokeStyle='#00bfff';ctx.lineWidth=2/scale;
+    for(const c of gridCropSelection.values()){
+      ctx.fillRect(c.x,c.y,c.w,c.h);ctx.strokeRect(c.x,c.y,c.w,c.h);
+    }
+    ctx.restore();
+  }
+  function cropSelectedGridCell(e){
+    checkGridCropGeometry();
+    const p=canvasPoint(e.clientX,e.clientY),ix=(p.x-offsetX)/scale,iy=(p.y-offsetY)/scale;
+    if(ix<0||iy<0||ix>=sourceCanvas.width||iy>=sourceCanvas.height)return;
+    const cell=build32GridCellAt(ix,iy);
+    if(!cell||cell.w<2||cell.h<2)return;
+    const key=cell.col+':'+cell.row;
+    if(gridCropSelection.has(key))gridCropSelection.delete(key);
+    else{
+      gridCropSelection.set(key,cell);
+    }
+    const count=gridCropSelection.size,valid=selectedGridCropBounds([...gridCropSelection.values()]);
+    hint.textContent=count+' Kästchen ausgewählt. '+(valid?'Weitere Kästchen antippen oder als Malvorlage übernehmen.':'Bitte die Auswahl zu einem vollständigen Rechteck ergänzen oder Kästchen abwählen.');
+    syncGridCellCrop();draw();
+  }
+  document.getElementById('gridCellCropApply').addEventListener('click',()=>studioRun(async()=>{
+    if(!gridCellCropArmed||!loaded)return;
+    checkGridCropGeometry();
+    const cell=selectedGridCropBounds([...gridCropSelection.values()]);
+    if(!cell)return;
+    const count=gridCropSelection.size;
+    const formsSnapshot=captureCroppedForms(cell);
+    const crop=document.createElement('canvas');crop.width=cell.w;crop.height=cell.h;
+    crop.getContext('2d').drawImage(sourceCanvas,cell.x,cell.y,cell.w,cell.h,0,0,cell.w,cell.h);
+    const area=await studioBeginCrop('Rasterbereich',cell);if(!area)return;
+    rememberCropWhole();
+    gridCellCropArmed=false;
+    rememberOriginalGridForCrop({x:cell.x,y:cell.y});
+    gridReference=null;
+    Object.assign(gridAdjust,{size:100,x:0,y:0,width:100,height:100,locked:false});
+    gridDensity.value='4';gridDensityVal.textContent='4';
+    centerGridControls();syncGridAdjust();syncBuild32Grid();
+    photoLoadRevision++;resetPhotoFilters();installPhoto(crop);
+    restoreCroppedForms(formsSnapshot);
+    document.dispatchEvent(new Event('atelier-reset-photo'));
+    setMode('move');
+    hint.textContent=count+' Rasterkästchen übernommen'+(formsSnapshot?' · Großformen und Original umschaltbar':' als Original-Malvorlage')+' · '+cell.w+' × '+cell.h+' Bildpixel. Neues Raster: 4 – über den Rasterregler weiter unterteilen.';
+    await studioFinishCrop(area);
+  }));
+  function syncVisibleCrop(){
+    syncGridCellCrop();
+    document.getElementById('visibleCropBtn').disabled=!loaded;
+    document.getElementById('visibleCropBack').hidden=!visibleCropWhole&&studioWholeIndex()<0&&!studioProject?.areas[studioProject.active]?.fullView;
+  }
+  function visibleCropBounds(width,height,viewWidth,viewHeight,zoom,x,y){
+    if(!(zoom>0)||!Number.isFinite(zoom)||viewWidth<=0||viewHeight<=0)return null;
+    const left=Math.max(0,Math.min(width,Math.floor(-x/zoom)));
+    const top=Math.max(0,Math.min(height,Math.floor(-y/zoom)));
+    const right=Math.max(0,Math.min(width,Math.ceil((viewWidth-x)/zoom)));
+    const bottom=Math.max(0,Math.min(height,Math.ceil((viewHeight-y)/zoom)));
+    return right>left&&bottom>top?{x:left,y:top,width:right-left,height:bottom-top}:null;
+  }
+  document.getElementById('visibleCropBtn').addEventListener('click',()=>studioRun(async()=>{
+    if(!loaded)return;
+    const view=viewer.getBoundingClientRect();
+    const box=visibleCropBounds(sourceCanvas.width,sourceCanvas.height,view.width,view.height,scale,offsetX,offsetY);
+    if(!box){hint.textContent='Bitte den gewünschten Bildbereich in die Ansicht schieben.';return;}
+    if(box.width===sourceCanvas.width&&box.height===sourceCanvas.height){hint.textContent='Bitte zuerst heranzoomen, bis nur der gewünschte Ausschnitt sichtbar ist.';return;}
+    if(box.width<2||box.height<2){hint.textContent='Der sichtbare Bildbereich ist zu klein. Bitte etwas herauszoomen.';return;}
+    // Copy source pixels 1:1, never the screen, quantized view or grid.
+    const crop=document.createElement('canvas');crop.width=box.width;crop.height=box.height;
+    crop.getContext('2d').drawImage(sourceCanvas,box.x,box.y,box.width,box.height,0,0,box.width,box.height);
+    const area=await studioBeginCrop('Ausschnitt',{x:box.x,y:box.y,w:box.width,h:box.height});if(!area)return;
+    rememberCropWhole();
+    const ref=gridReference||{width:sourceCanvas.width,height:sourceCanvas.height,x:0,y:0,viewWidth:sourceCanvas.width,viewHeight:sourceCanvas.height};
+    const rx=ref.viewWidth/sourceCanvas.width,ry=ref.viewHeight/sourceCanvas.height;
+    rememberOriginalGridForCrop(box);
+    gridReference={width:ref.width,height:ref.height,x:ref.x+box.x*rx,y:ref.y+box.y*ry,viewWidth:box.width*rx,viewHeight:box.height*ry};
+    photoLoadRevision++;
+    resetPhotoFilters();installPhoto(crop);
+    document.dispatchEvent(new Event('atelier-reset-photo'));
+    setMode('move');
+    hint.textContent='Originalausschnitt übernommen · '+box.width+' × '+box.height+' Bildpixel. Das Raster bleibt am Gesamtbild ausgerichtet. Wähle jetzt das gewünschte Modul.';
+    await studioFinishCrop(area);
+  }));
+  document.getElementById('visibleCropBack').addEventListener('click',()=>studioRun(async()=>{
+    const current=studioProject?.areas[studioProject.active];
+    if(current?.fullView){
+      await studioPersist();studioMergeCropSamples(current);
+      const full=current.fullView;full.name=current.name;full.plan.name=current.name;
+      studioProject.areas[studioProject.active]=full;
+      await studioRestore(studioProject,studioProject.active);await studioStore('put',studioProject);
+      hint.textContent='Gesamtbild geöffnet. Die gesammelten Farben bleiben im aktuellen Bereich erhalten.';return;
+    }
+    const index=studioWholeIndex();
+    if(index>=0){
+      await studioPersist();
+      const parent=studioProject.areas[index];if(parent.fullView){studioMergeCropSamples(parent);const full=parent.fullView;full.name=parent.name;full.plan.name=parent.name;studioProject.areas[index]=full;}
+      await studioRestore(studioProject,index);await studioStore('put',studioProject);
+      hint.textContent='Gesamtbild geöffnet. Dein Ausschnitt mit Farben und Mischungen bleibt unter Bereiche erhalten.';return;
+    }
+    if(!visibleCropWhole)return;
+    const whole=visibleCropWhole;visibleCropWhole=null;gridCellCropArmed=false;
+    gridReference=visibleCropGrid?.reference||null;
+    if(visibleCropGrid){
+      Object.assign(gridAdjust,visibleCropGrid.adjust);gridDensity.value=visibleCropGrid.density;gridDensityVal.textContent=gridDensity.value;
+      originalGridGeometry=visibleCropGrid.originalGeometry?{...visibleCropGrid.originalGeometry}:null;
+      originalGridEnabled=!!visibleCropGrid.originalEnabled;syncOriginalGridButtons();
+      if(gridEnabled!==visibleCropGrid.enabled)gridToggleBtn.click();
+      centerGridControls();syncGridAdjust();syncBuild32Grid();
+    }
+    visibleCropGrid=null;photoLoadRevision++;
+    resetPhotoFilters();installPhoto(whole);
+    document.dispatchEvent(new Event('atelier-reset-photo'));
+    setMode('move');hint.textContent='Ganze Malvorlage wiederhergestellt. Ausschnitt-Bearbeitungen werden nicht in das Gesamtbild eingesetzt.';
+  }));
+  function installPhoto(photo){
+    gridCellCropArmed=false;gridCropSelection.clear();
+    clearTimeout(formsSquintTimer);formsOriginalPreview=false;
+    setMixSurround('#808080');
+    img=studioWorkingImage(photo);loaded=true;syncApplyAllModules();syncVisibleCrop();placeholder.style.display='none';syncFormsOriginal();
+    resetBuild32();cancelIsolation();isolationRevision++;isolationSentKey=null;
+    sourceCanvas.width=img.width;sourceCanvas.height=img.height;
+    sourceCtx.clearRect(0,0,img.width,img.height);sourceCtx.drawImage(img,0,0);
+    startPicturePalette();resetSketchImage();rebuildToneGrayOriginal();
+    renderedFormLevel=null;rebuildForms();rebuildToneImage();fitImage();
+  }
+  function loadPhoto(file,keepOriginal=false,onComplete=null){
+    const token=++photoLoadRevision,url=URL.createObjectURL(file),photo=new Image();
+    const loadTimer=onComplete?setTimeout(()=>{
+      URL.revokeObjectURL(url);if(token===photoLoadRevision)photoLoadRevision++;
+      photo.onload=photo.onerror=null;onComplete(Error('Das Laden dauert zu lange. Bitte erneut versuchen.'));
+    },30000):null;
+    photo.onload=()=>{
+      clearTimeout(loadTimer);URL.revokeObjectURL(url);if(token!==photoLoadRevision){onComplete?.(Error('Ein anderes Foto wurde geöffnet.'));return;}
+      try{
+        if(!keepOriginal){
+          originalPhoto=photo;originalPhotoDataUrl=null;workingFromTemplate=false;
+          visibleCropWhole=null;visibleCropGrid=null;gridReference=null;
+          originalGridGeometry=null;originalGridEnabled=false;syncOriginalGridButtons();
+        }else{
+          workingFromTemplate=true;
+        }
+        // Every newly opened source starts neutral, including ordinary photo imports.
+        resetPhotoFilters();
+        installPhoto(photo);
+        if(!keepOriginal){document.dispatchEvent(new Event('atelier-reset-photo'));studioOpeningView();}
+        else studioDirty(); // übernommenes Bild und unverändertes Original gemeinsam sichern
+        onComplete?.();
+      }catch(error){hint.textContent='Das Foto konnte nicht übernommen werden.';onComplete?.(error);}
+    };
+    photo.onerror=()=>{clearTimeout(loadTimer);URL.revokeObjectURL(url);if(token===photoLoadRevision)hint.textContent='Das Foto konnte nicht geladen werden.';onComplete?.(Error('Das Foto konnte nicht geladen werden.'));};
+    photo.src=url;
+  }
+  fileInput.addEventListener('change',e=>{
+    const file=e.target.files&&e.target.files[0];if(!file)return;
+    studioRun(async()=>{
+      if(loaded)await studioPersist();
+      await new Promise((resolve,reject)=>loadPhoto(file,false,error=>error?reject(error):resolve()));
+      studioProject=null;studioManaged=true;studioEnsure();studioProject.name=file.name.replace(/\.[^.]+$/,'').slice(0,80)||'Mein Bild';studioRender();await studioPersist();studioRender();
+    });
+  });
+
+  fitBtn.addEventListener('click',fitImage);
+  function resetPhotoFilters(){
+    croppedFormsSnapshot=null;
+    sketchActive=false;resetSketchImage();
+    surfaceMode=null;surfacePreview=null;surfaceClusters=[];surfaceSelectedIndex=null;
+    surfaceBaseIndex=0;surfaceBaseRevision++;surfaceBaseRecipes=[];surfaceBaseSuggestionCache.clear();
+    surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';
+    surfaceBaseResults.innerHTML='<span class="tiny">Zuerst einen Bereich analysieren.</span>';
+    areaPickerMode=null;smartPickerArmed=false;
+    smartPickerBtn.classList.remove('active');smartPickerBtn.classList.add('secondary');
+    clearTimeout(formsSquintTimer);formsSquintPreview=false;
+    document.getElementById('formsSquint').checked=false;syncSquintPreview();
+    formLevel=0;formsOriginalPreview=false;syncFormsOriginal();formsSlider.value=0;formsValue.textContent='Aus';
+    formBtns.forEach(b=>{const active=+b.dataset.level===0;b.classList.toggle('active',active);b.classList.toggle('secondary',!active);});
+    [lightSlider,midSlider,darkSlider].forEach(sl=>sl.value=100);
+    [lightValue,midValue,darkValue].forEach(el=>el.textContent='100');
+    familySliders.forEach(sl=>{sl.value=100;familyValues[sl.dataset.family]=100;const v=sl.parentElement.querySelector('.family-value');if(v)v.textContent='100%';});
+    originalBlendPercent=0;
+    [toneOriginalBlend,isolationOriginalBlend].forEach(el=>{if(el)el.value=0;});
+    [toneOriginalBlendVal,isolationOriginalBlendVal].forEach(el=>{if(el)el.textContent='0 %';});
+    toneView='all';
+    [toneAll,toneOnly,toneOff].forEach(b=>{b.classList.toggle('active',b===toneAll);b.classList.toggle('secondary',b!==toneAll);});
+  }
+  function restoreInitialPhoto(){
+    if(!loaded||!originalPhoto)return;
+    photoLoadRevision++;
+    workingFromTemplate=false;
+    resetPhotoFilters();
+    visibleCropWhole=null;visibleCropGrid=null;gridReference=null;
+    originalGridGeometry=null;originalGridEnabled=false;syncOriginalGridButtons();
+    installPhoto(originalPhoto);
+    document.dispatchEvent(new Event('atelier-reset-photo'));
+    setMode('move');
+    document.getElementById('formsApplyStatus').textContent='Das ursprüngliche Foto ist wieder die Arbeitsvorlage.';
+    hint.textContent='Originalfoto wiederhergestellt. Großformen bleiben als Vorschau erneut auswählbar.';
+    studioDirty();
+  }
+  resetBtn.addEventListener('click',restoreInitialPhoto);
+  moveMode.addEventListener('click',()=>setMode('move'));
+  function selectNormalPipette(shape){
+    // Eine zuvor einmalig aktivierte Kreis-/Maler-Pipette soll die bewusste Auswahl nicht ueberlagern.
+    areaPickerMode=null;smartPickerArmed=false;
+    for(const b of [areaPickerBtn,smartAreaPickerBtn,smartPickerBtn]){
+      b.classList.remove('active');b.classList.add('secondary');
+    }
+    setMode('picker',shape);
+  }
+  pickerMode.addEventListener('click',()=>selectNormalPipette('circle'));
+  pointPickerMode.addEventListener('click',()=>selectNormalPipette('point'));
+  waterMode.addEventListener('click',()=>setPaintMode('water'));
+  oilMode.addEventListener('click',()=>setPaintMode('oil'));
+  toneAll.addEventListener('click',()=>setToneView('all'));
+  toneOnly.addEventListener('click',()=>setToneView('only'));
+  toneOff.addEventListener('click',()=>setToneView('off'));
+
+  // Select only on release: a second finger or a drag never samples a color.
+  function selectViewerPoint(e){
+    if(placePlanMarker(e)){e.preventDefault();return;}
+    // Farbnummern direkt antippen: auch im Pipettenmodus und unabhängig vom aktiven Werkzeug.
+    // Gezielte Platzierung hat darüber weiterhin Vorrang.
+    if(hitPlanMarker(e)){e.preventDefault();return;}
+    if(gridCellCropArmed){cropSelectedGridCell(e);e.preventDefault();return;}
+    if(mixSurroundArmed){pickMixSurround(e.clientX,e.clientY);e.preventDefault();return;}
+    if(pickSurfaceAt(e)) return;
+    // Detail-Kästchen: ein Rasterfeld auswählen und nur dort die aktuelle
+    // 8/16/32/48/64-Farbzahl neu berechnen.
+    if(build32DetailCellArmed&&build32Data&&!sketchActive){
+      const p=canvasPoint(e.clientX,e.clientY);
+      const ix=(p.x-offsetX)/scale, iy=(p.y-offsetY)/scale;
+      if(ix>=0&&iy>=0&&ix<sourceCanvas.width&&iy<sourceCanvas.height){
+        const cell=build32GridCellAt(ix,iy);
+        if(cell){analyzeBuild32DetailCell(cell);build32DetailCellArmed=false;syncBuild32DetailCellButton();e.preventDefault();return;}
+      }
+    }
+    // Beim Ersetzen einer Bildfarbe hat die Originalstellen-Auswahl Vorrang vor
+    // Pipette/Verschieben: Der Benutzer darf das Originalbild direkt antippen,
+    // ohne vorher den allgemeinen Pipettenmodus aktivieren zu müssen.
+    if(build32ReplaceArmed&&!sketchActive){
+      pickColor(e.clientX,e.clientY);
+      
+      e.preventDefault();
+      return;
+    }
+    if(areaPickerMode&&!sketchActive){
+      updatePickerCircle(e.clientX,e.clientY,true);
+      sampleCircle(e.clientX,e.clientY,areaPickerMode==='smart');
+      areaPickerMode=null;
+      areaPickerBtn.classList.remove('active'); areaPickerBtn.classList.add('secondary');
+      smartAreaPickerBtn.classList.remove('active'); smartAreaPickerBtn.classList.add('secondary');
+      hint.textContent=mode==='move' ? 'Modus: Verschieben / Zoom' : 'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger';
+      setTimeout(()=>updatePickerCircle(0,0,false),500);
+      
+      e.preventDefault();
+      return;
+    }
+    if(smartPickerArmed&&!sketchActive){
+      sampleSmartAt(e.clientX,e.clientY,12);
+      smartPickerArmed=false;
+      smartPickerBtn.classList.remove('active');
+      smartPickerBtn.classList.add('secondary');
+      hint.textContent=mode==='move' ? 'Modus: Verschieben / Zoom' : 'Pipette: tippen · Verschieben: ziehen · Zoom: zwei Finger';
+      
+      return;
+    }
+    if(mode==='move'&&inspectBuild32ImageColor(e)){e.preventDefault();return;}
+    if(mode==='picker'){
+      // In der normalen Farbmischung gemittelte Kreisfarbe verwenden.
+      // Spezialwerkzeuge behalten ihre bisherige punktgenaue Auswahl.
+      const journeyOpen=document.getElementById('colorJourneyPanel')?.classList.contains('tool-page-active');
+      if(pickerSampleShape==='circle'&&!build32Active&&!journeyOpen&&!sketchActive){
+        updatePickerCircle(e.clientX,e.clientY,true);
+        sampleCircle(e.clientX,e.clientY,false);
+        setTimeout(()=>updatePickerCircle(0,0,false),500);
+      }else{
+        pickColor(e.clientX,e.clientY);
+      }
+      e.preventDefault();
+      return;
+    }
+  }
+
+  function startViewerPinch(){
+    const pts=[...touches.values()];
+    const local=canvasPoint((pts[0].x+pts[1].x)/2,(pts[0].y+pts[1].y)/2);
+    gestureStart={type:'pinch',dist:Math.max(1,Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y)),
+      scale,imageX:(local.x-offsetX)/scale,imageY:(local.y-offsetY)/scale};
+  }
+  viewer.addEventListener('pointerdown',e=>{
+    if(!loaded || (e.pointerType==='mouse' && e.button!==0)) return;
+    viewer.setPointerCapture?.(e.pointerId);
+    touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(touches.size===1){
+      if(build32LassoArmed){
+        const q=canvasPoint(e.clientX,e.clientY),x=(q.x-offsetX)/scale,y=(q.y-offsetY)/scale;
+        if(x>=0&&y>=0&&x<=sourceCanvas.width&&y<=sourceCanvas.height){
+          build32LassoDraft=[{x,y}];gestureStart={type:'lasso',pointerId:e.pointerId};
+        }else gestureStart={type:'tap',startX:e.clientX,startY:e.clientY,offsetX,offsetY};
+      }else gestureStart={type:'tap',startX:e.clientX,startY:e.clientY,offsetX,offsetY};
+    }else if(touches.size>=2){
+      build32LassoDraft=null;
+      startViewerPinch();draw();
+    }
+    e.preventDefault();
+  });
+  viewer.addEventListener('pointermove',e=>{
+    if(!touches.has(e.pointerId)||!gestureStart) return;
+    touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(touches.size===1&&gestureStart.type==='lasso'){
+      const q=canvasPoint(e.clientX,e.clientY),x=Math.max(0,Math.min(sourceCanvas.width,(q.x-offsetX)/scale)),y=Math.max(0,Math.min(sourceCanvas.height,(q.y-offsetY)/scale));
+      const last=build32LassoDraft?.[build32LassoDraft.length-1];
+      if(last&&Math.hypot(x-last.x,y-last.y)>2/Math.max(.1,scale)){build32LassoDraft.push({x,y});draw();}
+    }else if(touches.size===1){
+      const dx=e.clientX-gestureStart.startX,dy=e.clientY-gestureStart.startY;
+      if(gestureStart.type==='tap' && Math.hypot(dx,dy)>8) gestureStart.type='pan';
+      if(gestureStart.type==='pan'){
+        offsetX=gestureStart.offsetX+dx;
+        offsetY=gestureStart.offsetY+dy;
+        syncGlobalViewControls();draw();
+      }
+    }else{
+      const pts=[...touches.values()];
+      if(gestureStart.type!=='pinch') startViewerPinch();
+      const dist=Math.hypot(pts[1].x-pts[0].x,pts[1].y-pts[0].y);
+      const local=canvasPoint((pts[0].x+pts[1].x)/2,(pts[0].y+pts[1].y)/2);
+      scale=Math.max(.05,Math.min(20,gestureStart.scale*dist/gestureStart.dist));
+      offsetX=local.x-gestureStart.imageX*scale;
+      offsetY=local.y-gestureStart.imageY*scale;
+      syncGlobalViewControls();draw();
+    }
+    e.preventDefault();
+  });
+  function endPointer(e){
+    if(!touches.has(e.pointerId)) return;
+    const tap=e.type==='pointerup' && touches.size===1 && gestureStart?.type==='tap'
+      && Math.hypot(e.clientX-gestureStart.startX,e.clientY-gestureStart.startY)<=8;
+    const finishLasso=e.type==='pointerup'&&touches.size===1&&gestureStart?.type==='lasso';
+    const points=finishLasso?build32LassoDraft:null;
+    touches.delete(e.pointerId);
+    if(touches.size===0){
+      gestureStart=null;
+      if(finishLasso){
+        build32LassoDraft=null;
+        if(points?.length>=5){
+          // A tiny closed scribble should not destroy an existing good result.
+          let area=0;for(let i=0;i<points.length;i++){const p=points[i],q=points[(i+1)%points.length];area+=p.x*q.y-q.x*p.y;}
+          if(Math.abs(area)>32){
+            build32LassoPoints=points.map(p=>({x:p.x,y:p.y}));
+            build32LassoArmed=false;
+            if(build32Data)analyzeBuild32Lasso(build32LassoPoints);
+            else{
+              build32Status.textContent='Lasso ist markiert. Jetzt Farbanzahl wählen oder „Farben erkennen“ drücken.';
+              hint.textContent='Markierter Bereich bleibt bestehen; außerhalb wird nichts reduziert.';
+            }
+          }else build32Status.textContent='Lasso zu klein. Bitte eine Fläche umfahren.';
+        }else build32Status.textContent='Lasso mit einem Finger als geschlossene Fläche zeichnen.';
+        syncBuild32LassoButtons();draw();
+      }else if(tap&&!build32LassoArmed) selectViewerPoint(e);
+      else refreshSurfaceAfterZoom();
+    }else if(touches.size===1){
+      const p=[...touches.values()][0];
+      // Remaining finger may pan, but may never become a new tap.
+      gestureStart={type:'pan',startX:p.x,startY:p.y,offsetX,offsetY};
+    }else startViewerPinch();
+  }
+  viewer.addEventListener('pointerup',endPointer);
+  viewer.addEventListener('pointercancel',endPointer);
+  viewer.addEventListener('lostpointercapture',endPointer);
+
+  function resizeViewerLayout(){
+    resizeCanvas();
+    if(document.body.classList.contains('image-focus')) fitImage();
+  }
+  window.addEventListener('resize',resizeViewerLayout);
+  if('ResizeObserver' in window) new ResizeObserver(resizeViewerLayout).observe(viewer);
+  resizeCanvas();
+
+  // 1.19: kontrollierter Zugriff des Farbmischpults auf die echten internen Paletten.
+  window.AtelierPaletteAPI={
+    currentKey:()=>paintPalette.value,
+    fullPalette:(key)=>{
+      const k=key||paintPalette.value;
+      return effectivePaletteColors(k).map(x=>[x[0],x[1],x[2]]);
+    },
+    selectedPalette:(key)=>{
+      const k=key||paintPalette.value;
+      return selectedPaletteColors(k)||[];
+    },
+    mixRgb:(colors,parts,key)=>pigmentMix(colors,parts,key||paintPalette.value),
+    washRgb,
+    mixes:(target,key)=>chooseMixes(target,key||paintPalette.value)
+  };
+
+  renderPicturePalettePanels();
+  renderPalettePlan();
+  initStudioProjects();
+  ['paintPalette','build32MixPalette','surfaceMixPalette'].forEach(id=>document.getElementById(id).addEventListener('change',renderPicturePalettePanels));
+
+  // 2.47: selective, non-destructive colour editor. All masks refer to input photo.
+  (()=>{
+    const button=document.createElement('button');button.textContent='Farben bearbeiten';button.id='colorEditOpen';
+    document.getElementById('moreTools').before(button);
+    const panel=document.createElement('div');panel.id='colorEditor';panel.hidden=true;
+    panel.innerHTML=`<div class="ce-head"><strong>Farben gezielt bearbeiten</strong><button id="ceClose" class="secondary">Menü schließen</button></div>
+    <div class="ce-body"><div class="ce-stage"><canvas id="ceCanvas"></canvas><canvas id="ceReviewCanvas" hidden aria-hidden="true"></canvas><span id="ceReviewBadge" hidden>Prüfansicht</span><svg id="ceLassoOutline" aria-hidden="true"></svg><div id="ceCircle" hidden aria-hidden="true"></div></div><div class="ce-controls">
+    <button id="ceFit" class="secondary">Bild einpassen · <span id="ceZoomVal">100 %</span></button><p class="tiny">Zwei Finger: vergrößern und verschieben. Bei aktiver Pipette: Kreis mit einem Finger setzen oder verschieben.</p><button id="ceLasso" class="secondary" aria-pressed="false">Bereich mit Lasso auswählen</button><button id="ceLassoClear" class="secondary" disabled>Bereichsauswahl aufheben</button><p id="ceRegionStatus" class="tiny" role="status">Kein Lasso: Farbharmonie und Linienverlauf gelten im ganzen Bild.</p><details id="ceGradientPanel" open><summary>Linienverlauf · ganzes Bild</summary>
+    <button id="ceGradientDraw" class="secondary" aria-pressed="false">Verlaufslinie zeichnen</button><button id="ceGradientAdd" class="secondary" disabled>Weitere Linie hinzufügen</button><button id="ceGradientUndo" class="secondary" disabled>Letzte Linie entfernen</button><p class="tiny">Mehrere unabhängige Linien bilden zusammen ein weiches Farbfeld. Die Farbwirkung konzentriert sich in Richtung der B-Enden. Jede Linie kann danach einzeln verschoben werden.</p><p id="ceGradientStatus" class="tiny" role="status">Mit einem Finger von A nach B ziehen.</p>
+    <label><input id="ceGradientHarmony" type="checkbox"> Farbharmonie im Linienverlauf steuern (Mischen / Ersetzen)</label>
+    <p class="tiny">Die Leitfarbe und der Modus kommen aus „Farbharmonie“. Ohne Lasso wirkt der Linienverlauf im ganzen Bild. Mit Lasso wirkt er nur innerhalb der Auswahl. A und B bestimmen, wie viel der eingestellten Stärke am jeweiligen Ende wirkt. Funktioniert mit allen Farben. Die übrigen Verlaufseinstellungen bleiben unabhängig.</p>
+    <strong>Anfang A</strong>
+    <label>Farbharmonie A <output id="ceGradHarmonyAVal">0 %</output><input id="ceGradHarmonyA" type="range" min="0" max="100" step="1" value="0"></label>
+    <label>Heller / dunkler <output id="ceGradLightAVal">0</output><input id="ceGradLightA" type="range" min="-40" max="40" step="0.5" value="0"></label>
+    <label>Kühler / wärmer <output id="ceGradWarmAVal">0</output><input id="ceGradWarmA" type="range" min="-30" max="30" step="0.5" value="0"></label>
+    <label>Sättigung <output id="ceGradSatAVal">0 %</output><input id="ceGradSatA" type="range" min="-100" max="100" step="1" value="0"></label>
+    <label>Unschärfe <output id="ceGradBlurAVal">0 %</output><input id="ceGradBlurA" type="range" min="0" max="100" step="1" value="0"></label>
+    <strong>Ende B</strong>
+    <label>Farbharmonie B <output id="ceGradHarmonyBVal">100 %</output><input id="ceGradHarmonyB" type="range" min="0" max="100" step="1" value="100"></label>
+    <label>Heller / dunkler <output id="ceGradLightBVal">0</output><input id="ceGradLightB" type="range" min="-40" max="40" step="0.5" value="0"></label>
+    <label>Kühler / wärmer <output id="ceGradWarmBVal">0</output><input id="ceGradWarmB" type="range" min="-30" max="30" step="0.5" value="0"></label>
+    <label>Sättigung <output id="ceGradSatBVal">0 %</output><input id="ceGradSatB" type="range" min="-100" max="100" step="1" value="0"></label>
+    <label>Unschärfe <output id="ceGradBlurBVal">0 %</output><input id="ceGradBlurB" type="range" min="0" max="100" step="1" value="0"></label>
+    <button id="ceGradientReverse" class="secondary">Richtung umkehren</button><button id="ceGradientClear" class="secondary">Verlauf entfernen</button>
+    <label><input id="ceGradientVisible" type="checkbox" checked> Verlaufslinien anzeigen / ausblenden (alle Linien)</label>
+    <p class="tiny">Unschärfe: 0 % = scharf, 100 % = stark weichgezeichnet. A = 0 und B = 50 ergibt zunehmende Unschärfe. Der Tonwertschutz gilt für Farbregler, nicht für die Unschärfe. 0 bedeutet unverändert. Der Verlauf ergänzt die normalen Farbregler. Ohne Lasso wirkt er auf das ganze Bild, mit Lasso nur innerhalb der Auswahl. Vor A und hinter B bleibt der jeweilige Endwert konstant. Bei aktivierter Farbharmonie steuern A/B die Wirkung der ausgewählten Zielfarbe von 0–100 % der eingestellten Stärke. „Änderung merken“ speichert den Verlauf.</p></details><details id="ceColorPanel" open><summary>Farbänderung · direkt</summary>
+    <label>Betroffene Ausgangsfarben<select id="ceFamily"><option value="all">Alle Farben (bewusst gesamtes Bild / Lasso)</option><option value="green">Grün / Oliv</option><option value="yellow">Gelb</option><option value="ochre">Ocker</option><option value="orange">Orange</option><option value="red">Rot / Rosa</option><option value="brown">Braun / Siena / Umbra</option><option value="turquoise">Türkis</option><option value="blue">Blau</option><option value="violet">Violett</option><option value="neutral">Weiß / Grau / Schwarz</option><option value="pick" selected>Einzelne Farbe · Pipette</option></select></label>
+    <button id="cePick" class="secondary">Nur angetippte Ausgangsfarbe ändern</button><p class="tiny">Nach dem Zeichnen eines Lassos wird die Ausgangs-Pipette automatisch aktiviert. Dieser Knopf begrenzt die Farbänderung auf ähnliche Stellen der aufgenommenen Ausgangsfarbe. „Leitfarbe aus dem Bild“ wählt dagegen die NEUE Zielfarbe.</p><label>Kreisgröße <output id="ceDiameterVal">32 px</output><input id="ceDiameter" type="range" min="8" max="80" step="2" value="32"></label><div id="ceSample">Noch keine Ausgangsfarbe gewählt · keine Farbänderung</div>
+    <label>Ähnlichkeit der angetippten Farbe <output id="ceRangeVal"></output><input id="ceRange" type="range" min="5" max="100" value="30"></label>
+    <label><input id="ceMask" type="checkbox"> Betroffene Stellen anzeigen (Vorschau)</label><p class="tiny">Ähnlichkeit kleiner: nur nahe Farbtöne. Größer: mehr ähnliche Stellen. Die Vorschau markiert die betroffenen Stellen; beim Speichern wird die Markierung nicht übernommen. Ohne Pipettenfarbe ist keine Farbauswahl möglich.</p>
+    <details id="ceHarmonyPanel" open><summary>Farbharmonie · aus</summary>
+    <p class="tiny">Einen Farbton aus dem Bild aufnehmen. „Mischen“ simuliert eine transparente Lasur und lässt etwas Ursprungsfarbe sichtbar. „Ersetzen“ tauscht den Farbton vollständig aus. Beide bewahren die Licht- und Schattenstruktur. Bei aktiviertem Tonwertschutz bleiben die Tonwerte in beiden Modi erhalten.</p>
+    <button id="ceTargetPick" class="secondary" aria-pressed="false">Neue Zielfarbe aus dem Bild aufnehmen</button>
+    <label>Leitfarbe <input id="ceTarget" type="color" value="#b49a45"></label>
+    <label>Malfarben aus der gewählten Palette <select id="ceArtisanPick"><option value="">Farbe auswählen …</option></select></label>
+    <label><input id="ceHarmonyEnabled" type="checkbox" checked> Farbänderung AN / AUS · vergleichen</label>
+    <label>Farbänderung <select id="ceColorMode"><option value="mix">Farbe mischen</option><option value="replace">Farbton vollständig ersetzen</option></select></label>
+    <label>Stärke <output id="ceBlendVal">0 %</output><input id="ceBlend" type="range" min="0" max="100" step="1" value="0"></label>
+    <div style="display:flex;gap:6px"><button id="ceHarmonySoft" class="secondary">Sanft · 15 %</button><button id="ceHarmonyClear" class="secondary">Aus</button></div>
+    <p class="tiny">Zum Einstieg 5–20 %. Bei neuem Lasso wartet die Farbharmonie auf deine Ausgangsfarbe. „Alle Farben“ ist nur bewusst wählbar und verändert die ganze Lasso-Fläche bzw. das ganze Bild. Für nur eine Farbe oben „Nur angetippte Ausgangsfarbe ändern“ verwenden.</p>
+    </details>
+    <details id="ceAdvancedPanel"><summary>Erweitert · Auswahl und Feineinstellung</summary>
+    
+    <label>Heller / dunkler <output id="ceLightVal"></output><input id="ceLight" type="range" min="-40" max="40" step="0.5" value="0"></label>
+    <label>Kühler / wärmer <output id="ceWarmVal"></output><input id="ceWarm" type="range" min="-30" max="30" step="0.5" value="0"></label>
+    <label>Sättigung <output id="ceSaturationVal">0 %</output><input id="ceSaturation" type="range" min="-100" max="100" step="1" value="0"></label>
+    <details id="ceProtectPanel"><summary>Licht und Tonwerte schützen · aus</summary>
+    <label><input id="ceProtectTone" type="checkbox"> Tonwerte schützen</label><p class="tiny">Helligkeit bleibt erhalten; der Heller-/Dunkler-Regler pausiert.</p>
+    <label><input id="ceProtectHighlights" type="checkbox"> Lichter und Papierweiß schützen</label><p class="tiny">Helle Stellen werden sanft ausgespart, sehr helle bleiben unverändert.</p>
+    </details>
+    <details id="ceBrushPanel"><summary>Auswahl korrigieren · Pinsel</summary>
+    <button id="ceBrushAdd" class="secondary" aria-pressed="false">Pinsel + · Stellen hinzufügen</button><button id="ceBrushRemove" class="secondary" aria-pressed="false">Pinsel − · Stellen ausschließen</button>
+    <label>Pinselgröße <output id="ceBrushSizeVal">32 px</output><input id="ceBrushSize" type="range" min="6" max="120" step="2" value="32"></label>
+    <button id="ceBrushUndo" class="secondary">Letzten Pinselstrich zurück</button><button id="ceBrushClear" class="secondary">Pinselkorrekturen löschen</button><p id="ceBrushStatus" class="tiny">Pinsel aus · zwei Finger zum Zoomen. Erneut auf den aktiven Pinsel tippen beendet ihn.</p>
+    </details>
+    <details id="ceSpotPanel"><summary>Lichtfleck &amp; Motiv hervorheben</summary>
+    <button id="ceFocusPreset">Motiv hervorheben · Umgebung beruhigen</button><p class="tiny">Setzt ein geschütztes Oval und nimmt die Farben außen sanft zurück. Ersetzt die Einstellungen des aktuellen Flecks.</p>
+    <button id="ceSpotPlace" class="secondary" aria-pressed="false">Fleck im Bild setzen</button><p id="ceSpotStatus" class="tiny" role="status">Mittelpunkt antippen oder mit einem Finger verschieben.</p>
+    <label><input id="ceSpotOutside" type="checkbox"> Umgebung bearbeiten · Mitte schützen</label>
+    <label>Stärke <output id="ceSpotStrengthVal">100 %</output><input id="ceSpotStrength" type="range" min="0" max="100" value="100"></label>
+    <label>Breite <output id="ceSpotWidthVal">40 %</output><input id="ceSpotWidth" type="range" min="2" max="200" value="40"></label>
+    <label>Höhe <output id="ceSpotHeightVal">40 %</output><input id="ceSpotHeight" type="range" min="2" max="200" value="40"></label>
+    <label>Weicher Rand <output id="ceSpotSoftVal">80 %</output><input id="ceSpotSoft" type="range" min="0" max="100" value="80"></label>
+    <label>Heller / dunkler <output id="ceSpotLightVal">0</output><input id="ceSpotLight" type="range" min="-40" max="40" step="0.5" value="0"></label>
+    <label>Kühler / wärmer <output id="ceSpotWarmVal">0</output><input id="ceSpotWarm" type="range" min="-30" max="30" step="0.5" value="0"></label>
+    <label>Sättigung <output id="ceSpotSatVal">0 %</output><input id="ceSpotSat" type="range" min="-100" max="100" value="0"></label>
+    <label><input id="ceSpotVisible" type="checkbox" checked> Umriss anzeigen</label><button id="ceSpotClear" class="secondary">Fleck entfernen</button>
+    <p class="tiny">Der Fleck ergänzt die normalen Farbregler innerhalb deiner Auswahl.</p></details>
+    
+    <label>Original einblenden <output id="ceOriginalVal"></output><input id="ceOriginal" type="range" min="0" max="100" value="0"></label>
+    <p class="tiny">Gemerkte Änderungen behalten ihren eigenen Bereich. Noch nicht gemerkte Regler gelten nur für die aktuelle Auswahl.</p>
+    </details>
+    </details>
+    <p class="tiny">Oben: Bereich wählen. Mitte: Farbänderung. „Erweitert“ nur bei Bedarf öffnen.</p><button id="ceKeep">Änderung merken · nächste Farbe</button><button id="ceUndo" class="secondary">Letzte Änderung zurück</button><button id="ceReset" class="secondary">Alles zurücksetzen</button>
+    <p class="tiny">Ohne Lasso gilt die Farbauswahl im ganzen Bild. Mit Lasso wird nur der umrandete Bereich bearbeitet. „Alle Farben“ bearbeitet dort sämtliche Farben. Gemerkte Änderungen behalten ihren eigenen Bereich. Licht und Schatten bleiben beim Umfärben weitgehend erhalten. „Farbbereich“ erweitert die Auswahl mit weichen Übergängen. Noch nicht gemerkte Regler gelten für die aktuelle Auswahl.</p>
+        <details id="ceProjectPanel"><summary>Mein Malprojekt · Varianten &amp; Notizen</summary>
+    <label hidden>Projektname <input id="ceProjectName" type="text" maxlength="80" value="Mein Malprojekt" style="width:100%;box-sizing:border-box"></label>
+    <strong>Bildvarianten · direkt umschalten</strong><div style="display:flex;gap:8px" role="group" aria-label="Bildvarianten"><button id="ceVariantA" aria-pressed="true">A</button><button id="ceVariantB" aria-pressed="false">B</button><button id="ceVariantC" aria-pressed="false">C</button></div>
+    <p id="ceVariantStatus" class="tiny">Variante A aktiv. Ein freier Platz startet mit dem unbearbeiteten Ausgangsbild. Beim Wechsel bleibt jede Variante erhalten.</p>
+    <button id="ceNoteAdd" class="secondary" aria-pressed="false">Farbnotiz im Bild setzen</button>
+    <label><input id="ceNotesVisible" type="checkbox" checked> Nummern im Bild anzeigen</label>
+    <div id="ceNotesList"></div><p class="tiny">Notizen gehören zur jeweiligen Variante. Die Farbe wird beim Setzen aufgenommen. Mischungen und Malhinweise kannst du dazuschreiben. Im gespeicherten Foto erscheinen keine Nummern.</p>
+    <div hidden><button id="ceProjectSave">Projekt als Datei speichern</button><button id="ceProjectOpen" class="secondary">Projektdatei öffnen …</button>
+    <input id="ceProjectFile" type="file" hidden>
+    <a id="ceProjectDownload" hidden>Projekt herunterladen</a><p id="ceProjectStatus" class="tiny" role="status">Speichert das Ausgangsbild, alle drei Varianten und ihre Notizen als Projektdatei. Vor dem Laden eines anderen Fotos oder Schließen der App bitte speichern.</p></div>
+    </details>
+    <details id="ceReviewPanel"><summary>Bildwirkung prüfen · aus</summary>
+    <label><input id="ceReviewSquint" type="checkbox"> Augen zusammenkneifen</label>
+    <label>Details ausblenden <output id="ceReviewBlurVal">5</output><input id="ceReviewBlur" type="range" min="1" max="12" step="1" value="5"></label>
+    <label><input id="ceReviewGray" type="checkbox"> Schwarz-Weiß</label>
+    <label><input id="ceReviewMirror" type="checkbox"> Horizontal spiegeln</label>
+    <button id="ceReviewNormal" class="secondary">Zur normalen Ansicht</button>
+    <p class="tiny">Die Ansichten lassen sich kombinieren. Zoomen und Verschieben bleiben möglich. Zum Auswählen oder Zeichnen erst zur normalen Ansicht zurückkehren. Speichern und „Als Malvorlage übernehmen“ verwenden immer das normale bearbeitete Bild.</p>
+    </details>
+    <button id="ceSave">Bearbeitetes Foto speichern</button><button id="ceApply">Als Malvorlage übernehmen</button><button id="ceCancelOutput" class="secondary" hidden>Berechnung abbrechen</button><a id="ceDownload" hidden download="AtelierAI_Farbvorlage.png">PNG herunterladen</a><p id="ceStatus" role="status" aria-live="polite"></p>
+    </div></div>`;
+    document.body.append(panel);
+    const css=document.createElement('style');css.textContent=`#colorEditor[hidden]{display:none}#colorEditor{position:fixed;inset:0;z-index:10000;background:#f2f1ed;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}.ce-head{display:flex;justify-content:space-between;align-items:center}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:0;flex:1}.ce-stage{touch-action:none;isolation:isolate;position:relative;min-width:0;display:flex;align-items:center;justify-content:center;background:#777;min-height:0;overflow:hidden;border-radius:12px}#ceReviewCanvas[hidden],#ceReviewBadge[hidden]{display:none}#ceReviewBadge{position:absolute;top:8px;left:8px;z-index:2;padding:5px 9px;border-radius:6px;background:#172822d9;color:white;font-size:12px;pointer-events:none}#ceCanvas,#ceReviewCanvas{position:absolute;inset:auto;left:0;top:0;width:auto;height:auto;max-width:none;max-height:none;transform-origin:0 0;touch-action:none;pointer-events:none}#ceLassoOutline{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:hidden}#ceCircle{position:absolute;z-index:1;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px black,inset 0 0 0 1px #0006;transform:translate(-50%,-50%);pointer-events:none}#ceCircle[hidden]{display:none}.ce-controls button[aria-pressed=true]{outline:2px solid #59776b}.ce-controls{position:relative;min-height:0;overflow:auto;background:white;padding:14px;border-radius:12px}.ce-controls details{margin:12px 0;padding:10px;border:1px solid #c4ccc7;border-radius:8px}.ce-controls summary{cursor:pointer;font-weight:bold}.ce-controls>label,.ce-controls details>label{display:block;margin:12px 0}.ce-controls input[type=range]{width:100%;min-height:36px}.ce-controls select{width:100%;min-height:44px}.ce-controls button{width:100%;margin:4px 0;font-size:14px}.ce-controls output{float:right;font-variant-numeric:tabular-nums}.ce-controls input[type=color]{width:70px;height:44px;vertical-align:middle}.ce-controls input[type=checkbox]{width:20px;height:20px}#ceProjectPanel button[aria-pressed=true]{background:#345c4a;color:white;outline:2px solid #84a893}#ceProjectName{font:inherit;min-height:40px;padding:6px}#ceSample{padding:8px;border-radius:6px;border:1px solid #aaa}.ce-controls details details{margin:10px 0 0}.ce-controls details details summary{font-weight:600}@media(max-width:650px){.ce-body{grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(180px,42%)}.ce-head strong{font-size:15px}}`;document.head.append(css);
+    const el=id=>document.getElementById('ce'+id),cv=el('Canvas'),ctx=cv.getContext('2d');
+    // Use the chosen paint palette; do not silently fall back to Artisan when painting in acrylic.
+    const artisanSelect=el('ArtisanPick');
+    function refreshEditorPaintPalette(){
+      const key=paintPalette.value;
+      artisanSelect.replaceChildren(new Option('Farbe auswählen …',''));
+      for(const [name,values] of effectivePaletteColors(key)){
+        const option=document.createElement('option');
+        option.value='#'+values.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+        option.textContent=name+(key==='system3' && SYSTEM3_INFO[name]?' · '+SYSTEM3_INFO[name].code:'');
+        artisanSelect.append(option);
+      }
+    }
+    refreshEditorPaintPalette();
+    paintPalette.addEventListener('change',refreshEditorPaintPalette);
+    artisanSelect.addEventListener('change',()=>{if(artisanSelect.value){el('Target').value=artisanSelect.value;el('Target').dispatchEvent(new Event('input',{bubbles:true}));}});
+    el('Target').addEventListener('input',()=>{if(artisanSelect.value!==el('Target').value)artisanSelect.value='';});
+
+    const reviewCanvas=el('ReviewCanvas'),reviewCtx=reviewCanvas.getContext('2d');
+    let editorReturnSource=null;
+    let base=null,preview=null,layers=[],sample=null,picking=false,revision=0,busy=false,lastSource=null,lastCleanPreview=null;
+    const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+    // OKLab separates perceptual lightness from colour. Gamut mapping reduces chroma.
+    const linear=Array.from({length:256},(_,v)=>v/255<=.04045?v/3294.6:((v/255+.055)/1.055)**2.4);
+    function lab(r,g,b){r=linear[r];g=linear[g];b=linear[b];const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);return [.2104542553*l+.793617785*m-.0040720468*s,1.9779984951*l-2.428592205*m+.4505937099*s,.0259040371*l+.7827717662*m-.808675766*s];}
+    function rgb(L,a,b){const raw=(a,b)=>{const l=(L+.3963377774*a+.2158037573*b)**3,m=(L-.1055613458*a-.0638541728*b)**3,s=(L-.0894841775*a-1.291485548*b)**3;return [4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.707614701*s]};let v=raw(a,b);if(v.some(x=>x<0||x>1)){let lo=0,hi=1;for(let k=0;k<8;k++){const mid=(lo+hi)/2,t=raw(a*mid,b*mid);if(t.every(x=>x>=0&&x<=1))lo=mid;else hi=mid;}v=raw(a*lo,b*lo);}return v.map(x=>255*(x<=.0031308?12.92*clamp(x):1.055*clamp(x)**(1/2.4)-.055));}
+    function current(){const hex=el('Target').value;return {spot:currentSpot(),gradient:currentGradient(),region:region?region.map(p=>({...p})):null,strokes:brushStrokes.map(s=>({...s,points:s.points.map(p=>({...p}))})),protectTone:el('ProtectTone').checked,protectHighlights:el('ProtectHighlights').checked,family:el('Family').value,sample:sample&&sample.slice(),range:+el('Range').value,light:el('ProtectTone').checked?0:+el('Light').value/100,blend:(el('HarmonyEnabled').checked?+el('Blend').value/100:0),colorMode:el('ColorMode').value,warm:+el('Warm').value/500,saturation:+el('Saturation').value/100,target:lab(...[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)))};}
+    const active=o=>o.light||o.blend||o.warm||o.saturation||(o.spot&&((!o.protectTone&&o.spot.light)||o.spot.warm||o.spot.saturation))||(o.gradient&&[o.gradient.from,o.gradient.to].some(p=>(!o.protectTone&&p.light)||p.warm||p.saturation||p.blur));
+    function weight(o,rgb0,p){if(o.family==='all')return 1;if(o.family==='pick'){
+        // Never treat an absent/invalid sampled colour as 'all colours'.
+        if(!Array.isArray(o.sample)||o.sample.length!==3||o.sample.some(v=>!Number.isFinite(v)))return 0;
+        const ref=lab(...o.sample);
+        // Separate tone from chromatic similarity: colour-family isolation
+        // must not turn an entire lasso yellow at moderate tolerance.
+        // Perceptual colour mask: gentle edges, but never the entire lasso.
+        // The old 4.05 radius made most sampled colours effectively invisible.
+        const chromaDistance=Math.hypot(p[1]-ref[1],p[2]-ref[2]);
+        const brightnessDistance=Math.abs(p[0]-ref[0]);
+        const range=clamp(o.range,5,100);
+        const chromaRadius=.044+range*.0011;
+        const lightRadius=.105+range*.0021;
+        const fade=t=>{t=clamp(t);return t*t*(3-2*t);};
+        const chromaWeight=fade((chromaRadius-chromaDistance)/(chromaRadius*.65));
+        const lightWeight=fade((lightRadius-brightnessDistance)/(lightRadius*.65));
+        return chromaWeight*lightWeight;
+      }
+      // Feather the existing AtelierAI family boundaries in colour space.
+      const delta=2+o.range*.25;let n=build32FamilyOf(rgb0)===o.family?2:0;
+      for(let ch=0;ch<3;ch++)for(const sign of [-1,1]){const c=rgb0.slice();c[ch]=clamp(c[ch]+delta*sign,0,255);if(build32FamilyOf(c)===o.family)n++;}return n/8;}
+    function spatialMask(polygon,width,height,fullHeight=height,offsetY=0){
+      if(!polygon||polygon.length<3)return null;
+      const xs=polygon.map(p=>p.x*width),ys=polygon.map(p=>p.y*fullHeight-offsetY);
+      const x=Math.max(0,Math.floor(Math.min(...xs))-1),y=Math.max(0,Math.floor(Math.min(...ys))-1);
+      const w=Math.max(1,Math.min(width,Math.ceil(Math.max(...xs))+1)-x),h=Math.max(1,Math.min(height,Math.ceil(Math.max(...ys))+1)-y);
+      const mask=document.createElement('canvas');mask.width=w;mask.height=h;const mc=mask.getContext('2d');
+      mc.beginPath();polygon.forEach((p,i)=>mc[i?'lineTo':'moveTo'](p.x*width-x,p.y*fullHeight-offsetY-y));mc.closePath();mc.fillStyle='#fff';mc.fill('evenodd');
+      const d=mc.getImageData(0,0,w,h).data,a=new Uint8Array(w*h);for(let i=0;i<a.length;i++)a[i]=d[i*4+3];mask.width=mask.height=1;
+      return {x,y,w,h,a};
+    }
+    function spatialAlpha(mask,x,y){if(!mask)return 255;const mx=x-mask.x,my=y-mask.y;return mx<0||my<0||mx>=mask.w||my>=mask.h?0:mask.a[my*mask.w+mx];}
+    function brushMask(strokes,width,height,fullHeight=height,offsetY=0){
+      if(!strokes?.length)return null;
+      const c=document.createElement('canvas');c.width=width;c.height=height;
+      const x=c.getContext('2d');x.translate(0,-offsetY);x.lineCap='round';x.lineJoin='round';
+      for(const stroke of strokes){
+        if(!stroke.points.length)continue;
+        x.strokeStyle=x.fillStyle=stroke.mode==='add'?'#ff0000':'#0000ff';
+        x.lineWidth=stroke.size*Math.min(width,fullHeight);
+        x.beginPath();stroke.points.forEach((p,i)=>x[i?'lineTo':'moveTo'](p.x*width,p.y*fullHeight));
+        if(stroke.points.length===1){const p=stroke.points[0];x.arc(p.x*width,p.y*fullHeight,x.lineWidth/2,0,Math.PI*2);x.fill();}else x.stroke();
+      }
+      const d=x.getImageData(0,0,width,height).data;
+      // Red/blue carry additive/subtractive coverage in premultiplied form.
+      const values=new Uint8Array(width*height*2);
+      for(let i=0,j=0;i<d.length;i+=4,j+=2){values[j]=Math.round(d[i]*d[i+3]/255);values[j+1]=Math.round(d[i+2]*d[i+3]/255);}
+      c.width=c.height=1;return values;
+    }
+    function selectedWeight(o,c,p,area=255,add=0,remove=0){
+      let w=weight(o,c,p)*area/255;
+      w=w*(1-(add+remove)/255)+((o.family==='pick'&&!o.sample)?0:add/255);
+      if(o.protectHighlights){const t=clamp((p[0]-.75)/.22);w*=1-t*t*(3-2*t);}
+      return clamp(w);
+    }
+    function gradientProjection(g,width,height){
+      if(!g)return null;
+      const ax=g.a.x*width,ay=g.a.y*height,dx=(g.b.x-g.a.x)*width,dy=(g.b.y-g.a.y)*height,den=dx*dx+dy*dy;
+      if(den<1e-12)return null;
+      return {x:dx/den,y:dy/den,offset:-(ax*dx+ay*dy)/den,ax,ay,bx:g.b.x*width,by:g.b.y*height,den};
+    }
+    function gradientProjections(g,width,height){
+      if(!g)return null;
+      const lines=[g,...(g.lines||[])].map(line=>gradientProjection(line,width,height)).filter(Boolean);
+      return lines.length>1?lines:lines[0]||null;
+    }
+    function gradientStep(p,x,y){
+      if(!p)return 0;
+      if(!Array.isArray(p))return Math.round(clamp((x+.5)*p.x+(y+.5)*p.y+p.offset)*2048);
+      // Each line is a directional field. Blend projections by proximity to the
+      // line (and its B end), not by adding strengths: no oversaturation.
+      let total=0,weights=0;
+      for(const q of p){
+        const t=clamp((x+.5)*q.x+(y+.5)*q.y+q.offset);
+        const cx=q.ax+(q.bx-q.ax)*t,cy=q.ay+(q.by-q.ay)*t;
+        const dist=Math.hypot(x+.5-cx,y+.5-cy);
+        const scale=Math.max(8,Math.sqrt(q.den)*.50);
+        const weight=1/(1+(dist/scale)**2);
+        total+=t*weight;weights+=weight;
+      }
+      return Math.round(clamp(total/Math.max(1e-10,weights))*2048);
+    }
+    function gradientValues(g,t){
+      if(!g)return {light:0,warm:0,saturation:0};
+      return {light:g.from.light+(g.to.light-g.from.light)*t,warm:g.from.warm+(g.to.warm-g.from.warm)*t,saturation:g.from.saturation+(g.to.saturation-g.from.saturation)*t};
+    }
+    function spotGeometry(s,width,height){
+      if(!s)return null;
+      const side=Math.min(width,height);
+      return {x:s.center.x*width,y:s.center.y*height,rx:Math.max(.001,s.width*side/2),ry:Math.max(.001,s.height*side/2),soft:s.soft,outside:!!s.outside,strength:s.strength??1};
+    }
+    function spotStep(g,x,y){
+      if(!g)return 0;
+      const r=Math.hypot((x+.5-g.x)/g.rx,(y+.5-g.y)/g.ry);
+      let inside=0;
+      if(r<1){if(g.soft<=0)inside=1;else{const t=clamp((1-r)/g.soft);inside=t*t*(3-2*t);}}
+      return Math.round((g.outside?1-inside:inside)*g.strength*2048);
+    }
+    // CPU blur also works in offline iPad Safari without Canvas filter support.
+    // Fractional box radii avoid visible jumps; summed areas keep each sample O(1).
+    function blurRadius(o,width,height){
+      return Math.max(o.gradient?.from.blur||0,o.gradient?.to.blur||0)*Math.min(width,height)*.025;
+    }
+    async function applyGradientBlur(out,original,ops,token,fullHeight,offsetY){
+      const width=out.width,height=out.height,stride=width+1;
+      let tick=performance.now();
+      for(const o of ops){
+        if(!blurRadius(o,width,fullHeight))continue;
+        const projection=gradientProjections(o.gradient,width,fullHeight);if(!projection)continue;
+        const area=spatialMask(o.region,width,height,fullHeight,offsetY),brush=brushMask(o.strokes,width,height,fullHeight,offsetY);
+        const radii=new Float32Array(width*height),weights=new Float32Array(width*height);
+        for(let y=0;y<height;y++){
+          for(let x=0;x<width;x++){
+            const k=y*width+x,i=k*4,t=gradientStep(projection,x,y+offsetY)/2048;
+            radii[k]=((o.gradient.from.blur||0)*(1-t)+(o.gradient.to.blur||0)*t)*Math.min(width,fullHeight)*.025;
+            const c=[original.data[i],original.data[i+1],original.data[i+2]];
+            weights[k]=selectedWeight(o,c,lab(...c),spatialAlpha(area,x,y),brush?.[k*2]||0,brush?.[k*2+1]||0);
+          }
+          if(performance.now()-tick>12){await new Promise(r=>setTimeout(r,0));if(token!==revision)return null;tick=performance.now();}
+        }
+        // Process channels separately to bound working memory during full-size export.
+        for(let ch=0;ch<3;ch++){
+          const sums=new Float64Array(stride*(height+1));
+          for(let y=0;y<height;y++){
+            let row=0;for(let x=0;x<width;x++){row+=out.data[(y*width+x)*4+ch];sums[(y+1)*stride+x+1]=sums[y*stride+x+1]+row;}
+            if(performance.now()-tick>12){await new Promise(r=>setTimeout(r,0));if(token!==revision)return null;tick=performance.now();}
+          }
+          const average=(x,y,r)=>{
+            const x0=Math.max(0,x-r),x1=Math.min(width,x+r+1),y0=Math.max(0,y-r),y1=Math.min(height,y+r+1);
+            return (sums[y1*stride+x1]-sums[y0*stride+x1]-sums[y1*stride+x0]+sums[y0*stride+x0])/((x1-x0)*(y1-y0));
+          };
+          for(let y=0;y<height;y++){
+            for(let x=0;x<width;x++){
+              const k=y*width+x,r=radii[k],w=weights[k];if(!r||!w)continue;
+              const lo=Math.floor(r),f=r-lo,i=k*4+ch;
+              const value=average(x,y,lo)*(1-f)+average(x,y,lo+1)*f;
+              out.data[i]=out.data[i]*(1-w)+value*w;
+            }
+            if(performance.now()-tick>12){await new Promise(r=>setTimeout(r,0));if(token!==revision)return null;tick=performance.now();}
+          }
+        }
+      }
+      return out;
+    }
+    async function process(data,ops,maskOp,token,fullHeight=data.height,offsetY=0){
+      let sliceStart=performance.now();
+      const out=new ImageData(new Uint8ClampedArray(data.data),data.width,data.height),cache=new Map(),d=data.data;
+      const masks=ops.map(o=>spatialMask(o.region,data.width,data.height,fullHeight,offsetY)),brushes=ops.map(o=>brushMask(o.strokes,data.width,data.height,fullHeight,offsetY));
+      const spatial=masks.some(Boolean)||brushes.some(Boolean);
+      const projections=ops.map(o=>gradientProjections(o.gradient,data.width,fullHeight)),hasGradient=projections.some(Boolean);
+      const spots=ops.map(o=>spotGeometry(o.spot,data.width,fullHeight)),hasSpot=spots.some(Boolean);
+      for(let i=0;i<d.length;i+=4){
+        const pixel=i/4,px=pixel%data.width,py=Math.floor(pixel/data.width);
+        const amounts=spatial?ops.map((o,j)=>[spatialAlpha(masks[j],px,py),brushes[j]?.[pixel*2]||0,brushes[j]?.[pixel*2+1]||0]):null;
+        const steps=hasGradient?projections.map(p=>gradientStep(p,px,py+offsetY)):null;
+        const spotSteps=hasSpot?spots.map(s=>spotStep(s,px,py+offsetY)):null;
+        let key=(d[i]<<16)|(d[i+1]<<8)|d[i+2];if(spatial)key+=':'+amounts.flat().join(',');if(steps)key+='g'+steps.join(',');if(spotSteps)key+='s'+spotSteps.join(',');
+        let c=cache.get(key);
+        if(!c){
+          const orig=[d[i],d[i+1],d[i+2]],p=lab(...orig);let [L,a,b]=p,changed=false;
+          for(let j=0;j<ops.length;j++){
+            const o=ops[j],v=amounts?amounts[j]:[255,0,0],w=selectedWeight(o,orig,p,...v);if(!w)continue;
+            const g=gradientValues(o.gradient,steps?steps[j]/2048:0);
+            if(o.spot){const v=spotSteps[j]/2048;g.light+=o.spot.light*v;g.warm+=o.spot.warm*v;g.saturation+=o.spot.saturation*v;}
+            changed=true;if(!o.protectTone)L=clamp(L+(o.light+g.light)*w);
+            const harmonyFactor=o.gradient?.harmony ? (o.gradient.harmonyA??0)+((o.gradient.harmonyB??1)-(o.gradient.harmonyA??0))*(steps?steps[j]/2048:0) : 1;
+            const colorStrength=Math.max(0,Math.min(1,o.blend*w*harmonyFactor));
+            if(colorStrength>0){
+              // OKLab L is 0..1 (not 0..100). Keep each pixel's
+              // lightness: the fabric's folds and shadows remain intact.
+              // Gamut mapping in rgb() limits chroma where necessary.
+              const sourceChroma=Math.hypot(a,b);
+              const targetChroma=Math.hypot(o.target[1],o.target[2]);
+              // Near-black regions cannot show vivid pigments; scale chroma
+              // smoothly with original lightness, never flatten the lightness.
+              const shadowFactor=Math.min(1,Math.max(0,L)/0.42);
+              const ta=o.target[1]*shadowFactor;
+              const tb=o.target[2]*shadowFactor;
+              if(o.colorMode==='replace'){
+                // Full replacement at 100%: no original chroma remains.
+                a=a*(1-colorStrength)+ta*colorStrength;
+                b=b*(1-colorStrength)+tb*colorStrength;
+              }else{
+                // Transparent glaze: original colour remains visible even
+                // at 100%, while lightness and its contrast are preserved.
+                const glaze=0.58*colorStrength;
+                a=a*(1-glaze)+ta*glaze;
+                b=b*(1-glaze)+tb*glaze;
+              }
+            }
+            b+=(o.warm+g.warm)*w;
+            const sat=Math.max(0,1+((o.saturation||0)+g.saturation)*w);a*=sat;b*=sat;
+          }
+          c=changed?rgb(L,a,b):orig;if(cache.size<32768)cache.set(key,c);
+        }
+        out.data[i]=c[0];out.data[i+1]=c[1];out.data[i+2]=c[2];
+        if(i%8192===0&&performance.now()-sliceStart>=12){await new Promise(r=>setTimeout(r,0));if(token!==revision)return null;sliceStart=performance.now();}
+      }
+      return applyGradientBlur(out,data,ops,token,fullHeight,offsetY);
+    }
+    function labels(){for(const name of ['Range','Light','Blend','Warm','Saturation','Original'])el(name+'Val').textContent=el(name).value+(name==='Light'||name==='Warm'?'':' %');el('Range').disabled=busy;syncResetToggle();}
+    async function render(){if(!preview||busy)return;labels();const token=++revision;el('Status').textContent='Vorschau wird aktualisiert …';const o=current(),ops=[...layers,...(active(o)?[o]:[])];const out=await process(preview,ops,null,token);if(!out)return;const f=+el('Original').value/100;if(f)for(let i=0;i<out.data.length;i+=4)for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*(1-f)+preview.data[i+j]*f;lastCleanPreview=new ImageData(new Uint8ClampedArray(out.data),out.width,out.height);if(el('Mask').checked){const area=spatialMask(o.region,out.width,out.height),brush=brushMask(o.strokes,out.width,out.height);for(let i=0;i<out.data.length;i+=4){const c=Array.from(preview.data.slice(i,i+3)),w=selectedWeight(o,c,lab(...c),spatialAlpha(area,(i/4)%out.width,Math.floor(i/4/out.width)),brush?.[i/2]||0,brush?.[i/2+1]||0);for(let j=0;j<3;j++)out.data[i+j]=out.data[i+j]*.3+(j===0?255:j===2?190:30)*w*.7;}}ctx.putImageData(out,0,0);drawReview();el('Status').textContent=resetSnapshot?'Originalansicht · alle Bearbeitungen bleiben zum Wiederanzeigen gespeichert.':layers.length+' gemerkte Änderungen · Vorschau';}
+    function resetSliders(){el('HarmonyEnabled').checked=true;el('SpotOutside').checked=false;el('SpotStrength').value=100;spot=null;spotDraft=null;spotArmed=false;for(const n of ['SpotLight','SpotWarm','SpotSat'])el(n).value=0;gradient=null;gradientDraft=null;gradientArmed=false;el('GradientHarmony').checked=false;el('GradHarmonyA').value=0;el('GradHarmonyB').value=100;for(const n of gradientControls)el(n).value=0;for(const n of ['Light','Blend','Warm','Saturation','Original'])el(n).value=0;el('Mask').checked=false;}
+    function reviewActive(){return ['ReviewSquint','ReviewGray','ReviewMirror'].some(n=>el(n).checked);}
+    function syncReviewControls(){
+      const names=[el('ReviewSquint').checked?'Zusammenkneifen':'',el('ReviewGray').checked?'S/W':'',el('ReviewMirror').checked?'Gespiegelt':''].filter(Boolean);
+      el('ReviewPanel').querySelector('summary').textContent='Bildwirkung prüfen · '+(names.join(' + ')||'aus');
+      el('ReviewBadge').textContent='Prüfansicht · '+names.join(' + ');el('ReviewBadge').hidden=!names.length;
+      el('ReviewBlurVal').textContent=el('ReviewBlur').value;
+      el('ReviewBlur').disabled=busy||!el('ReviewSquint').checked;
+      el('ReviewNormal').disabled=busy||!names.length;
+      for(const n of ['Lasso','Pick','TargetPick','BrushAdd','BrushRemove','GradientDraw','SpotPlace','FocusPreset'])el(n).disabled=busy||!!names.length;
+    }
+    function drawReview(){
+      const on=reviewActive();reviewCanvas.hidden=!on;cv.style.visibility=on?'hidden':'';
+      outline.style.visibility=on?'hidden':'';positionCircle();syncReviewControls();
+      if(!on||!lastCleanPreview)return;
+      if(reviewCanvas.width!==cv.width)reviewCanvas.width=cv.width;if(reviewCanvas.height!==cv.height)reviewCanvas.height=cv.height;
+      const clean=document.createElement('canvas');clean.width=cv.width;clean.height=cv.height;clean.getContext('2d').putImageData(lastCleanPreview,0,0);
+      reviewCtx.setTransform(1,0,0,1,0,0);reviewCtx.clearRect(0,0,cv.width,cv.height);reviewCtx.save();
+      if(el('ReviewMirror').checked){reviewCtx.translate(cv.width,0);reviewCtx.scale(-1,1);}
+      reviewCtx.drawImage(clean,0,0);reviewCtx.restore();
+      reviewCanvas.style.filter=(el('ReviewGray').checked?'grayscale(1) ':'')+(el('ReviewSquint').checked?'blur('+(+el('ReviewBlur').value*Math.min(cv.width,cv.height)/300)+'px)':'');
+      reviewCanvas.style.width=cv.style.width;reviewCanvas.style.height=cv.style.height;reviewCanvas.style.transform=cv.style.transform;
+    }
+    function resetReview(){for(const n of ['ReviewSquint','ReviewGray','ReviewMirror'])el(n).checked=false;drawReview();}
+    function changeReview(){
+      clearGesture();if(reviewActive()){picking=false;pickPoint=null;lassoArmed=false;brushMode=null;gradientArmed=false;spotArmed=false;
+        el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');syncRegion();syncBrush();syncGradient();syncSpot();}
+      drawReview();
+    }
+    for(const n of ['ReviewSquint','ReviewGray','ReviewMirror'])el(n).addEventListener('input',changeReview);
+    el('ReviewBlur').addEventListener('input',drawReview);
+    el('ReviewNormal').onclick=resetReview;
+    // Capture the same artwork composition as the main view, at full resolution.
+    // Grid lines are orientation aids and remain a separate overlay.
+    function captureEditorSource(){
+      flushToneImage();
+      const next=document.createElement('canvas');next.width=sourceCanvas.width;next.height=sourceCanvas.height;
+      const c=next.getContext('2d');c.fillStyle=getComputedStyle(viewer).backgroundColor;c.fillRect(0,0,next.width,next.height);
+      renderCurrentArtwork(c,false);return next;
+    }
+    function sameEditorSource(next){
+      const reference=editorReturnSource||base;
+      if(lastSource!==img||!reference||reference.width!==next.width||reference.height!==next.height)return false;
+      const a=reference.getContext('2d'),b=next.getContext('2d');
+      // Compare in strips to limit temporary memory on iPad.
+      for(let y=0;y<next.height;y+=32){
+        const h=Math.min(32,next.height-y),left=a.getImageData(0,y,next.width,h).data,right=b.getImageData(0,y,next.width,h).data;
+        for(let i=0;i<left.length;i++)if(left[i]!==right[i])return false;
+      }
+      return true;
+    }
+    button.onclick=()=>{
+      if(!loaded){alert('Bitte zuerst ein Foto öffnen.');return;}
+      if(sketchActive&&!sketchOriginalPreview&&(sketchBusy||!sketchCanvas||sketchReadyKey!==sketchKey(sketchSettings()))){alert('Bitte warten, bis die Vorzeichnung fertig ist.');return;}
+      if(isolationBusy){alert('Bitte warten, bis die Bildansicht fertig ist.');return;}
+      const next=captureEditorSource();
+      if(!sameEditorSource(next)){
+        resetProject();resetReview();revision++;brushStrokes=[];brushMode=null;brushDraft=null;el('ProtectTone').checked=false;el('ProtectHighlights').checked=false;base=next;lastSource=img;resetSnapshot=null;layers=[];sample=null;lastCleanPreview=null;region=null;lassoDraft=null;lassoArmed=false;picking=false;pickPoint=null;
+        resetSliders();el('Family').value='pick';el('Range').value=12;el('Sample').textContent='Ausgangsfarbe fehlt: Zuerst „Nur angetippte Ausgangsfarbe ändern“ drücken und im Bild eine Farbe wählen.';
+        el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
+        const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));
+        ctx.drawImage(base,0,0,cv.width,cv.height);preview=ctx.getImageData(0,0,cv.width,cv.height);
+      }
+      if(!sample&&el('Family').value==='all'){el('Family').value='pick';el('Range').value=12;}
+      refreshEditorPaintPalette();panel.hidden=false;fitEditor();syncRegion();render();
+    };
+    el('Close').onclick=()=>{panel.hidden=true;revision++;clearGesture();button.focus();};
+    for(const n of ['Range','Light','Blend','Warm','Saturation','Target','Original','Mask','ProtectTone','ProtectHighlights'])el(n).addEventListener('input',render);
+    el('Family').onchange=()=>{picking=false;pickPoint=null;positionCircle();el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');if(el('Family').value==='pick')armPicker(false);else el('Sample').textContent='Auswahl: '+el('Family').selectedOptions[0].textContent;render();};
+    // 2.49: local viewport; only this stage captures image gestures.
+    const stage=panel.querySelector('.ce-stage'),circle=el('Circle');
+    let view={zoom:1,x:0,y:0,k:1},points=new Map(),gesture=null,pickTarget=false,pickPoint=null;
+    // Spatial selections use normalized photo coordinates, independent of zoom/resolution.
+    let region=null,lassoArmed=false,lassoDraft=null;
+    let brushStrokes=[],brushMode=null,brushDraft=null;
+    let gradient=null,gradientDraft=null,gradientArmed=false,gradientAddMode=false;
+    let spot=null,spotDraft=null,spotArmed=false;
+    const spotControls=['SpotStrength','SpotWidth','SpotHeight','SpotSoft','SpotLight','SpotWarm','SpotSat'];
+    const gradientControls=['GradLightA','GradWarmA','GradSatA','GradBlurA','GradLightB','GradWarmB','GradSatB','GradBlurB'];
+    const outline=el('LassoOutline');
+    function drawRegion(){
+      const polygon=lassoDraft||region;outline.replaceChildren();drawNotes();drawSpot();drawGradient();drawBrushDraft();
+      if(!polygon?.length)return;
+      const coords=polygon.map(p=>(view.x+p.x*cv.width*view.k)+','+(view.y+p.y*cv.height*view.k)).join(' ');
+      for(const [stroke,width,dash] of [['#111',4,''],['#fff',2,'7 5']]){
+        const path=document.createElementNS('http://www.w3.org/2000/svg',lassoDraft?'polyline':'polygon');
+        path.setAttribute('points',coords);path.setAttribute('fill','none');path.setAttribute('stroke',stroke);path.setAttribute('stroke-width',width);if(dash)path.setAttribute('stroke-dasharray',dash);outline.appendChild(path);
+      }
+    }
+    function currentSpot(){
+      if(!spot)return null;
+      return {center:{...spot},outside:el('SpotOutside').checked,strength:+el('SpotStrength').value/100,width:+el('SpotWidth').value/100,height:+el('SpotHeight').value/100,soft:+el('SpotSoft').value/100,light:+el('SpotLight').value/100,warm:+el('SpotWarm').value/500,saturation:+el('SpotSat').value/100};
+    }
+    function syncSpot(){
+      for(const n of spotControls){el(n+'Val').textContent=el(n).value+(['SpotLight','SpotWarm'].includes(n)?'':' %');el(n).disabled=busy||!spot||(n==='SpotLight'&&el('ProtectTone').checked);}
+      el('SpotPlace').setAttribute('aria-pressed',String(spotArmed));el('SpotPlace').textContent=spotArmed?'Fleck setzen / verschieben: aktiv · beenden':spot?'Fleck verschieben':'Fleck im Bild setzen';
+      el('SpotClear').disabled=busy||!spot;
+      el('SpotStatus').textContent=el('SpotOutside').checked&&spot?'Umgebung aktiv: Das innere Oval schützt dein Motiv; bis zum äußeren Oval steigt die Wirkung sanft an. Zum Verschieben den Knopf aktivieren.':spotArmed?'Mit einem Finger Mittelpunkt setzen oder verschieben. Zwei Finger zoomen.':spot?'Fleck aktiv · Größe, weichen Rand und Wirkung einstellen.':'Noch kein Fleck · zuerst „Fleck im Bild setzen“ antippen.';
+      drawRegion();
+    }
+    function drawSpot(){
+      const center=spotDraft||spot;if(!center||(!spotDraft&&!el('SpotVisible').checked))return;
+      const side=Math.min(cv.width,cv.height)*view.k,x=view.x+center.x*cv.width*view.k,y=view.y+center.y*cv.height*view.k;
+      for(const [stroke,w]of [['#111',4],['#ffe6a3',2]]){
+        const ellipse=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+        for(const [k,v]of Object.entries({cx:x,cy:y,rx:+el('SpotWidth').value/200*side,ry:+el('SpotHeight').value/200*side,fill:'none',stroke,'stroke-width':w,'stroke-dasharray':'6 5'}))ellipse.setAttribute(k,String(v));outline.appendChild(ellipse);
+      }
+      if(el('SpotOutside').checked){
+        const inner=1-+el('SpotSoft').value/100;
+        if(inner>0){const e=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+          for(const [k,v]of Object.entries({cx:x,cy:y,rx:+el('SpotWidth').value/200*side*inner,ry:+el('SpotHeight').value/200*side*inner,fill:'none',stroke:'#86efac','stroke-width':2,'stroke-dasharray':'3 3'}))e.setAttribute(k,String(v));outline.appendChild(e);}
+      }
+      const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');for(const [k,v]of Object.entries({cx:x,cy:y,r:5,fill:'#ffe6a3',stroke:'#111','stroke-width':1}))dot.setAttribute(k,String(v));outline.appendChild(dot);
+    }
+    el('FocusPreset').onclick=()=>{
+      clearGesture();if(!spot)spot={x:.5,y:.5};
+      el('SpotOutside').checked=true;el('SpotStrength').value=70;
+      el('SpotWidth').value=70;el('SpotHeight').value=90;el('SpotSoft').value=35;
+      el('SpotLight').value=-5;el('SpotWarm').value=0;el('SpotSat').value=-40;
+      el('SpotVisible').checked=true;el('Mask').checked=false;
+      spotArmed=true;gradientArmed=false;brushMode=null;lassoArmed=false;picking=false;pickPoint=null;
+      el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
+      positionCircle();syncRegion();syncBrush();syncGradient();syncSpot();render();
+    };
+    el('SpotOutside').addEventListener('input',render);
+    el('SpotPlace').onclick=()=>{
+      clearGesture();spotArmed=!spotArmed;gradientArmed=false;brushMode=null;lassoArmed=false;picking=false;pickPoint=null;
+      if(spotArmed&&!spot&&!['SpotLight','SpotWarm','SpotSat'].some(n=>+el(n).value)){el('SpotLight').value=15;el('SpotWarm').value=4;}
+      el('SpotVisible').checked=true;el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
+      positionCircle();syncRegion();syncBrush();syncGradient();syncSpot();
+    };
+    el('SpotClear').onclick=()=>{clearGesture();spot=null;spotArmed=false;syncSpot();render();};
+    el('SpotVisible').onchange=drawRegion;
+    for(const n of spotControls)el(n).addEventListener('input',render);
+    function currentGradient(){
+      if(!gradient)return null;
+      const values=end=>({light:+el('GradLight'+end).value/100,warm:+el('GradWarm'+end).value/500,saturation:+el('GradSat'+end).value/100,blur:+el('GradBlur'+end).value/100});
+      return {a:{...gradient.a},b:{...gradient.b},lines:(gradient.lines||[]).map(l=>({a:{...l.a},b:{...l.b}})),from:values('A'),to:values('B'),harmony:el('GradientHarmony').checked,harmonyA:+el('GradHarmonyA').value/100,harmonyB:+el('GradHarmonyB').value/100};
+    }
+    function syncGradientSummary(){
+      const scope=region?'nur Lasso':'ganzes Bild';
+      const state=gradient?((gradient.lines?.length||0)+1)+' Linien · ':'';
+      el('GradientPanel').querySelector('summary').textContent='Linienverlauf · '+state+scope;
+    }
+    function syncGradient(){
+      for(const end of ['A','B']){el('GradHarmony'+end+'Val').textContent=el('GradHarmony'+end).value+' %';el('GradHarmony'+end).disabled=busy||!gradient||!el('GradientHarmony').checked;}
+      el('GradientHarmony').disabled=busy||!gradient;
+      for(const n of gradientControls)el(n+'Val').textContent=el(n).value+((n.includes('Sat')||n.includes('Blur'))?' %':'');
+      for(const n of gradientControls)el(n).disabled=busy||(!gradient)||n.includes('Light')&&el('ProtectTone').checked;
+      el('GradientDraw').setAttribute('aria-pressed',String(gradientArmed));
+      el('GradientDraw').textContent=gradientArmed?'Linie zeichnen: aktiv · beenden':gradient?'Verlaufslinie neu zeichnen':'Verlaufslinie zeichnen';
+      el('GradientReverse').disabled=busy||!gradient;el('GradientClear').disabled=busy||!gradient;el('GradientAdd').disabled=busy||!gradient;el('GradientUndo').disabled=busy||!gradient||!(gradient.lines?.length);
+      const scopeText=region?'Wirkbereich: nur innerhalb der Lasso-Auswahl.':'Wirkbereich: ganzes Bild.';
+      el('GradientStatus').textContent=gradientArmed?'Mit einem Finger von Anfang A zu Ende B ziehen. Zwei Finger zoomen. '+scopeText:gradient?'A / B ziehen: Endpunkte ändern · Linie ziehen: Verlauf verschieben. Werte bleiben erhalten. '+scopeText:'Noch keine Linie · zuerst „Verlaufslinie zeichnen“ antippen. '+scopeText;
+      syncGradientSummary();
+      drawRegion();
+    }
+    function drawGradient(){
+      const g=gradientDraft||gradient;if(!g||(!gradientDraft&&!el('GradientVisible').checked))return;
+      const lines=[g,...(g.lines||[])];
+      const svg=(tag,attrs)=>{const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,String(v));outline.appendChild(n);return n;};
+      for(let idx=0;idx<lines.length;idx++){const line=lines[idx];const a={x:view.x+line.a.x*cv.width*view.k,y:view.y+line.a.y*cv.height*view.k},b={x:view.x+line.b.x*cv.width*view.k,y:view.y+line.b.y*cv.height*view.k};
+      svg('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#111','stroke-width':5});
+      svg('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#fff','stroke-width':2});
+      for(const [label,p]of [['A',a],['B',b]]){
+        svg('circle',{cx:p.x,cy:p.y,r:12,fill:label==='A'?'#206652':'#384c94',stroke:'#fff','stroke-width':2});
+        const t=svg('text',{x:p.x,y:p.y+4,fill:'#fff','text-anchor':'middle','font-size':13,'font-weight':'bold'});t.textContent=label+(idx+1);
+      }}
+    }
+    function gradientHit(p){
+      if(!gradient||!el('GradientVisible').checked)return null;
+      const screen=q=>({x:view.x+q.x*cv.width*view.k,y:view.y+q.y*cv.height*view.k});
+      let best=null,bestD=Infinity;
+      [gradient,...(gradient.lines||[])].forEach((line,index)=>{
+        const a=screen(line.a),b=screen(line.b);
+        for(const [handle,v] of [['a',a],['b',b]]){const d=Math.hypot(p.x-v.x,p.y-v.y);if(d<=24&&d<bestD){best={handle,index};bestD=d;}}
+        const dx=b.x-a.x,dy=b.y-a.y,den=dx*dx+dy*dy;
+        if(den){const t=clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/den);const d=Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy);if(d<=16&&d<bestD){best={handle:'line',index};bestD=d;}}
+      });return best;
+    }
+    function beginGradientMove(p){
+      const hit=gradientHit(p);if(!hit)return false;
+      const line=[gradient,...(gradient.lines||[])][hit.index];
+      gradientDraft=JSON.parse(JSON.stringify(gradient));
+      gesture={type:'gradientMove',...hit,start:{...p},original:{a:{...line.a},b:{...line.b}}};
+      drawRegion();return true;
+    }
+    function moveGradient(p){
+      const g=gesture,original=g.original;
+      let dx=(p.x-g.start.x)/(cv.width*view.k),dy=(p.y-g.start.y)/(cv.height*view.k);
+      const line=g.index===0?gradientDraft:gradientDraft.lines[g.index-1];
+      line.a={...original.a};line.b={...original.b};
+      if(g.handle==='line'){
+        dx=clamp(dx,-Math.min(original.a.x,original.b.x),1-Math.max(original.a.x,original.b.x));
+        dy=clamp(dy,-Math.min(original.a.y,original.b.y),1-Math.max(original.a.y,original.b.y));
+        for(const end of ['a','b']){line[end].x+=dx;line[end].y+=dy;}
+      }else line[g.handle]={x:clamp(original[g.handle].x+dx),y:clamp(original[g.handle].y+dy)};
+      drawRegion();
+    }
+    function finishGradient(){
+      const g=gradientDraft;gradientDraft=null;
+      if(g&&Math.hypot((g.b.x-g.a.x)*cv.width*view.k,(g.b.y-g.a.y)*cv.height*view.k)>=8){if(gesture?.addingGradient&&gradient){gradient.lines=gradient.lines||[];if(gradient.lines.length<11)gradient.lines.push({a:{...g.a},b:{...g.b}});}else if(gesture?.type==='gradientMove'){gradient=g;}else gradient={...g,lines:[]};gradientArmed=false;syncGradient();render();}
+      else{syncGradient();el('GradientStatus').textContent='Linie zu kurz – bitte etwas weiter ziehen.';}
+    }
+    el('GradientDraw').onclick=()=>{
+      clearGesture();spotArmed=false;syncSpot();gradientAddMode=false;gradientArmed=!gradientArmed;brushMode=null;lassoArmed=false;picking=false;pickPoint=null;
+      el('GradientVisible').checked=true;el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
+      positionCircle();syncBrush();syncRegion();syncGradient();
+    };
+    el('GradientAdd').onclick=()=>{if(!gradient||((gradient.lines||[]).length>=11))return;clearGesture();gradientAddMode=true;gradientArmed=true;lassoArmed=false;brushMode=null;picking=false;spotArmed=false;el('GradientVisible').checked=true;syncRegion();syncGradient();syncSpot();};
+    el('GradientUndo').onclick=()=>{if(gradient?.lines?.length){gradient.lines.pop();syncGradient();render();}};
+    el('GradientReverse').onclick=()=>{if(gradient){for(const line of [gradient,...(gradient.lines||[])]){const a=line.a;line.a=line.b;line.b=a;}syncGradient();render();}};
+    el('GradientClear').onclick=()=>{clearGesture();gradient=null;gradientArmed=false;syncGradient();render();};
+    el('GradientVisible').onchange=drawRegion;
+    for(const n of gradientControls)el(n).addEventListener('input',render);
+    for(const n of ['GradientHarmony','GradHarmonyA','GradHarmonyB'])el(n).addEventListener('input',()=>{syncGradient();render();});
+    function drawBrushDraft(){
+      if(!brushDraft?.points.length)return;
+      const path=document.createElementNS('http://www.w3.org/2000/svg','polyline');
+      const points=brushDraft.points.map(p=>(view.x+p.x*cv.width*view.k)+','+(view.y+p.y*cv.height*view.k));
+      if(points.length===1)points.push(points[0]);
+      path.setAttribute('points',points.join(' '));path.setAttribute('fill','none');path.setAttribute('stroke',brushDraft.mode==='add'?'#34d399':'#fb7185');path.setAttribute('stroke-opacity','.65');
+      path.setAttribute('stroke-width',brushDraft.size*Math.min(cv.width,cv.height)*view.k);path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');outline.appendChild(path);
+    }
+    function syncBrush(){
+      el('BrushAdd').setAttribute('aria-pressed',String(brushMode==='add'));el('BrushRemove').setAttribute('aria-pressed',String(brushMode==='remove'));
+      el('BrushSizeVal').textContent=el('BrushSize').value+' px';
+      el('BrushUndo').disabled=busy||!brushStrokes.length;el('BrushClear').disabled=busy||!brushStrokes.length;
+      el('BrushStatus').textContent=(brushMode==='add'?'Pinsel + aktiv: übersehene Stellen hinzufügen.':brushMode==='remove'?'Pinsel − aktiv: unerwünschte Stellen ausschließen.':'Pinsel aus.')+' '+brushStrokes.length+' Striche · zwei Finger zum Zoomen.';
+    }
+    function setBrush(mode){
+      clearGesture();spotArmed=false;syncSpot();gradientArmed=false;syncGradient();brushMode=brushMode===mode?null:mode;lassoArmed=false;picking=false;pickPoint=null;
+      el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
+      if(brushMode)el('Mask').checked=true;
+      positionCircle();syncRegion();syncBrush();render();
+    }
+    function addBrushPoint(p){
+      if(!brushDraft||!imagePoint(p))return;
+      const q=regionPoint(p),last=brushDraft.points[brushDraft.points.length-1];
+      if(!last||Math.hypot((q.x-last.x)*cv.width*view.k,(q.y-last.y)*cv.height*view.k)>=1)brushDraft.points.push(q);
+      drawRegion();
+    }
+    el('BrushAdd').onclick=()=>setBrush('add');el('BrushRemove').onclick=()=>setBrush('remove');
+    el('BrushSize').oninput=syncBrush;
+    el('BrushUndo').onclick=()=>{brushStrokes.pop();syncBrush();render();};
+    el('BrushClear').onclick=()=>{brushStrokes=[];syncBrush();render();};
+    function syncRegion(){el('Lasso').setAttribute('aria-pressed',String(lassoArmed));el('LassoClear').disabled=!region&&!lassoDraft;el('RegionStatus').textContent=lassoArmed?'Mit einem Finger den Bereich umzeichnen. Beim Loslassen wird er geschlossen.':region?'Lasso aktiv: Farbharmonie und Linienverlauf wirken nur innerhalb der Umrandung.':'Kein Lasso: Farbharmonie und Linienverlauf gelten im ganzen Bild.';drawRegion();syncGradientSummary();}
+    function regionPoint(p){return {x:clamp((p.x-view.x)/view.k/cv.width),y:clamp((p.y-view.y)/view.k/cv.height)};}
+    function addRegionPoint(p){const q=regionPoint(p),last=lassoDraft[lassoDraft.length-1];if(!last||Math.hypot((q.x-last.x)*cv.width*view.k,(q.y-last.y)*cv.height*view.k)>=1.5)lassoDraft.push(q);drawRegion();}
+    function finishRegion(){
+      const draft=lassoDraft;lassoDraft=null;
+      if(draft&&draft.length>=3){
+        const xs=draft.map(p=>p.x),ys=draft.map(p=>p.y),w=(Math.max(...xs)-Math.min(...xs))*cv.width*view.k,h=(Math.max(...ys)-Math.min(...ys))*cv.height*view.k;
+        if(w>=5&&h>=5){region=draft.map(p=>({...p}));lassoArmed=false;sample=null;el('Family').value='pick';el('Range').value=12;el('Diameter').value=8;syncRegion();armPicker(false);el('Sample').textContent='Lasso bereit · jetzt eine AUSGANGSFARBE innerhalb der Auswahl antippen. Bis dahin bleibt das Bild unverändert.';render();return;}
+      }
+      syncRegion();el('RegionStatus').textContent='Auswahl zu klein – bitte einen Bereich umzeichnen.';
+    }
+    el('Lasso').onclick=()=>{spotArmed=false;syncSpot();gradientArmed=false;syncGradient();brushMode=null;syncBrush();clearGesture();lassoArmed=!lassoArmed;lassoDraft=null;picking=false;pickPoint=null;positionCircle();el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');syncRegion();};
+    el('LassoClear').onclick=()=>{clearGesture();region=null;lassoDraft=null;lassoArmed=false;syncRegion();render();};
+    function positionCircle(){
+      circle.hidden=reviewActive()||!picking||!pickPoint;
+      if(circle.hidden)return;
+      circle.style.left=(view.x+pickPoint.x*view.k)+'px';
+      circle.style.top=(view.y+pickPoint.y*view.k)+'px';
+      const diameter=+el('Diameter').value;circle.style.width=diameter+'px';circle.style.height=diameter+'px';
+      el('DiameterVal').textContent=diameter+' px';
+    }
+    function placeView(){
+      if(!preview||panel.hidden)return;
+      const w=stage.clientWidth,h=stage.clientHeight;
+      view.k=Math.min(w/cv.width,h/cv.height)*view.zoom;
+      const iw=cv.width*view.k,ih=cv.height*view.k;
+      view.x=iw<=w?(w-iw)/2:clamp(view.x,w-iw,0);
+      view.y=ih<=h?(h-ih)/2:clamp(view.y,h-ih,0);
+      cv.style.width=cv.width+'px';cv.style.height=cv.height+'px';
+      cv.style.transform=`translate(${view.x}px,${view.y}px) scale(${view.k})`;
+      reviewCanvas.style.width=cv.style.width;reviewCanvas.style.height=cv.style.height;reviewCanvas.style.transform=cv.style.transform;
+      el('ZoomVal').textContent=Math.round(view.zoom*100)+' %';positionCircle();drawRegion();
+    }
+    function fitEditor(){clearGesture();view={zoom:1,x:0,y:0,k:1};placeView();}
+    function localPoint(e){const r=stage.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+    function imagePoint(p){const x=(p.x-view.x)/view.k,y=(p.y-view.y)/view.k;return x>=0&&y>=0&&x<cv.width&&y<cv.height?{x,y}:null;}
+    function armPicker(target){spotArmed=false;syncSpot();gradientArmed=false;syncGradient();brushMode=null;syncBrush();lassoArmed=false;lassoDraft=null;syncRegion();picking=true;pickTarget=target;pickPoint=null;circle.hidden=true;
+      if(!target){el('Family').value='pick';sample=null;el('Range').value=12;render();}
+      el('Pick').setAttribute('aria-pressed',String(!target));el('TargetPick').setAttribute('aria-pressed',String(target));
+      el('Sample').textContent=(target?'Leitfarbe':'Ausgangsfarbe')+': Kreis mit einem Finger setzen · zwei Finger zum Zoomen / Verschieben.';
+    }
+    function clearGesture(){points.clear();gesture=null;lassoDraft=null;brushDraft=null;gradientDraft=null;spotDraft=null;drawRegion();}
+    function beginPinch(){spotDraft=null;gradientDraft=null;brushDraft=null;drawRegion();if(lassoDraft){lassoDraft=null;drawRegion();}const [a,b]=[...points.values()],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};gesture={type:'pinch',distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom:view.zoom,ix:(mid.x-view.x)/view.k,iy:(mid.y-view.y)/view.k};}
+    function meanCircle(context,width,height,ix,iy,radius){
+      const x0=Math.max(0,Math.floor(ix-radius)),y0=Math.max(0,Math.floor(iy-radius)),x1=Math.min(width,Math.ceil(ix+radius+1)),y1=Math.min(height,Math.ceil(iy+radius+1));
+      const data=context.getImageData(x0,y0,x1-x0,y1-y0).data,step=Math.max(1,Math.floor(radius/70));let sum=[0,0,0],count=0;
+      for(let y=y0;y<y1;y+=step)for(let x=x0;x<x1;x+=step){if((x+.5-ix)**2+(y+.5-iy)**2>Math.max(.75,radius)**2)continue;const i=((y-y0)*(x1-x0)+x-x0)*4,a=data[i+3]/255;count+=a;for(let j=0;j<3;j++)sum[j]+=data[i+j]*a;}
+      if(!count)return Array.from(context.getImageData(clamp(Math.floor(ix),0,width-1),clamp(Math.floor(iy),0,height-1),1,1).data.slice(0,3));
+      return sum.map(v=>Math.round(v/count));
+    }
+    function pointInCurrentLasso(q){
+      if(!region||region.length<3)return true;
+      const x=q.x/cv.width,y=q.y/cv.height;
+      let inside=false;
+      for(let i=0,j=region.length-1;i<region.length;j=i++){
+        const a=region[i],b=region[j];
+        if(((a.y>y)!==(b.y>y))&&(x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x))inside=!inside;
+      }
+      return inside;
+    }
+    function chooseCircle(){
+      if(!pickPoint||!picking||busy)return;
+      if(!pickTarget&&!pointInCurrentLasso(pickPoint)){
+        el('Sample').textContent='Bitte eine Ausgangsfarbe INNERHALB des Lasso-Bereichs antippen.';
+        return;
+      }
+      const radius=+el('Diameter').value/2/view.k;
+      if(pickTarget){
+        // Read the displayed colour preview (without the selection overlay).
+        const clean=document.createElement('canvas');clean.width=cv.width;clean.height=cv.height;
+        const cc=clean.getContext('2d');cc.putImageData(lastCleanPreview||preview,0,0);
+        const colour=meanCircle(cc,cv.width,cv.height,pickPoint.x,pickPoint.y,radius);
+        el('Target').value='#'+colour.map(v=>v.toString(16).padStart(2,'0')).join('');
+        el('Sample').textContent='Leitfarbe: '+el('Target').value+' · Kreis kann weiter verschoben werden.';
+      }else{
+        const factor=base.width/cv.width;
+        sample=meanCircle(base.getContext('2d'),base.width,base.height,pickPoint.x*factor,pickPoint.y*(base.height/cv.height),Math.min(radius,4/view.k)*factor);
+        el('Family').value='pick';el('Sample').textContent='✓ Ausgangsfarbe aufgenommen: RGB '+sample.join(', ')+' · Farbänderung nur an ähnlichen Bildstellen '+(region?'innerhalb des Lassos.':'im ganzen Bild.')+' Toleranz '+el('Range').value+' %.';
+        el('Sample').style.borderColor='rgb('+sample.join(',')+')';
+      }
+      render();
+    }
+    stage.addEventListener('pointerdown',e=>{
+      if(!preview||busy||(e.pointerType==='mouse'&&e.button!==0))return;
+      const p=localPoint(e);points.set(e.pointerId,p);stage.setPointerCapture?.(e.pointerId);
+      if(points.size>=2)beginPinch();
+      else{const q=imagePoint(p);if(reviewActive()){gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}else if(noteArmed&&q){gesture={type:'note',start:p};}else if(spotArmed&&q){spotDraft=regionPoint(p);gesture={type:'spot'};drawRegion();}else if(gradientArmed&&q){const a=regionPoint(p);gradientDraft={a,b:{...a}};gesture={type:'gradient',addingGradient:gradientAddMode};drawRegion();}else if(brushMode&&q){brushDraft={mode:brushMode,size:+el('BrushSize').value/view.k/Math.min(cv.width,cv.height),points:[]};addBrushPoint(p);gesture={type:'brush'};}else if(lassoArmed&&q){lassoDraft=[];addRegionPoint(p);gesture={type:'lasso'};}else if(picking&&q){pickPoint=q;positionCircle();gesture={type:'pick'};}else if(!noteArmed&&!spotArmed&&!gradientArmed&&!brushMode&&!lassoArmed&&!picking&&beginGradientMove(p)){}else gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
+      e.preventDefault();
+    });
+    stage.addEventListener('pointermove',e=>{
+      if(!points.has(e.pointerId)||!gesture)return;const p=localPoint(e);points.set(e.pointerId,p);
+      if(points.size>=2){if(gesture.type!=='pinch')beginPinch();const [a,b]=[...points.values()],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};view.zoom=clamp(gesture.zoom*Math.hypot(a.x-b.x,a.y-b.y)/gesture.distance,1,12);view.k=Math.min(stage.clientWidth/cv.width,stage.clientHeight/cv.height)*view.zoom;view.x=mid.x-gesture.ix*view.k;view.y=mid.y-gesture.iy*view.k;placeView();}
+      else if(gesture.type==='spot'){spotDraft=regionPoint(p);drawRegion();}
+      else if(gesture.type==='gradient'){gradientDraft.b=regionPoint(p);drawRegion();}
+      else if(gesture.type==='gradientMove'){moveGradient(p);}
+      else if(gesture.type==='brush'){addBrushPoint(p);}
+      else if(gesture.type==='lasso'){addRegionPoint(p);}
+      else if(gesture.type==='pick'){const q=imagePoint(p);if(q){pickPoint=q;positionCircle();}}
+      else if(gesture.type==='pan'){view.x=gesture.vx+p.x-gesture.x;view.y=gesture.vy+p.y-gesture.y;placeView();}
+      e.preventDefault();
+    });
+    function endEditorPointer(e){
+      if(!points.has(e.pointerId))return;
+      if(e.type==='pointerup'&&points.size===1&&gesture?.type==='note'&&Math.hypot(localPoint(e).x-gesture.start.x,localPoint(e).y-gesture.start.y)<12)addNote(localPoint(e));
+      const finishSpot=e.type==='pointerup'&&points.size===1&&gesture?.type==='spot';
+      if(finishSpot){spot=regionPoint(localPoint(e));spotDraft=null;syncSpot();render();}
+      const finishLine=e.type==='pointerup'&&points.size===1&&gesture?.type==='gradient';
+      if(finishLine){gradientDraft.b=regionPoint(localPoint(e));finishGradient();}
+      if(e.type==='pointerup'&&points.size===1&&gesture?.type==='gradientMove'){moveGradient(localPoint(e));gradient=gradientDraft;gradientDraft=null;syncGradient();render();drawRegion();}
+      const finishBrush=e.type==='pointerup'&&points.size===1&&gesture?.type==='brush';
+      if(finishBrush){addBrushPoint(localPoint(e));if(brushDraft?.points.length)brushStrokes.push(brushDraft);brushDraft=null;drawRegion();syncBrush();render();}
+      const finishLasso=e.type==='pointerup'&&points.size===1&&gesture?.type==='lasso';if(finishLasso)addRegionPoint(localPoint(e));
+      if(e.type==='pointercancel'||e.type==='lostpointercapture'){lassoDraft=null;brushDraft=null;gradientDraft=null;spotDraft=null;drawRegion();}
+      const select=e.type==='pointerup'&&points.size===1&&gesture?.type==='pick';
+      points.delete(e.pointerId);
+      // The remaining finger after a pinch must never select a colour.
+      if(points.size>=2)beginPinch();
+      else if(points.size===1){const p=[...points.values()][0];gesture={type:'pan',x:p.x,y:p.y,vx:view.x,vy:view.y};}
+      else gesture=null;
+      if(finishLasso)finishRegion();
+      if(select)chooseCircle();
+    }
+    for(const event of ['pointerup','pointercancel','lostpointercapture'])stage.addEventListener(event,endEditorPointer);
+    el('Fit').onclick=fitEditor;
+    el('Diameter').oninput=()=>{positionCircle();};el('Diameter').onchange=chooseCircle;
+    el('TargetPick').onclick=()=>armPicker(true);
+    el('Pick').onclick=()=>armPicker(false);
+    if('ResizeObserver' in window)new ResizeObserver(()=>{if(!panel.hidden)fitEditor();}).observe(stage);
+    function syncSections(){
+      const summary=(id,text)=>el(id).querySelector('summary').textContent=text;
+      summary('HarmonyPanel','Farbharmonie · '+(!el('HarmonyEnabled').checked?'Vergleich AUS':+el('Blend').value?(el('ColorMode').value==='replace'?'Ersetzen ':'Mischen ')+el('Blend').value+' %':'aus'));
+      const protect=[el('ProtectTone').checked?'Tonwerte':'',el('ProtectHighlights').checked?'Lichter':''].filter(Boolean);
+      summary('ProtectPanel','Licht und Tonwerte schützen · '+(protect.join(' + ')||'aus'));
+      summary('BrushPanel','Auswahl korrigieren · '+(brushStrokes.length?brushStrokes.length+' Pinselstriche':'Pinsel'));
+      syncGradientSummary();
+      summary('SpotPanel','Lichtfleck & Motiv hervorheben · '+(spot?(el('SpotOutside').checked?'Umgebung aktiv':'Fleck aktiv'):'aus'));
+    }
+    el('ColorMode').onchange=render;
+    el('HarmonyEnabled').onchange=render;
+    el('HarmonySoft').onclick=()=>{el('Blend').value=15;render();};
+    el('HarmonyClear').onclick=()=>{el('Blend').value=0;render();};
+    // Folding a tool stops its drawing mode; saved/current visual effects stay active.
+    for(const id of ['HarmonyPanel','BrushPanel','GradientPanel','SpotPanel'])el(id).addEventListener('toggle',()=>{
+      if(el(id).open)return;
+      clearGesture();
+      if(id==='BrushPanel'){brushMode=null;syncBrush();}
+      if(id==='GradientPanel'){gradientArmed=false;syncGradient();}
+      if(id==='SpotPanel'){spotArmed=false;syncSpot();}
+      if(id==='HarmonyPanel'&&picking&&pickTarget){picking=false;pickPoint=null;positionCircle();el('TargetPick').setAttribute('aria-pressed','false');}
+    });
+    el('Keep').onclick=()=>{const o=current();if(o.family==='pick'&&!sample){el('Status').textContent='Bitte zuerst eine Farbe antippen.';return;}if(active(o)){layers.push(o);brushStrokes=[];}region=null;lassoDraft=null;lassoArmed=false;resetSliders();syncRegion();syncBrush();render();};
+    el('Undo').onclick=()=>{if(active(current()))resetSliders();else layers.pop();render();};
+    // Reversible full reset for comparing the untouched photo with every saved edit.
+    let resetSnapshot=null;
+    const resetControlNames=['Family','Range','Light','Blend','ColorMode','HarmonyEnabled','Warm','Saturation','Target','Original','Mask','Diameter','ProtectTone','ProtectHighlights','BrushSize','GradientVisible','GradientHarmony','GradHarmonyA','GradHarmonyB',...gradientControls,'SpotVisible','SpotOutside',...spotControls];
+    function syncResetToggle(){
+      el('Reset').textContent=resetSnapshot?'Bearbeitung wieder anzeigen':'Alles zurücksetzen';
+      el('Reset').setAttribute('aria-pressed',String(!!resetSnapshot));
+      panel.querySelectorAll('button,input,select').forEach(node=>{
+        const allowed=['ceReset','ceClose','ceFit','ceSave','ceApply'].includes(node.id);
+        node.disabled=busy;
+      });
+      if(!busy)el('LassoClear').disabled=!region&&!lassoDraft;
+      el('Light').disabled=busy||el('ProtectTone').checked;syncBrush();syncGradient();syncSpot();syncSections();syncReviewControls();
+    }
+    function toggleReset(){
+      if(busy)return;
+      clearGesture();
+      if(resetSnapshot){
+        const saved=resetSnapshot;resetSnapshot=null;
+        spot=saved.spot||null;spotArmed=false;gradient=saved.gradient||null;gradientArmed=false;brushStrokes=saved.brushStrokes||[];brushMode=saved.brushMode||null;layers=saved.layers;region=saved.region;sample=saved.sample;picking=saved.picking;pickTarget=saved.pickTarget;pickPoint=saved.pickPoint;lassoArmed=saved.lassoArmed;
+        for(const [name,value] of Object.entries(saved.controls)){if(el(name).type==='checkbox')el(name).checked=value;else el(name).value=value;}
+        el('Sample').textContent=saved.sampleText;el('Sample').style.borderColor=saved.sampleBorder;
+      }else{
+        resetSnapshot={spot:spot?{...spot}:null,gradient:gradient?JSON.parse(JSON.stringify(gradient)):null,brushStrokes:JSON.parse(JSON.stringify(brushStrokes)),brushMode,layers:JSON.parse(JSON.stringify(layers)),region:region?region.map(p=>({...p})):null,sample:sample?.slice()||null,picking,pickTarget,pickPoint:pickPoint?{...pickPoint}:null,lassoArmed,
+          controls:Object.fromEntries(resetControlNames.map(name=>[name,el(name).type==='checkbox'?el(name).checked:el(name).value])),sampleText:el('Sample').textContent,sampleBorder:el('Sample').style.borderColor};
+        layers=[];brushStrokes=[];brushMode=null;region=null;lassoDraft=null;lassoArmed=false;picking=false;pickPoint=null;resetSliders();
+        el('Sample').textContent='Originalansicht · „Bearbeitung wieder anzeigen“ holt alle Änderungen zurück.';
+      }
+      el('Pick').setAttribute('aria-pressed',String(picking&&!pickTarget));el('TargetPick').setAttribute('aria-pressed',String(picking&&pickTarget));
+      positionCircle();syncRegion();syncResetToggle();render();
+    }
+    // A new edit in the original view starts a fresh edit without locking controls.
+    function resumeEditing(e){
+      if(!resetSnapshot||busy)return;
+      if(e.target.closest?.('#ceProjectPanel')||e.target.closest?.('#ceReviewPanel')||['ceReset','ceClose','ceFit','ceSave','ceApply'].includes(e.target.id))return;
+      resetSnapshot=null;syncResetToggle();
+    }
+    panel.addEventListener('input',resumeEditing,true);
+    panel.addEventListener('change',resumeEditing,true);
+    panel.addEventListener('click',resumeEditing,true);
+    document.addEventListener('atelier-reset-photo',()=>{
+      resetProject();resetReview();revision++;lastSource=null;resetSnapshot=null;layers=[];brushStrokes=[];brushMode=null;resetSliders();
+      panel.hidden=true;clearGesture();syncResetToggle();
+    });
+    el('Reset').onclick=toggleReset;
+
+    // 2.64: editable variants share one lossless source image, with per-variant notes.
+    const copyProject=value=>JSON.parse(JSON.stringify(value));
+    let variants=[null,null,null],variantIndex=0,notes=[],noteArmed=false,projectURL=null;
+    // Fresh slots use neutral controls, never the edits of the previous slot.
+    const originalVariantControls=Object.fromEntries(resetControlNames.map(n=>{
+      const control=el(n);
+      return [n,n==='Family'?'all':control.type==='checkbox'?control.defaultChecked:control.defaultValue];
+    }));
+    function createOriginalVariant(){
+      return {spot:null,gradient:null,brushStrokes:[],layers:[],region:null,sample:null,
+        controls:copyProject(originalVariantControls),sampleText:'Ausgangspunkt: unbearbeitetes Ausgangsbild',sampleBorder:'',notes:[]};
+    }
+    function captureVariant(){
+      const saved=resetSnapshot||{spot,gradient,brushStrokes,layers,region,sample,
+        controls:Object.fromEntries(resetControlNames.map(n=>[n,el(n).type==='checkbox'?el(n).checked:el(n).value])),
+        sampleText:el('Sample').textContent,sampleBorder:el('Sample').style.borderColor};
+      return copyProject({spot:saved.spot,gradient:saved.gradient,brushStrokes:saved.brushStrokes,layers:saved.layers,region:saved.region,sample:saved.sample,
+        controls:saved.controls,sampleText:saved.sampleText,sampleBorder:saved.sampleBorder,notes});
+    }
+    function restoreVariant(saved){
+      const v=copyProject(saved);revision++;resetSnapshot=null;clearGesture();
+      spot=v.spot;gradient=v.gradient;brushStrokes=v.brushStrokes;layers=v.layers;region=v.region;sample=v.sample;notes=v.notes;
+      spotArmed=gradientArmed=lassoArmed=picking=noteArmed=false;brushMode=null;pickPoint=null;
+      for(const n of resetControlNames){if(el(n).type==='checkbox')el(n).checked=v.controls[n];else el(n).value=v.controls[n]??originalVariantControls[n];}
+      el('Sample').textContent=v.sampleText;el('Sample').style.borderColor=v.sampleBorder;
+      el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
+      resetReview();syncRegion();syncResetToggle();syncProject();render();
+    }
+    function syncProject(){
+      ['A','B','C'].forEach((letter,i)=>{el('Variant'+letter).setAttribute('aria-pressed',String(i===variantIndex));el('Variant'+letter).textContent=letter+(i===variantIndex?' ✓':variants[i]?'':' +');});
+      el('VariantStatus').textContent='Variante '+['A','B','C'][variantIndex]+' aktiv · A/B/C direkt antippen, ohne Datei zu laden. Ein Platz mit + startet vom unbearbeiteten Ausgangsbild. Bearbeitete Varianten bleiben erhalten.';
+      el('NoteAdd').textContent=noteArmed?'Im Bild antippen · Abbrechen':'Farbnotiz im Bild setzen';
+      el('NoteAdd').setAttribute('aria-pressed',String(noteArmed));
+      el('NotesList').replaceChildren();
+      notes.forEach((note,i)=>{
+        const row=document.createElement('div');row.style.cssText='margin:10px 0;padding:8px;border:1px solid #ccd2cd;border-radius:8px';
+        const label=document.createElement('label');label.textContent=(i+1)+'. Farbnotiz · '+note.color;label.style.display='block';
+        const swatch=document.createElement('span');swatch.style.cssText='display:inline-block;width:24px;height:20px;border:1px solid #777;vertical-align:middle;margin-right:6px;background:'+note.color;label.prepend(swatch);
+        const input=document.createElement('textarea');input.value=note.text;input.maxLength=2000;input.rows=3;input.placeholder='Zum Beispiel: Ocker + Ultramarin, Lichter aussparen …';input.style.cssText='width:100%;box-sizing:border-box;font:inherit';
+        input.setAttribute('aria-label','Malhinweis zu Farbnotiz '+(i+1));input.oninput=()=>{note.text=input.value;};
+        const del=document.createElement('button');del.textContent='Notiz '+(i+1)+' löschen';del.className='secondary';del.onclick=()=>{notes.splice(i,1);syncProject();};
+        row.append(label,input,del);el('NotesList').append(row);
+      });
+      drawRegion();
+    }
+    function drawNotes(){
+      if(!el('NotesVisible').checked)return;
+      notes.forEach((note,i)=>{
+        const group=document.createElementNS('http://www.w3.org/2000/svg','g');
+        group.setAttribute('transform',`translate(${view.x+note.x*cv.width*view.k},${view.y+note.y*cv.height*view.k})`);
+        const dot=document.createElementNS(group.namespaceURI,'circle');
+        for(const [k,v] of Object.entries({r:13,fill:'#fff',stroke:'#24392f','stroke-width':2}))dot.setAttribute(k,v);
+        const text=document.createElementNS(group.namespaceURI,'text');text.textContent=i+1;
+        for(const [k,v] of Object.entries({'text-anchor':'middle',y:5,fill:'#172822','font-size':14,'font-weight':'bold'}))text.setAttribute(k,v);
+        group.append(dot,text);outline.append(group);
+      });
+    }
+    function addNote(p){
+      const q=imagePoint(p);if(!q||!lastCleanPreview)return;
+      const d=lastCleanPreview.data,i=(Math.floor(q.y)*cv.width+Math.floor(q.x))*4;
+      const color='#'+Array.from(d.slice(i,i+3),v=>v.toString(16).padStart(2,'0')).join('');
+      notes.push({...regionPoint(p),color,text:''});noteArmed=false;syncProject();
+      el('NotesList').lastElementChild?.querySelector('textarea')?.focus();
+    }
+    function resetProject(){
+      editorReturnSource=null;
+      variants=[null,null,null];variantIndex=0;notes=[];noteArmed=false;
+      el('ProjectName').value='Mein Malprojekt';el('NotesVisible').checked=true;
+      if(projectURL){URL.revokeObjectURL(projectURL);projectURL=null;}el('ProjectDownload').hidden=true;
+      syncProject();
+    }
+    ['A','B','C'].forEach((letter,i)=>el('Variant'+letter).onclick=()=>{
+      if(busy||!base||i===variantIndex)return;
+      const state=captureVariant();variants[variantIndex]=state;
+      if(!variants[i])variants[i]=createOriginalVariant();
+      variantIndex=i;restoreVariant(variants[i]);
+    });
+    el('NoteAdd').onclick=()=>{
+      if(busy||!preview)return;const armed=!noteArmed;clearGesture();resetReview();
+      picking=lassoArmed=gradientArmed=spotArmed=false;brushMode=null;pickPoint=null;
+      el('Pick').setAttribute('aria-pressed','false');el('TargetPick').setAttribute('aria-pressed','false');
+      noteArmed=armed;syncRegion();syncBrush();syncGradient();syncSpot();syncProject();
+    };
+    el('NotesVisible').oninput=drawRegion;
+    panel.addEventListener('click',e=>{if(noteArmed&&!e.target.closest('#ceProjectPanel')&&!e.target.closest('.ce-stage')){noteArmed=false;syncProject();}},true);
+    el('ProjectPanel').addEventListener('toggle',()=>{if(!el('ProjectPanel').open){noteArmed=false;syncProject();}});
+    function blobDataURL(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('Bild konnte nicht gelesen werden.'));reader.readAsDataURL(blob);});}
+    el('ProjectSave').onclick=async()=>{
+      if(busy||!base)return;busy=true;revision++;syncResetToggle();
+      el('ProjectStatus').textContent='Projekt wird vorbereitet …';
+      try{
+        variants[variantIndex]=captureVariant();
+        const blob=await new Promise((resolve,reject)=>base.toBlob(b=>b?resolve(b):reject(Error('Bild konnte nicht gespeichert werden.')),'image/png'));
+        const project={format:'AtelierAI-Malprojekt',version:1,name:el('ProjectName').value,source:await blobDataURL(blob),active:variantIndex,variants,notesVisible:el('NotesVisible').checked};
+        const file=new Blob([JSON.stringify(project)],{type:'application/json'});
+        if(projectURL)URL.revokeObjectURL(projectURL);projectURL=URL.createObjectURL(file);
+        const link=el('ProjectDownload');link.href=projectURL;link.download=(project.name.replace(/[^\p{L}\p{N}_-]+/gu,'_').slice(0,80)||'Mein_Malprojekt')+'.atelierai';link.hidden=false;link.click();
+        el('ProjectStatus').textContent='Projektdatei bereit · falls nötig „Projekt herunterladen“ antippen. Zum Fortsetzen später „Projekt öffnen“ wählen.';
+      }catch(e){el('ProjectStatus').textContent='Speichern fehlgeschlagen: '+e.message;}
+      finally{busy=false;syncResetToggle();render();}
+    };
+    // Only accept well-formed editor snapshots before replacing the current photo.
+    function validateProject(p){
+      const fail=()=>{throw Error('Keine gültige AtelierAI-Projektdatei.');};
+      const num=(x,a,b)=>typeof x==='number'&&Number.isFinite(x)&&x>=a&&x<=b;
+      const point=x=>x&&num(x.x,0,1)&&num(x.y,0,1);
+      const polygon=x=>x===null||(Array.isArray(x)&&x.length<=50000&&x.every(point));
+      const strokes=x=>Array.isArray(x)&&x.length<=2000&&x.every(s=>s&&['add','remove'].includes(s.mode)&&num(s.size,0,10)&&Array.isArray(s.points)&&s.points.length<=50000&&s.points.every(point));
+      const rgb=x=>x===null||(Array.isArray(x)&&x.length===3&&x.every(n=>num(n,0,255)));
+      const delta=x=>x&&num(x.light,-.4,.4)&&num(x.warm,-.06,.06)&&num(x.saturation,-1,1)&&(x.blur===undefined||num(x.blur,0,1));
+      const grad=x=>x===null||(x&&point(x.a)&&point(x.b)&&(x.lines===undefined||(Array.isArray(x.lines)&&x.lines.length<=11&&x.lines.every(l=>l&&point(l.a)&&point(l.b))))&&delta(x.from)&&delta(x.to)&&(x.harmony===undefined||typeof x.harmony==='boolean')&&(x.harmonyA===undefined||num(x.harmonyA,0,1))&&(x.harmonyB===undefined||num(x.harmonyB,0,1)));
+      const spotOp=x=>x===null||(x&&point(x.center)&&num(x.width,.02,2)&&num(x.height,.02,2)&&num(x.soft,0,1)&&num(x.strength,0,1)&&typeof x.outside==='boolean'&&delta(x));
+      const families=Array.from(el('Family').options,o=>o.value);
+      const layer=o=>o&&families.includes(o.family)&&polygon(o.region)&&strokes(o.strokes)&&rgb(o.sample)&&num(o.range,5,100)&&delta(o)&&num(o.blend,0,1)&&(o.colorMode===undefined||['mix','replace'].includes(o.colorMode))&&Array.isArray(o.target)&&o.target.length===3&&o.target.every(n=>num(n,-1,1))&&grad(o.gradient)&&spotOp(o.spot)&&typeof o.protectTone==='boolean'&&typeof o.protectHighlights==='boolean';
+      if(!p||p.format!=='AtelierAI-Malprojekt'||p.version!==1||typeof p.name!=='string'||p.name.length>80||!Number.isInteger(p.active)||p.active<0||p.active>2||!Array.isArray(p.variants)||p.variants.length!==3||!p.variants[p.active]||typeof p.source!=='string'||!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(p.source))fail();
+      for(const v of p.variants){if(v===null)continue;
+        if(!v||!Array.isArray(v.layers)||v.layers.length>2000||!v.layers.every(layer)||!polygon(v.region)||!strokes(v.brushStrokes)||!rgb(v.sample)||!(v.spot===null||point(v.spot))||!(v.gradient===null||(point(v.gradient?.a)&&point(v.gradient?.b)&&(v.gradient.lines===undefined||(Array.isArray(v.gradient.lines)&&v.gradient.lines.length<=11&&v.gradient.lines.every(l=>l&&point(l.a)&&point(l.b))))))||typeof v.sampleText!=='string'||v.sampleText.length>1000||typeof v.sampleBorder!=='string'||v.sampleBorder.length>100||!v.controls||!Array.isArray(v.notes)||v.notes.length>1000)fail();
+        for(const n of ['GradBlurA','GradBlurB'])if(v.controls[n]===undefined)v.controls[n]='0';if(v.controls.ColorMode===undefined)v.controls.ColorMode='mix';if(v.controls.GradientHarmony===undefined)v.controls.GradientHarmony=false;if(v.controls.GradHarmonyA===undefined)v.controls.GradHarmonyA='0';if(v.controls.GradHarmonyB===undefined)v.controls.GradHarmonyB='100';
+        for(const n of resetControlNames){const e=el(n),value=v.controls[n];
+          if(e.type==='checkbox'){if(typeof value!=='boolean')fail();}
+          else if(typeof value!=='string')fail();
+          else if(e.type==='range'){if(value.trim()===''||!Number.isFinite(Number(value))||+value<+e.min||+value>+e.max)fail();}
+          else if(n==='Family'){if(!families.includes(value))fail();}
+          else if(n==='Target'&&!/^#[a-f0-9]{6}$/i.test(value))fail();else if(n==='ColorMode'&&!['mix','replace'].includes(value))fail();
+        }
+        if(!v.notes.every(n=>point(n)&&/^#[a-f0-9]{6}$/i.test(n.color)&&typeof n.text==='string'&&n.text.length<=2000))fail();
+      }
+      return p;
+    }
+    window.atelierEditorBusy=()=>busy;
+    window.atelierEditorCapture=()=>{
+      if(!base||lastSource!==img)return null;
+      variants[variantIndex]=captureVariant();
+      return {format:'AtelierAI-Malprojekt',version:1,name:el('ProjectName').value,source:base.toDataURL('image/png'),active:variantIndex,variants:copyProject(variants),notesVisible:el('NotesVisible').checked};
+    };
+    window.atelierEditorRestore=async raw=>{
+      const p=validateProject(raw),image=studioWorkingImage(await studioImage(p.source));
+      base=document.createElement('canvas');base.width=image.width;base.height=image.height;base.getContext('2d').drawImage(image,0,0);
+      lastSource=img;editorReturnSource=captureEditorSource();variants=copyProject(p.variants);variantIndex=p.active;
+      el('ProjectName').value=p.name;el('NotesVisible').checked=p.notesVisible!==false;
+      const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));ctx.drawImage(base,0,0,cv.width,cv.height);preview=ctx.getImageData(0,0,cv.width,cv.height);
+      restoreVariant(variants[variantIndex]);
+    };
+    window.atelierLegacyImport=async raw=>{
+      const p=validateProject(raw),photo=await studioImage(p.source);
+      studioClear();resetPhotoFilters();originalPhoto=photo;installPhoto(photo);
+      await window.atelierEditorRestore(p);studioEnsure();studioProject.name=p.name;studioRender();
+      panel.hidden=false;fitEditor();studioOpeningView();
+    };
+    const openProjectButton=document.createElement('button');openProjectButton.textContent='Projektdatei öffnen …';openProjectButton.className='secondary';openProjectButton.hidden=true;
+    const requestProject=()=>{if(!busy)el('ProjectFile').click();};
+    openProjectButton.onclick=requestProject;el('ProjectOpen').onclick=requestProject;
+    el('ProjectFile').onchange=async()=>{
+      const file=el('ProjectFile').files[0];el('ProjectFile').value='';if(!file||busy)return;
+      busy=true;syncResetToggle();
+      try{
+        if(file.size>150*1024*1024)throw Error('Diese Projektdatei ist zu groß (maximal 150 MB).');
+        const p=validateProject(JSON.parse(await file.text()));
+        const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(Error('Das Projektbild ist beschädigt.'));image.src=p.source;});
+        if(!image.width||!image.height||image.width*image.height>40000000)throw Error('Projektbild ist zu groß.');
+        if(base&&!confirm('Projekt öffnen? Nicht als Projektdatei gespeicherte Änderungen werden ersetzt.'))return;
+        const source=document.createElement('canvas');source.width=image.width;source.height=image.height;source.getContext('2d').drawImage(image,0,0);
+        const blob=await new Promise((resolve,reject)=>source.toBlob(b=>b?resolve(b):reject(Error('Projektbild konnte nicht geöffnet werden.')),'image/png'));
+        resetPhotoFilters();
+        await new Promise((resolve,reject)=>loadPhoto(blob,false,e=>e?reject(e):resolve()));
+        editorReturnSource=null;base=source;lastSource=img;variants=copyProject(p.variants);variantIndex=p.active;el('ProjectName').value=p.name;el('NotesVisible').checked=p.notesVisible!==false;
+        const f=Math.min(1,900/Math.max(base.width,base.height));cv.width=Math.max(1,Math.round(base.width*f));cv.height=Math.max(1,Math.round(base.height*f));ctx.drawImage(base,0,0,cv.width,cv.height);preview=ctx.getImageData(0,0,cv.width,cv.height);
+        panel.hidden=false;el('ProjectPanel').open=true;busy=false;restoreVariant(variants[variantIndex]);fitEditor();
+        el('ProjectStatus').textContent='Projekt geöffnet · '+p.name;
+      }catch(e){alert('Projekt konnte nicht geöffnet werden: '+e.message);}
+      finally{busy=false;syncResetToggle();}
+    };
+    syncProject();
+
+    // Full-resolution export in strips: masks and pixel copies stay bounded.
+    let downloadURL=null;
+    el('CancelOutput').onclick=()=>{revision++;el('CancelOutput').disabled=true;el('Status').textContent='Wird abgebrochen …';};
+    async function output(apply){
+      if(busy||!base)return;
+      busy=true;const token=++revision;let out=null;
+      try{
+        clearGesture();syncResetToggle();
+        el('CancelOutput').hidden=false;el('CancelOutput').disabled=false;
+        el('Download').hidden=true;
+        if(downloadURL){URL.revokeObjectURL(downloadURL);downloadURL=null;}
+        el('Status').textContent='Foto wird erstellt · 0 %';
+        await new Promise(r=>setTimeout(r,0));
+        const source=base,o=current(),ops=[...layers,...(active(o)?[o]:[])];
+        out=document.createElement('canvas');out.width=source.width;out.height=source.height;
+        const target=out.getContext('2d'),input=source.getContext('2d');
+        if(!target)throw Error('Nicht genügend Speicher für das Bild.');
+        const rows=Math.max(1,Math.min(64,Math.floor(131072/source.width)));
+        const halo=ops.reduce((sum,o)=>sum+Math.ceil(blurRadius(o,source.width,source.height)),0);
+        for(let y=0;y<source.height;y+=rows){
+          if(token!==revision)throw Error('Abgebrochen');
+          const h=Math.min(rows,source.height-y);
+          const top=Math.max(0,y-halo),bottom=Math.min(source.height,y+h+halo);
+          const result=await process(input.getImageData(0,top,source.width,bottom-top),ops,null,token,source.height,top);
+          if(!result||token!==revision)throw Error('Abgebrochen');
+          target.putImageData(result,0,top,0,y-top,source.width,h);
+          el('Status').textContent='Foto wird erstellt · '+Math.round((y+h)/source.height*100)+' %';
+          await new Promise(r=>setTimeout(r,0));
+        }
+        if(token!==revision)throw Error('Abgebrochen');
+        el('Status').textContent='PNG wird vorbereitet …';
+        const blob=await new Promise((resolve,reject)=>{
+          let settled=false;
+          const finish=(value,error)=>{if(settled)return;settled=true;clearTimeout(timer);clearInterval(cancel);error?reject(error):resolve(value);};
+          const timer=setTimeout(()=>finish(null,Error('PNG-Erstellung dauert zu lange. Bitte erneut versuchen.')),45000);
+          const cancel=setInterval(()=>{if(token!==revision)finish(null,Error('Abgebrochen'));},100);
+          try{out.toBlob(b=>finish(b,b?null:Error('Bild konnte nicht erstellt werden.')),'image/png');}catch(e){finish(null,e);}
+        });
+        out.width=out.height=1;out=null;
+        if(token!==revision)throw Error('Abgebrochen');
+        if(apply){
+          el('CancelOutput').hidden=true;
+          el('Status').textContent='Malvorlage wird geöffnet …';
+          await new Promise((resolve,reject)=>loadPhoto(blob,true,error=>error?reject(error):resolve()));
+          // After applying as a painting template, continue on the new image with a fresh selection state.
+          editorReturnSource=null;lastSource=null;resetSnapshot=null;layers=[];brushStrokes=[];brushMode=null;region=null;lassoDraft=null;lassoArmed=false;sample=null;picking=false;pickPoint=null;
+          gradient=null;gradientDraft=null;gradientArmed=false;spot=null;spotDraft=null;spotArmed=false;
+          resetSliders();resetReview();syncRegion();syncBrush();syncGradient();syncSpot();syncResetToggle();
+          panel.hidden=true;
+          hint.textContent='Bearbeitetes Bild als Malvorlage übernommen. Für weitere Bereiche startet die Farbänderung beim nächsten Öffnen mit frischer Auswahl.';
+        }else{
+          downloadURL=URL.createObjectURL(blob);
+          const link=el('Download');link.href=downloadURL;link.hidden=false;link.click();
+          el('Status').textContent='PNG bereit. Falls kein Download startet: „PNG herunterladen“ antippen.';
+        }
+      }catch(e){
+        el('Status').textContent=e.message==='Abgebrochen'?'Abgebrochen · deine Bearbeitung bleibt erhalten.':'Fehler: '+e.message;
+      }finally{
+        if(out)out.width=out.height=1;
+        busy=false;el('CancelOutput').hidden=true;syncResetToggle();
+      }
+    }
+    el('Save').onclick=()=>output(false);el('Apply').onclick=()=>output(true);
+  })();
+
+  // 1.20.8j: kein Service Worker – GitHub Pages lädt immer die aktuelle index.html.
+})();
+
+
+
+  // ===== 1.17 Farbmischpult Vollbild =====
+  const advisorFamily=document.getElementById('advisorFamily');
+  const advisorResultSwatch=document.getElementById('advisorResultSwatch');
+  const advisorRecipe=document.getElementById('advisorRecipe');
+  const advisorHint=document.getElementById('advisorHint');
+  const advisorMixerRows=document.getElementById('advisorMixerRows');
+  const advisorAddColor=document.getElementById('advisorAddColor');
+  const advisorAddBtn=document.getElementById('advisorAddBtn');
+  const advisorResetBtn=document.getElementById('advisorResetBtn');
+  const advisorClearBtn=document.getElementById('advisorClearBtn');
+  const advisorFullscreenBtn=document.getElementById('advisorFullscreenBtn');
+  const advisorWorkspace=document.getElementById('advisorWorkspace');
+  const advisorPaletteInfo=document.getElementById('advisorPaletteInfo');
+
+  const advisorDefs={
+    basic_red:{rgb:[190,48,42],hint:'Grundfarbe Rot – als Ausgangspunkt für warme, kühle, helle und gebrochene Rottöne.',terms:[['red|rot|crimson|karmin|cadmium red|zinnober','Rot'],['white|weiß|weiss|titanium','Aufhellen'],['blue|blau|ultramarine|ultramarin','Kühlen'],['yellow|gelb|ochre|ocker','Wärmen']]},
+    basic_yellow:{rgb:[226,190,45],hint:'Grundfarbe Gelb – Ausgangspunkt für Zitronengelb, warmes Gelb, Goldgelb und gebrochene Gelbtöne.',terms:[['yellow|gelb|lemon|zitrone|cadmium yellow','Gelb'],['white|weiß|weiss|titanium','Aufhellen'],['red|rot|orange','Wärmen'],['blue|blau|ultramarine|ultramarin','Brechen/Kühlen']]},
+    basic_blue:{rgb:[54,94,155],hint:'Grundfarbe Blau – Ausgangspunkt für Himmelblau, warmes und kühles Blau, Türkis und dunkle Blautöne.',terms:[['blue|blau|ultramarine|ultramarin|cobalt|kobalt','Blau'],['white|weiß|weiss|titanium','Aufhellen'],['green|grün|viridian','Richtung Türkis'],['red|rot|magenta|violet|violett','Wärmen']]},
+    basic_green:{rgb:[76,126,73],hint:'Grundfarbe Grün – Ausgangspunkt für Naturgrün, warmes, kühles, helles und gedämpftes Grün.',terms:[['green|grün|viridian|sap','Grün'],['yellow|gelb|ochre|ocker','Wärmen'],['blue|blau|ultramarine|ultramarin','Kühlen'],['red|rot|sienna|siena|umber|umbra','Brechen']]},
+    basic_orange:{rgb:[207,112,45],hint:'Grundfarbe Orange – Ausgangspunkt für warme, helle, erdige und rötliche Orangetöne.',terms:[['orange|orange|cadmium orange','Orange'],['yellow|gelb|ochre|ocker','Gelber'],['red|rot|cadmium red|zinnober','Röter'],['white|weiß|weiss|titanium','Aufhellen']]},
+    basic_violet:{rgb:[117,76,135],hint:'Grundfarbe Violett – Ausgangspunkt für Lavendel, warmes Violett, Blauviolett und gedämpfte Violetttöne.',terms:[['violet|violett|purple|lila','Violett'],['blue|blau|ultramarine|ultramarin','Kühlen'],['red|rot|magenta|crimson|karmin','Wärmen'],['white|weiß|weiss|titanium','Lavendel/Aufhellen']]},
+    basic_brown:{rgb:[126,82,54],hint:'Grundfarbe Braun – Ausgangspunkt für warme und kühle Erdtöne, Holz, Boden und dunkle Naturfarben.',terms:[['umber|umbra|sienna|siena|brown|braun','Braun'],['ochre|ocker|yellow|gelb','Wärmen'],['blue|blau|ultramarine|ultramarin','Kühlen'],['white|weiß|weiss|titanium','Aufhellen']]},
+    basic_white:{rgb:[238,235,224],hint:'Grundfarbe Weiß – Ausgangspunkt für warmes Weiß, kühles Weiß, Creme und sehr helle gebrochene Farben.',terms:[['white|weiß|weiss|titanium','Weiß'],['ochre|ocker|yellow|gelb','Wärmen'],['blue|blau|ultramarine|ultramarin','Kühlen'],['red|rot|rose|rosa','Rosiger Ton']]},
+    basic_grey:{rgb:[132,132,128],hint:'Grundfarbe Grau – Ausgangspunkt für warmes, kühles, bläuliches, violettes und farbig gebrochenes Grau.',terms:[['white|weiß|weiss|titanium','Heller'],['umber|umbra|brown|braun','Wärmer/Dunkler'],['blue|blau|ultramarine|ultramarin','Kühler'],['red|rot|ochre|ocker','Wärmer']]},
+    basic_black:{rgb:[45,45,43],hint:'Sehr dunkler Grundton – für malerisch gemischte dunkle Töne statt eines harten reinen Schwarz.',terms:[['umber|umbra|brown|braun','Warme Dunkelheit'],['blue|blau|ultramarine|ultramarin','Kühle Dunkelheit'],['red|rot|crimson|karmin','Tiefe/Wärme'],['white|weiß|weiss|titanium','Aufhellen']]},
+
+    lavender:{rgb:[166,145,190],hint:'Lavendel: Weiß bestimmt die Helligkeit, Blau und Rotviolett bestimmen die Richtung. Ocker oder Erdfarbe kann die Mischung brechen.',terms:[
+      ['weiß|white','Aufhellen'],['ultramarin|ultramarine','blauer / tiefer'],['magenta|permanentrosa|rose|karmin|crimson','rötlicher'],['ocker|ochre|siena|sienna|umbra|umber','brechen / natürlicher']]},
+    green:{rgb:[104,137,83],hint:'Grün: Gelb und Blau bauen die Farbe auf. Ocker/Erdfarbe macht Grün natürlicher; Rot kann es kontrolliert brechen.',terms:[
+      ['gelb|yellow','gelblicher / frischer'],['ultramarin|blau|blue','blauer / kühler'],['ocker|ochre|siena|sienna|umbra|umber','erdiger / natürlicher'],['rot|red|magenta|crimson','brechen']]},
+    skin:{rgb:[199,145,119],hint:'Haut-Halbton: kleine Zugaben verändern die Mischung stark. Besonders Weiß, Ocker, Rot, Ultramarin und Umbra sind interessant.',terms:[
+      ['weiß|white','heller'],['ocker|ochre|yellow ochre','goldener'],['rot|red|zinnober|vermilion|cadmium red|crimson','rosiger / durchblutet'],['ultramarin|blau|blue','kühler / Schattenrichtung'],['umbra|umber|siena|sienna','tiefer / gebrochener']]},
+    blue:{rgb:[75,116,166],hint:'Blau: Weiß verändert die Helligkeit, Rot/Violett verschiebt die Richtung, Grün/Türkis macht es kühler, Erdfarbe dämpft.',terms:[
+      ['weiß|white','heller'],['ultramarin|blau|blue','tieferes Blau'],['magenta|violett|purple|crimson','violetter'],['grün|green|cyan|turquoise','türkiser'],['ocker|ochre|siena|sienna|umbra|umber','gedämpfter']]},
+    earth:{rgb:[126,91,61],hint:'Erde/Boden: Ocker, Siena und Umbra bilden die Basis. Blau kühlt feuchte Erde, Rot wärmt trockene Erde, Weiß erzeugt staubige helle Töne.',terms:[
+      ['ocker|ochre','goldener / trockener'],['siena|sienna','wärmer / rötlicher'],['umbra|umber','dunkler / erdiger'],['ultramarin|blau|blue','kühler / feuchter'],['weiß|white','heller / staubiger']]},
+    snow:{rgb:[218,225,231],hint:'Schnee ist selten reines Weiß. Weiß bleibt die Basis; Blau/Violett erzeugt kalte Schatten, Ocker oder Rosa warmes Licht.',terms:[
+      ['weiß|white','Schneelicht'],['ultramarin|blau|blue','kalte Schatten'],['violett|purple|magenta','violette Schatten'],['ocker|ochre|gelb|yellow','warmes Sonnenlicht'],['rose|rosa|red|rot','Abendlicht']]},
+    autumn:{rgb:[164,101,47],hint:'Herbst: Ocker und warme Rottöne bilden die Basis. Siena/Umbra vertiefen, Grün hält Übergänge natürlich.',terms:[
+      ['ocker|ochre|gelb|yellow','goldenes Laub'],['rot|red|crimson|karmin','rotes Laub'],['siena|sienna','orangebraun'],['umbra|umber','tiefe trockene Töne'],['grün|green','Restgrün / brechen']]},
+    sky:{rgb:[128,174,211],hint:'Himmel: Blau mit Weiß aufbauen. Ultramarin vertieft den oberen Himmel; wärmere Rot-/Ockerspuren eignen sich Richtung Horizont.',terms:[
+      ['weiß|white','heller / Horizont'],['blau|blue|cerulean|cobalt','Himmelblau'],['ultramarin|ultramarine','tiefer oben'],['magenta|rose|rot|red','wärmer / Abendton'],['ocker|ochre|gelb|yellow','Horizontlicht']]},
+    water:{rgb:[75,132,145],hint:'Wasser übernimmt Himmel und Umgebung. Blau/Grün bestimmen die Grundrichtung, Umbra dämpft, Weiß setzt helle Reflexe.',terms:[
+      ['blau|blue|ultramarin','Himmelreflex'],['grün|green|viridian','grünlicher'],['umbra|umber|siena|sienna','natürlicher / tiefer'],['weiß|white','Lichtreflexe'],['ocker|ochre','flaches / warmes Wasser']]},
+    sand:{rgb:[193,164,112],hint:'Sand: Ocker plus Weiß ist eine gute Basis. Siena wärmt, Umbra vertieft feuchten Sand, Blau kann Schatten neutralisieren.',terms:[
+      ['ocker|ochre','Sandbasis'],['weiß|white','heller / trocken'],['siena|sienna','wärmer'],['umbra|umber','feucht / dunkel'],['ultramarin|blau|blue','kühle Schatten']]},
+    stone:{rgb:[126,124,117],hint:'Stein/Felsen: gebrochene Erdfarben statt neutrales Grau. Ocker/Siena wärmen, Blau kühlt, Umbra vertieft.',terms:[
+      ['weiß|white','heller Stein'],['umbra|umber','Tiefe'],['ocker|ochre','wärmer'],['siena|sienna','rötlicher Fels'],['ultramarin|blau|blue','kühler Schatten']]},
+    wood:{rgb:[139,91,55],hint:'Holz: Ocker, Siena und Umbra bilden natürliche Holztöne. Rot wärmt Mahagoni-Töne, Blau dämpft zu orange Mischungen.',terms:[
+      ['ocker|ochre','helles Holz'],['siena|sienna','warmes Holz'],['umbra|umber','dunkles Holz'],['rot|red|crimson','rötlicher'],['ultramarin|blau|blue','brechen / kühlen']]},
+    foliage:{rgb:[83,116,57],hint:'Naturgrün: Gelb und Blau variieren das Grün. Ocker, Umbra und Rot verhindern künstlich grelle Grüntöne.',terms:[
+      ['gelb|yellow','sonniger / frischer'],['blau|blue|ultramarin','kühler / tiefer'],['ocker|ochre','natürlicher'],['umbra|umber','dunkler'],['rot|red|crimson','brechen']]},
+    shadow:{rgb:[91,91,102],hint:'Natürliche Schatten sind farbig. Blau/Violett kühlt, Umbra erdet, Ocker oder Rot bringen reflektiertes warmes Licht hinein.',terms:[
+      ['ultramarin|blau|blue','kühler'],['violett|purple|magenta','farbiger Schatten'],['umbra|umber','neutraler / tiefer'],['ocker|ochre','warmes Reflexlicht'],['rot|red|crimson','wärmer']]},
+    cloud:{rgb:[205,207,209],hint:'Wolken: Weiß als Licht, Blau/Violett für kühle Unterseiten, Ocker/Rosa für warmes Sonnenlicht.',terms:[
+      ['weiß|white','Licht'],['ultramarin|blau|blue','kalte Unterseite'],['violett|purple|magenta','violetter Schatten'],['ocker|ochre|gelb|yellow','warmes Licht'],['rose|rot|red','Abendlicht']]},
+    sunset:{rgb:[210,112,72],hint:'Abendhimmel: warme Gelb-/Rot-/Rosatöne gegen kühles Blau/Violett ausspielen. Weiß hält die Übergänge leuchtend.',terms:[
+      ['gelb|yellow|ocker|ochre','goldenes Licht'],['rot|red|crimson','wärmer'],['magenta|rose|rosa','rosa-violetter'],['ultramarin|blau|blue','kühler Gegenpol'],['weiß|white','heller Übergang']]},
+    flowerpink:{rgb:[205,115,145],hint:'Rosa Blüten: Weiß und Rot/Magenta aufbauen. Blau macht kühler, Ocker oder Grün brechen zu süße Rosatöne.',terms:[
+      ['weiß|white','heller'],['magenta|rose|rosa|crimson','kräftiger rosa'],['rot|red','wärmer'],['ultramarin|blau|blue','kühler'],['ocker|ochre|grün|green','brechen']]},
+    flowerred:{rgb:[176,55,53],hint:'Rote Blüten: Rot als Basis; Magenta kühlt, Gelb wärmt Richtung Orange, Blau vertieft, Grün bricht.',terms:[
+      ['rot|red|cadmium red|crimson','Rotbasis'],['magenta|rose','kühler'],['gelb|yellow','wärmer / orange'],['ultramarin|blau|blue','tiefer'],['grün|green','brechen']]},
+    yellow:{rgb:[221,184,70],hint:'Gelb/Sonnenlicht: Gelb als Basis, Weiß hellt, Ocker erdet, Rot wärmt, Violett/Blau bricht Schatten.',terms:[
+      ['gelb|yellow','Gelbbasis'],['weiß|white','heller'],['ocker|ochre','erdiger'],['rot|red','wärmer / orange'],['violett|purple|ultramarin|blau|blue','brechen / Schatten']]},
+    turquoise:{rgb:[62,151,157],hint:'Türkis: Blau und Grün aufbauen, Weiß hellt. Gelb macht es grüner, Violett/Rot nimmt die grelle Wirkung.',terms:[
+      ['blau|blue|cyan','blauer'],['grün|green|viridian','grüner'],['weiß|white','heller'],['gelb|yellow','wärmer / grüner'],['magenta|rot|red|violett|purple','brechen']]},
+    grey:{rgb:[128,126,123],hint:'Malerisches Grau: lieber aus Gegenfarben oder Blau plus Erdfarbe mischen als fertiges neutrales Grau. So bleibt es lebendig.',terms:[
+      ['ultramarin|blau|blue','kühler'],['umbra|umber|siena|sienna','wärmer / erdiger'],['ocker|ochre','wärmer'],['rot|red|crimson','rötlicher'],['weiß|white','heller']]},
+    white:{rgb:[224,218,205],hint:'Gebrochenes Weiß: Weiß bleibt dominant. Winzige Mengen Ocker, Umbra, Blau oder Rosa bestimmen den Charakter.',terms:[
+      ['weiß|white','Basis'],['ocker|ochre','cremig / warm'],['umbra|umber','erdig / gedämpft'],['ultramarin|blau|blue','kühl'],['rose|magenta|rot|red','rosig']]},
+    blackmix:{rgb:[45,47,48],hint:'Sehr dunkle Töne wirken lebendiger, wenn sie aus dunklem Blau und Erdfarbe aufgebaut werden. Rot/Grün kann die Richtung verändern.',terms:[
+      ['ultramarin|blau|blue','kühles Dunkel'],['umbra|umber','warmes Dunkel'],['rot|red|crimson','wärmer'],['grün|green','grünliches Dunkel'],['weiß|white','kontrolliert aufhellen']]},
+    hair:{rgb:[120,88,62],hint:'Haare: Ocker, Siena und Umbra bilden natürliche Braun- und Blondtöne. Ultramarin kühlt Schatten, Rot vertieft warme Haare, Weiß dient nur für Licht.',terms:[
+      ['ocker|ochre','Blond / warmes Licht'],['siena|sienna','warmes Braun'],['umbra|umber','Tiefe / dunkles Haar'],['ultramarin|blau|blue','kühle Schatten'],['rot|red|crimson','warme Reflexe'],['weiß|white','Licht']]},
+    eyes:{rgb:[104,116,101],hint:'Augenfarben: Ocker und Umbra für Braun, Blau für graue/blaue Augen, Grün für grüne Augen. Weiß nur sehr sparsam für Aufhellung.',terms:[
+      ['ocker|ochre','golden / haselnuss'],['umbra|umber','braun / Tiefe'],['ultramarin|blau|blue','blau / grau'],['grün|green','grün'],['weiß|white','heller']]},
+    lips:{rgb:[164,91,88],hint:'Lippen: Rot/Rosa als Basis. Ocker wärmt, Ultramarin kühlt, Umbra bricht und vertieft, Weiß hellt sparsam auf.',terms:[
+      ['rot|red|crimson','Rotbasis'],['magenta|rose|rosa','rosa / kühler'],['ocker|ochre','wärmer'],['ultramarin|blau|blue','kühler'],['umbra|umber','brechen / Tiefe'],['weiß|white','heller']]},
+    blush:{rgb:[196,118,108],hint:'Wangen und Hautröte: Rot/Rosa sehr sparsam. Ocker bindet in die Haut, Weiß hellt, Ultramarin oder Umbra nimmt zu starke Sättigung zurück.',terms:[
+      ['rot|red|crimson','Röte'],['magenta|rose|rosa','kühleres Rosa'],['ocker|ochre','in Haut einbinden'],['weiß|white','heller'],['ultramarin|blau|blue','kühler / brechen'],['umbra|umber','dämpfen']]},
+    meadow:{rgb:[113,139,66],hint:'Wiese und Feld: Gelb/Ocker für Sonne, Grün für die Basis, Blau für Tiefe, Umbra und Rot zum Brechen.',terms:[
+      ['gelb|yellow','frischer / sonniger'],['ocker|ochre','natürlicher / trockener'],['grün|green','Grünbasis'],['ultramarin|blau|blue','kühler / Tiefe'],['umbra|umber','erdiger'],['rot|red|crimson','brechen']]},
+    wheat:{rgb:[190,157,83],hint:'Getreide und Stroh: Ocker/Gelb als Basis, Siena für warme Halme, Umbra für Schatten, Weiß für Licht, Blau zum Brechen.',terms:[
+      ['ocker|ochre','Stroh / Basis'],['gelb|yellow','sonniger'],['siena|sienna','wärmer'],['umbra|umber','Schatten'],['weiß|white','Licht'],['ultramarin|blau|blue','brechen']]},
+    mountain:{rgb:[105,116,126],hint:'Berge und Ferne: Blau und Violett für atmosphärische Distanz, Umbra/Ocker für nahe Felsen, Weiß für Dunst.',terms:[
+      ['ultramarin|blau|blue','Ferne / kühler'],['violett|purple|magenta','atmosphärisch'],['umbra|umber','Fels / Tiefe'],['ocker|ochre','warme Felsen'],['weiß|white','Dunst']]},
+    mist:{rgb:[187,193,194],hint:'Nebel und Atmosphäre: Weiß als Basis, Blau/Violett sehr sparsam für Kühle, Ocker/Rosa für warmen Dunst.',terms:[
+      ['weiß|white','Nebelbasis'],['ultramarin|blau|blue','kühler'],['violett|purple|magenta','violetter Dunst'],['ocker|ochre','warmer Dunst'],['rose|rosa|rot|red','rosiges Licht']]},
+    night:{rgb:[47,59,81],hint:'Nacht und Mondlicht: Ultramarin bildet die Basis. Violett oder Umbra vertiefen, Weiß setzt Mondlicht, Ocker wärmt künstliches Licht.',terms:[
+      ['ultramarin|blau|blue','Nachtbasis'],['violett|purple|magenta','tiefer / violetter'],['umbra|umber','dunkler / neutraler'],['weiß|white','Mondlicht'],['ocker|ochre|gelb|yellow','warmes Licht']]},
+    storm:{rgb:[79,88,98],hint:'Sturm und Gewitter: Blau, Violett und Umbra bilden schwere dunkle Wolken. Weiß setzt Lichtöffnungen, Ocker kann warmes Gegenlicht erzeugen.',terms:[
+      ['ultramarin|blau|blue','kalte Wolke'],['violett|purple|magenta','Gewitterviolett'],['umbra|umber','Schwere / Tiefe'],['weiß|white','Lichtöffnung'],['ocker|ochre','warmes Gegenlicht']]},
+    brick:{rgb:[160,91,65],hint:'Ziegel und Terrakotta: Rot/Siena als Basis, Ocker wärmt, Umbra vertieft, Blau bricht zu kräftiges Orange, Weiß hellt.',terms:[
+      ['rot|red','Ziegelrot'],['siena|sienna','Terrakotta'],['ocker|ochre','wärmer'],['umbra|umber','Tiefe'],['ultramarin|blau|blue','brechen'],['weiß|white','heller']]},
+    metal:{rgb:[153,157,158],hint:'Metall und Silber: Weiß plus malerisch gebrochene Blau-/Umbra-Mischungen. Ocker wärmt reflektiertes Licht.',terms:[
+      ['weiß|white','Licht'],['ultramarin|blau|blue','kühler Stahl'],['umbra|umber','dunkle Reflexe'],['ocker|ochre','warmes Reflexlicht']]},
+    copper:{rgb:[157,91,59],hint:'Kupfer und Bronze: Siena/Rot und Ocker bilden die warmen Metalltöne. Umbra vertieft, Grün kann Patina andeuten.',terms:[
+      ['siena|sienna','Kupferbasis'],['rot|red','wärmer'],['ocker|ochre','goldener'],['umbra|umber','Tiefe'],['grün|green','Patina'],['weiß|white','Glanz']]},
+    gold:{rgb:[190,151,62],hint:'Gold und Messing: Ocker/Gelb als Basis. Siena oder Umbra geben Tiefe, Weiß Licht, ein Hauch Blau bricht zu grelles Gelb.',terms:[
+      ['ocker|ochre','Goldbasis'],['gelb|yellow','leuchtender'],['siena|sienna','wärmer'],['umbra|umber','Tiefe'],['weiß|white','Glanz'],['ultramarin|blau|blue','brechen']]},
+    fabric:{rgb:[105,104,111],hint:'Stoff und Kleidung: Die eigentliche Stofffarbe bleibt entscheidend; Weiß hellt Falten, Umbra/Blau vertiefen Schatten, Ocker oder Rot wärmen Reflexe.',terms:[
+      ['weiß|white','Lichtfalten'],['umbra|umber','Tiefe'],['ultramarin|blau|blue','kühler Schatten'],['ocker|ochre','warmes Reflexlicht'],['rot|red|crimson','wärmer']]},
+  };
+
+  const advisorVariants={
+"basic_red":[["Neutralrot",[190,48,42]],["Warmes Rot",[205,65,38]],["Kühles Rot",[165,45,68]],["Helles Rot",[222,92,82]],["Gebrochenes Rot",[150,72,62]],["Dunkelrot",[112,38,39]]],
+"basic_yellow":[["Neutralgelb",[226,190,45]],["Zitronengelb",[232,213,65]],["Warmes Gelb",[229,167,45]],["Goldgelb",[205,145,42]],["Helles Gelb",[239,220,112]],["Gebrochenes Gelb",[177,155,82]]],
+"basic_blue":[["Neutralblau",[54,94,155]],["Himmelblau",[105,151,193]],["Kühles Blau",[46,111,165]],["Warmes Blau",[67,72,143]],["Helles Blau",[145,181,210]],["Dunkelblau",[35,52,98]]],
+"basic_green":[["Neutralgrün",[76,126,73]],["Gelbgrün",[116,145,65]],["Kühles Grün",[52,121,105]],["Helles Grün",[137,166,104]],["Olivgrün",[112,111,59]],["Dunkelgrün",[46,79,55]]],
+"basic_orange":[["Neutralorange",[207,112,45]],["Gelborange",[224,143,49]],["Rotorange",[202,77,42]],["Helles Orange",[230,154,91]],["Erdorange",[166,100,60]],["Dunkelorange",[145,72,39]]],
+"basic_violet":[["Neutralviolett",[117,76,135]],["Lavendel",[165,139,181]],["Blauviolett",[84,78,143]],["Rotviolett",[145,67,126]],["Helles Violett",[187,158,197]],["Dunkelviolett",[73,49,91]]],
+"basic_brown":[["Neutralbraun",[126,82,54]],["Ockerbraun",[155,112,63]],["Rotbraun",[137,67,49]],["Kühles Braun",[101,83,72]],["Helles Braun",[171,132,95]],["Dunkelbraun",[76,53,42]]],
+"basic_white":[["Neutralweiß",[238,235,224]],["Warmes Weiß",[239,229,205]],["Kühles Weiß",[224,232,236]],["Cremeweiß",[235,218,183]],["Rosiges Weiß",[238,220,216]],["Grauweiß",[215,215,209]]],
+"basic_grey":[["Neutralgrau",[132,132,128]],["Warmes Grau",[143,130,116]],["Kühles Grau",[119,132,143]],["Blaugrau",[105,125,143]],["Violettgrau",[128,116,137]],["Helles Grau",[181,181,176]]],
+"basic_black":[["Neutral dunkel",[45,45,43]],["Warm dunkel",[55,43,36]],["Kühl dunkel",[38,44,53]],["Bläulich dunkel",[34,43,60]],["Braunschwarz",[53,40,32]],["Aufgehellt dunkel",[73,73,69]]],
+"lavender":[["Klassisches Lavendel",[166,145,190]],["Helles Lavendel",[202,190,218]],["Warmes Lavendel",[190,143,183]],["Kühles Lavendel",[143,151,196]],["Graulavendel",[151,145,160]],["Tiefes Lavendel",[105,82,137]],["Staubiges Lavendel",[158,145,166]],["Rosiges Lavendel",[193,151,181]],["Blaues Lavendel",[137,151,193]],["Abendlavendel",[129,103,151]]],"green":[["Frühlingsgrün",[119,153,72]],["Sommergrün",[83,126,62]],["Salbeigrün",[130,143,111]],["Olivgrün",[111,108,56]],["Waldgrün",[50,82,49]],["Moosgrün",[92,105,55]],["Junges Blatt",[140,163,79]],["Eukalyptus",[111,139,126]],["Tannengrün",[43,76,60]],["Gebrochenes Landschaftsgrün",[98,113,74]],["Schattenlaub",[57,85,58]],["Trockenes Grün",[124,116,72]]],"skin":[["Porzellan – hell neutral",[232,199,180]],["Helle Haut – warm",[225,181,150]],["Helle Haut – kühl",[215,181,172]],["Mittlere Haut – neutral",[199,145,119]],["Mittlere Haut – warm",[204,140,105]],["Mittlere Haut – oliv",[174,139,103]],["Gebräunte Haut",[177,119,84]],["Dunklere warme Haut",[139,91,69]],["Dunklere kühle Haut",[119,84,77]],["Stirn – warmes Licht",[224,177,139]],["Wange – natürlicher Halbton",[211,151,128]],["Wange – warme Röte",[211,123,111]],["Wange – kühle Röte",[193,121,130]],["Nase – warmes Licht",[218,149,119]],["Kinn – neutral",[198,149,130]],["Hals – warm",[178,123,94]],["Hals – kühler Schatten",[153,119,111]],["Ohr – warm durchblutet",[194,112,103]],["Haut – warmer Schatten",[151,101,78]],["Haut – kühler Schatten",[128,105,101]],["Haut – violetter Schatten",[137,108,120]],["Haut – reflektiertes Licht",[184,137,118]],["Kinderhaut – hell",[229,184,166]],["Kinderhaut – rosig",[226,168,164]],["Ältere Haut – warm",[184,137,111]],["Ältere Haut – kühler",[161,132,121]],["Männerhaut – neutral",[185,132,105]],["Männerhaut – warm",[190,125,91]],["Frauenhaut – neutral",[208,153,132]],["Frauenhaut – rosig",[217,151,146]],["Lichtkante auf Haut",[235,202,178]],["Tiefe Hautschatten",[112,78,68]]],"blue":[["Klares Blau",[75,116,166]],["Himmelblau",[128,174,211]],["Kühles Blau",[63,125,166]],["Warmes Blau",[84,91,158]],["Gedämpftes Blau",[102,125,145]],["Tiefblau",[43,65,111]],["Graublau",[115,132,145]],["Abendblau",[86,94,137]],["Türkisblau",[56,137,158]],["Preußisch wirkendes Dunkelblau",[42,57,79]]],"earth":[["Trockene Erde",[145,101,61]],["Feuchte Erde",[92,72,56]],["Lehm",[164,105,72]],["Roter Boden",[151,77,55]],["Helle Erde",[180,143,96]],["Dunkle Erde",[69,57,47]],["Sandige Erde",[169,137,96]],["Waldboden",[92,77,55]],["Sonnige Erde",[176,124,68]],["Kühle feuchte Erde",[82,78,70]]],"snow":[["Schnee – neutrales Licht",[225,228,229]],["Schnee – warmes Sonnenlicht",[232,219,193]],["Schnee – kalter Schatten",[188,204,222]],["Schnee – violetter Schatten",[197,191,214]],["Schnee – Abendlicht Rosa",[228,194,200]],["Schnee – tiefer Schatten",[157,174,194]],["Schnee – Morgenlicht",[230,207,184]],["Schnee – bedeckter Himmel",[206,213,218]],["Schnee – blauer Reflex",[178,199,220]],["Schnee – goldener Reflex",[226,204,160]]],"autumn":[["Goldenes Herbstlaub",[191,139,48]],["Orangefarbenes Laub",[188,93,42]],["Rotes Herbstlaub",[151,62,45]],["Olivbraunes Laub",[116,99,47]],["Trockenes Laub",[137,91,53]],["Dunkles Herbstlaub",[86,61,42]],["Kupferlaub",[164,91,50]],["Gelbgrüner Herbst",[154,145,58]],["Weinrotes Herbstlaub",[115,54,54]],["Nebliger Herbst",[134,115,91]]],"sky":[["Klarer Mittagshimmel",[118,170,211]],["Heller Horizont",[174,199,218]],["Winterhimmel",[151,171,188]],["Gewitterhimmel",[91,101,116]],["Warmer Morgenhimmel",[211,171,151]],["Abendhimmel",[204,124,111]],["Dunstiger Sommerhimmel",[155,186,203]],["Kalter Morgenhimmel",[150,181,205]],["Goldener Horizont",[224,181,117]],["Violetter Abendhimmel",[139,118,168]],["Stahlblauer Himmel",[101,132,157]],["Nach-Regen-Himmel",[114,156,184]]],"water":[["Klarer See",[77,132,151]],["Tiefes Wasser",[43,82,112]],["Grünliches Wasser",[67,119,105]],["Türkises Wasser",[62,151,157]],["Himmelspiegelung",[111,157,185]],["Dunkle Reflexion",[55,76,78]],["Flaches warmes Wasser",[124,143,120]],["Nordsee-Grau",[103,125,128]],["Meer bei Sonne",[73,145,164]],["Wasser im Schatten",[63,91,108]],["Abendreflex im Wasser",[147,112,117]],["Bewölktes Wasser",[92,112,119]]],"sand":[["Heller Sand",[210,187,143]],["Warmer Sand",[199,158,99]],["Feuchter Sand",[142,116,87]],["Kühler Strandschatten",[157,151,139]],["Goldener Sand",[205,169,92]],["Dünensand",[193,174,128]],["Nasser dunkler Sand",[111,94,77]],["Rosiger Sand",[201,164,142]]],"stone":[["Heller Stein",[169,164,151]],["Warmer Fels",[151,119,94]],["Kühler Stein",[119,128,132]],["Rötlicher Fels",[154,99,78]],["Dunkler Fels",[76,75,70]],["Kalkstein",[194,184,158]],["Granitgrau",[127,124,122]],["Moosiger Stein",[112,118,94]],["Sonnenfels",[180,142,100]]],"wood":[["Helles Holz",[181,133,83]],["Warmes Holz",[157,96,58]],["Rötliches Holz",[137,72,55]],["Altes Holz",[116,101,83]],["Dunkles Holz",[78,57,43]],["Eiche hell",[170,127,82]],["Walnuss",[105,74,54]],["Verwittertes Holz",[133,125,111]],["Mahagoni-Ton",[120,62,53]]],"foliage":[["Sonniges Laub",[111,145,61]],["Naturgrün",[83,116,57]],["Kühles Laub",[61,104,71]],["Olives Laub",[105,106,56]],["Dunkles Laub",[47,76,48]],["Trockenes Grün",[119,112,68]],["Frisches Blattlicht",[139,163,74]],["Blatt-Halbton",[93,126,63]],["Laubschatten",[54,82,55]],["Fernes Grün",[103,123,91]]],"shadow":[["Kühler Schatten",[91,99,117]],["Violetter Schatten",[103,91,116]],["Warmer Schatten",[116,92,76]],["Erdiger Schatten",[89,76,61]],["Reflektierter Schatten",[112,103,92]],["Blauer Außenschatten",[82,101,123]],["Warmer Innenraumschatten",[103,79,67]],["Grünlicher Landschaftsschatten",[81,94,74]],["Hautschatten weich",[133,103,99]]],"cloud":[["Weiße Wolke",[222,221,215]],["Warme Wolke",[222,205,183]],["Kühle Unterseite",[166,176,190]],["Violette Unterseite",[171,160,181]],["Abendwolke",[213,158,151]],["Gewitterwolke",[105,111,121]],["Goldrand Wolke",[230,196,135]],["Rosa Wolke",[221,178,183]],["Ferne Wolke",[190,198,205]]],"sunset":[["Goldener Horizont",[229,174,86]],["Orange Abendlicht",[218,126,67]],["Rosa Abendlicht",[218,142,158]],["Violetter Abendhimmel",[137,103,151]],["Tiefe Abendwolke",[101,78,100]],["Pfirsichfarbener Himmel",[226,158,123]],["Karmesin-Abend",[175,79,86]],["Blauvioletter Übergang",[107,111,159]],["Spätes Restlicht",[158,117,123]]],"flowerpink":[["Zartrosa",[224,174,187]],["Warmes Rosa",[214,133,144]],["Kühles Rosa",[194,132,169]],["Altrosa",[172,122,128]],["Tiefrosa",[166,74,113]],["Pfingstrosen-Rosa",[218,149,163]],["Staubrosa",[184,139,143]],["Lachsrosa",[221,145,124]],["Kühles Blütenrosa",[200,141,181]]],"flowerred":[["Leuchtendes Rot",[194,58,50]],["Warmes Rot",[202,72,43]],["Kühles Rot",[164,48,69]],["Gebrochenes Rot",[139,70,62]],["Tiefrot",[111,42,48]],["Mohnrot",[209,65,45]],["Karmesin",[150,44,62]],["Ziegelrot",[161,73,59]],["Dunkles Rosenrot",[119,45,57]]],"yellow":[["Sonnenlicht",[229,195,91]],["Zitroniges Gelb",[224,207,72]],["Warmes Gelb",[225,173,57]],["Goldocker",[188,142,55]],["Gedämpftes Gelb",[166,147,83]],["Strohgelb",[207,183,114]],["Cremegelb",[231,213,157]],["Orangegelb",[222,151,50]]],"turquoise":[["Helles Türkis",[102,184,183]],["Meerestürkis",[62,151,157]],["Blaues Türkis",[53,133,158]],["Grünes Türkis",[58,145,128]],["Gedämpftes Türkis",[91,132,129]],["Helles Lagunentürkis",[117,190,181]],["Tiefes Petrol",[47,96,101]]],"grey":[["Warmes Grau",[137,126,113]],["Kühles Grau",[116,126,137]],["Violettes Grau",[127,118,132]],["Grüngrau",[119,128,115]],["Dunkles malerisches Grau",[76,76,74]],["Taubengrau",[154,151,149]],["Steingrau",[135,132,124]],["Blaugrau",[112,128,143]],["Braungrau",[125,112,100]]],"white":[["Warmes Weiß",[232,222,202]],["Kühles Weiß",[218,225,231]],["Cremeweiß",[230,214,181]],["Rosiges Weiß",[231,215,215]],["Grauweiß",[207,207,201]],["Elfenbein",[231,219,194]],["Leinenweiß",[220,210,190]],["Perlweiß",[218,219,214]]],"blackmix":[["Kühles Dunkel",[39,45,53]],["Warmes Dunkel",[52,43,37]],["Blaues Dunkel",[36,44,63]],["Grünes Dunkel",[38,51,43]],["Rötliches Dunkel",[55,39,42]],["Samtiges Dunkel",[46,42,47]],["Braunschwarz",[55,44,36]],["Nachtschwarz",[31,39,52]]],"hair":[["Hellblond",[203,174,120]],["Goldblond",[190,143,81]],["Aschblond",[159,145,122]],["Dunkelblond",[142,111,77]],["Hellbraun",[134,95,67]],["Mittelbraun",[104,72,53]],["Dunkelbraun",[69,52,43]],["Rotbraun",[130,69,50]],["Kupferhaar",[166,83,49]],["Schwarzbraun",[48,42,39]],["Graues Haar – warm",[145,139,130]],["Graues Haar – kühl",[137,143,150]],["Silbergrau",[175,179,182]],["Blondes Licht",[218,190,141]],["Braunes Licht",[157,109,74]]],"eyes":[["Hellblau",[132,165,184]],["Graublau",[111,132,145]],["Tiefblau",[67,91,116]],["Grün",[93,127,92]],["Graugrün",[111,127,110]],["Haselnuss",[135,109,65]],["Bernstein",[161,119,54]],["Hellbraun",[132,94,62]],["Dunkelbraun",[78,59,45]],["Sehr dunkle Iris",[51,50,45]]],"lips":[["Natürlich rosig",[174,105,104]],["Heller Lippenton",[199,128,126]],["Warme Lippen",[183,91,78]],["Kühle Lippen",[159,88,108]],["Gebrochene Lippenfarbe",[146,96,92]],["Dunkle Lippen",[117,72,70]],["Unterlippe Licht",[207,142,137]],["Oberlippe Schatten",[131,79,82]]],"blush":[["Zarte Röte",[216,157,151]],["Warme Wange",[211,123,111]],["Kühle Wange",[194,126,137]],["Sonnenröte",[201,109,90]],["Rosige Kinderwange",[226,157,158]],["Gebrochene Röte",[177,119,113]],["Tiefe Wangenröte",[158,87,85]]],"meadow":[["Frühlingswiese",[132,158,72]],["Sommerwiese",[100,132,62]],["Sonnige Wiese",[142,148,65]],["Trockene Wiese",[151,128,72]],["Kühle Wiese",[76,113,74]],["Wiesenschatten",[64,91,59]],["Ferne Wiese",[119,135,98]],["Abendwiese",[125,108,69]]],"wheat":[["Helles Stroh",[211,186,122]],["Goldenes Getreide",[198,158,77]],["Reifes Weizenfeld",[186,147,75]],["Trockenes Stroh",[169,139,87]],["Stroh im Schatten",[135,119,87]],["Abendgold",[205,143,66]],["Fernes Getreide",[178,160,112]]],"mountain":[["Ferne blaue Berge",[104,124,148]],["Violette Ferne",[124,113,145]],["Warme Felsen",[151,119,94]],["Kühle Felsen",[108,119,125]],["Berg im Dunst",[148,154,158]],["Sonnenfels",[176,138,96]],["Bergschatten",[79,88,96]],["Schneebedeckte Ferne",[173,187,199]]],"mist":[["Kühler Morgennebel",[192,202,207]],["Warmer Morgennebel",[214,199,181]],["Violetter Dunst",[190,181,198]],["Blauer Dunst",[178,195,207]],["Rosiger Abenddunst",[211,187,190]],["Dichter Nebel",[207,209,206]],["Ferne Atmosphäre",[171,181,183]]],"night":[["Klare Nacht",[43,55,78]],["Blaue Stunde",[72,91,123]],["Mondlicht",[126,145,166]],["Violette Nacht",[67,58,88]],["Warme Stadtnacht",[74,61,55]],["Nachtwolke",[61,67,78]],["Sehr dunkler Himmel",[31,39,57]],["Mondlicht auf Schnee",[172,190,210]]],"storm":[["Schwere Gewitterwolke",[78,84,92]],["Blaues Gewitter",[72,89,108]],["Violette Gewitterwolke",[90,78,101]],["Warmer Sturmrand",[135,111,90]],["Regenhimmel",[104,116,125]],["Lichtöffnung im Sturm",[166,169,163]],["Dunkle Regenfront",[59,66,73]]],"brick":[["Klassischer Ziegel",[167,84,61]],["Heller Ziegel",[188,111,79]],["Dunkler Ziegel",[120,67,56]],["Alte Terrakotta",[151,94,72]],["Sonnenziegel",[190,117,72]],["Kühler Ziegelschatten",[117,83,78]],["Gebrochener Backstein",[139,88,71]]],"metal":[["Helles Silber",[181,184,184]],["Stahlgrau",[127,139,145]],["Dunkler Stahl",[83,91,95]],["Warme Metallreflexe",[151,139,119]],["Kühle Reflexe",[119,139,153]],["Altes Silber",[136,132,122]],["Polierter Glanz",[207,207,198]]],"copper":[["Poliertes Kupfer",[182,103,64]],["Altes Kupfer",[135,88,65]],["Dunkle Bronze",[94,68,52]],["Goldbronze",[164,124,62]],["Kupferlicht",[205,132,78]],["Grüne Patina",[91,126,105]],["Blaue Patina",[84,125,126]]],"gold":[["Helles Gold",[213,177,86]],["Altes Gold",[164,132,70]],["Messing",[183,151,74]],["Dunkles Gold",[125,99,55]],["Gold im Licht",[228,194,111]],["Gold im Schatten",[128,103,70]],["Mattes Gold",[174,151,97]]],"fabric":[["Leinen natur",[190,178,154]],["Weißer Stoff – warm",[223,216,201]],["Weißer Stoff – kühl",[210,218,224]],["Jeansblau",[77,101,128]],["Schwarzer Stoff – warm",[54,48,46]],["Schwarzer Stoff – kühl",[47,52,60]],["Roter Stoff – Schatten",[115,52,56]],["Blauer Stoff – Schatten",[56,69,98]],["Grüner Stoff – Schatten",[57,78,62]]]};
+  const advisorImageLocations={"monet_bild_1":[{"x":85.0,"y":45.5,"label":"in der Bildmitte, rechts"},{"x":3.6,"y":64.0,"label":"in der Bildmitte, links"},{"x":24.4,"y":43.8,"label":"in der Bildmitte, links"},{"x":6.1,"y":64.6,"label":"in der Bildmitte, links"},{"x":54.4,"y":45.8,"label":"in der Bildmitte"},{"x":33.9,"y":67.7,"label":"unten, links"},{"x":60.1,"y":74.7,"label":"unten, mittig"},{"x":29.6,"y":73.3,"label":"unten, links"},{"x":68.3,"y":37.9,"label":"in der Bildmitte, rechts"},{"x":5.2,"y":80.9,"label":"unten, links"},{"x":2.9,"y":30.6,"label":"oben, links"},{"x":8.2,"y":9.0,"label":"oben, links"},{"x":13.9,"y":24.7,"label":"oben, links"},{"x":44.6,"y":94.1,"label":"unten, mittig"},{"x":5.2,"y":23.6,"label":"oben, links"},{"x":11.9,"y":22.8,"label":"oben, links"},{"x":45.1,"y":84.3,"label":"unten, mittig"},{"x":37.6,"y":13.8,"label":"oben, mittig"},{"x":33.5,"y":82.0,"label":"unten, links"},{"x":50.6,"y":41.9,"label":"in der Bildmitte"}],"monet_bild_2":[{"x":3.0,"y":9.0,"label":"oben, links"},{"x":3.2,"y":28.1,"label":"oben, links"},{"x":2.9,"y":28.3,"label":"oben, links"},{"x":4.9,"y":9.1,"label":"oben, links"},{"x":2.5,"y":90.9,"label":"unten, links"},{"x":3.2,"y":80.2,"label":"unten, links"},{"x":3.1,"y":22.9,"label":"oben, links"},{"x":4.0,"y":48.1,"label":"in der Bildmitte, links"},{"x":3.2,"y":62.8,"label":"in der Bildmitte, links"},{"x":17.1,"y":61.1,"label":"in der Bildmitte, links"},{"x":5.5,"y":61.2,"label":"in der Bildmitte, links"},{"x":2.6,"y":96.0,"label":"unten, links"},{"x":5.0,"y":51.3,"label":"in der Bildmitte, links"},{"x":19.0,"y":59.8,"label":"in der Bildmitte, links"},{"x":15.0,"y":40.0,"label":"in der Bildmitte, links"},{"x":7.4,"y":46.5,"label":"in der Bildmitte, links"},{"x":9.2,"y":49.9,"label":"in der Bildmitte, links"},{"x":30.9,"y":50.7,"label":"in der Bildmitte, links"},{"x":22.4,"y":50.2,"label":"in der Bildmitte, links"},{"x":27.3,"y":55.5,"label":"in der Bildmitte, links"}],"monet_bild_3":[{"x":49.4,"y":86.8,"label":"unten, mittig"},{"x":15.2,"y":89.8,"label":"unten, links"},{"x":29.7,"y":58.2,"label":"in der Bildmitte, links"},{"x":13.0,"y":60.2,"label":"in der Bildmitte, links"},{"x":31.4,"y":32.5,"label":"oben, links"},{"x":69.1,"y":13.3,"label":"oben, rechts"},{"x":9.4,"y":69.2,"label":"unten, links"},{"x":17.1,"y":70.7,"label":"unten, links"},{"x":51.7,"y":45.6,"label":"in der Bildmitte"},{"x":15.7,"y":79.8,"label":"unten, links"},{"x":54.4,"y":81.8,"label":"unten, mittig"},{"x":21.8,"y":29.9,"label":"oben, links"},{"x":33.4,"y":24.8,"label":"oben, links"},{"x":57.4,"y":82.6,"label":"unten, mittig"},{"x":27.4,"y":10.0,"label":"oben, links"},{"x":15.6,"y":25.1,"label":"oben, links"},{"x":22.0,"y":89.2,"label":"unten, links"},{"x":74.7,"y":34.3,"label":"in der Bildmitte, rechts"},{"x":25.9,"y":86.9,"label":"unten, links"},{"x":33.2,"y":81.4,"label":"unten, links"}],"monet_bild_4":[{"x":18.8,"y":82.8,"label":"unten, links"},{"x":27.0,"y":34.0,"label":"in der Bildmitte, links"},{"x":14.8,"y":37.8,"label":"in der Bildmitte, links"},{"x":24.3,"y":32.1,"label":"oben, links"},{"x":31.7,"y":68.4,"label":"unten, links"},{"x":10.8,"y":81.0,"label":"unten, links"},{"x":30.5,"y":83.4,"label":"unten, links"},{"x":77.3,"y":83.6,"label":"unten, rechts"},{"x":18.8,"y":43.1,"label":"in der Bildmitte, links"},{"x":28.2,"y":36.8,"label":"in der Bildmitte, links"},{"x":25.0,"y":43.2,"label":"in der Bildmitte, links"},{"x":18.0,"y":38.7,"label":"in der Bildmitte, links"},{"x":60.3,"y":47.9,"label":"in der Bildmitte"},{"x":60.5,"y":65.0,"label":"in der Bildmitte"},{"x":18.0,"y":25.7,"label":"oben, links"},{"x":19.0,"y":61.6,"label":"in der Bildmitte, links"},{"x":34.7,"y":43.9,"label":"in der Bildmitte"},{"x":47.8,"y":71.6,"label":"unten, mittig"},{"x":21.0,"y":25.7,"label":"oben, links"},{"x":17.5,"y":63.6,"label":"in der Bildmitte, links"}],"monet_bild_5":[{"x":3.7,"y":95.4,"label":"unten, links"},{"x":5.9,"y":31.1,"label":"oben, links"},{"x":4.0,"y":48.0,"label":"in der Bildmitte, links"},{"x":78.7,"y":76.6,"label":"unten, rechts"},{"x":8.4,"y":76.6,"label":"unten, links"},{"x":30.0,"y":76.1,"label":"unten, links"},{"x":9.4,"y":76.1,"label":"unten, links"},{"x":67.1,"y":24.4,"label":"oben, rechts"},{"x":24.8,"y":89.7,"label":"unten, links"},{"x":22.1,"y":65.9,"label":"in der Bildmitte, links"},{"x":2.5,"y":77.1,"label":"unten, links"},{"x":48.5,"y":11.9,"label":"oben, mittig"},{"x":21.7,"y":62.1,"label":"in der Bildmitte, links"},{"x":23.9,"y":37.5,"label":"in der Bildmitte, links"},{"x":20.8,"y":35.7,"label":"in der Bildmitte, links"},{"x":7.4,"y":63.1,"label":"in der Bildmitte, links"},{"x":7.2,"y":52.4,"label":"in der Bildmitte, links"},{"x":6.8,"y":28.0,"label":"oben, links"},{"x":12.8,"y":52.2,"label":"in der Bildmitte, links"},{"x":68.5,"y":27.4,"label":"oben, rechts"}],"monet_bild_6":[{"x":9.4,"y":79.4,"label":"unten, links"},{"x":67.2,"y":70.0,"label":"unten, rechts"},{"x":4.1,"y":94.0,"label":"unten, links"},{"x":12.2,"y":78.4,"label":"unten, links"},{"x":26.8,"y":32.4,"label":"oben, links"},{"x":17.1,"y":65.5,"label":"in der Bildmitte, links"},{"x":21.5,"y":72.0,"label":"unten, links"},{"x":9.2,"y":27.9,"label":"oben, links"},{"x":7.0,"y":27.5,"label":"oben, links"},{"x":21.1,"y":73.0,"label":"unten, links"},{"x":6.2,"y":25.2,"label":"oben, links"},{"x":5.9,"y":18.1,"label":"oben, links"},{"x":3.1,"y":17.6,"label":"oben, links"},{"x":5.7,"y":11.9,"label":"oben, links"},{"x":17.9,"y":49.5,"label":"in der Bildmitte, links"},{"x":13.8,"y":14.3,"label":"oben, links"},{"x":8.5,"y":8.2,"label":"oben, links"},{"x":44.4,"y":56.6,"label":"in der Bildmitte"},{"x":23.7,"y":92.3,"label":"unten, links"},{"x":13.8,"y":58.9,"label":"in der Bildmitte, links"}]};
+
+  const advisorVariant=document.getElementById('advisorVariant');
+  const advisorBrightness=document.getElementById('advisorBrightness');
+  const advisorBrightnessVal=document.getElementById('advisorBrightnessVal');
+
+  function advBrightnessRgb(rgb, amount){
+    const a=Math.max(-40,Math.min(40,Number(amount)||0))/40;
+    if(a>=0){
+      return rgb.map(v=>Math.round(v+(255-v)*a*0.72));
+    }
+    return rgb.map(v=>Math.round(v*(1+a*0.62)));
+  }
+
+  let advisorItems=[];
+  let advisorCoverage=1;
+
+  function advEsc(s){
+    return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function advPalette(){
+    const api=window.AtelierPaletteAPI;
+    const select=document.getElementById('paintPalette');
+    const key=(select && select.value) ? select.value : (api?.currentKey?.() || 'artisan');
+    let colors=[];
+    try{
+      colors=api?.fullPalette?.(key) || [];
+    }catch(e){
+      colors=[];
+    }
+    return {key,colors};
+  }
+  function advFind(colors,pattern){
+    const rx=new RegExp(pattern,'i');
+    return colors.find(c=>rx.test(c[0]))||null;
+  }
+
+  function advBaseItems(){
+    const d=advisorDefs[advisorFamily.value]||advisorDefs.lavender;
+    const variants=advisorVariants[advisorFamily.value]||[];
+    const vi=Math.max(0,Math.min(variants.length-1,Number(advisorVariant?.value)||0));
+    const rawTarget=(variants[vi]&&variants[vi][1])||d.rgb;
+    const targetRgb=rawTarget;
+    const {key,colors}=advPalette();
+    let base=[];
+    advisorCoverage=1;
+
+    // Erst AtelierAI-Mischlogik versuchen.
+    try{
+      const mixes=window.AtelierPaletteAPI?.mixes?.(targetRgb,key)||[];
+      if(mixes.length){
+        const m=mixes[0];
+        advisorCoverage=m.coverage||1;
+        (m.names||[]).forEach((name,i)=>{
+          const c=colors.find(x=>(x[2]?x[0]+' ('+x[2]+')':x[0])===name);
+          if(c) base.push({
+            name:c[0],rgb:c[1],
+            parts:Math.max(.1,Number((m.parts||[])[i]||1)),
+            role:'Grundmischung'
+          });
+        });
+      }
+    }catch(e){}
+
+    // Wenn persönliche Palette leer/zu klein ist: aus vollständiger realer Palette
+    // sinnvolle konkrete Farben wählen.
+    if(!base.length){
+      d.terms.slice(0,3).forEach(([pat,role])=>{
+        const c=advFind(colors,pat);
+        if(c && !base.some(x=>x.name===c[0])){
+          base.push({name:c[0],rgb:c[1],parts:1,role});
+        }
+      });
+    }
+
+    // Weitere sinnvolle konkrete Zugaben bei 0 starten.
+    d.terms.forEach(([pat,role])=>{
+      const c=advFind(colors,pat);
+      if(c && !base.some(x=>x.name===c[0])){
+        base.push({name:c[0],rgb:c[1],parts:0,role});
+      }
+    });
+
+    advisorItems=base.slice(0,8);
+  }
+
+  function advMixRgb(){
+    const active=advisorItems.filter(x=>x.parts>0);
+    if(!active.length){
+      const vs=advisorVariants[advisorFamily.value]||[];
+      const vi=Math.max(0,Math.min(vs.length-1,Number(advisorVariant?.value)||0));
+      const raw=(vs[vi]&&vs[vi][1])||(advisorDefs[advisorFamily.value]||advisorDefs.lavender).rgb;
+      return advBrightnessRgb(raw,advisorBrightness?.value||0);
+    }
+    const total=active.reduce((s,x)=>s+x.parts,0)||1;
+    let mixed=window.AtelierPaletteAPI.mixRgb(active.map(x=>x.rgb),active.map(x=>x.parts),advPalette().key);
+    mixed=window.AtelierPaletteAPI.washRgb(mixed,advisorCoverage);
+    return advBrightnessRgb(mixed,advisorBrightness?.value||0);
+  }
+
+  function advRenderResult(){
+    const rgb=advMixRgb();
+    advisorResultSwatch.style.background=`rgb(${rgb.join(',')})`;
+    const active=advisorItems.filter(x=>x.parts>0);
+    advisorRecipe.innerHTML=active.length
+      ? '<b>Aktuelle Mischung:</b><br>'+active.map(x=>{
+          const q=x.parts<1?Math.round(x.parts*100)/100:Math.round(x.parts*10)/10;
+          return `${q} Teile ${advEsc(x.name)}`;
+        }).join(' + ')
+      : '<b>Aktuelle Mischung:</b> leer';
+    advisorRecipe.innerHTML+='<br><small>Unkalibrierte Mischvorschau · Farbprobe erforderlich. '+(['watercolor','horadam','akademie'].includes(advPalette().key)?Math.round(advisorCoverage*100)+' % Farbauftrag auf Weiß; kein Wasserverhältnis. ':'')+'Helligkeitsregler verändert nur die Vorschau.</small>';
+  }
+
+  function advRenderRows(){
+    advisorMixerRows.innerHTML=advisorItems.map((x,i)=>`
+      <div class="card" style="margin-top:7px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="width:44px;height:44px;flex:0 0 44px;border-radius:7px;background:rgb(${x.rgb.join(',')});border:1px solid rgba(0,0,0,.18)"></span>
+          <div style="min-width:0;flex:1"><b>${advEsc(x.name)}</b><div class="tiny">${advEsc(x.role)}</div></div>
+          <span id="advVal${i}" class="tiny">${Number(x.parts)<1?Number(x.parts).toFixed(2):Number(x.parts).toFixed(1)}</span>
+        </div>
+        <input class="adv-slider" data-i="${i}" type="range" min="0" max="${Math.max(5,x.parts)}" step="0.05" value="${x.parts}" style="width:100%;margin-top:7px;">
+      </div>`).join('');
+
+    advisorMixerRows.querySelectorAll('.adv-slider').forEach(s=>s.addEventListener('input',()=>{
+      const i=+s.dataset.i;
+      advisorItems[i].parts=+s.value;
+      const v=document.getElementById('advVal'+i);
+      if(v){
+        const vv=+s.value;
+        v.textContent=vv<1?vv.toFixed(2):vv.toFixed(1);
+      }
+      advRenderResult();
+    }));
+    advRenderResult();
+  }
+
+  function advFillAdd(){
+    const {key,colors}=advPalette();
+    const available=colors.slice();
+
+    advisorAddColor.innerHTML=available.length
+      ? available.map(c=>{
+          const already=advisorItems.some(x=>x.name===c[0]);
+          return `<option value="${advEsc(c[0])}">${advEsc(c[0])}${already?' ✓':''}</option>`;
+        }).join('')
+      : '<option value="">Keine Farben verfügbar</option>';
+
+    const paletteNames={
+      artisan:'Winsor & Newton Artisan',
+      system3:'Daler-Rowney System3 Original · Acryl',
+      horadam:'Schmincke Horadam',
+      akademie:'Schmincke Akademie'
+    };
+    advisorPaletteInfo.textContent=`Palette: ${paletteNames[key]||key} · ${colors.length} Tubenfarben`;
+    advisorAddBtn.disabled=!available.length;
+  }
+
+  function advFillVariants(resetIndex=false){
+    const vs=advisorVariants[advisorFamily.value]||[];
+    advisorVariant.innerHTML=vs.map((v,i)=>`<option value="${i}">${advEsc(v[0])}</option>`).join('');
+    if(resetIndex) advisorVariant.value='0';
+  }
+
+  function advReset(){
+    const d=advisorDefs[advisorFamily.value]||advisorDefs.lavender;
+    const vs=advisorVariants[advisorFamily.value]||[];
+    const vi=Math.max(0,Math.min(vs.length-1,Number(advisorVariant?.value)||0));
+    const vn=vs[vi]?.[0];
+    advisorHint.textContent=(vn?vn+': ':'')+d.hint;
+    advBaseItems();
+    advRenderRows();
+    advFillAdd();
+  }
+
+  advisorFamily?.addEventListener('change',()=>{
+    advFillVariants(true);
+    advReset();
+  });
+  advisorVariant?.addEventListener('change',advReset);
+
+  advisorBrightness?.addEventListener('input',()=>{
+    const v=Number(advisorBrightness.value)||0;
+    if(advisorBrightnessVal) advisorBrightnessVal.textContent=(v>0?'+':'')+v;
+    advRenderResult();
+  });
+
+  advisorResetBtn?.addEventListener('click',advReset);
+
+  advisorClearBtn?.addEventListener('click',()=>{
+    advisorItems.forEach(x=>x.parts=0);
+    advRenderRows();
+  });
+
+  advisorAddBtn?.addEventListener('click',()=>{
+    const {colors}=advPalette();
+    const c=colors.find(x=>x[0]===advisorAddColor.value);
+    if(!c) return;
+
+    const existing=advisorItems.findIndex(x=>x.name===c[0]);
+    if(existing>=0){
+      if(advisorItems[existing].parts<=0) advisorItems[existing].parts=0.1;
+    }else{
+      advisorItems.push({name:c[0],rgb:c[1],parts:0.1,role:'eigene Zugabe'});
+    }
+    advRenderRows();
+    advFillAdd();
+  });
+
+  advisorFullscreenBtn?.addEventListener('click',()=>{
+    const on=advisorWorkspace.classList.toggle('advisor-fullscreen');
+    advisorFullscreenBtn.textContent=on?'Fenster schließen':'Ganzes Fenster';
+  });
+
+  const advisorPaletteSelect=document.getElementById('advisorOwnPalette');
+  const advisorMainPaletteSelect=document.getElementById('paintPalette');
+  if(advisorPaletteSelect){
+    if(advisorMainPaletteSelect && ['artisan','system3','horadam','akademie'].includes(advisorMainPaletteSelect.value)){
+    advisorPaletteSelect.value=advisorMainPaletteSelect.value;
+  }
+  advisorPaletteSelect?.addEventListener('change',()=>{
+    if(advisorMainPaletteSelect && advisorMainPaletteSelect.value!==advisorPaletteSelect.value){
+      setMedium(advisorPaletteSelect.value==='artisan'?'oil':advisorPaletteSelect.value==='system3'?'acrylic':'water');
+      advisorMainPaletteSelect.value=advisorPaletteSelect.value;
+    }
+  });
+  advisorMainPaletteSelect?.addEventListener('change',()=>{
+    if(['artisan','system3','horadam','akademie'].includes(advisorMainPaletteSelect.value) && advisorPaletteSelect.value!==advisorMainPaletteSelect.value){
+      advisorPaletteSelect.value=advisorMainPaletteSelect.value;
+      advisorPaletteSelect.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+  });
+  advisorPaletteSelect.addEventListener('change',advReset);
+  }
+
+  if(advisorBrightnessVal) advisorBrightnessVal.textContent='0';
+  advReset();
+
+
+
+  // Brücke für das separat initialisierte Gestaltungsmodul.
+
