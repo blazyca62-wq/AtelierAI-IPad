@@ -1,3 +1,16 @@
+AtelierAI iPad 4.64 – Nur neue Farben / Hell-Dunkel-Ansicht
+========================================================
+- Farbstufen 8/16/32/48/64: "Nur neue Farben" bleibt beim
+  Schieben von Hell/Dunkel aktiv. Bisherige Farbstufen sind
+  in dieser Ansicht auch auf Bildebene zuverlässig ausgeblendet.
+- Beim ersten Umschalten auf "Nur neue Farben" werden neue
+  Farben gezeigt; danach über dieselben Regler einzeln ein-/ausblenden.
+- "Zusammen" zeigt die bisherigen plus eingeschaltete neue Farben.
+- Lasso-Grenze, Original außerhalb, Zoom und Farbmischungen bleiben.
+- Versionsnummer in App, Startseiten und Service-Worker synchron
+  auf 4.64 gesetzt, damit die Offline-Version korrekt aktualisiert.
+- Kein vollständiger iPad-Safari-Test durchgeführt.
+
 AtelierAI iPad 4.62 – Lasso in Farbreduktion UND Malaufbau
 ============================================================
 - Neuberechnung: aktueller Zoom und Pan bleiben unverändert.
