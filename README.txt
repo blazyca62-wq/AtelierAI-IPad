@@ -1,3 +1,16 @@
+AtelierAI iPad 4.61 – Lasso zuerst wählen, Farbzahl danach ändern
+============================================================
+Lasso ist jetzt bei geöffnetem Originalfoto unmittelbar wählbar, ohne dass
+vorher eine Gesamt-Farberkennung ausgeführt sein muss. Die geschlossene
+Kontur bleibt bis zum Entfernen bestehen. Bei „Farben erkennen“ und
+bei jedem Wechsel zwischen 8, 16, 32, 48, 64 Farben wird die ausgewählte
+Kontur erhalten und lokal mit der gewählten Anzahl neu analysiert.
+Die unveränderte Originalaufnahme bleibt außerhalb der Auswahl sichtbar.
+Raster-Detail, Pipette, Malaufbau, Farbmischung und die vorhandenen Module
+bleiben bestehen. Diese Änderung umfasst keine Neugestaltung der Erkennung.
+
+Hinweis: Browserprüfungen ersetzen keinen iPad-Safari-Gerätetest.
+
 AtelierAI iPad 4.60 – Lasso-Darstellung und Bildkoordinaten korrigiert
 ===================================================================
 Fehler in 4.59: Bei großen Fotos hatte die globale Farbanalyse eine kleinere

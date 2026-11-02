@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.60</title>
+  <title>AtelierAI iPad 4.61</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.60</div>
+    <div class="title">AtelierAI · iPad 4.61</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -6720,12 +6720,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     b.textContent=build32LassoArmed?'Lasso zeichnen: Ein':'Lasso-Bereich wählen';b.setAttribute('aria-pressed',String(build32LassoArmed));
     b.classList.toggle('active',build32LassoArmed);b.classList.toggle('secondary',!build32LassoArmed);
     clear.disabled=!build32LassoPoints&&!build32LassoDraft;
-    status.textContent=build32LassoArmed?'Jetzt mit einem Finger oder der Maus die Fläche umfahren und loslassen. Zwei Finger: wie gewohnt Zoom.':
+    status.textContent=build32LassoArmed?'Jetzt auf dem Originalbild mit einem Finger oder der Maus die Fläche umfahren. Zwei Finger zoomen.':
       build32DetailCell?.kind==='lasso'?'Lasso aktiv · '+build32DetailCell.palette.length+' Farben innerhalb der Kontur. Außerhalb bleibt das Originalfoto sichtbar.':
-      'Lasso: eine frei umrandete Fläche separat erkennen; kein Raster nötig. Vorher die gewünschte Farbanzahl einstellen.';
+      build32LassoPoints?'Lasso markiert · jetzt 8, 16, 32, 48 oder 64 Farben wählen oder „Farben erkennen“ drücken. Die Kontur bleibt erhalten.':
+      'Erst Lasso im Originalbild zeichnen, danach gewünschte Farbanzahl wählen. Kein Raster nötig.';
   }
   function drawBuild32LassoOutline(){
-    if(!loaded||build32SuppressLassoOutline||document.getElementById('build32Dock').hidden)return;
+    if(!loaded||build32SuppressLassoOutline)return;
     const pts=build32LassoDraft||build32LassoPoints;
     if(!pts||pts.length<2)return;
     ctx.save();ctx.translate(offsetX,offsetY);ctx.scale(scale,scale);
@@ -7090,10 +7091,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function build32ColorCount(){if(build32Data)return build32Data.palette.length;return Number(document.getElementById('build32Count').value);}
   for(const id of ['build32Count','build32CountSide'])document.getElementById(id).addEventListener('change',e=>{
     for(const other of ['build32Count','build32CountSide'])document.getElementById(other).value=e.target.value;
-    build32LassoRestorePoints=build32LassoPoints?build32LassoPoints.map(p=>({...p})):null;
-    build32LassoGlobalState=null; // global palette will be rebuilt for the new count
-    resetBuild32();
-    document.getElementById('build32Analyze').textContent=build32ColorCount()+' Farben erkennen';
+    // The analyze handler owns the reset, and keeps any existing polygon.
+    // Never reset here: it cleared the Lasso before the recalculation could use it.
+    document.getElementById('build32Analyze').textContent=e.target.value+' Farben erkennen';
     if(loaded)document.getElementById('build32Analyze').click();
   });
   let build32CollapsedBeforeFocus=false;
@@ -7786,9 +7786,17 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   document.getElementById('build32Analyze').addEventListener('click',()=>{
     if(!loaded){build32Status.textContent='Bitte zuerst ein Foto öffnen.';return;}
     const progressive=build32StageRequest;build32StageRequest=false;
-    resetBuild32();const generation=build32Generation;
+    // Keep the SAME source-image polygon when calculating a different count.
+    // Both count changes and a direct press on "Farben erkennen" come here.
+    const savedLasso=(build32LassoPoints||build32LassoRestorePoints);
+    const savedPoints=savedLasso?.map(p=>({x:p.x,y:p.y}))||null;
+    resetBuild32();
+    build32LassoRestorePoints=savedPoints;
+    build32LassoPoints=savedPoints; // outline stays visible while analysing
+    syncBuild32LassoButtons();
+    const generation=build32Generation;
     document.getElementById('build32StagesStart').disabled=true;
-    build32Status.textContent=build32ColorCount()+' Farben werden ermittelt …';document.getElementById('build32Analyze').disabled=true;
+    build32Status.textContent=(savedPoints?'Nur Lasso-Bereich: ':'')+build32ColorCount()+' Farben werden ermittelt …';document.getElementById('build32Analyze').disabled=true;
     const work=document.createElement('canvas'),ratio=Math.min(1,(progressive==='final'?2400:1600)/Math.max(sourceCanvas.width,sourceCanvas.height));
     work.width=Math.max(1,Math.round(sourceCanvas.width*ratio));work.height=Math.max(1,Math.round(sourceCanvas.height*ratio));
     const wc=work.getContext('2d');wc.fillStyle='#fff';wc.fillRect(0,0,work.width,work.height);wc.drawImage(sourceCanvas,0,0,work.width,work.height);
@@ -7935,10 +7943,15 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   document.getElementById('build32Grid').addEventListener('click',()=>{gridToggleBtn.click();syncBuild32Grid();});
   document.getElementById('build32GridDensity').addEventListener('input',e=>{gridDensity.value=e.target.value;gridDensity.dispatchEvent(new Event('input'));syncBuild32Grid();clearBuild32DetailCell();draw();});
   document.getElementById('build32Lasso').addEventListener('click',()=>{
-    if(!build32Data){build32Status.textContent='Bitte zuerst die Farben des Gesamtbildes erkennen lassen.';return;}
+    if(!loaded){build32Status.textContent='Bitte zuerst ein Foto öffnen.';return;}
     build32LassoArmed=!build32LassoArmed;
-    if(build32LassoArmed){build32DetailCellArmed=false;syncBuild32DetailCellButton();setMode('move');hint.textContent='Lasso: mit einem Finger frei umfahren, mit zwei Fingern zoomen. Die Farben werden nur innerhalb erkannt.';}
-    else build32LassoDraft=null;
+    if(build32LassoArmed){
+      build32DetailCellArmed=false;syncBuild32DetailCellButton();
+      // Draw on the real image, independently of any previously computed palette.
+      // When a global view exists, temporarily show the original for accuracy.
+      build32Active=false;
+      setMode('move');hint.textContent='Lasso: Originalbild mit einem Finger frei umfahren. Danach 8/16/32/48/64 Farben wählen.';
+    }else build32LassoDraft=null;
     syncBuild32LassoButtons();draw();
   });
   document.getElementById('build32LassoClear').addEventListener('click',()=>{
@@ -10670,8 +10683,15 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         if(points?.length>=5){
           // A tiny closed scribble should not destroy an existing good result.
           let area=0;for(let i=0;i<points.length;i++){const p=points[i],q=points[(i+1)%points.length];area+=p.x*q.y-q.x*p.y;}
-          if(Math.abs(area)>32)analyzeBuild32Lasso(points);
-          else build32Status.textContent='Lasso zu klein. Bitte eine Fläche umfahren.';
+          if(Math.abs(area)>32){
+            build32LassoPoints=points.map(p=>({x:p.x,y:p.y}));
+            build32LassoArmed=false;
+            if(build32Data)analyzeBuild32Lasso(build32LassoPoints);
+            else{
+              build32Status.textContent='Lasso ist markiert. Jetzt Farbanzahl wählen oder „Farben erkennen“ drücken.';
+              hint.textContent='Markierter Bereich bleibt bestehen; außerhalb wird nichts reduziert.';
+            }
+          }else build32Status.textContent='Lasso zu klein. Bitte eine Fläche umfahren.';
         }else build32Status.textContent='Lasso mit einem Finger als geschlossene Fläche zeichnen.';
         syncBuild32LassoButtons();draw();
       }else if(tap&&!build32LassoArmed) selectViewerPoint(e);
