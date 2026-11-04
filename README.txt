@@ -1,3 +1,23 @@
+AtelierAI iPad 4.66 – helle Farben und Lernen aus Korrekturen
+============================================================
+- Alle sehr hellen Farbtöne: die Farbfamilie der verwendeten Pigmente
+  wird zusätzlich zur numerischen Bildschirmnähe geprüft, nicht nur Blau.
+  Zu hellem Rosa, Gelb, Grün, Blau usw. werden erdige oder dunkle
+  Neutraltöne ohne geeignete Buntpigmente nicht länger bevorzugt.
+- Helligkeitsvorrang bei fast gleich guten Rezepten für alle Paletten.
+- Nach „Rezept zur Korrektur suchen“ merkt sich Atelier die zuvor
+  abgelehnte Rezeptur für ähnliche Zielbilder und dieselbe Palette.
+- Nach einem realen Farbtest kann man ein passendes Korrekturrezept mit
+  „Diese Mischung passt – fürs nächste Mal merken“ bestätigen; ebenso
+  kann eine gelungene Zugabe zur bestehenden Mischung bestätigt werden.
+  Das bestätigte Rezept wird für sehr ähnliche Zielfarben bevorzugt.
+- Lernen ist lokal auf dem iPad/Safari (localStorage) und nach Palette
+  getrennt, maximal 100 abgelehnte und 100 bestätigte Rezepturen.
+  Bei Löschen der Website-Daten gehen diese Lernerfahrungen verloren.
+- Keine gemessenen Pigmentdaten: Simulation und angezeigte Punktwerte
+  sind Näherungen. Unveränderte Module aus Version 4.65.
+- Kein vollständiger iPad-Safari-Test durchgeführt.
+
 AtelierAI iPad 4.65 – Original S/W im Lasso korrigiert
 ====================================================
 - Original S/W ist nun auch innerhalb des Lassos sichtbar, wenn

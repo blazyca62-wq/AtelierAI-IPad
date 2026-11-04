@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.65</title>
+  <title>AtelierAI iPad 4.66</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.65</div>
+    <div class="title">AtelierAI · iPad 4.66</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -3353,6 +3353,136 @@
     return d+penalty;
   }
 
+  // 4.66: An ultra-light tint is not made plausible merely by a small RGB
+  // error from an approximate spectral model. Require the *chromatic* tube(s)
+  // to belong to the family of the target. Covers ALL pastel hues and palettes.
+  // Earth/black/neutral pigments can still be a subtle correction alongside a
+  // suitable chromatic pigment; near-neutral creams/greys stay unrestricted.
+  function makePalePigmentPenalty(target,paletteKey){
+    const lab=rgbToLabFast(target),chroma=Math.hypot(lab[1],lab[2]);
+    const [h,sat]=rgbToHsv(target);
+    if(lab[0]<79||chroma<6||sat<.035)return ()=>0;
+    const family=h<16||h>=343?'red':h<43?'orange':h<84?'yellow':
+      h<176?'green':h<201?'cyan':h<264?'blue':h<343?'violet':'red';
+    const cache=new Map();
+    const darkNeutral=/(?:umber|umbra|sienna|siena|ochre|ocker|brown|black|schwarz|grau|grey|gray|payne|sepia|neutral|indigo)/i;
+    function families(item){
+      const name=item.name||'';
+      // Never let the ultramarine component of Payne's Grey pass as a
+      // genuine light-blue colourant; the dark neutral paint is distinct.
+      if(darkNeutral.test(name))return {earth:/(?:umber|umbra|sienna|siena|ochre|ocker|brown)/i.test(name),c:new Set()};
+      const meta=paletteKey==='system3'?SYSTEM3_INFO[name]?.pigments:
+        paletteKey==='artisan'?ARTISAN_PIGMENTS[name]?.[0]:null;
+      const c=new Set();
+      if(meta){
+        const codes=meta.split(/\s+/);
+        if(codes.some(p=>/^PR\d/.test(p)))c.add('red');
+        if(codes.some(p=>/^PY\d/.test(p)))c.add('yellow');
+        if(codes.some(p=>/^PO\d/.test(p)))c.add('orange');
+        if(codes.some(p=>/^PG\d/.test(p)))c.add('green');
+        if(codes.some(p=>/^PB\d/.test(p)))c.add('blue');
+        if(codes.some(p=>/^PV\d/.test(p))){c.add('violet');c.add('red');}
+      }else{
+        if(/red|rot|rose|rosa|pink|magenta|crimson|scarlet|krap|karmin|alizarin|rubin|vermilion|coral/i.test(name))c.add('red');
+        if(/yellow|gelb|lemon|zitrone|gold|naples|neapel/i.test(name))c.add('yellow');
+        if(/orange|cadmium orange/i.test(name))c.add('orange');
+        if(/green|grün|viridian|sap green|olive/i.test(name))c.add('green');
+        if(/blue|blau|cyan|ultramar|cobalt|kobalt|cerule|coerule|prussian|preuß/i.test(name))c.add('blue');
+        if(/violet|violett|purple|lila|dioxazine|dioxazin/i.test(name))c.add('violet');
+      }
+      // Only trust an unrecognised paint as unknown, never make up a family.
+      const unknown=!meta&&!c.size&&!/white|weiß|weiss|zinc|titan|transparent/i.test(name);
+      return {c,unknown};
+    }
+    return items=>{
+      const signature=items.map(x=>x.name+'@'+(x.series||'')).sort().join('|');
+      if(cache.has(signature))return cache.get(signature);
+      const all=items.map(families);
+      const union=new Set(all.flatMap(f=>[...f.c]));
+      const has=f=>union.has(f);
+      const plausible=family==='red'?(has('red')||has('violet')):
+        family==='orange'?(has('orange')||(has('red')&&has('yellow'))):
+        family==='yellow'?(has('yellow')||has('orange')):
+        family==='green'?(has('green')||(has('yellow')&&has('blue'))):
+        family==='cyan'?(has('blue')||has('green')):
+        family==='blue'?has('blue'):
+        (has('violet')||(has('red')&&has('blue')));
+      // Muted warm off-whites may legitimately be tinted with earth colours.
+      const mutedEarth=(family==='yellow'||family==='orange')&&h>=18&&h<58&&sat<.13&&chroma<11&&all.some(x=>x.earth);
+      const penalty=plausible||mutedEarth||all.some(x=>x.unknown)?0:Math.min(44,25+chroma*.45);
+      cache.set(signature,penalty);return penalty;
+    };
+  }
+
+  // Explicit feedback is saved in Safari's local storage, separately for each
+  // palette. Corrections reject a bad suggestion; only user-confirmed mixtures
+  // are reusable as physically approved recipes. No invented pigment data.
+  const MIX_FEEDBACK_KEY='atelierai-mix-feedback-v1';
+  function readMixFeedback(){
+    try{const x=JSON.parse(localStorage.getItem(MIX_FEEDBACK_KEY)||'{}');return {
+      rejected:Array.isArray(x.rejected)?x.rejected.slice(-100):[],
+      approved:Array.isArray(x.approved)?x.approved.slice(-100):[]
+    };}catch(e){return {rejected:[],approved:[]};}
+  }
+  let mixFeedback=readMixFeedback();
+  function saveMixFeedback(){
+    try{localStorage.setItem(MIX_FEEDBACK_KEY,JSON.stringify(mixFeedback));mixResultCache.clear();return true;}
+    catch(e){return false;}
+  }
+  function mixFeedbackSignature(names){
+    return names.map(x=>String(x).trim().toLowerCase()).sort().join('|');
+  }
+  function makeRejectedRecipePenalty(target,paletteKey){
+    const relevant=mixFeedback.rejected.filter(x=>x.key===paletteKey&&
+      Array.isArray(x.target)&&deltaE76FromLab(rgbToLabFast(x.target),rgbToLabFast(target))<11);
+    if(!relevant.length)return ()=>0;
+    const rejected=new Set(relevant.map(x=>x.sig));
+    return items=>rejected.has(mixFeedbackSignature(items.map(x=>x.series?
+      `${x.name} (${x.series})`:x.name)))?38:0;
+  }
+  function rememberRejectedRecipe(target,original,key,corrected){
+    if(!original?.names?.length||!Array.isArray(target)||!Array.isArray(corrected))return false;
+    // A correction can reach the original goal exactly; compare against the
+    // *rejected mix*, not against the colour the painter was aiming for.
+    const difference=deltaE76FromLab(rgbToLabFast(original.rgb||target),rgbToLabFast(corrected));
+    if(difference<1.3)return false;
+    const sig=mixFeedbackSignature(original.names);
+    mixFeedback.rejected=mixFeedback.rejected.filter(x=>!(x.key===key&&x.sig===sig&&
+      deltaE76FromLab(rgbToLabFast(x.target),rgbToLabFast(target))<4));
+    mixFeedback.rejected.push({key,target:target.slice(),sig,time:Date.now()});
+    mixFeedback.rejected=mixFeedback.rejected.slice(-100);
+    return saveMixFeedback();
+  }
+  function rememberApprovedRecipe(target,corrected,recipe,key){
+    if(!recipe?.names?.length||recipe.parts?.length!==recipe.names.length)return false;
+    const pal=effectivePaletteColors(key);
+    const ids=recipe.tubeIds?.length===recipe.names.length?recipe.tubeIds:
+      recipe.names.map(name=>{const c=pal.find(c=>c[0]===name||`${c[0]} (${c[2]})`===name);return c?pictureTubeId(key,c):null;});
+    if(ids.some(id=>!id))return false;
+    const sig=mixFeedbackSignature(recipe.names);
+    mixFeedback.approved=mixFeedback.approved.filter(x=>!(x.key===key&&x.sig===sig&&
+      deltaE76FromLab(rgbToLabFast(x.target),rgbToLabFast(target))<4));
+    mixFeedback.approved.push({key,target:target.slice(),corrected:corrected.slice(),
+      names:recipe.names.slice(),tubeIds:ids.slice(),parts:recipe.parts.slice(),
+      coverage:recipe.coverage||1,time:Date.now()});
+    mixFeedback.approved=mixFeedback.approved.slice(-100);
+    return saveMixFeedback();
+  }
+  function confirmedMixesNear(target,key,palette){
+    const lookup=new Map(palette.map(c=>[pictureTubeId(key,c),c]));
+    return mixFeedback.approved.filter(x=>x.key===key&&x.target&&
+      deltaE76FromLab(rgbToLabFast(x.target),rgbToLabFast(target))<=5).map(x=>{
+      const colors=x.tubeIds.map(id=>lookup.get(id));
+      if(colors.some(c=>!c))return null; // no longer in selected palette
+      const rgb=pigmentMix(colors.map(c=>c[1]),x.parts,key);
+      const simulated=['watercolor','horadam','akademie'].includes(key)?washRgb(rgb,x.coverage||1):rgb;
+      return {names:x.names.slice(),tubeIds:x.tubeIds.slice(),parts:x.parts.slice(),
+        rgb:simulated,coverage:x.coverage||1,color_count:x.names.length,
+        watercolor:['watercolor','horadam','akademie'].includes(key),
+        score:similarityPct(target,simulated),confirmed:true};
+    }).filter(Boolean).sort((a,b)=>b.score-a.score);
+  }
+
   function watercolorSimilarityPct(target,rgb,items,paletteKey){
     const d=perceptualMixScore(target,rgb,items,paletteKey);
     return Math.max(0,Math.min(100,Math.round(100-d*1.35)));
@@ -3381,6 +3511,9 @@
     if(mixResultCache.has(cacheKey)) return mixResultCache.get(cacheKey);
     const targetLab=rgbToLabFast(target);
     const [targetHue,targetSaturation]=rgbToHsv(target);
+    const palePenalty=makePalePigmentPenalty(target,paletteKey);
+    const rejectionPenalty=makeRejectedRecipePenalty(target,paletteKey);
+    const recipePenalty=items=>palePenalty(items)+rejectionPenalty(items);
     const isWater=paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie';
     const candidates=pal.map(([name,rgb,series])=>({name,rgb,series}));
 
@@ -3414,10 +3547,10 @@
       return best;
     }
     function studioCost(rgb,items){
-      return deltaE76FromLab(targetLab,rgbToLabFast(rgb));
+      return deltaE76FromLab(targetLab,rgbToLabFast(rgb))+recipePenalty(items);
     }
-    function displayPct(rgb){
-      return similarityPct(target,rgb);
+    function displayPct(rgb,items){
+      return Math.max(0,similarityPct(target,rgb)-Math.round(1.35*recipePenalty(items)));
     }
     function recipeKey(items){
       return items.map(i=>i.name+'@'+(i.series||'')).sort().join('|');
@@ -3428,7 +3561,7 @@
     // 1 Farbe: zuerst die einfachste mögliche Lösung prüfen.
     for(const c of candidates){
       const finished=finishMix(candidateRgb(c)),rgb=finished.rgb;
-      pool.push({items:[c],parts:[10],coverage:finished.coverage,rgb,cost:studioCost(rgb,[c]),score:displayPct(rgb)});
+      pool.push({items:[c],parts:[10],coverage:finished.coverage,rgb,cost:studioCost(rgb,[c]),score:displayPct(rgb,[c])});
     }
 
     // 2 Farben: ALLE Farbpaarungen und malerisch brauchbare Verhältnisse prüfen.
@@ -3440,7 +3573,7 @@
           const finished=finishMix(mixFor([candidates[i],candidates[j]],[pct,100-pct])),rgb=finished.rgb;
           const parts=[pct,100-pct];
           const items=[candidates[i],candidates[j]];
-          pool.push({items,parts,coverage:finished.coverage,rgb,cost:studioCost(rgb,items),score:displayPct(rgb)});
+          pool.push({items,parts,coverage:finished.coverage,rgb,cost:studioCost(rgb,items),score:displayPct(rgb,items)});
         }
       }
     }
@@ -3452,7 +3585,7 @@
 
     let beam=nearest.map(c=>{
       const items=[c],parts=[10],rgb=candidateRgb(c);
-      return {items,parts,rgb,cost:studioCost(rgb,items),score:displayPct(rgb)};
+      return {items,parts,rgb,cost:studioCost(rgb,items),score:displayPct(rgb,items)};
     }).sort((a,b)=>a.cost-b.cost).slice(0,30);
 
     for(let count=2;count<=3;count++){
@@ -3466,7 +3599,7 @@
             const parts=state.parts.concat([add]);
             const finished=finishMix(mixFor(items,parts)),rgb=finished.rgb;
             const cost=studioCost(rgb,items);
-            next.push({items,parts,coverage:finished.coverage,rgb,cost,score:displayPct(rgb)});
+            next.push({items,parts,coverage:finished.coverage,rgb,cost,score:displayPct(rgb,items)});
           }
         }
       }
@@ -3563,6 +3696,9 @@
     if(mixResultCache.has(cacheKey)) return mixResultCache.get(cacheKey);
     const targetLab=rgbToLabFast(target);
     const [targetHue,targetSaturation]=rgbToHsv(target);
+    const palePenalty=makePalePigmentPenalty(target,paletteKey);
+    const rejectionPenalty=makeRejectedRecipePenalty(target,paletteKey);
+    const recipePenalty=items=>palePenalty(items)+rejectionPenalty(items);
     const isWater=paletteKey==='watercolor'||paletteKey==='horadam'||paletteKey==='akademie';
     const candidates=pal.map(([name,rgb,series])=>({name,rgb,series}));
 
@@ -3602,7 +3738,7 @@
     // unveraendert, ebenso neutrale, dunkle und gering gesaettigte Ziele.
     const targetChroma=Math.hypot(targetLab[1],targetLab[2]);
     const needs=((paletteKey==='artisan'||paletteKey==='system3') && targetChroma>=14 &&
-      targetLab[0]>23 && targetLab[0]<92 && targetSaturation>=.13)
+      targetLab[0]>23 && targetLab[0]<=99.9 && targetSaturation>=.13)
       ? (targetHue>=325||targetHue<20?'rose':
          targetHue>=20&&targetHue<85?'warm':
          targetHue>=85&&targetHue<190?'green':
@@ -3626,10 +3762,10 @@
       return plausible?0:36;
     }
     function studioCost(rgb,items){
-      return deltaE76FromLab(targetLab,rgbToLabFast(rgb))+pigmentPlausibilityPenalty(items);
+      return deltaE76FromLab(targetLab,rgbToLabFast(rgb))+pigmentPlausibilityPenalty(items)+recipePenalty(items);
     }
     function displayPct(rgb,items){
-      return Math.max(0,similarityPct(target,rgb)-Math.round(1.35*pigmentPlausibilityPenalty(items)));
+      return Math.max(0,similarityPct(target,rgb)-Math.round(1.35*(pigmentPlausibilityPenalty(items)+recipePenalty(items))));
     }
     function recipeKey(items){
       return items.map(i=>i.name+'@'+(i.series||'')).sort().join('|');
@@ -4641,7 +4777,7 @@
     if(!recipes.length)return recipes;
     const used=pictureUsedIds(key);
     const best=Math.max(...recipes.map(m=>m.score));
-    const targetLabLightness=key==='artisan'&&target?rgbToLabFast(target)[0]:null;
+    const targetLabLightness=target?rgbToLabFast(target)[0]:null;
     recipes.forEach(m=>{m.referenceBest=best;});
     const count=m=>pictureRecipeIds(m,key).filter(id=>!used.has(id)).length;
     const colors=m=>m.color_count||m.items?.length||m.names?.length||0;
@@ -4661,15 +4797,19 @@
   function chooseMixes(target,key){
     const pal=effectivePaletteColors(key),used=pictureUsedIds(key);
     const full=chooseMixesRaw(target,key,pal);
-    if(!used.size)return full.slice(0,3);
     const restricted=pal.filter(c=>used.has(pictureTubeId(key,c)));
-    const onlyUsed=restricted.length&&restricted.length<pal.length?chooseMixesRaw(target,key,restricted):[];
+    const onlyUsed=used.size&&restricted.length&&restricted.length<pal.length?chooseMixesRaw(target,key,restricted):[];
     const unique=new Map();
     for(const m of [...full,...onlyUsed]){
       const id=[...m.tubeIds].sort().join('|'),old=unique.get(id);
       if(!old||m.score>old.score)unique.set(id,{...m});
     }
-    return rankPictureRecipes([...unique.values()],key,target).slice(0,3);
+    const ranked=rankPictureRecipes([...unique.values()],key,target);
+    const confirmed=confirmedMixesNear(target,key,pal);
+    // A tested mixture wins for the same/nearly identical target even if the
+    // imperfect screen simulation reports a poorer numerical match.
+    const ids=new Set(confirmed.map(m=>[...m.tubeIds].sort().join('|')));
+    return [...confirmed,...ranked.filter(m=>!ids.has([...m.tubeIds].sort().join('|')))].slice(0,3);
   }
   // 3.29: Cross-area saved-premix comparison. A saved mixture is treated as
   // a physical premix, not silently replaced by its original tube recipe.
@@ -4836,7 +4976,7 @@
     } )).sort((a,b)=>{
       const delta=a.correctionScore-b.correctionScore;
       if(Math.abs(delta)<=5){
-        const brightness=key==='artisan'?oilLightnessPreference(a,b,rgbToLabFast(hint)[0]):0;
+        const brightness=oilLightnessPreference(a,b,rgbToLabFast(hint)[0]);
         if(brightness)return brightness;
         if(a.color_count!==b.color_count)return a.color_count-b.color_count;
       }
@@ -4915,7 +5055,35 @@
         const item=document.createElement('div');item.className='tiny';item.textContent=name;
         const square=document.createElement('div');square.style.cssText='width:65px;height:34px;border:1px solid #888;background:'+rgbHex(rgb);item.appendChild(square);swatch.appendChild(item);
       }
-      const similarity=document.createElement('span');similarity.className='tiny';similarity.textContent=o.score+'/100 Bildschirmnähe';swatch.appendChild(similarity);row.appendChild(swatch);block.appendChild(row);
+      const similarity=document.createElement('span');similarity.className='tiny';similarity.textContent=o.score+'/100 Bildschirmnähe';swatch.appendChild(similarity);row.appendChild(swatch);
+      // Also allow a successful real-world addition to be learned. A ready
+      // 30-part base is resolved back to its original tube proportions.
+      if(original?.names?.length&&original.parts?.length===original.names.length&&o.adds.length){
+        const sum=original.parts.reduce((n,p)=>n+Math.max(0,Number(p)||0),0);
+        if(sum>0){
+          const recipe={names:original.names.slice(),tubeIds:original.tubeIds?.slice()||[],
+            parts:original.parts.map(p=>Math.round((Number(p)||0)*30/sum*100)/100),
+            coverage:original.coverage||1};
+          for(const addition of o.adds){
+            const existing=recipe.names.findIndex(n=>n===addition.name);
+            if(existing>=0)recipe.parts[existing]+=addition.part;
+            else {recipe.names.push(addition.name);recipe.parts.push(addition.part);
+              const color=effectivePaletteColors(key).find(c=>c[0]===addition.name);
+              recipe.tubeIds.push(color?pictureTubeId(key,color):null);
+            }
+          }
+          const approve=document.createElement('button');approve.type='button';approve.className='secondary';
+          approve.textContent='Diese Zugabe hat gepasst – merken';
+          approve.style.marginTop='8px';
+          approve.addEventListener('click',()=>{
+            if(rememberApprovedRecipe(correctionTarget||correctionRecipeHint,correctionRecipeHint,recipe,key)){
+              approve.disabled=true;approve.textContent='Gelungene Zugabe gelernt ✓';
+            }else{approve.textContent='Speichern nicht möglich – Safari-Speicher prüfen';}
+          });
+          row.appendChild(approve);
+        }
+      }
+      block.appendChild(row);
     });
     const warning=document.createElement('p');warning.className='tiny';warning.textContent='Erst eine kleine Probe abteilen. Simulierte RGB-/Spektralfarben ersetzen keine tatsächlichen Pigmentmessungen; bei Öl und Aquarell können die realen Mischungen deutlich abweichen. Die Zugabe bezieht sich auf 30 Teile bereits fertige Mischung, nicht auf 30 Teile Tubenfarbe.';block.appendChild(warning);
     mixResults.prepend(block);
@@ -4923,8 +5091,12 @@
   function calculateCorrectionRecipe(){
     const hint=correctedColor();
     if(!hint||!correctionTarget)return;
+    const original=correctionOriginalRecipe;
+    const target=correctionTarget.slice();
+    if(original)rememberRejectedRecipe(target,original,original.paletteKey||paintPalette.value,hint);
     // setMixTarget clears stale correction state for all normal new targets.
-    setMixTarget(correctionTarget,'Ursprüngliche Zielfarbe');
+    setMixTarget(target,'Ursprüngliche Zielfarbe');
+    correctionOriginalRecipe=original; // for the real 30-part correction calculation
     correctionRecipeHint=hint.slice();
     showStudioMixPage();
   }
@@ -4992,7 +5164,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const brightnessText=Math.abs(brightnessDelta)<=1.5?'Helligkeit: sehr nah am Ziel':
         'Helligkeit: '+Math.abs(brightnessDelta).toFixed(1).replace('.',',')+' L* '+(brightnessDelta<0?'zu dunkel':'zu hell')+' (Simulation)';
       card.innerHTML=`
-        <div class="mix-head"><b>${correctionRecipeHint?'Korrekturrezept':'Vorschlag'} ${idx+1}</b><span>${correctionRecipeHint?`${m.correctionScore}/100 zur Korrektur<br>${m.score}/100 zur ursprünglichen Zielfarbe`:`${m.score}/100 Bildschirmnähe`}</span></div>
+        <div class="mix-head"><b>${m.confirmed?'Deine bestätigte Mischung':correctionRecipeHint?'Korrekturrezept':'Vorschlag'} ${idx+1}</b><span>${correctionRecipeHint?`${m.correctionScore}/100 zur Korrektur<br>${m.score}/100 zur ursprünglichen Zielfarbe`:`${m.score}/100 Bildschirmnähe`}</span></div>
         <div class="mix-swatches" ${correctionRecipeHint?'style="grid-template-columns:repeat(3,minmax(0,1fr))"':''}>
           <div><div class="tiny">${correctionRecipeHint?'Ursprüngliche Zielfarbe':'Zielfarbe'}</div><div class="mix-swatch" style="background:${targetHex}"></div><div class="tiny" style="margin-top:6px">${targetHex} · RGB ${target.join(', ')}</div></div>
           ${correctionRecipeHint?`<div><div class="tiny">Deine Korrektur</div><div class="mix-swatch" style="background:${rgbHex(correctionRecipeHint)}"></div><div class="tiny" style="margin-top:6px">${rgbHex(correctionRecipeHint)}</div></div>`:''}
@@ -5000,6 +5172,24 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         </div>
         <div class="mix-lines">${m.names.map((n,i)=>`${m.parts[i].toLocaleString('de-DE')} Teil${m.parts[i]!==1?'e':''} ${n}`).join('<br>')}<br><span class="tiny">${m.watercolor?'Aquarell · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß (Simulation, kein Wasserverhältnis)':paletteKey==='system3'?'Acryl · angenäherte Farbwerte, keine gemessenen Mischspektren; Mengen als Startrezept':'Öl · angenäherte Pigmentfarben, keine gemessenen Mischspektren; Mengen als Startrezept'}. Auf Papier/Palette prüfen.</span></div>
       `;
+      if(correctionRecipeHint){
+        const approve=document.createElement('button');approve.type='button';approve.className='secondary';
+        approve.textContent='Diese Mischung passt – fürs nächste Mal merken';
+        approve.style.marginTop='8px';
+        approve.addEventListener('click',()=>{
+          if(rememberApprovedRecipe(target,correctionRecipeHint,m,paletteKey)){
+            approve.disabled=true;approve.textContent='Für diese Palette gelernt ✓';
+          }else{approve.textContent='Speichern nicht möglich – Safari-Speicher prüfen';}
+        });
+        card.appendChild(approve);
+        const help=document.createElement('p');help.className='tiny';
+        help.textContent='Erst nach einem echten Farbtest bestätigen. Atelier bevorzugt diese Rezeptur dann bei ähnlichen Zielfarben.';
+        card.appendChild(help);
+      }else if(m.confirmed){
+        const note=document.createElement('p');note.className='tiny';
+        note.textContent='Von dir als passend bestätigtes Rezept für diese oder eine sehr ähnliche Farbe.';
+        card.appendChild(note);
+      }
       appendPictureUseButton(card,m,paletteKey,target);
       (alternatives&&idx>0?alternatives:mixResults).appendChild(card);
     });
@@ -6297,7 +6487,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     showStudioMixPage();
   });
   function takeCorrectionColor(rgb,target=rgb,recipe=null,paletteKey=null){
-    correctionOriginalRecipe=recipe?{rgb:rgb.slice(),names:[...(recipe.names||[])],parts:[...(recipe.parts||[])],paletteKey:paletteKey||paintPalette.value}:null;
+    correctionOriginalRecipe=recipe?{rgb:rgb.slice(),names:[...(recipe.names||[])],tubeIds:[...(recipe.tubeIds||[])],parts:[...(recipe.parts||[])],coverage:recipe.coverage||1,paletteKey:paletteKey||paintPalette.value}:null;
     correctionBase=[...rgb];
     correctionTarget=[...target];
     for(const id of ['corrLight','corrWarm','corrSat','corrHue'])document.getElementById(id).value=0;
