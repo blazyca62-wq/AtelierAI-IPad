@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.66</title>
+  <title>AtelierAI iPad 4.67</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.66</div>
+    <div class="title">AtelierAI · iPad 4.67</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1306,6 +1306,24 @@
         <button id="sketchSaveBtn" type="button" style="width:100%;margin-top:8px;" disabled>Vorzeichnung als PNG speichern</button>
         <div id="sketchStatus" class="tiny" role="status" aria-live="polite" style="margin-top:10px;">Bitte zuerst ein Foto öffnen.</div>
         <p class="tiny">Für Aquarell bleiben Flächen und Lichter weiß. Für Öl kannst du die Formverläufe und Konturen kräftiger einstellen. Das Raster findest du unter „Raster &amp; Speichern“; dort bleibt die Vorzeichnung sichtbar. Die gespeicherte PNG-Datei lässt sich aus Fotos oder Dateien drucken.</p>
+      </div>
+
+      <div class="section" id="shadowImagePanel">
+        <h3>Schattenbild aus Skulptur</h3>
+        <p>Erstellt aus dem geöffneten Foto eine klare, dunkle Silhouette auf weißem Grund. Am besten funktioniert ein deutlich beleuchtetes Motiv mit ruhigem Hintergrund.</p>
+        <label for="shadowThreshold" style="display:block;margin-top:10px">Trennschwelle: <span id="shadowThresholdValue">145</span></label>
+        <input id="shadowThreshold" type="range" min="20" max="235" value="145" step="1" style="width:100%;min-height:44px">
+        <div class="grid2" style="margin:4px 0 8px">
+          <button id="shadowDarkSubject" type="button" class="active" aria-pressed="true">Dunkle Skulptur</button>
+          <button id="shadowLightSubject" type="button" class="secondary" aria-pressed="false">Helle Skulptur</button>
+        </div>
+        <canvas id="shadowPreview" aria-label="Vorschau des Schattenbilds" style="position:relative;width:100%;height:auto;aspect-ratio:4/3;background:#fff;border:1px solid #aaa;border-radius:10px;display:block"></canvas>
+        <div class="grid2" style="margin-top:8px">
+          <button id="shadowCreate" type="button">Schattenbild erzeugen</button>
+          <button id="shadowSave" type="button" class="secondary" disabled>PNG speichern</button>
+        </div>
+        <button id="shadowUse" type="button" class="secondary" style="width:100%;margin-top:8px" disabled>Als Atelierbild öffnen</button>
+        <p id="shadowStatus" class="tiny" role="status" aria-live="polite" style="margin-top:8px">Bitte zuerst das Skulpturfoto öffnen.</p>
       </div>
 
       <div class="section" id="tonesPanel">
@@ -2383,6 +2401,87 @@
   let sourceCanvas = document.createElement('canvas');
   let sourceCtx = sourceCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
   window.__atelierArtBridge = { photo:()=>({loaded,canvas:sourceCanvas}), load:(blob,done)=>loadPhoto(blob,true,done) };
+
+  // Schattenbild: ein isoliertes, reversibles Modul, das die Originalvorlage nicht verändert.
+  const shadowPreview=document.getElementById('shadowPreview');
+  const shadowPreviewCtx=shadowPreview.getContext('2d');
+  const shadowThreshold=document.getElementById('shadowThreshold');
+  const shadowThresholdValue=document.getElementById('shadowThresholdValue');
+  const shadowDarkSubject=document.getElementById('shadowDarkSubject');
+  const shadowLightSubject=document.getElementById('shadowLightSubject');
+  const shadowStatus=document.getElementById('shadowStatus');
+  const shadowSave=document.getElementById('shadowSave');
+  const shadowUse=document.getElementById('shadowUse');
+  let shadowOutputCanvas=null, shadowSubjectIsDark=true;
+  function renderShadowImage(){
+    if(!loaded||!sourceCanvas.width||!sourceCanvas.height){
+      shadowStatus.textContent='Bitte zuerst das Skulpturfoto öffnen.';
+      return;
+    }
+    try{
+      const w=sourceCanvas.width,h=sourceCanvas.height;
+      const input=sourceCtx.getImageData(0,0,w,h),out=document.createElement('canvas');
+      out.width=w;out.height=h;
+      const outCtx=out.getContext('2d',{willReadFrequently:false});
+      const result=outCtx.createImageData(w,h),src=input.data,dst=result.data,cut=Number(shadowThreshold.value);
+      for(let i=0;i<src.length;i+=4){
+        const luminance=.2126*src[i]+.7152*src[i+1]+.0722*src[i+2];
+        const isSubject=shadowSubjectIsDark?luminance<=cut:luminance>=cut;
+        const value=isSubject?0:255;
+        dst[i]=value;dst[i+1]=value;dst[i+2]=value;dst[i+3]=255;
+      }
+      outCtx.putImageData(result,0,0);
+      shadowOutputCanvas=out;
+      const box=shadowPreview.getBoundingClientRect(),scale=Math.min(box.width/w,240/h);
+      const pw=Math.max(1,Math.round(w*scale)),ph=Math.max(1,Math.round(h*scale));
+      shadowPreview.width=pw;shadowPreview.height=ph;
+      shadowPreview.style.aspectRatio=`${w} / ${h}`;
+      shadowPreviewCtx.clearRect(0,0,pw,ph);shadowPreviewCtx.drawImage(out,0,0,pw,ph);
+      shadowThresholdValue.textContent=String(cut);
+      shadowSave.disabled=false;shadowUse.disabled=false;
+      shadowStatus.textContent=`Schattenbild erstellt · ${w} × ${h} Pixel. Die Originalvorlage bleibt erhalten.`;
+    }catch(error){
+      shadowOutputCanvas=null;shadowSave.disabled=true;shadowUse.disabled=true;
+      shadowStatus.textContent='Das Schattenbild konnte nicht erstellt werden. Bitte ein anderes Foto oder eine kleinere Bilddatei verwenden.';
+    }
+  }
+  document.getElementById('shadowCreate').addEventListener('click',renderShadowImage);
+  shadowThreshold.addEventListener('input',()=>{shadowThresholdValue.textContent=shadowThreshold.value;});
+  shadowThreshold.addEventListener('change',()=>{if(shadowOutputCanvas)renderShadowImage();});
+  function resetShadowModule(){
+    shadowOutputCanvas=null;shadowSave.disabled=true;shadowUse.disabled=true;
+    shadowPreview.width=320;shadowPreview.height=180;shadowPreview.style.aspectRatio='16 / 9';
+    shadowPreviewCtx.clearRect(0,0,shadowPreview.width,shadowPreview.height);
+    shadowStatus.textContent=loaded?'Neues Foto geöffnet. „Schattenbild erzeugen“ antippen.':'Bitte zuerst das Skulpturfoto öffnen.';
+  }
+  function setShadowSubject(isDark){
+    shadowSubjectIsDark=isDark;
+    shadowDarkSubject.classList.toggle('active',isDark);shadowDarkSubject.classList.toggle('secondary',!isDark);
+    shadowLightSubject.classList.toggle('active',!isDark);shadowLightSubject.classList.toggle('secondary',isDark);
+    shadowDarkSubject.setAttribute('aria-pressed',String(isDark));shadowLightSubject.setAttribute('aria-pressed',String(!isDark));
+    if(shadowOutputCanvas)renderShadowImage();
+  }
+  shadowDarkSubject.addEventListener('click',()=>setShadowSubject(true));
+  shadowLightSubject.addEventListener('click',()=>setShadowSubject(false));
+  function shadowBlob(){return new Promise((resolve,reject)=>{
+    if(!shadowOutputCanvas){reject(Error('Erzeuge zuerst das Schattenbild.'));return;}
+    shadowOutputCanvas.toBlob(blob=>blob?resolve(blob):reject(Error('PNG konnte nicht erstellt werden.')),'image/png');
+  });}
+  shadowSave.addEventListener('click',async()=>{
+    try{
+      const blob=await shadowBlob(),url=URL.createObjectURL(blob),link=document.createElement('a');
+      link.href=url;link.download='AtelierAI_Schattenbild.png';link.click();
+      setTimeout(()=>URL.revokeObjectURL(url),30000);
+      shadowStatus.textContent='Schattenbild als PNG gespeichert.';
+    }catch(error){shadowStatus.textContent=error.message;}
+  });
+  shadowUse.addEventListener('click',async()=>{
+    try{
+      const blob=await shadowBlob();
+      await new Promise((resolve,reject)=>loadPhoto(blob,true,error=>error?reject(error):resolve()));
+      shadowStatus.textContent='Schattenbild ist jetzt als Atelierbild geöffnet. Das ursprüngliche Foto bleibt wiederherstellbar.';
+    }catch(error){shadowStatus.textContent='Nicht geöffnet: '+error.message;}
+  });
 
   let formCanvas = document.createElement('canvas');
   let formCtx = formCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
@@ -10777,7 +10876,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     gridCellCropArmed=false;gridCropSelection.clear();
     clearTimeout(formsSquintTimer);formsOriginalPreview=false;
     setMixSurround('#808080');
-    img=studioWorkingImage(photo);loaded=true;syncApplyAllModules();syncVisibleCrop();placeholder.style.display='none';syncFormsOriginal();
+    img=studioWorkingImage(photo);loaded=true;syncApplyAllModules();syncVisibleCrop();placeholder.style.display='none';syncFormsOriginal();resetShadowModule();
     resetBuild32();cancelIsolation();isolationRevision++;isolationSentKey=null;
     sourceCanvas.width=img.width;sourceCanvas.height=img.height;
     sourceCtx.clearRect(0,0,img.width,img.height);sourceCtx.drawImage(img,0,0);

@@ -1,3 +1,10 @@
+AtelierAI iPad 4.67 – Schattenbild aus Skulpturfoto
+==================================================
+- Neues eigenständiges Schattenbild-Modul für das geöffnete Foto.
+- Helligkeitsschwelle einstellen und dunkle oder helle Skulpturen wählen.
+- Ergebnis als PNG speichern oder als Atelierbild öffnen; das Original bleibt wiederherstellbar.
+- Bestehende Module aus Version 4.66 bleiben erhalten.
+
 AtelierAI iPad 4.66 – helle Farben und Lernen aus Korrekturen
 ============================================================
 - Alle sehr hellen Farbtöne: die Farbfamilie der verwendeten Pigmente
