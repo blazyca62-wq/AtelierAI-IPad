@@ -1,3 +1,20 @@
+NEU IN 4.68 – SAUBERE HINTERGRUNDKANTEN
+=======================================
+Die bestehende Funktion „Hintergrund ersetzen“ wurde gezielt verbessert.
+- „Rand bereinigen“ (0–5 px, Start 2): schneidet den schmalen alten
+  Hintergrund-Farbsaum am Rand des Motivs ab. Falls feine Details
+  verschwinden, den Wert verringern (0 schaltet die Bereinigung aus).
+- „Kante glätten“ (Start an): mildert kantige Pixelstufen an der
+  Freistellung, ohne die komplette Figur weichzuzeichnen.
+- „Weiche Kante“ bleibt separat (Start 1 px; 0 für harte Kanten).
+- Original vergleichen, Lasso, Antippen, eigenes Hintergrundbild,
+  PNG-Export und Übernahme als Malvorlage bleiben erhalten.
+- Export übernimmt die Randbehandlung auch bei Originalauflösung.
+- Einschränkung: Es ist keine KI-Segmentierung; einzelne Haare,
+  transparente Objekte und stark gemischte Ursprungsränder können
+  weiterhin eine präzisere Auswahl erfordern.
+- Keine sonstigen AtelierAI-Module geändert. Test in iPad/Safari empfohlen.
+
 NEU IN 4.67 – HINTERGRUND ERSETZEN
 ================================
 Werkzeuge ▾ → „Hintergrund ersetzen“.
