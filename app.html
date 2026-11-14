@@ -1075,6 +1075,7 @@
     <details class="moreTools" id="moreTools"><summary aria-label="Weitere Werkzeuge">Werkzeuge ▾</summary>
       <div class="moreToolsPanel">
         <button id="saveCurrentViewBtn" type="button">Ansicht speichern</button>
+        <button id="bgReplaceOpen" type="button" class="secondary">Hintergrund ersetzen</button>
         <button id="visibleCropBtn" type="button" class="secondary" disabled>Sichtbaren Ausschnitt als Malvorlage übernehmen</button>
         <button id="gridCellCropBtn" type="button" class="secondary" disabled aria-pressed="false">Rasterkästchen als Malvorlage auswählen</button>
         <button id="fitBtn" class="secondary">Einpassen</button>
@@ -1306,24 +1307,6 @@
         <button id="sketchSaveBtn" type="button" style="width:100%;margin-top:8px;" disabled>Vorzeichnung als PNG speichern</button>
         <div id="sketchStatus" class="tiny" role="status" aria-live="polite" style="margin-top:10px;">Bitte zuerst ein Foto öffnen.</div>
         <p class="tiny">Für Aquarell bleiben Flächen und Lichter weiß. Für Öl kannst du die Formverläufe und Konturen kräftiger einstellen. Das Raster findest du unter „Raster &amp; Speichern“; dort bleibt die Vorzeichnung sichtbar. Die gespeicherte PNG-Datei lässt sich aus Fotos oder Dateien drucken.</p>
-      </div>
-
-      <div class="section" id="shadowImagePanel">
-        <h3>Schattenbild aus Skulptur</h3>
-        <p>Erstellt aus dem geöffneten Foto eine klare, dunkle Silhouette auf weißem Grund. Am besten funktioniert ein deutlich beleuchtetes Motiv mit ruhigem Hintergrund.</p>
-        <label for="shadowThreshold" style="display:block;margin-top:10px">Trennschwelle: <span id="shadowThresholdValue">145</span></label>
-        <input id="shadowThreshold" type="range" min="20" max="235" value="145" step="1" style="width:100%;min-height:44px">
-        <div class="grid2" style="margin:4px 0 8px">
-          <button id="shadowDarkSubject" type="button" class="active" aria-pressed="true">Dunkle Skulptur</button>
-          <button id="shadowLightSubject" type="button" class="secondary" aria-pressed="false">Helle Skulptur</button>
-        </div>
-        <canvas id="shadowPreview" aria-label="Vorschau des Schattenbilds" style="position:relative;width:100%;height:auto;aspect-ratio:4/3;background:#fff;border:1px solid #aaa;border-radius:10px;display:block"></canvas>
-        <div class="grid2" style="margin-top:8px">
-          <button id="shadowCreate" type="button">Schattenbild erzeugen</button>
-          <button id="shadowSave" type="button" class="secondary" disabled>PNG speichern</button>
-        </div>
-        <button id="shadowUse" type="button" class="secondary" style="width:100%;margin-top:8px" disabled>Als Atelierbild öffnen</button>
-        <p id="shadowStatus" class="tiny" role="status" aria-live="polite" style="margin-top:8px">Bitte zuerst das Skulpturfoto öffnen.</p>
       </div>
 
       <div class="section" id="tonesPanel">
@@ -2401,87 +2384,6 @@
   let sourceCanvas = document.createElement('canvas');
   let sourceCtx = sourceCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
   window.__atelierArtBridge = { photo:()=>({loaded,canvas:sourceCanvas}), load:(blob,done)=>loadPhoto(blob,true,done) };
-
-  // Schattenbild: ein isoliertes, reversibles Modul, das die Originalvorlage nicht verändert.
-  const shadowPreview=document.getElementById('shadowPreview');
-  const shadowPreviewCtx=shadowPreview.getContext('2d');
-  const shadowThreshold=document.getElementById('shadowThreshold');
-  const shadowThresholdValue=document.getElementById('shadowThresholdValue');
-  const shadowDarkSubject=document.getElementById('shadowDarkSubject');
-  const shadowLightSubject=document.getElementById('shadowLightSubject');
-  const shadowStatus=document.getElementById('shadowStatus');
-  const shadowSave=document.getElementById('shadowSave');
-  const shadowUse=document.getElementById('shadowUse');
-  let shadowOutputCanvas=null, shadowSubjectIsDark=true;
-  function renderShadowImage(){
-    if(!loaded||!sourceCanvas.width||!sourceCanvas.height){
-      shadowStatus.textContent='Bitte zuerst das Skulpturfoto öffnen.';
-      return;
-    }
-    try{
-      const w=sourceCanvas.width,h=sourceCanvas.height;
-      const input=sourceCtx.getImageData(0,0,w,h),out=document.createElement('canvas');
-      out.width=w;out.height=h;
-      const outCtx=out.getContext('2d',{willReadFrequently:false});
-      const result=outCtx.createImageData(w,h),src=input.data,dst=result.data,cut=Number(shadowThreshold.value);
-      for(let i=0;i<src.length;i+=4){
-        const luminance=.2126*src[i]+.7152*src[i+1]+.0722*src[i+2];
-        const isSubject=shadowSubjectIsDark?luminance<=cut:luminance>=cut;
-        const value=isSubject?0:255;
-        dst[i]=value;dst[i+1]=value;dst[i+2]=value;dst[i+3]=255;
-      }
-      outCtx.putImageData(result,0,0);
-      shadowOutputCanvas=out;
-      const box=shadowPreview.getBoundingClientRect(),scale=Math.min(box.width/w,240/h);
-      const pw=Math.max(1,Math.round(w*scale)),ph=Math.max(1,Math.round(h*scale));
-      shadowPreview.width=pw;shadowPreview.height=ph;
-      shadowPreview.style.aspectRatio=`${w} / ${h}`;
-      shadowPreviewCtx.clearRect(0,0,pw,ph);shadowPreviewCtx.drawImage(out,0,0,pw,ph);
-      shadowThresholdValue.textContent=String(cut);
-      shadowSave.disabled=false;shadowUse.disabled=false;
-      shadowStatus.textContent=`Schattenbild erstellt · ${w} × ${h} Pixel. Die Originalvorlage bleibt erhalten.`;
-    }catch(error){
-      shadowOutputCanvas=null;shadowSave.disabled=true;shadowUse.disabled=true;
-      shadowStatus.textContent='Das Schattenbild konnte nicht erstellt werden. Bitte ein anderes Foto oder eine kleinere Bilddatei verwenden.';
-    }
-  }
-  document.getElementById('shadowCreate').addEventListener('click',renderShadowImage);
-  shadowThreshold.addEventListener('input',()=>{shadowThresholdValue.textContent=shadowThreshold.value;});
-  shadowThreshold.addEventListener('change',()=>{if(shadowOutputCanvas)renderShadowImage();});
-  function resetShadowModule(){
-    shadowOutputCanvas=null;shadowSave.disabled=true;shadowUse.disabled=true;
-    shadowPreview.width=320;shadowPreview.height=180;shadowPreview.style.aspectRatio='16 / 9';
-    shadowPreviewCtx.clearRect(0,0,shadowPreview.width,shadowPreview.height);
-    shadowStatus.textContent=loaded?'Neues Foto geöffnet. „Schattenbild erzeugen“ antippen.':'Bitte zuerst das Skulpturfoto öffnen.';
-  }
-  function setShadowSubject(isDark){
-    shadowSubjectIsDark=isDark;
-    shadowDarkSubject.classList.toggle('active',isDark);shadowDarkSubject.classList.toggle('secondary',!isDark);
-    shadowLightSubject.classList.toggle('active',!isDark);shadowLightSubject.classList.toggle('secondary',isDark);
-    shadowDarkSubject.setAttribute('aria-pressed',String(isDark));shadowLightSubject.setAttribute('aria-pressed',String(!isDark));
-    if(shadowOutputCanvas)renderShadowImage();
-  }
-  shadowDarkSubject.addEventListener('click',()=>setShadowSubject(true));
-  shadowLightSubject.addEventListener('click',()=>setShadowSubject(false));
-  function shadowBlob(){return new Promise((resolve,reject)=>{
-    if(!shadowOutputCanvas){reject(Error('Erzeuge zuerst das Schattenbild.'));return;}
-    shadowOutputCanvas.toBlob(blob=>blob?resolve(blob):reject(Error('PNG konnte nicht erstellt werden.')),'image/png');
-  });}
-  shadowSave.addEventListener('click',async()=>{
-    try{
-      const blob=await shadowBlob(),url=URL.createObjectURL(blob),link=document.createElement('a');
-      link.href=url;link.download='AtelierAI_Schattenbild.png';link.click();
-      setTimeout(()=>URL.revokeObjectURL(url),30000);
-      shadowStatus.textContent='Schattenbild als PNG gespeichert.';
-    }catch(error){shadowStatus.textContent=error.message;}
-  });
-  shadowUse.addEventListener('click',async()=>{
-    try{
-      const blob=await shadowBlob();
-      await new Promise((resolve,reject)=>loadPhoto(blob,true,error=>error?reject(error):resolve()));
-      shadowStatus.textContent='Schattenbild ist jetzt als Atelierbild geöffnet. Das ursprüngliche Foto bleibt wiederherstellbar.';
-    }catch(error){shadowStatus.textContent='Nicht geöffnet: '+error.message;}
-  });
 
   let formCanvas = document.createElement('canvas');
   let formCtx = formCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
@@ -10876,7 +10778,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     gridCellCropArmed=false;gridCropSelection.clear();
     clearTimeout(formsSquintTimer);formsOriginalPreview=false;
     setMixSurround('#808080');
-    img=studioWorkingImage(photo);loaded=true;syncApplyAllModules();syncVisibleCrop();placeholder.style.display='none';syncFormsOriginal();resetShadowModule();
+    img=studioWorkingImage(photo);loaded=true;syncApplyAllModules();syncVisibleCrop();placeholder.style.display='none';syncFormsOriginal();
     resetBuild32();cancelIsolation();isolationRevision++;isolationSentKey=null;
     sourceCanvas.width=img.width;sourceCanvas.height=img.height;
     sourceCtx.clearRect(0,0,img.width,img.height);sourceCtx.drawImage(img,0,0);
@@ -13266,5 +13168,176 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wrap.hidden){revision++;wrap.hidden=true}});
 })();
 </script>
+<!-- 4.67: Isolated background replacement studio. Existing photo modules are unchanged. -->
+<style>
+#bgEditorOverlay[hidden]{display:none!important}
+#bgEditorOverlay{position:fixed;inset:0;z-index:4500;background:rgba(10,10,12,.82);display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 8px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 8px)}
+#bgEditorBox{display:flex;flex-direction:column;width:min(1420px,100%);height:min(920px,100%);background:#f4f3ef;color:#202020;border-radius:16px;overflow:hidden;box-shadow:0 12px 48px #0009}
+#bgEditorHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:white;border-bottom:1px solid #ddd}
+#bgEditorHead strong{font-size:18px}
+#bgEditorWork{display:grid;grid-template-columns:minmax(0,1fr) 295px;flex:1;min-height:0}
+#bgStage{position:relative;overflow:hidden;min-width:0;min-height:260px;background:#373737;touch-action:none;user-select:none}
+#bgStage canvas{position:absolute;width:100%;height:100%;touch-action:none}
+#bgSide{overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:9px;border-left:1px solid #ddd}
+#bgSide [hidden]{display:none!important}
+#bgSide p{margin:0;font-size:13px;line-height:1.35;color:#555}
+#bgSide button{padding:10px;font-size:14px;min-height:43px}
+#bgSide label{display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:14px;font-weight:600}
+#bgSide input[type=range]{max-width:130px}
+#bgSide input[type=color]{width:68px;height:36px;padding:2px}
+#bgSide select{min-width:0;font-size:14px;padding:9px;border-radius:7px}
+#bgSide .bg-file{cursor:pointer;border-radius:10px;border:1px solid #999;padding:10px;min-height:43px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600}
+#bgEditorFooter{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;border-top:1px solid #ddd;background:white}
+#bgEditorFooter button,#bgEditorHead button{font-size:14px;padding:9px 12px;min-height:42px}
+#bgStatus{margin-right:auto;flex:1 1 225px;font-size:13px;line-height:1.3}
+#bgSide .bg-choice{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+#bgSide .bg-choice button{min-width:0}
+#bgFileName{word-break:break-word}
+@media(max-width:730px){#bgEditorWork{grid-template-columns:1fr;grid-template-rows:minmax(200px,1fr) auto}#bgSide{max-height:40vh;border-left:0;border-top:1px solid #ddd}#bgEditorFooter{padding:7px}#bgEditorFooter button{font-size:12px}}
+</style>
+<div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
+  <div id="bgEditorBox">
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.67</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
+    <div id="bgEditorWork">
+      <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
+      <div id="bgSide">
+        <strong>1 · Hintergrund auswählen</strong>
+        <div class="bg-choice"><button id="bgTap" class="secondary" type="button">Hintergrund antippen</button><button id="bgLasso" class="secondary" type="button">Motiv mit Lasso</button></div>
+        <p>Einfacher Hintergrund: eine oder mehrere Flächen antippen. Bei komplexem Hintergrund: das Motiv genau umranden; alles außerhalb wird ersetzt. Zwei Finger zoomen und verschieben.</p>
+        <label id="bgToleranceRow">Ähnlichkeit <input id="bgTolerance" type="range" min="5" max="100" step="1" value="30"><output id="bgToleranceVal">30</output></label>
+        <button id="bgFit" class="secondary" type="button">Bild einpassen</button>
+        <strong>2 · Neuen Hintergrund wählen</strong>
+        <label>Art <select id="bgKind"><option value="color" selected>Farbe / Schwarz</option><option value="photo">Eigenes Bild</option></select></label>
+        <label id="bgColorRow">Farbe <input id="bgColor" type="color" value="#000000" aria-label="Hintergrundfarbe"></label>
+        <label id="bgPhotoRow" class="bg-file" hidden>Hintergrundbild öffnen<input id="bgPhotoInput" type="file" accept="image/*"></label>
+        <p id="bgFileName" hidden>Kein Hintergrundbild ausgewählt.</p>
+        <label>Weiche Kante <input id="bgFeather" type="range" min="0" max="8" step="1" value="2"><output id="bgFeatherVal">2 px</output></label>
+        <label><span>Original vergleichen</span><input id="bgOriginal" type="checkbox" style="width:22px;height:22px"></label>
+        <button id="bgClear" class="secondary" type="button">Auswahl zurücksetzen</button>
+      </div>
+    </div>
+    <div id="bgEditorFooter"><span id="bgStatus" role="status" aria-live="polite">Foto öffnen, dann Hintergrund auswählen.</span><button id="bgSave" type="button">PNG speichern</button><button id="bgApply" type="button">Als Malvorlage übernehmen</button></div>
+  </div>
+</div>
+<script>
+(()=>{
+  'use strict';
+  const $=id=>document.getElementById(id);
+  const overlay=$('bgEditorOverlay'),stage=$('bgStage'),screen=$('bgPreview'),screenCtx=screen.getContext('2d');
+  const status=$('bgStatus'),kind=$('bgKind'),color=$('bgColor'),photoInput=$('bgPhotoInput'),feather=$('bgFeather'),tol=$('bgTolerance');
+  const source=()=>window.__atelierArtBridge?.photo?.();
+  const canvas=(w,h)=>{const c=document.createElement('canvas');c.width=Math.max(1,Math.round(w));c.height=Math.max(1,Math.round(h));return c;};
+  const blobOf=c=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG konnte nicht erstellt werden.')),'image/png'));
+  let original=null,preview=null,previewData=null,mask=null,replacement=null,photo=null,points=null,draft=null,selection='none',tool='tap',selected=null;
+  let busy=false,zoom=1,panX=0,panY=0,gest=null,gestures=new Map(),fitScale=1,drawScale=1,drawX=0,drawY=0,raf=0;
+  const say=t=>{status.textContent=t;};
+  const working=()=>selection!=='none'&&!!mask;
+  function ui(){
+    for(const [id,value] of [['bgTap','tap'],['bgLasso','lasso']]){$(id).classList.toggle('active',tool===value);$(id).classList.toggle('secondary',tool!==value);$(id).setAttribute('aria-pressed',String(tool===value));}
+    $('bgToleranceRow').hidden=tool!=='tap';$('bgColorRow').hidden=kind.value!=='color';$('bgPhotoRow').hidden=kind.value!=='photo';$('bgFileName').hidden=kind.value!=='photo';
+    $('bgSave').disabled=$('bgApply').disabled=busy||!working()||(kind.value==='photo'&&!photo);
+    $('bgFeatherVal').textContent=feather.value+' px';$('bgToleranceVal').textContent=tol.value;
+  }
+  function fit(){zoom=1;panX=panY=0;render();}
+  function viewport(){const w=stage.clientWidth,h=stage.clientHeight;if(!preview||!w||!h)return null;fitScale=Math.min(w/preview.width,h/preview.height);drawScale=fitScale*zoom;drawX=(w-preview.width*drawScale)/2+panX;drawY=(h-preview.height*drawScale)/2+panY;return {w,h};}
+  function point(e){const r=stage.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+  function toImage(p){return {x:(p.x-drawX)/drawScale,y:(p.y-drawY)/drawScale};}
+  function inImage(p){return p.x>=0&&p.y>=0&&p.x<preview.width&&p.y<preview.height;}
+  function drawCover(ctx,img,w,h){const s=Math.max(w/img.width,h/img.height),dw=img.width*s,dh=img.height*s;ctx.drawImage(img,(w-dw)/2,(h-dh)/2,dw,dh);}
+  // Mask alpha=1 means replace original; alpha=0 means preserve the motif.
+  function maskFor(w,h){
+    if(!working())return null;
+    let m=canvas(w,h),mc=m.getContext('2d');
+    if(selection==='lasso'&&points){mc.fillStyle='#fff';mc.fillRect(0,0,w,h);mc.globalCompositeOperation='destination-out';mc.beginPath();points.forEach((p,i)=>{const x=p.x*w/preview.width,y=p.y*h/preview.height;i?mc.lineTo(x,y):mc.moveTo(x,y);});mc.closePath();mc.fill();mc.globalCompositeOperation='source-over';}
+    else{mc.imageSmoothingEnabled=true;mc.imageSmoothingQuality='high';mc.drawImage(mask,0,0,w,h);}
+    const radius=Number(feather.value)*Math.max(1,w/preview.width);
+    if(radius>0&&'filter' in mc){const b=canvas(w,h),bc=b.getContext('2d');bc.filter='blur('+Math.min(32,radius)+'px)';bc.drawImage(m,0,0);bc.filter='none';m=b;}
+    return m;
+  }
+  function compose(base,w,h){
+    const out=canvas(w,h),oc=out.getContext('2d');oc.drawImage(base,0,0,w,h);
+    if(!working())return out;
+    const lay=canvas(w,h),lc=lay.getContext('2d');
+    if(kind.value==='photo'){if(!photo)throw Error('Bitte zuerst ein Hintergrundbild auswählen.');drawCover(lc,photo,w,h);}
+    else {lc.fillStyle=color.value;lc.fillRect(0,0,w,h);}
+    lc.globalCompositeOperation='destination-in';lc.drawImage(maskFor(w,h),0,0);lc.globalCompositeOperation='source-over';oc.drawImage(lay,0,0);return out;
+  }
+  function render(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;paint();});}
+  function paint(){const v=viewport();if(!v)return;const dpr=Math.min(2,window.devicePixelRatio||1);if(screen.width!==Math.round(v.w*dpr)||screen.height!==Math.round(v.h*dpr)){screen.width=Math.round(v.w*dpr);screen.height=Math.round(v.h*dpr);}
+    screenCtx.setTransform(dpr,0,0,dpr,0,0);screenCtx.fillStyle='#373737';screenCtx.fillRect(0,0,v.w,v.h);
+    let active=preview;
+    try{if(working()&&!$('bgOriginal').checked&&(kind.value!=='photo'||photo))active=compose(preview,preview.width,preview.height);}catch(_e){}
+    screenCtx.imageSmoothingEnabled=true;screenCtx.imageSmoothingQuality='high';screenCtx.drawImage(active,drawX,drawY,preview.width*drawScale,preview.height*drawScale);
+    if(draft?.length){screenCtx.save();screenCtx.beginPath();draft.forEach((p,i)=>{const x=drawX+p.x*drawScale,y=drawY+p.y*drawScale;i?screenCtx.lineTo(x,y):screenCtx.moveTo(x,y);});screenCtx.setLineDash([5,5]);screenCtx.strokeStyle='#000';screenCtx.lineWidth=5;screenCtx.stroke();screenCtx.strokeStyle='#fff';screenCtx.lineWidth=2;screenCtx.stroke();screenCtx.restore();}
+    if(points&&selection==='lasso'&&tool==='lasso'&&!draft){screenCtx.save();screenCtx.beginPath();points.forEach((p,i)=>{const x=drawX+p.x*drawScale,y=drawY+p.y*drawScale;i?screenCtx.lineTo(x,y):screenCtx.moveTo(x,y);});screenCtx.closePath();screenCtx.setLineDash([5,5]);screenCtx.strokeStyle='#fff';screenCtx.lineWidth=2;screenCtx.stroke();screenCtx.restore();}
+  }
+  function clear(){selection='none';mask=null;selected=null;points=null;draft=null;gest=null;ui();render();say('Auswahl gelöscht. Das Originalbild bleibt unverändert.');}
+  function createMask(){if(!preview)return;mask=canvas(preview.width,preview.height);const data=mask.getContext('2d').createImageData(mask.width,mask.height);for(let i=0;i<selected.length;i++)if(selected[i]){data.data[i*4]=255;data.data[i*4+1]=255;data.data[i*4+2]=255;data.data[i*4+3]=255;}mask.getContext('2d').putImageData(data,0,0);}
+  function flood(p){
+    if(!inImage(p))return;
+    const w=preview.width,h=preview.height,n=w*h,cx=Math.max(0,Math.min(w-1,Math.floor(p.x))),cy=Math.max(0,Math.min(h-1,Math.floor(p.y)));
+    if(selection!=='tap'||!selected){selected=new Uint8Array(n);points=null;}
+    const d=previewData.data,s=(cy*w+cx)*4,r=d[s],g=d[s+1],b=d[s+2];
+    const threshold=5+Number(tol.value)*1.12,limit=threshold*threshold*3;
+    const visited=new Uint8Array(n),queue=new Int32Array(n);let head=0,tail=1,count=0;queue[0]=cy*w+cx;visited[queue[0]]=1;
+    while(head<tail){const pos=queue[head++],z=pos*4,dr=d[z]-r,dg=d[z+1]-g,db=d[z+2]-b;
+      if(dr*dr+dg*dg+db*db>limit)continue;
+      if(!selected[pos]){selected[pos]=1;count++;}
+      const x=pos%w,y=(pos/w)|0;
+      if(x>0&&!visited[pos-1]){visited[pos-1]=1;queue[tail++]=pos-1;}
+      if(x+1<w&&!visited[pos+1]){visited[pos+1]=1;queue[tail++]=pos+1;}
+      if(y>0&&!visited[pos-w]){visited[pos-w]=1;queue[tail++]=pos-w;}
+      if(y+1<h&&!visited[pos+w]){visited[pos+w]=1;queue[tail++]=pos+w;}
+    }
+    if(count===0){say('Keine passende Fläche gefunden. Ähnlichkeit höher stellen oder eine andere Stelle antippen.');return;}
+    selection='tap';createMask();ui();render();say('Hintergrund ausgewählt. Weitere Flächen antippen oder die Kante anpassen.');
+  }
+  function lassoEnd(){const a=draft;draft=null;if(!a||a.length<5){say('Bitte das Motiv mit einem Finger vollständig umfahren.');render();return;}
+    let area=0;for(let i=0;i<a.length;i++){const p=a[i],q=a[(i+1)%a.length];area+=p.x*q.y-q.x*p.y;}if(Math.abs(area)<40){say('Lasso zu klein. Bitte das Motiv umranden.');render();return;}
+    points=a;selected=null;selection='lasso';mask=canvas(preview.width,preview.height);const c=mask.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,mask.width,mask.height);c.globalCompositeOperation='destination-out';c.beginPath();points.forEach((p,i)=>{i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y);});c.closePath();c.fill();c.globalCompositeOperation='source-over';ui();render();say('Motiv geschützt. Alles außerhalb des Lassos erhält den neuen Hintergrund.');
+  }
+  function start(){const p=source();if(!p?.loaded||!p.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}
+    original=p.canvas;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
+    kind.value='color';color.value='#000000';tol.value='30';feather.value='2';$('bgOriginal').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;tool='tap';selection='none';mask=null;selected=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
+    overlay.hidden=false;ui();say('Hintergrund antippen oder das Motiv mit Lasso umfahren. Schwarz ist voreingestellt.');fit();
+  }
+  function close(){overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;selected=null;photo=null;points=null;}
+  $('bgReplaceOpen').addEventListener('click',start);$('bgClose').addEventListener('click',close);
+  $('bgTap').addEventListener('click',()=>{tool='tap';draft=null;ui();render();say('Hintergrund antippen. Mehrere Flächen sind möglich.');});
+  $('bgLasso').addEventListener('click',()=>{tool='lasso';draft=null;ui();render();say('Mit einem Finger das Motiv umranden. Zwei Finger zoomen.');});
+  $('bgFit').addEventListener('click',fit);$('bgClear').addEventListener('click',clear);
+  kind.addEventListener('change',()=>{ui();render();});color.addEventListener('input',render);$('bgOriginal').addEventListener('change',render);
+  feather.addEventListener('input',()=>{ui();render();});tol.addEventListener('input',ui);
+  photoInput.addEventListener('change',async()=>{const file=photoInput.files?.[0];if(!file)return;const url=URL.createObjectURL(file),pic=new Image();
+    try{await new Promise((ok,fail)=>{pic.onload=ok;pic.onerror=()=>fail(Error('Bild konnte nicht geladen werden.'));pic.src=url;});photo=pic;$('bgFileName').textContent='Gewählt: '+file.name;say('Hintergrundbild geladen. Es wird passend zugeschnitten.');}
+    catch(e){say('Hintergrundbild: '+e.message);photo=null;}finally{URL.revokeObjectURL(url);ui();render();}
+  });
+  stage.addEventListener('pointerdown',e=>{if(!preview||e.pointerType==='mouse'&&e.button!==0)return;stage.setPointerCapture(e.pointerId);const p=point(e);gestures.set(e.pointerId,p);
+    if(gestures.size===2){draft=null;const a=[...gestures.values()],mid={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2};viewport();gest={type:'pinch',dist:Math.max(1,Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)),zoom,mid,focus:toImage(mid)};render();}
+    else if(gestures.size===1){viewport();const q=toImage(p);if(tool==='lasso'&&inImage(q)){draft=[q];gest={type:'lasso',id:e.pointerId};}else gest={type:'tap',pos:p,start:p,panX,panY};}e.preventDefault();
+  });
+  stage.addEventListener('pointermove',e=>{if(!gestures.has(e.pointerId)||!preview)return;const p=point(e);gestures.set(e.pointerId,p);
+    if(gestures.size>=2){const a=[...gestures.values()],dist=Math.max(1,Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)),mid={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2};if(gest?.type!=='pinch'){viewport();gest={type:'pinch',dist,zoom,mid,focus:toImage(mid)};}zoom=Math.max(1,Math.min(10,gest.zoom*dist/gest.dist));const base=Math.min(stage.clientWidth/preview.width,stage.clientHeight/preview.height)*zoom;panX=mid.x-(stage.clientWidth-preview.width*base)/2-gest.focus.x*base;panY=mid.y-(stage.clientHeight-preview.height*base)/2-gest.focus.y*base;render();}
+    else if(gest?.type==='lasso'&&draft){viewport();const q=toImage(p),r=draft[draft.length-1];q.x=Math.max(0,Math.min(preview.width,q.x));q.y=Math.max(0,Math.min(preview.height,q.y));if(Math.hypot(q.x-r.x,q.y-r.y)>=1.4/Math.max(.1,drawScale)){draft.push(q);render();}}
+    else if(gest){const dx=p.x-gest.start.x,dy=p.y-gest.start.y;if(gest.type==='tap'&&Math.hypot(dx,dy)>8)gest.type='pan';if(gest.type==='pan'){panX=gest.panX+dx;panY=gest.panY+dy;render();}}
+    e.preventDefault();
+  });
+  function pointerEnd(e){if(!gestures.has(e.pointerId))return;const isLast=gestures.size===1,was=gest?.type,p=point(e);gestures.delete(e.pointerId);
+    if(isLast){if(e.type==='pointerup'&&was==='lasso')lassoEnd();else if(e.type==='pointerup'&&was==='tap'&&tool==='tap'){viewport();flood(toImage(p));}draft=null;gest=null;render();}
+    else if(gestures.size===1){const q=[...gestures.values()][0];gest={type:'pan',start:q,panX,panY};}
+    else gest=null;e.preventDefault();
+  }
+  ['pointerup','pointercancel','lostpointercapture'].forEach(type=>stage.addEventListener(type,pointerEnd));
+  function exportCanvas(){if(!working())throw Error('Bitte zuerst einen Hintergrund auswählen.');return compose(original,original.width,original.height);}
+  async function save(apply){if(busy||!working())return;busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
+    try{const out=exportCanvas(),blob=await blobOf(out);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));close();}
+      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.67_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
+    catch(e){say('Fehler: '+e.message);}finally{busy=false;ui();}
+  }
+  $('bgSave').addEventListener('click',()=>save(false));$('bgApply').addEventListener('click',()=>save(true));
+  window.addEventListener('resize',()=>{if(!overlay.hidden)render();});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden)close();});
+})();
+</script>
+
 </body>
 </html>

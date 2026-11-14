@@ -1,11 +1,30 @@
-AtelierAI iPad 4.67 – Schattenbild aus Skulpturfoto
-==================================================
-- Neues eigenständiges Schattenbild-Modul für das geöffnete Foto.
-- Helligkeitsschwelle einstellen und dunkle oder helle Skulpturen wählen.
-- Ergebnis als PNG speichern oder als Atelierbild öffnen; das Original bleibt wiederherstellbar.
-- Bestehende Module aus Version 4.66 bleiben erhalten.
+NEU IN 4.67 – HINTERGRUND ERSETZEN
+================================
+Werkzeuge ▾ → „Hintergrund ersetzen“.
 
-AtelierAI iPad 4.66 – helle Farben und Lernen aus Korrekturen
+1) „Hintergrund antippen“: Einfachen/farblich zusammenhängenden Hintergrund
+   auf dem Bild antippen; mehrere Bereiche können nacheinander ausgewählt
+   werden. Der Regler „Ähnlichkeit“ steuert, welche Nachbarfarben einbezogen
+   werden. Für komplizierte Hintergründe stattdessen „Motiv mit Lasso“ wählen
+   und die Kontur des zu schützenden Motivs mit dem Finger umzeichnen.
+   Zwei Finger: zoomen/verschieben; „Bild einpassen“ stellt den Zoom zurück.
+2) Farbe/Schwarz (Start: #000000) oder eigenes Bild wählen. Das neue Bild
+   wird proportional skaliert und mittig zugeschnitten, nicht verzerrt.
+3) „Weiche Kante“ korrigiert den Übergang. „Original vergleichen“ zeigt die
+   unveränderte Vorlage. „Auswahl zurücksetzen“ entfernt die Freistellung.
+4) „PNG speichern“ exportiert in Originalauflösung, ohne die Arbeitsvorlage
+   in AtelierAI zu ändern. „Als Malvorlage übernehmen“ verwendet das Bild als
+   neue Vorlage für die übrigen Werkzeuge; das Original bleibt über das
+   vorhandene Zurücksetzen-Verfahren erreichbar. Danach ist JPG/PNG auch
+   über den normalen AtelierAI-Export möglich.
+
+Hinweis: Keine automatische KI-Personenfreistellung. Bei Fell, Haaren oder
+komplizierten Motivkanten kann die manuelle Auswahl Nacharbeit erfordern.
+Die bestehenden Malwerkzeuge sind nicht verändert. Offline-Modus/Startseiten
+verwenden die Versionskennung 4.67. Browser-Syntax und drei Bild-/Lasso-
+Verarbeitungstests wurden geprüft; praktische iPad-/Safari-Prüfung steht aus.
+
+AtelierAI iPad 4.67 – Hintergrund ersetzen (Basis: 4.66)
 ============================================================
 - Alle sehr hellen Farbtöne: die Farbfamilie der verwendeten Pigmente
   wird zusätzlich zur numerischen Bildschirmnähe geprüft, nicht nur Blau.
