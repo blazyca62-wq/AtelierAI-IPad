@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.82</title>
+  <title>AtelierAI iPad 4.83</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.82</div>
+    <div class="title">AtelierAI · iPad 4.83</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -12692,16 +12692,20 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       return !!settings?.targets&&Object.values(settings.targets).some(target=>
         effects.some(([id])=>!!Number(target.values[id])));
     }
-    function renderLayerDesign(source,matte,settings,dragging=false){
-      if(!hasLayerDesign(settings))return source;
-      const {width:w,height:h}=source,maxSize=dragging?360:1000;
-      const scale=Math.min(1,maxSize/Math.max(w,h));
-      const sw=Math.max(1,Math.round(w*scale)),sh=Math.max(1,Math.round(h*scale));
+    function measureLayerDesign(source,settings,maxSize=1000){
+      if(!hasLayerDesign(settings))return null;
+      const scale=Math.min(1,maxSize/Math.max(source.width,source.height));
+      const sw=Math.max(1,Math.round(source.width*scale)),sh=Math.max(1,Math.round(source.height*scale));
       const sample=workCanvas(sw,sh);
       sample.getContext('2d',{willReadFrequently:true}).drawImage(source,0,0,sw,sh);
       const input=pixels(sample);
       const edits=['motif','backdrop'].map(key=>applyArtEffects(settings.targets[key].values,input));
       const differences=edits.map(edit=>edit&&Int16Array.from(edit,(value,i)=>value-input.data[i]));
+      return {sw,sh,differences};
+    }
+    function applyLayerDesign(source,matte,correction){
+      if(!correction)return source;
+      const {width:w,height:h}=source,{sw,sh,differences}=correction;
 
       // Transfer the effect to the original pixels. The exact matte is applied at
       // output size so colors from one side cannot spill onto the other.
@@ -12825,7 +12829,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(!targets)return;
       captureTarget();loadTarget(target.value);render();
     });
-    Object.assign(window.__atelierArtBridge,{openDesign:start,hasLayerDesign,renderLayerDesign});
+    Object.assign(window.__atelierArtBridge,{openDesign:start,hasLayerDesign,measureLayerDesign,applyLayerDesign});
     by('artOpenBtn').addEventListener('click',()=>{
       try{
         const photo=window.__atelierArtBridge.photo();
@@ -13368,7 +13372,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.82</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.83</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -13448,7 +13452,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   const say=t=>{status.textContent=t;};
   const working=()=>selection!=='none'&&!!mask;
   const tapHistory=[];
-  let designSettings=null;
+  let designSettings=null,designCorrection=null,fastPreview=null;
+  let sliderPointer=null,sliderTimer=0,sliderMoving=false;
+  let designMaskCache=null;
   const brushSize=$('bgBrushSize');
   let brushMode=null,brushStroke=null,brushCursor=null,brushLayer=null,brushMaskCache=null;
   let brushStrokes=[],brushRevision=0;
@@ -14009,15 +14015,16 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const placing=selection==='alpha'||(motifChanged()&&!!motifBounds());
     if(!placing&&!(kind.value==='original'&&brushLayer))return prepareLayers(base,w,h,compare,false).motif;
     let layers;
-    const lighting=lightingPlacement(compare,base===preview);
-    if(base===preview){
-      const settings=[...layerSettings(compare),lighting?.x,lighting?.y,lighting?.scale];
+    const isPreview=base===preview||base===fastPreview;
+    const lighting=lightingPlacement(compare,isPreview);
+    if(isPreview){
+      const settings=[...layerSettings(compare),lighting?.x,lighting?.y,lighting?.scale,w,h];
       if(!placementCache||settings.some((v,i)=>v!==placementCache.settings[i])){
         placementCache={settings,layers:prepareLayers(base,w,h,compare,true,lighting)};
       }
       layers=placementCache.layers;
     }else layers=prepareLayers(base,w,h,compare,true,lighting);
-    const out=base===preview?canvas(w,h):layers.backdrop,ctx=out.getContext('2d');
+    const out=isPreview?canvas(w,h):layers.backdrop,ctx=out.getContext('2d');
     const offset=motifPlacement(),x=offset.x*w/preview.width,y=offset.y*h/preview.height;
     if(out!==layers.backdrop)ctx.drawImage(layers.backdrop,0,0);
     ctx.imageSmoothingQuality='high';
@@ -14025,14 +14032,25 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     return out;
   }
   function render(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;paint();});}
+  function interactivePreview(){
+    if(fastPreview)return fastPreview;
+    const scale=Math.min(1,640/Math.max(preview.width,preview.height));
+    if(scale===1)return preview;
+    fastPreview=canvas(preview.width*scale,preview.height*scale);
+    fastPreview.getContext('2d').drawImage(preview,0,0,fastPreview.width,fastPreview.height);
+    return fastPreview;
+  }
   function composedPreview(){
     const compare=$('bgCompare').checked;
     const lighting=lightingPlacement(compare,true);
-    const moving=gest?.type==='motif'||gest?.type==='background'||gest?.type==='brush';
-    const settings=[...layerSettings(compare),motifX,motifY,motifScale,lighting?.x,lighting?.y,lighting?.scale,designSettings,moving];
+    const moving=sliderMoving||gest?.type==='motif'||gest?.type==='background'||gest?.type==='brush';
+    const hasDesign=!compare&&window.__atelierArtBridge?.hasLayerDesign?.(designSettings);
+    const fast=!!(moving&&hasDesign);
+    const settings=[...layerSettings(compare),motifX,motifY,motifScale,lighting?.x,lighting?.y,lighting?.scale,designSettings,fast];
     if(!compositeCache||settings.some((value,i)=>value!==compositeCache.settings[i])){
-      const composite=compose(preview,preview.width,preview.height,compare);
-      compositeCache={settings,canvas:compare?composite:withDesign(composite,moving)};
+      const base=fast?interactivePreview():preview;
+      const composite=compose(base,base.width,base.height,compare);
+      compositeCache={settings,canvas:hasDesign?withDesign(composite,fast?'fast':'preview'):composite};
     }
     return compositeCache.canvas;
   }
@@ -14124,13 +14142,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function start(){const p=source();if(!p?.loaded||!p.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}
     original=p.canvas;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
     kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='70';lightMix.value=colorMix.value=backdropLight.value=backdropColor.value='0';$('bgBackdropGroup').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;selected=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
-    designSettings=null;tapHistory.length=0;clearBrush();brushSize.value='24';$('bgBrushPanel').open=false;resetPlacement();$('bgMotifPlacement').open=false;
+    resetDesignPreview();designSettings=null;tapHistory.length=0;clearBrush();brushSize.value='24';$('bgBrushPanel').open=false;resetPlacement();$('bgMotifPlacement').open=false;
     mask=importedAlphaMask();
     if(mask)selection='alpha';
     overlay.hidden=false;ui();
     say(mask?'Freistellung erkannt. Bei „Art“ kannst du direkt eine Farbe oder ein eigenes Bild wählen.':'Hintergrund antippen oder das Motiv mit Lasso umfahren. Schwarz ist voreingestellt.');fit();
   }
-  function close(){designSettings=null;tapHistory.length=0;clearBrush();resetPlacement();edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;selected=null;photo=null;points=null;}
+  function close(){resetDesignPreview();designSettings=null;tapHistory.length=0;clearBrush();resetPlacement();edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;selected=null;photo=null;points=null;}
   $('bgReplaceOpen').addEventListener('click',start);$('bgClose').addEventListener('click',close);
   $('bgTap').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='tap';draft=null;ui();render();say('Hintergrund antippen. Mehrere Flächen sind möglich.');});
   $('bgLasso').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='lasso';draft=null;ui();render();say('Mit einem Finger das Motiv umranden. Zwei Finger zoomen.');});
@@ -14218,20 +14236,62 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   ['pointerup','pointercancel','lostpointercapture'].forEach(type=>stage.addEventListener(type,pointerEnd));
   stage.addEventListener('pointerleave',()=>{if(brushCursor&&!brushStroke){brushCursor=null;render();}});
+  function resetDesignPreview(){
+    designCorrection=fastPreview=designMaskCache=null;
+    sliderPointer=null;
+    sliderMoving=false;
+    clearTimeout(sliderTimer);
+  }
+  function finishSlider(){
+    clearTimeout(sliderTimer);
+    if(!sliderMoving)return;
+    sliderMoving=false;
+    render();
+  }
+  const sidebar=$('bgSide');
+  const isSlider=el=>el?.matches?.('input[type="range"]');
+  sidebar.addEventListener('pointerdown',e=>{
+    if(isSlider(e.target))sliderPointer=e.pointerId;
+  });
+  sidebar.addEventListener('input',e=>{
+    if(!isSlider(e.target)||!window.__atelierArtBridge?.hasLayerDesign?.(designSettings))return;
+    sliderMoving=true;
+    clearTimeout(sliderTimer);
+    if(sliderPointer===null)sliderTimer=setTimeout(finishSlider,180);
+  });
+  function finishSliderPointer(e){
+    if(e.pointerId!==sliderPointer)return;
+    sliderPointer=null;
+    finishSlider();
+  }
+  window.addEventListener('pointerup',finishSliderPointer);
+  window.addEventListener('pointercancel',finishSliderPointer);
+
   function exportCanvas(includeDesign=true){
     if(!working())throw Error('Bitte zuerst einen Hintergrund auswählen.');
     const composite=compose(original,original.width,original.height);
     return includeDesign?withDesign(composite):composite;
   }
-  function withDesign(composite,moving=false){
+  function withDesign(composite,quality='export'){
     const bridge=window.__atelierArtBridge;
-    if(!bridge.hasLayerDesign?.(designSettings))return composite;
-    const matte=designMatte(composite.width,composite.height);
-    return bridge.renderLayerDesign(composite,matte,designSettings,moving);
+    if(!bridge?.hasLayerDesign?.(designSettings))return composite;
+    const {width:w,height:h}=composite;
+    const key=[mask,selection,brushRevision,clean.value,smooth.checked,feather.value,w,h,motifX,motifY,motifScale];
+    if(!designMaskCache||key.some((value,i)=>value!==designMaskCache.key[i])){
+      designMaskCache={key,canvas:designMatte(w,h)};
+    }
+    // During scrubbing reuse the last complete color correction. Recompute once
+    // the control settles, so the next preview and export reflect its exact value.
+    let correction=designCorrection;
+    if(quality!=='fast'||!correction){
+      correction=bridge.measureLayerDesign(composite,designSettings,quality==='fast'?360:1000);
+      if(quality!=='export')designCorrection=correction;
+    }
+    return bridge.applyLayerDesign(composite,designMaskCache.canvas,correction);
   }
   async function save(apply){if(busy||brushStroke||!working())return;busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
     try{const out=exportCanvas(),blob=await blobOf(out);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));close();}
-      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.82_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
+      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.83_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
     catch(e){say('Fehler: '+e.message);}finally{busy=false;ui();}
   }
   function designMatte(w=preview.width,h=preview.height){
@@ -14256,7 +14316,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const composite=exportCanvas(false);
       window.__atelierArtBridge.openDesign(composite,(applied,settings)=>{
         if(applied){close();return;}
-        designSettings=settings;
+        resetDesignPreview();designSettings=settings;
         compositeCache=null;
         $('bgCompare').checked=$('bgOriginal').checked=false;
         overlay.hidden=false;ui();render();

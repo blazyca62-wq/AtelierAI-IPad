@@ -1,3 +1,7 @@
+NEU IN 4.83 – FLÜSSIGERE HINTERGRUNDREGLER
+
+Beim Ziehen eines Reglers erscheint eine schnellere Vorschau mit den bereits berechneten Gestaltungseffekten. Beim Loslassen berechnet AtelierAI die Gestaltung für die endgültige Einstellung neu. Beim PNG-Export wird die Gestaltung für den aktuellen Stand berechnet und in den Abmessungen des Ausgangsbildes ausgegeben.
+
 NEU IN 4.82 – GESTALTUNG BEIM ZURÜCKGEHEN BEHALTEN
 
 „Zurück zum Hintergrund“ und „Gestaltung übernehmen und zurück“ übernehmen die getrennten Gestaltungseinstellungen in die laufende Hintergrundbearbeitung. Motiv und Hintergrund bleiben als getrennte Ebenen verfügbar. Motivgröße, Platzierung und Hintergrund können weiter geändert werden. Beim erneuten Öffnen stehen beide Reglersätze bereit. „PNG speichern“ im Hintergrundeditor exportiert die Gestaltung in den Abmessungen des Ausgangsbildes.
