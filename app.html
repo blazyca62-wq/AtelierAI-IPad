@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.70</title>
+  <title>AtelierAI iPad 4.71</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.70</div>
+    <div class="title">AtelierAI · iPad 4.71</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -13168,7 +13168,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!wrap.hidden){revision++;wrap.hidden=true}});
 })();
 </script>
-<!-- 4.70: Background repositioning and explicit alpha feathering for iPad Safari. -->
+<!-- Background editor: cutout, backdrop placement and local relighting. -->
 <style>
 #bgEditorOverlay[hidden]{display:none!important}
 #bgEditorOverlay{position:fixed;inset:0;z-index:4500;background:rgba(10,10,12,.82);display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 8px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 8px)}
@@ -13197,7 +13197,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.70</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.71</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -13217,9 +13217,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         <p>Verschieben einschalten, dann das Bild mit einem Finger ziehen. Zwei Finger bewegen weiterhin die gesamte Ansicht.</p></div>
         <strong>3 · Motiv integrieren</strong>
         <label>Integration <input id="bgIntegrate" type="range" min="0" max="100" value="0" step="5"><output id="bgIntegrateVal">0 %</output></label>
-        <label>Licht / Tonwerte <input id="bgLightMix" type="range" min="0" max="100" value="60" step="5"><output id="bgLightMixVal">60 %</output></label>
-        <label>Farbharmonie <input id="bgColorMix" type="range" min="0" max="100" value="50" step="5"><output id="bgColorMixVal">50 %</output></label>
-        <p>Passt die Farben und Helligkeit des Motivs dezent an den neuen Hintergrund an. Die Form bleibt unverändert. Integration 0 % = Original.</p>
+        <label>Licht / Tonwerte <input id="bgLightMix" type="range" min="0" max="100" value="80" step="5"><output id="bgLightMixVal">80 %</output></label>
+        <label>Farbharmonie <input id="bgColorMix" type="range" min="0" max="100" value="65" step="5"><output id="bgColorMixVal">65 %</output></label>
+        <p>Das Licht rund ums Motiv beeinflusst seine Tonwerte und Farbe. Erhöhe die Integration, bis das Motiv zum Hintergrund passt.</p>
+        <label><span>Ohne Integration vergleichen</span><input id="bgCompare" type="checkbox" style="width:22px;height:22px"></label>
         <label>Rand bereinigen <input id="bgClean" type="range" min="0" max="5" step="1" value="2"><output id="bgCleanVal">2 px</output></label>
         <label><span>Kante glätten</span><input id="bgSmooth" type="checkbox" checked style="width:22px;height:22px"></label>
         <label>Weiche Kante <input id="bgFeather" type="range" min="0" max="8" step="1" value="1"><output id="bgFeatherVal">1 px</output></label>
@@ -13242,9 +13243,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   let bgShiftX=0,bgShiftY=0,bgZoom=1,bgMoveMode=false;
   const canvas=(w,h)=>{const c=document.createElement('canvas');c.width=Math.max(1,Math.round(w));c.height=Math.max(1,Math.round(h));return c;};
   const blobOf=c=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG konnte nicht erstellt werden.')),'image/png'));
-  let original=null,preview=null,previewData=null,mask=null,replacement=null,photo=null,points=null,draft=null,selection='none',tool='tap',selected=null;
+  let original=null,preview=null,previewData=null,mask=null,photo=null,points=null,draft=null,selection='none',tool='tap',selected=null;
   let busy=false,zoom=1,panX=0,panY=0,gest=null,gestures=new Map(),fitScale=1,drawScale=1,drawX=0,drawY=0,raf=0;
-  let edgeMaskCache=null; // Only invalidate when the selection or edge options change.
+  let edgeMaskCache=null,previewMatte=null,compositeCache=null;
   const say=t=>{status.textContent=t;};
   const working=()=>selection!=='none'&&!!mask;
   function ui(){
@@ -13321,10 +13322,16 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function maskFor(w,h){
     if(!working())return null;
-    const src=edgeMask(),radius=Number(feather.value)*Math.max(1,w/preview.width);
+    const src=edgeMask(),softness=Number(feather.value),radius=softness*Math.max(1,w/preview.width);
+    const forPreview=w===preview.width&&h===preview.height;
+    if(forPreview&&previewMatte?.src===src&&previewMatte.softness===softness)return previewMatte.canvas;
+    const remember=m=>{
+      if(forPreview)previewMatte={src,softness,canvas:m};
+      return m;
+    };
     const m=canvas(w,h),mc=m.getContext('2d',{willReadFrequently:true});
     mc.imageSmoothingEnabled=true;mc.imageSmoothingQuality='high';mc.drawImage(src,0,0,w,h);
-    if(radius<=0)return m;
+    if(radius<=0)return remember(m);
     // Explicit separable alpha blur: Safari canvas filter support is inconsistent.
     // Gaussian approximation using a bounded triangular kernel, alpha only.
     const im=mc.getImageData(0,0,w,h),d=im.data,n=w*h;
@@ -13333,61 +13340,176 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const horizontal=new Float32Array(n),out=new Uint8ClampedArray(n);
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){let v=0;for(let k=-r;k<=r;k++)v+=weights[k+r]*d[(y*w+Math.max(0,Math.min(w-1,x+k)))*4+3];horizontal[y*w+x]=v/sum;}
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){let v=0;for(let k=-r;k<=r;k++)v+=weights[k+r]*horizontal[Math.max(0,Math.min(h-1,y+k))*w+x];out[y*w+x]=v/sum;}
-    for(let i=0;i<n;i++)d[i*4+3]=out[i];mc.putImageData(im,0,0);return m;
+    for(let i=0;i<n;i++)d[i*4+3]=out[i];mc.putImageData(im,0,0);return remember(m);
   }
-  // Analyze actual replacement image colors, not the old background.
-  // Small sampling canvas avoids reading the full resolution photo.
-  function backgroundAverage(){
-    const c=canvas(96,96),cx=c.getContext('2d',{willReadFrequently:true});
-    if(kind.value==='photo'){if(!photo)return [128,128,128];drawCover(cx,photo,96,96);}
-    else{cx.fillStyle=color.value;cx.fillRect(0,0,96,96);}
-    const d=cx.getImageData(0,0,96,96).data;let r=0,g=0,b=0,n=0;
-    for(let y=4;y<96;y+=5)for(let x=4;x<96;x+=5){let j=(y*96+x)*4;r+=d[j];g+=d[j+1];b+=d[j+2];n++;}
-    return [r/n,g/n,b/n];
-  }
-  function integrateMotif(base,w,h,m){
-    const amount=Number(integrate.value)/100;
-    if(amount<=0)return null;
-    const target=backgroundAverage();
-    const sample=previewData.data,md=edgeMask().getContext('2d',{willReadFrequently:true}).getImageData(0,0,preview.width,preview.height).data;
-    let sr=0,sg=0,sb=0,n=0;
-    for(let y=0;y<preview.height;y+=4)for(let x=0;x<preview.width;x+=4){const j=(y*preview.width+x)*4;if(md[j+3]>32)continue;sr+=sample[j];sg+=sample[j+1];sb+=sample[j+2];n++;}
-    if(n<10)return null;
-    const avg=[sr/n,sg/n,sb/n],brightness=a=>.2126*a[0]+.7152*a[1]+.0722*a[2];
-    const lightDelta=Math.max(-45,Math.min(45,(brightness(target)-brightness(avg))*.35))*amount*Number(lightMix.value)/100;
-    const colorPower=amount*Number(colorMix.value)/100*.30;
-    const out=canvas(w,h),cx=out.getContext('2d',{willReadFrequently:true});cx.drawImage(base,0,0,w,h);
-    // Process in tiles to keep peak memory manageable on iPad.
-    const tileH=Math.max(1,Math.floor(400000/Math.max(1,w)));
-    const deltas=target.map((v,i)=>Math.max(-45,Math.min(45,v-avg[i]))*colorPower);
-    for(let y=0;y<h;y+=tileH){const th=Math.min(tileH,h-y),im=cx.getImageData(0,y,w,th),d=im.data;
-      for(let i=0;i<d.length;i+=4){for(let k=0;k<3;k++){const v=d[i+k];d[i+k]=Math.max(0,Math.min(255,(v-128)*(1-.09*amount)+128+lightDelta+deltas[k]));}}
-      cx.putImageData(im,0,y);
+  const clamp=(value,lo,hi)=>Math.max(lo,Math.min(hi,value));
+  const luminance=(r,g,b)=>.2126*r+.7152*g+.0722*b;
+
+  // Distance to the closest pixel on the other side of the contour.
+  // Distances are in analysis-grid pixels, independent of export resolution.
+  function contourDistances(alpha,w,h,toBackground){
+    const distance=new Float32Array(w*h);
+    for(let i=0;i<distance.length;i++)distance[i]=(alpha[i*4+3]>=128)===toBackground?0:w+h;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const i=y*w+x;
+      if(x)distance[i]=Math.min(distance[i],distance[i-1]+1);
+      if(!y)continue;
+      distance[i]=Math.min(distance[i],distance[i-w]+1);
+      if(x)distance[i]=Math.min(distance[i],distance[i-w-1]+Math.SQRT2);
+      if(x+1<w)distance[i]=Math.min(distance[i],distance[i-w+1]+Math.SQRT2);
     }
-    // Only recolor the original motif; retain the exact original alpha contour.
-    cx.globalCompositeOperation='destination-out';cx.drawImage(m,0,0);cx.globalCompositeOperation='source-over';
+    for(let y=h-1;y>=0;y--)for(let x=w-1;x>=0;x--){
+      const i=y*w+x;
+      if(x+1<w)distance[i]=Math.min(distance[i],distance[i+1]+1);
+      if(y+1>=h)continue;
+      distance[i]=Math.min(distance[i],distance[i+w]+1);
+      if(x)distance[i]=Math.min(distance[i],distance[i+w-1]+Math.SQRT2);
+      if(x+1<w)distance[i]=Math.min(distance[i],distance[i+w+1]+Math.SQRT2);
+    }
+    return distance;
+  }
+
+  function sceneSample(image,w,h){
+    const c=canvas(w,h),ctx=c.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(image,0,0,w,h);
+    return ctx.getImageData(0,0,w,h).data;
+  }
+
+  function lightField(backdrop){
+    const scale=Math.min(1,180/Math.max(preview.width,preview.height));
+    const w=Math.max(1,Math.round(preview.width*scale)),h=Math.max(1,Math.round(preview.height*scale));
+    const alpha=sceneSample(edgeMask(),w,h),before=sceneSample(preview,w,h),after=sceneSample(backdrop,w,h);
+    const outside=contourDistances(alpha,w,h,false),inside=contourDistances(alpha,w,h,true);
+    const radius=Math.max(2,Math.round(Math.max(w,h)*.10));
+    let weight=0,oldY=0,newY=0,oldR=0,oldB=0,newR=0,newB=0;
+    for(let i=0;i<w*h;i++){
+      const j=i*4;
+      if(!outside[i]||outside[i]>radius*2||alpha[j+3]<240)continue;
+      const p=(before[j+3]/255)*(after[j+3]/255)/(1+outside[i]/radius);
+      weight+=p;
+      oldY+=p*luminance(before[j],before[j+1],before[j+2]);
+      newY+=p*luminance(after[j],after[j+1],after[j+2]);
+      oldR+=p*before[j];oldB+=p*before[j+2];
+      newR+=p*after[j];newB+=p*after[j+2];
+    }
+    if(weight<.01)return null;
+    oldY/=weight;newY/=weight;oldR/=weight;oldB/=weight;newR/=weight;newB/=weight;
+
+    // Summed-area table for soft local light. Ignore transparent areas exposed by moving a backdrop.
+    const stride=w+1,table=new Float32Array(stride*(h+1)*4);
+    for(let y=0;y<h;y++){
+      const row=[0,0,0,0];
+      for(let x=0;x<w;x++){
+        const sample=(y*w+x)*4,idx=((y+1)*stride+x+1)*4,a=after[sample+3]/255;
+        row[0]+=after[sample]*a;row[1]+=after[sample+1]*a;row[2]+=after[sample+2]*a;row[3]+=a;
+        for(let k=0;k<4;k++)table[idx+k]=table[idx-stride*4+k]+row[k];
+      }
+    }
+    const field=new Float32Array(w*h*3);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const i=y*w+x,x0=Math.max(0,x-radius),x1=Math.min(w,x+radius+1);
+      const y0=Math.max(0,y-radius),y1=Math.min(h,y+radius+1);
+      const a=(y0*stride+x0)*4,b=(y0*stride+x1)*4,c=(y1*stride+x0)*4,d=(y1*stride+x1)*4;
+      const sum=k=>table[d+k]-table[b+k]-table[c+k]+table[a+k];
+      const localWeight=sum(3),hasLight=localWeight>.01;
+      const r=hasLight?sum(0)/localWeight:newR;
+      const blue=hasLight?sum(2)/localWeight:newB;
+      const light=hasLight?luminance(r,sum(1)/localWeight,blue):newY;
+      const rim=Math.exp(-inside[i]/Math.max(1,radius*.32));
+      const tonalShift=.65*(newY-oldY)+.50*(light-newY);
+      field[i*3]=clamp(tonalShift,-110,95);
+      field[i*3+1]=clamp(.30*(newR-newY)+.70*(r-light)-.42*(oldR-oldY),-72,72)*(.55+.45*rim);
+      field[i*3+2]=clamp(.30*(newB-newY)+.70*(blue-light)-.42*(oldB-oldY),-72,72)*(.55+.45*rim);
+    }
+    return {w,h,field};
+  }
+
+  const colorHeadroom=(value,shift)=>shift>0?(255-value)/shift:shift<0?value/-shift:1;
+  function relightMotif(ctx,matte,scene,w,h,light,color){
+    const maskContext=matte.getContext('2d');
+    const {w:fw,h:fh,field}=scene;
+    const columns=new Int32Array(w),fractions=new Float32Array(w);
+    for(let x=0;x<w;x++){
+      const fx=clamp((x+.5)*fw/w-.5,0,fw-1);
+      columns[x]=Math.floor(fx);
+      fractions[x]=fx-columns[x];
+    }
+    const tileH=Math.max(1,Math.floor(350000/w)),row=new Float32Array(fw*3);
+    for(let top=0;top<h;top+=tileH){
+      const height=Math.min(tileH,h-top);
+      const tile=ctx.getImageData(0,top,w,height),data=tile.data;
+      const maskData=maskContext.getImageData(0,top,w,height).data;
+      for(let y=0;y<height;y++){
+        const fy=clamp((top+y+.5)*fh/h-.5,0,fh-1);
+        const y0=Math.floor(fy),y1=Math.min(fh-1,y0+1),wy=fy-y0;
+        for(let j=0;j<row.length;j++)row[j]=field[y0*row.length+j]*(1-wy)+field[y1*row.length+j]*wy;
+        for(let x=0;x<w;x++){
+          const i=(y*w+x)*4;
+          if(maskData[i+3]===255||data[i+3]===0)continue;
+          const a=columns[x]*3,b=Math.min(fw-1,columns[x]+1)*3,f=fractions[x];
+          const yShift=(row[a]*(1-f)+row[b]*f)*light;
+          const rShift=(row[a+1]*(1-f)+row[b+1]*f)*color;
+          const bShift=(row[a+2]*(1-f)+row[b+2]*f)*color;
+          const gShift=-(.2126*rShift+.0722*bShift)/.7152;
+          const r=data[i],g=data[i+1],blue=data[i+2],l=luminance(r,g,blue)/255;
+          const meanShift=yShift<0
+            ? yShift*1.45*l*(1-.62*l*l)
+            : yShift*1.28*(1-l)*(.42+.85*l);
+          const toneScale=meanShift<0 ? 1+meanShift/Math.max(1,l*255) : 1-meanShift/Math.max(1,(1-l)*255);
+          const toneLift=meanShift>0 ? 255*(1-toneScale) : 0;
+          const newR=r*toneScale+toneLift,newG=g*toneScale+toneLift,newB=blue*toneScale+toneLift;
+          // Keep color shifts inside the RGB gamut without clipping individual channels.
+          const strength=clamp(Math.min(colorHeadroom(newR,rShift),colorHeadroom(newG,gShift),colorHeadroom(newB,bShift)),0,1);
+          data[i]=newR+rShift*strength;
+          data[i+1]=newG+gShift*strength;
+          data[i+2]=newB+bShift*strength;
+        }
+      }
+      ctx.putImageData(tile,0,top);
+    }
+  }
+
+  function compose(base,w,h,compare=false){
+    if(!working())return base;
+    const amount=compare?0:Number(integrate.value)/100;
+    const light=amount*Number(lightMix.value)/100,colorStrength=amount*Number(colorMix.value)/100;
+    const backdrop=canvas(w,h),bc=backdrop.getContext('2d');
+    if(kind.value==='photo'){
+      if(!photo)throw Error('Bitte zuerst ein Hintergrundbild auswählen.');
+      drawCover(bc,photo,w,h);
+    }else{
+      bc.fillStyle=color.value;bc.fillRect(0,0,w,h);
+    }
+    const matte=maskFor(w,h);
+    const out=canvas(w,h),oc=out.getContext('2d',{willReadFrequently:!!(light||colorStrength)});
+    oc.drawImage(base,0,0,w,h);
+    if(light||colorStrength){
+      // Sample at the preview aspect ratio, before cutting the replacement to the background mask.
+      const scene=lightField(backdrop);
+      if(scene)relightMotif(oc,matte,scene,w,h,light,colorStrength);
+    }
+    bc.globalCompositeOperation='destination-in';bc.drawImage(matte,0,0);
+    oc.drawImage(backdrop,0,0);
     return out;
   }
-  function compose(base,w,h){
-    const out=canvas(w,h),oc=out.getContext('2d');oc.drawImage(base,0,0,w,h);
-    if(!working())return out;
-    const matte=maskFor(w,h);
-    if(Number(integrate.value)>0){const fg=integrateMotif(base,w,h,matte);if(fg)oc.drawImage(fg,0,0);}
-    const lay=canvas(w,h),lc=lay.getContext('2d');
-    if(kind.value==='photo'){if(!photo)throw Error('Bitte zuerst ein Hintergrundbild auswählen.');drawCover(lc,photo,w,h);}
-    else {lc.fillStyle=color.value;lc.fillRect(0,0,w,h);}
-    lc.globalCompositeOperation='destination-in';lc.drawImage(matte,0,0);lc.globalCompositeOperation='source-over';oc.drawImage(lay,0,0);return out;
-  }
   function render(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;paint();});}
+  function composedPreview(){
+    const compare=$('bgCompare').checked;
+    const settings=[mask,clean.value,smooth.checked,feather.value,kind.value,color.value,photo,bgShiftX,bgShiftY,bgZoom,integrate.value,lightMix.value,colorMix.value,compare];
+    if(!compositeCache||settings.some((value,i)=>value!==compositeCache.settings[i])){
+      compositeCache={settings,canvas:compose(preview,preview.width,preview.height,compare)};
+    }
+    return compositeCache.canvas;
+  }
   function paint(){const v=viewport();if(!v)return;const dpr=Math.min(2,window.devicePixelRatio||1);if(screen.width!==Math.round(v.w*dpr)||screen.height!==Math.round(v.h*dpr)){screen.width=Math.round(v.w*dpr);screen.height=Math.round(v.h*dpr);}
     screenCtx.setTransform(dpr,0,0,dpr,0,0);screenCtx.fillStyle='#373737';screenCtx.fillRect(0,0,v.w,v.h);
     let active=preview;
-    try{if(working()&&!$('bgOriginal').checked&&(kind.value!=='photo'||photo))active=compose(preview,preview.width,preview.height);}catch(_e){}
+    try{if(working()&&!$('bgOriginal').checked&&(kind.value!=='photo'||photo))active=composedPreview();}catch(_e){}
     screenCtx.imageSmoothingEnabled=true;screenCtx.imageSmoothingQuality='high';screenCtx.drawImage(active,drawX,drawY,preview.width*drawScale,preview.height*drawScale);
     if(draft?.length){screenCtx.save();screenCtx.beginPath();draft.forEach((p,i)=>{const x=drawX+p.x*drawScale,y=drawY+p.y*drawScale;i?screenCtx.lineTo(x,y):screenCtx.moveTo(x,y);});screenCtx.setLineDash([5,5]);screenCtx.strokeStyle='#000';screenCtx.lineWidth=5;screenCtx.stroke();screenCtx.strokeStyle='#fff';screenCtx.lineWidth=2;screenCtx.stroke();screenCtx.restore();}
     if(points&&selection==='lasso'&&tool==='lasso'&&!draft){screenCtx.save();screenCtx.beginPath();points.forEach((p,i)=>{const x=drawX+p.x*drawScale,y=drawY+p.y*drawScale;i?screenCtx.lineTo(x,y):screenCtx.moveTo(x,y);});screenCtx.closePath();screenCtx.setLineDash([5,5]);screenCtx.strokeStyle='#fff';screenCtx.lineWidth=2;screenCtx.stroke();screenCtx.restore();}
   }
-  function clear(){edgeMaskCache=null;selection='none';mask=null;selected=null;points=null;draft=null;gest=null;ui();render();say('Auswahl gelöscht. Das Originalbild bleibt unverändert.');}
+  function clear(){edgeMaskCache=previewMatte=compositeCache=null;selection='none';mask=null;selected=null;points=null;draft=null;gest=null;ui();render();say('Auswahl gelöscht. Das Originalbild bleibt unverändert.');}
   function createMask(){if(!preview)return;edgeMaskCache=null;mask=canvas(preview.width,preview.height);const data=mask.getContext('2d').createImageData(mask.width,mask.height);for(let i=0;i<selected.length;i++)if(selected[i]){data.data[i*4]=255;data.data[i*4+1]=255;data.data[i*4+2]=255;data.data[i*4+3]=255;}mask.getContext('2d').putImageData(data,0,0);}
   function flood(p){
     if(!inImage(p))return;
@@ -13414,10 +13536,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function start(){const p=source();if(!p?.loaded||!p.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}
     original=p.canvas;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
-    kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='0';lightMix.value='60';colorMix.value='50';edgeMaskCache=null;$('bgOriginal').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;selected=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
+    kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='0';lightMix.value='80';colorMix.value='65';edgeMaskCache=previewMatte=compositeCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;selected=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
     overlay.hidden=false;ui();say('Hintergrund antippen oder das Motiv mit Lasso umfahren. Schwarz ist voreingestellt.');fit();
   }
-  function close(){edgeMaskCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;selected=null;photo=null;points=null;}
+  function close(){edgeMaskCache=previewMatte=compositeCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;selected=null;photo=null;points=null;}
   $('bgReplaceOpen').addEventListener('click',start);$('bgClose').addEventListener('click',close);
   $('bgTap').addEventListener('click',()=>{tool='tap';draft=null;ui();render();say('Hintergrund antippen. Mehrere Flächen sind möglich.');});
   $('bgLasso').addEventListener('click',()=>{tool='lasso';draft=null;ui();render();say('Mit einem Finger das Motiv umranden. Zwei Finger zoomen.');});
@@ -13425,7 +13547,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   kind.addEventListener('change',()=>{if(kind.value!=='photo')bgMoveMode=false;ui();render();});
   $('bgMoveMode').addEventListener('click',()=>{bgMoveMode=!bgMoveMode;ui();say(bgMoveMode?'Hintergrund mit einem Finger verschieben.':'Hintergrundposition fixiert.');});
   $('bgPhotoZoom').addEventListener('input',e=>{bgZoom=Number(e.target.value)/100;ui();render();});
-  $('bgPhotoReset').addEventListener('click',()=>{bgShiftX=bgShiftY=0;bgZoom=1;$('bgPhotoZoom').value='100';ui();render();});color.addEventListener('input',render);$('bgOriginal').addEventListener('change',render);
+  $('bgPhotoReset').addEventListener('click',()=>{bgShiftX=bgShiftY=0;bgZoom=1;$('bgPhotoZoom').value='100';ui();render();});color.addEventListener('input',render);$('bgOriginal').addEventListener('change',render);$('bgCompare').addEventListener('change',render);
   for(const el of [integrate,lightMix,colorMix])el.addEventListener('input',()=>{ui();render();});
   feather.addEventListener('input',()=>{ui();render();});
   clean.addEventListener('input',()=>{edgeMaskCache=null;ui();render();});
@@ -13454,7 +13576,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function exportCanvas(){if(!working())throw Error('Bitte zuerst einen Hintergrund auswählen.');return compose(original,original.width,original.height);}
   async function save(apply){if(busy||!working())return;busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
     try{const out=exportCanvas(),blob=await blobOf(out);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));close();}
-      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.70_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
+      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.71_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
     catch(e){say('Fehler: '+e.message);}finally{busy=false;ui();}
   }
   $('bgSave').addEventListener('click',()=>save(false));$('bgApply').addEventListener('click',()=>save(true));

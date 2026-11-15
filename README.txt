@@ -1,3 +1,9 @@
+NEU IN 4.71 – MOTIV INTEGRIEREN
+
+Im Fenster „Hintergrund ersetzen“ passt „Motiv integrieren“ Tonwerte und Farbe an das Licht rund ums Motiv an. Bei Hintergründen mit unterschiedlichen Farben oder Lichtzonen wirkt sich die Position des Hintergrundbilds auf das Motiv aus. An der Kontur kann die Umgebungsfarbe stärker sichtbar werden.
+
+„Integration“ regelt die Gesamtstärke. „Licht / Tonwerte“ und „Farbharmonie“ lassen sich einzeln einstellen. „Ohne Integration vergleichen“ zeigt denselben Hintergrund und dieselbe Auswahl ohne die Anpassung. Der Vergleich wirkt nur in der Vorschau. PNG und Malvorlage verwenden die eingestellte Integration.
+
 NEU IN 4.70 – SAUBERE HINTERGRUNDKANTEN
 =======================================
 Die bestehende Funktion „Hintergrund ersetzen“ wurde gezielt verbessert.
