@@ -1,3 +1,11 @@
+NEU IN 4.77 – RADIERGUMMI FÜR DIE FREISTELLUNG
+
+Motiv mit dem Lasso freistellen oder den Hintergrund antippen. „Rand mit Radiergummi korrigieren“ öffnen und die Pinselgröße einstellen. „Radieren“ blendet Motivteile aus. Mit „Zurückmalen“ lassen sich zuvor radierte Stellen übermalen und damit bis zur ursprünglichen Freistellung wieder einblenden. „Letzten Pinselstrich rückgängig“ nimmt jeweils einen Radier- oder Zurückmalstrich zurück. Mit zwei Fingern lässt sich die Ansicht weiter zoomen. Die Korrektur wird beim PNG-Export und beim Übernehmen als Malvorlage berücksichtigt.
+
+NEU IN 4.76 – HINTERGRUNDAUSWAHL RÜCKGÄNGIG MACHEN
+
+„Letztes Antippen rückgängig“ nimmt jeweils den letzten wirksamen Tipp bei der Hintergrundauswahl zurück. Frühere Tipps bleiben ausgewählt. Mehrere Tipps lassen sich nacheinander zurücknehmen.
+
 NEU IN 4.75 – VORHANDENER HINTERGRUND BLEIBT SICHTBAR
 
 „Vorhandenen bearbeiten“ verwendet das Foto als feste Grundlage für die Platzierung. Beim Verschieben oder Skalieren wird nur die alte Motivfläche aufgefüllt. Der übrige Hintergrund bleibt als Orientierung erhalten. Bei einer Auswahl mit sehr wenig sichtbarem Hintergrund wird die Füllung aus dem verfügbaren Rand berechnet.
