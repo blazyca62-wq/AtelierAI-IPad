@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.87</title>
+  <title>AtelierAI iPad 4.88</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.87</div>
+    <div class="title">AtelierAI · iPad 4.88</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -4177,8 +4177,13 @@
     const launcher=document.createElement('button');launcher.id='studioMenu';launcher.type='button';launcher.textContent='Projekt';launcher.className='secondary';
     launcher.setAttribute('aria-expanded','false');launcher.setAttribute('aria-controls','studioProjects');
     document.querySelector('.topbar .title').after(launcher);
-    const closeMenu=()=>{panel.hidden=true;launcher.setAttribute('aria-expanded','false');};
-    launcher.onclick=()=>{panel.hidden=!panel.hidden;launcher.setAttribute('aria-expanded',String(!panel.hidden));};
+    const setProjectMenu=open=>{panel.hidden=!open;launcher.setAttribute('aria-expanded',String(open));};
+    const closeMenu=()=>setProjectMenu(false);
+    launcher.onclick=()=>setProjectMenu(panel.hidden);
+    window.__atelierArtBridge.openProjectMenu=()=>{
+      setProjectMenu(true);
+      document.getElementById('studioSave').focus({preventScroll:true});
+    };
     panel.querySelector('#studioClose').onclick=()=>{closeMenu();launcher.focus();};
     document.addEventListener('click',event=>{if(!panel.hidden&&!panel.contains(event.target)&&!launcher.contains(event.target))closeMenu();});
     document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden){closeMenu();launcher.focus();}});
@@ -13346,6 +13351,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 #bgEditorBox{display:flex;flex-direction:column;width:min(1420px,100%);height:min(920px,100%);background:#f4f3ef;color:#202020;border-radius:16px;overflow:hidden;box-shadow:0 12px 48px #0009}
 #bgEditorHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:white;border-bottom:1px solid #ddd}
 #bgEditorHead strong{font-size:18px}
+#bgEditorHead .bg-head-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
 #bgEditorWork{display:grid;grid-template-columns:minmax(0,1fr) 295px;flex:1;min-height:0}
 #bgStage{position:relative;overflow:hidden;min-width:0;min-height:260px;background:#373737;touch-action:none;user-select:none}
 #bgStage canvas{position:absolute;width:100%;height:100%;touch-action:none}
@@ -13372,7 +13378,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.87</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.88</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -13380,7 +13386,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         <div class="bg-choice"><button id="bgTap" class="secondary" type="button">Hintergrund antippen</button><button id="bgLasso" class="secondary" type="button">Motiv mit Lasso</button></div>
         <p>Einfacher Hintergrund: eine oder mehrere Flächen antippen. Bei komplexem Hintergrund: das Motiv genau umranden; alles außerhalb wird ersetzt. Zwei Finger zoomen und verschieben.</p>
         <button id="bgUndoTap" class="secondary" type="button" disabled>Letztes Antippen rückgängig</button>
-        <details id="bgBrushPanel" hidden>
+        <details id="bgBrushPanel" open>
           <summary>Radieren und Zurückmalen</summary>
           <div class="bg-choice">
             <button id="bgErase" class="secondary" type="button" aria-pressed="false">Radieren</button>
@@ -13390,7 +13396,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           <label>Radierstärke <input id="bgEraseStrength" type="range" min="1" max="100" value="100"><output id="bgEraseStrengthVal">100 %</output></label>
           <label>Weiche Pinselkante <input id="bgBrushSoftness" type="range" min="0" max="100" value="35"><output id="bgBrushSoftnessVal">35 %</output></label>
           <button id="bgUndoStroke" class="secondary" type="button" disabled>Letzten Pinselstrich rückgängig</button>
-          <p>Mit einem Finger malen. Zwei Finger zoomen oder verschieben die Ansicht.</p>
+          <p>Du kannst direkt radieren oder eine Auswahl nachbessern. Mit einem Finger malen, mit zwei Fingern zoomen und verschieben.</p>
         </details>
         <label id="bgToleranceRow">Ähnlichkeit <input id="bgTolerance" type="range" min="5" max="100" step="1" value="30"><output id="bgToleranceVal">30</output></label>
         <p id="bgToleranceHelp">Ähnlichkeit einstellen oder nach dem Antippen anpassen.</p>
@@ -13432,7 +13438,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         <button id="bgClear" class="secondary" type="button">Auswahl zurücksetzen</button>
       </div>
     </div>
-    <div id="bgEditorFooter"><span id="bgStatus" role="status" aria-live="polite">Foto öffnen, dann Hintergrund auswählen.</span><button id="bgDesign" class="secondary" type="button" disabled>Motiv gestalten</button><button id="bgDesignBackdrop" class="secondary" type="button" disabled>Hintergrund gestalten</button><button id="bgSave" type="button">PNG speichern</button><button id="bgApply" type="button">Als Malvorlage übernehmen</button></div>
+    <div id="bgEditorFooter"><span id="bgStatus" role="status" aria-live="polite">Foto öffnen, dann Hintergrund auswählen.</span><button id="bgDesign" class="secondary" type="button" disabled>Motiv gestalten</button><button id="bgDesignBackdrop" class="secondary" type="button" disabled>Hintergrund gestalten</button><button id="bgSave" type="button">PNG speichern</button></div>
   </div>
 </div>
 <script>
@@ -13480,7 +13486,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     $('bgPositionRow').hidden=kind.value!=='photo';$('bgMoveMode').textContent='Hintergrund verschieben: '+(bgMoveMode?'AN':'AUS');$('bgMoveMode').classList.toggle('active',bgMoveMode);$('bgMoveMode').classList.toggle('secondary',!bgMoveMode);$('bgPhotoZoomVal').textContent=Math.round(bgZoom*100)+' %';
     const canPlace=working()&&(kind.value!=='photo'||!!photo);
     $('bgMotifPlacement').hidden=!canPlace;
-    $('bgBrushPanel').hidden=!canPlace;
+    $('bgClose').disabled=busy;
     $('bgUndoStroke').disabled=busy||!!brushStroke||brushStrokes.length===0;
     $('bgBrushSizeVal').textContent=brushSize.value+' px';
     for(const slider of [eraseStrength,brushSoftness]){
@@ -13492,6 +13498,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       button.classList.toggle('active',active);
       button.classList.toggle('secondary',!active);
       button.setAttribute('aria-pressed',String(active));
+      button.disabled=busy||!preview;
     }
     const move=$('bgMotifMove');
     move.setAttribute('aria-pressed',String(motifMoveMode));
@@ -13515,7 +13522,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   // and means preview and full-resolution exports use the same cutout.
   function cleanEdgeMask(){
     if(!working())return null;
-    if(selection==='alpha')return mask;
+    if(selection==='alpha'||selection==='manual')return mask;
     if(edgeMaskCache)return edgeMaskCache;
     const radius=Number(clean.value),w=mask.width,h=mask.height,n=w*h;
     if(!radius&&!smooth.checked){edgeMaskCache=mask;return mask;}
@@ -13652,6 +13659,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       brushStrokes.push(brushStroke);
     }
     brushStroke=brushCursor=null;
+    if(selection==='manual'&&!brushStrokes.length){
+      selection='none';mask=null;
+    }
     brushRevision++;
     ui();render();
   }
@@ -13690,7 +13700,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
   function maskFor(w,h){
     if(!working())return null;
-    const src=edgeMask(),softness=selection==='alpha'?0:Number(feather.value),radius=softness*Math.max(1,w/preview.width);
+    const src=edgeMask(),softness=selection==='alpha'||selection==='manual'?0:Number(feather.value),radius=softness*Math.max(1,w/preview.width);
     const forPreview=w===preview.width&&h===preview.height;
     if(forPreview&&previewMatte?.src===src&&previewMatte.softness===softness)return previewMatte.canvas;
     const remember=m=>{
@@ -14212,9 +14222,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(last){
       floodInto(last,tapPrefix);
     }else{
-      tapBase={selection,mask,points,brushStrokes};
+      tapBase={selection,mask,points,brushStrokes:brushStrokes.slice()};
       tapPrefix=new Uint8Array(preview.width*preview.height);
-      clearBrush();
+      if(selection!=='manual')clearBrush();
     }
     tapHistory.push({index:Math.floor(p.y)*preview.width+Math.floor(p.x),tolerance:Number(tol.value)});
     points=null;selection='tap';
@@ -14244,7 +14254,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function lassoEnd(){const a=draft;draft=null;if(!a||a.length<5){say('Bitte das Motiv mit einem Finger vollständig umfahren.');render();return;}
     let area=0;for(let i=0;i<a.length;i++){const p=a[i],q=a[(i+1)%a.length];area+=p.x*q.y-q.x*p.y;}if(Math.abs(area)<40){say('Lasso zu klein. Bitte das Motiv umranden.');render();return;}
-    clearTaps();clearBrush();edgeMaskCache=null;points=a;selection='lasso';mask=canvas(preview.width,preview.height);const c=mask.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,mask.width,mask.height);c.globalCompositeOperation='destination-out';c.beginPath();points.forEach((p,i)=>{i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y);});c.closePath();c.fill();c.globalCompositeOperation='source-over';ui();render();say('Motiv ausgewählt. Den Bereich außerhalb des Lassos kannst du als Hintergrund bearbeiten.');
+    clearTaps();if(selection!=='manual')clearBrush();edgeMaskCache=null;points=a;selection='lasso';mask=canvas(preview.width,preview.height);const c=mask.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,mask.width,mask.height);c.globalCompositeOperation='destination-out';c.beginPath();points.forEach((p,i)=>{i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y);});c.closePath();c.fill();c.globalCompositeOperation='source-over';ui();render();say('Motiv ausgewählt. Den Bereich außerhalb des Lassos kannst du als Hintergrund bearbeiten.');
   }
   function importedAlphaMask(){
     const data=previewData.data;
@@ -14265,21 +14275,22 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function start(){const p=source();if(!p?.loaded||!p.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}
     original=p.canvas;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
     kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='70';lightMix.value=colorMix.value=backdropLight.value=backdropColor.value='0';$('bgBackdropGroup').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
-    resetDesignPreview();designSettings=null;resetOpacity();clearTaps();clearBrush();brushSize.value='24';eraseStrength.value='100';brushSoftness.value='35';$('bgBrushPanel').open=false;resetPlacement();$('bgMotifPlacement').open=false;
+    resetDesignPreview();designSettings=null;resetOpacity();clearTaps();clearBrush();brushSize.value='24';eraseStrength.value='100';brushSoftness.value='35';$('bgBrushPanel').open=true;resetPlacement();$('bgMotifPlacement').open=false;
     mask=importedAlphaMask();
     if(mask)selection='alpha';
     overlay.hidden=false;ui();
-    say(mask?'Freistellung erkannt. Bei „Art“ kannst du direkt eine Farbe oder ein eigenes Bild wählen.':'Hintergrund antippen oder das Motiv mit Lasso umfahren. Schwarz ist voreingestellt.');fit();
+    say(mask?'Freistellung erkannt. Bei „Art“ kannst du direkt eine Farbe oder ein eigenes Bild wählen.':'Hintergrund antippen, das Motiv umranden oder direkt radieren. Schwarz ist voreingestellt.');fit();
   }
   function close(){resetDesignPreview();designSettings=null;clearTaps();clearBrush();resetPlacement();edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;photo=null;points=null;}
-  $('bgReplaceOpen').addEventListener('click',start);$('bgClose').addEventListener('click',close);
+  function cancel(){if(!busy)close();}
+  $('bgReplaceOpen').addEventListener('click',start);$('bgClose').addEventListener('click',cancel);
   $('bgTap').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='tap';draft=null;ui();render();say('Hintergrund antippen. Mehrere Flächen sind möglich.');});
   $('bgLasso').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='lasso';draft=null;ui();render();say('Mit einem Finger das Motiv umranden. Zwei Finger zoomen.');});
   $('bgFit').addEventListener('click',fit);$('bgClear').addEventListener('click',clear);
   $('bgUndoTap').addEventListener('click',undoTap);
   for(const [id,mode] of [['bgErase','erase'],['bgRestore','restore']]){
     $(id).addEventListener('click',()=>{
-      if(!working()||busy||brushStroke)return;
+      if(!preview||busy||brushStroke)return;
       motifMoveMode=bgMoveMode=false;
       $('bgOriginal').checked=false;
       setBrushMode(brushMode===mode?null:mode);
@@ -14290,6 +14301,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   $('bgUndoStroke').addEventListener('click',()=>{
     if(busy||brushStroke||!brushStrokes.length)return;
     brushStrokes.pop();rebuildBrush();
+    if(selection==='manual'&&!brushStrokes.length){
+      selection='none';mask=null;
+    }
     ui();render();say('Letzter Pinselstrich rückgängig gemacht.');
   });
   $('bgBrushPanel').addEventListener('toggle',()=>{
@@ -14343,9 +14357,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     try{await new Promise((ok,fail)=>{pic.onload=ok;pic.onerror=()=>fail(Error('Bild konnte nicht geladen werden.'));pic.src=url;});photo=pic;$('bgFileName').textContent='Gewählt: '+file.name;say('Hintergrundbild geladen. Es wird passend zugeschnitten.');}
     catch(e){say('Hintergrundbild: '+e.message);photo=null;}finally{URL.revokeObjectURL(url);ui();render();}
   });
-  stage.addEventListener('pointerdown',e=>{if(!preview||e.pointerType==='mouse'&&e.button!==0)return;stage.setPointerCapture(e.pointerId);const p=point(e);gestures.set(e.pointerId,p);
+  stage.addEventListener('pointerdown',e=>{if(!preview||busy||e.pointerType==='mouse'&&e.button!==0)return;stage.setPointerCapture(e.pointerId);const p=point(e);gestures.set(e.pointerId,p);
     if(gestures.size===2){finishBrush(false);draft=null;const a=[...gestures.values()],mid={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2};viewport();gest={type:'pinch',dist:Math.max(1,Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)),zoom,mid,focus:toImage(mid)};render();}
-    else if(gestures.size===1){viewport();const q=toImage(p);if(bgMoveMode&&kind.value==='photo'&&photo){gest={type:'background',start:p,bgX:bgShiftX,bgY:bgShiftY};}else if(motifMoveMode&&working()){gest={type:'motif',start:p,x:motifX,y:motifY};}else if(brushMode&&working()&&!busy){
+    else if(gestures.size===1){viewport();const q=toImage(p);if(bgMoveMode&&kind.value==='photo'&&photo){gest={type:'background',start:p,bgX:bgShiftX,bgY:bgShiftY};}else if(motifMoveMode&&working()){gest={type:'motif',start:p,x:motifX,y:motifY};}else if(brushMode){
+      if(!working()){
+        if(brushMode==='restore'||!inImage(q))return;
+        selection='manual';
+        mask=canvas(preview.width,preview.height);
+      }
       gest={type:'brush',start:p};brushCursor=p;
       const erasing=brushMode==='erase';
       brushStroke={mode:brushMode,radius:Number(brushSize.value)/2,
@@ -14433,10 +14452,27 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     return bridge.applyLayerDesign(composite,designMaskCache.canvas,correction);
   }
-  async function save(apply){if(busy||brushStroke||!working())return;busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
-    try{const out=exportCanvas(),blob=await blobOf(out);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));close();}
-      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.87_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
-    catch(e){say('Fehler: '+e.message);}finally{busy=false;ui();}
+  async function save(apply){
+    if(busy||brushStroke||!working())return;
+    busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
+    try{
+      const blob=await blobOf(exportCanvas());
+      if(apply){
+        const bridge=window.__atelierArtBridge;
+        await new Promise((resolve,reject)=>bridge.load(blob,err=>err?reject(err):resolve()));
+        close();
+        bridge.openProjectMenu();
+      }else{
+        const url=URL.createObjectURL(blob),link=document.createElement('a');
+        link.href=url;link.download='AtelierAI_4.88_Hintergrund.png';link.click();
+        setTimeout(()=>URL.revokeObjectURL(url),4000);
+        say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
+      }
+    }catch(error){
+      say('Fehler: '+error.message);
+    }finally{
+      busy=false;ui();
+    }
   }
   function designMatte(w=preview.width,h=preview.height){
     const source=w===preview.width&&h===preview.height?preview:original;
@@ -14476,7 +14512,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   motifDesign.addEventListener('click',()=>openLayerDesign(motifDesign,'motif'));
   backdropDesign.addEventListener('click',()=>openLayerDesign(backdropDesign,'backdrop'));
   $('bgSave').addEventListener('click',()=>save(false));$('bgApply').addEventListener('click',()=>save(true));
-  window.addEventListener('resize',()=>{if(!overlay.hidden)render();});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden)close();});
+  window.addEventListener('resize',()=>{if(!overlay.hidden)render();});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden)cancel();});
 })();
 </script>
 

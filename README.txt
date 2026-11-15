@@ -1,3 +1,9 @@
+NEU IN 4.88 – ZUM PROJEKT UND DIREKT RADIEREN
+
+„Übernehmen & zum Projekt“ übernimmt das zusammengesetzte Bild als Malvorlage in den aktuellen Projektbereich und öffnet das Projektmenü. Dort lädt „Projekt speichern“ eine .atelierprojekt-Datei herunter. AtelierAI speichert den übernommenen Stand auch automatisch im Browser.
+
+„Radieren und Zurückmalen“ ist gleich beim Öffnen sichtbar. Radieren geht direkt auf dem Foto. Zurückmalen stellt bereits ausgeblendete Stellen wieder her.
+
 NEU IN 4.87 – WEICH UND TEILWEISE RADIEREN
 
 Unter „Hintergrund ersetzen → Radieren und Zurückmalen“ findest du zwei Regler. „Radierstärke“ bestimmt, wie viel pro Strich ausgeblendet wird. Bei 30 % scheint der Hintergrund leicht durch. Ein neuer Strich über dieselbe Stelle verstärkt den Effekt. „Weiche Pinselkante“ lässt den Rand des Strichs auslaufen. Bei 0 % ist die Kante scharf. Standard sind 100 % Radierstärke und 35 % weiche Pinselkante. Mit „Zurückmalen“ kannst du übermalte Stellen wieder einblenden. Die Wirkung ist in der Vorschau und im PNG-Export sichtbar.
