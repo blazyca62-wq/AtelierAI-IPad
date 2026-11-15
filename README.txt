@@ -1,3 +1,9 @@
+NEU IN 4.86 – LIVE-ÄHNLICHKEIT UND ZURÜCKMALEN
+
+Nach dem Antippen einer Hintergrundfläche kannst du mit „Ähnlichkeit“ genau diese Fläche live vergrößern oder verkleinern. Frühere Flächen behalten ihre eigene Einstellung. „Letztes Antippen rückgängig“ entfernt die zuletzt gewählte Fläche.
+
+Unter „Radieren und Zurückmalen“ blendet der Pinsel „Zurückmalen“ das Original an übermalten Stellen wieder ein. Das gilt für die Auswahl per Antippen, per Lasso und für Radierstriche. Bei bereits transparenten PNG-Dateien sind die ursprünglich sichtbaren Bildteile wiederherstellbar. Die Vorschau und der Export verwenden dieselben Korrekturen.
+
 NEU IN 4.85 – EINSTELLBARE MOTIV-DECKKRAFT
 
 Unter „Hintergrund ersetzen → Motiv platzieren“ stellt „Motiv-Deckkraft“ die Sichtbarkeit von 0 % bis 100 % ein. Bei 0 % bleibt der Hintergrund sichtbar, bei 100 % hat das Motiv wieder seine ursprüngliche Deckkraft. Dazwischen scheint der Hintergrund durch das Motiv hindurch. Der Wert gilt für die Vorschau, die künstlerische Gestaltung und den Export.

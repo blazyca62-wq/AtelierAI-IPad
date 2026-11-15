@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.85</title>
+  <title>AtelierAI iPad 4.86</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.85</div>
+    <div class="title">AtelierAI · iPad 4.86</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -13372,7 +13372,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.85</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.86</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -13381,7 +13381,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         <p>Einfacher Hintergrund: eine oder mehrere Flächen antippen. Bei komplexem Hintergrund: das Motiv genau umranden; alles außerhalb wird ersetzt. Zwei Finger zoomen und verschieben.</p>
         <button id="bgUndoTap" class="secondary" type="button" disabled>Letztes Antippen rückgängig</button>
         <details id="bgBrushPanel" hidden>
-          <summary>Rand mit Radiergummi korrigieren</summary>
+          <summary>Radieren und Zurückmalen</summary>
           <div class="bg-choice">
             <button id="bgErase" class="secondary" type="button" aria-pressed="false">Radieren</button>
             <button id="bgRestore" class="secondary" type="button" aria-pressed="false">Zurückmalen</button>
@@ -13391,6 +13391,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           <p>Mit einem Finger malen. Zwei Finger zoomen oder verschieben die Ansicht.</p>
         </details>
         <label id="bgToleranceRow">Ähnlichkeit <input id="bgTolerance" type="range" min="5" max="100" step="1" value="30"><output id="bgToleranceVal">30</output></label>
+        <p id="bgToleranceHelp">Ähnlichkeit einstellen oder nach dem Antippen anpassen.</p>
         <button id="bgFit" class="secondary" type="button">Bild einpassen</button>
         <strong>2 · Hintergrund wählen</strong>
         <label>Art <select id="bgKind"><option value="color" selected>Farbe / Schwarz</option><option value="photo">Eigenes Bild</option><option value="original">Vorhandenen bearbeiten</option></select></label>
@@ -13447,21 +13448,28 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   const motifChanged=()=>motifX!==0||motifY!==0||motifScale!==1;
   const canvas=(w,h)=>{const c=document.createElement('canvas');c.width=Math.max(1,Math.round(w));c.height=Math.max(1,Math.round(h));return c;};
   const blobOf=c=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('PNG konnte nicht erstellt werden.')),'image/png'));
-  let original=null,preview=null,previewData=null,mask=null,photo=null,points=null,draft=null,selection='none',tool='tap',selected=null;
+  let original=null,preview=null,previewData=null,mask=null,photo=null,points=null,draft=null,selection='none',tool='tap';
   let busy=false,zoom=1,panX=0,panY=0,gest=null,gestures=new Map(),fitScale=1,drawScale=1,drawX=0,drawY=0,raf=0;
   let edgeMaskCache=null,previewMatte=null,compositeCache=null,motifTintCache=null;
   const say=t=>{status.textContent=t;};
   const working=()=>selection!=='none'&&!!mask;
   const tapHistory=[];
+  let tapBase=null,tapPrefix=null,tapSearch=null;
+  let tolerancePending=false,toleranceMoving=false,toleranceTimer=0;
   let designSettings=null,designCorrection=null,fastPreview=null;
   let sliderPointer=null,sliderTimer=0,sliderMoving=false;
   let designMaskCache=null;
   const brushSize=$('bgBrushSize');
-  let brushMode=null,brushStroke=null,brushCursor=null,brushLayer=null,brushMaskCache=null;
+  let brushMode=null,brushStroke=null,brushCursor=null,brushLayer=null,brushCoverage=null,brushMaskCache=null;
   let brushStrokes=[],brushRevision=0;
   function ui(){
     for(const [id,value] of [['bgTap','tap'],['bgLasso','lasso']]){$(id).classList.toggle('active',tool===value);$(id).classList.toggle('secondary',tool!==value);$(id).setAttribute('aria-pressed',String(tool===value));}
-    $('bgToleranceRow').hidden=tool!=='tap';$('bgColorRow').hidden=kind.value!=='color';$('bgPhotoRow').hidden=kind.value!=='photo';$('bgFileName').hidden=kind.value!=='photo';
+    $('bgToleranceRow').hidden=tool!=='tap';
+    $('bgToleranceHelp').hidden=tool!=='tap';
+    $('bgToleranceHelp').textContent=tapHistory.length
+      ?'Ändert die zuletzt angetippte Fläche direkt im Bild.'
+      :'Ähnlichkeit einstellen oder nach dem Antippen anpassen.';
+    $('bgColorRow').hidden=kind.value!=='color';$('bgPhotoRow').hidden=kind.value!=='photo';$('bgFileName').hidden=kind.value!=='photo';
     const preCut=selection==='alpha';
     kind.querySelector('option[value="original"]').disabled=preCut;
     for(const option of [clean,smooth,feather])option.disabled=preCut;
@@ -13556,9 +13564,15 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     return result;
   }
   function strokeSegment(stroke,from,to){
-    if(!brushLayer)brushLayer=canvas(preview.width,preview.height);
-    const ctx=brushLayer.getContext('2d');
-    ctx.globalCompositeOperation=stroke.mode==='restore'?'destination-out':'source-over';
+    if(!brushLayer){
+      brushLayer=canvas(preview.width,preview.height);
+      brushCoverage=canvas(preview.width,preview.height);
+    }
+    drawStroke(brushCoverage.getContext('2d'),stroke,from,to,'source-over');
+    drawStroke(brushLayer.getContext('2d'),stroke,from,to,stroke.mode==='restore'?'destination-out':'source-over');
+  }
+  function drawStroke(ctx,stroke,from,to,operation){
+    ctx.globalCompositeOperation=operation;
     ctx.strokeStyle=ctx.fillStyle='#fff';
     ctx.lineCap='round';
     ctx.lineWidth=stroke.radius*2;
@@ -13570,14 +13584,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
   }
   function rebuildBrush(){
-    brushLayer=null;
+    brushLayer=brushCoverage=null;
     for(const stroke of brushStrokes){
       stroke.points.forEach((point,i)=>strokeSegment(stroke,stroke.points[i-1],point));
     }
     brushRevision++;
   }
   function clearBrush(){
-    brushMode=brushStroke=brushLayer=brushCursor=brushMaskCache=null;
+    brushMode=brushStroke=brushLayer=brushCoverage=brushCursor=brushMaskCache=null;
     brushStrokes=[];
     brushRevision++;
   }
@@ -13608,7 +13622,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(!base||!brushLayer)return base;
     if(brushMaskCache?.base===base&&brushMaskCache.revision===brushRevision)return brushMaskCache.canvas;
     const result=canvas(base.width,base.height),ctx=result.getContext('2d');
-    ctx.drawImage(base,0,0);ctx.drawImage(brushLayer,0,0);
+    ctx.drawImage(base,0,0);
+    if(selection!=='alpha'){
+      // The painted area replaces the base mask. Only erasing adds mask alpha back.
+      ctx.globalCompositeOperation='destination-out';
+      ctx.drawImage(brushCoverage,0,0);
+      ctx.globalCompositeOperation='lighter';
+    }
+    ctx.drawImage(brushLayer,0,0);
     brushMaskCache={base,revision:brushRevision,canvas:result};
     return result;
   }
@@ -14051,7 +14072,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const lighting=lightingPlacement(compare,true);
     const moving=sliderMoving||gest?.type==='motif'||gest?.type==='background'||gest?.type==='brush';
     const hasDesign=!compare&&window.__atelierArtBridge?.hasLayerDesign?.(designSettings);
-    const fast=!!(moving&&hasDesign);
+    const fast=toleranceMoving||!!(moving&&hasDesign);
     const settings=[...layerSettings(compare),motifX,motifY,motifScale,motifOpacity,lighting?.x,lighting?.y,lighting?.scale,designSettings,fast];
     if(!compositeCache||settings.some((value,i)=>value!==compositeCache.settings[i])){
       const base=fast?interactivePreview():preview;
@@ -14060,7 +14081,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     return compositeCache.canvas;
   }
-  function paint(){const v=viewport();if(!v)return;const dpr=Math.min(2,window.devicePixelRatio||1);if(screen.width!==Math.round(v.w*dpr)||screen.height!==Math.round(v.h*dpr)){screen.width=Math.round(v.w*dpr);screen.height=Math.round(v.h*dpr);}
+  function paint(){updatePendingTolerance();const v=viewport();if(!v)return;const dpr=Math.min(2,window.devicePixelRatio||1);if(screen.width!==Math.round(v.w*dpr)||screen.height!==Math.round(v.h*dpr)){screen.width=Math.round(v.w*dpr);screen.height=Math.round(v.h*dpr);}
     screenCtx.setTransform(dpr,0,0,dpr,0,0);screenCtx.fillStyle='#373737';screenCtx.fillRect(0,0,v.w,v.h);
     let active=preview;
     try{if(working()&&!$('bgOriginal').checked&&(kind.value!=='photo'||photo))active=composedPreview();}catch(_e){}
@@ -14082,45 +14103,86 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     $('bgMotifScale').value='100';
   }
   function resetOpacity(){motifOpacity=1;$('bgMotifOpacity').value='100';}
-  function clear(){resetOpacity();tapHistory.length=0;clearBrush();resetPlacement();$('bgMotifPlacement').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;selection='none';mask=null;selected=null;points=null;draft=null;gest=null;ui();render();say('Auswahl gelöscht. Das Originalbild bleibt unverändert.');}
-  function createMask(){if(!preview)return;edgeMaskCache=null;mask=canvas(preview.width,preview.height);const data=mask.getContext('2d').createImageData(mask.width,mask.height);for(let i=0;i<selected.length;i++)if(selected[i]){data.data[i*4]=255;data.data[i*4+1]=255;data.data[i*4+2]=255;data.data[i*4+3]=255;}mask.getContext('2d').putImageData(data,0,0);}
-  function flood(p){
-    if(!inImage(p))return;
-    const w=preview.width,h=preview.height,n=w*h,cx=Math.max(0,Math.min(w-1,Math.floor(p.x))),cy=Math.max(0,Math.min(h-1,Math.floor(p.y)));
-    const previous=selection==='tap'?null:{selection,mask,points,brushStrokes};
-    const next=previous?new Uint8Array(n):selected;
-    const d=previewData.data,s=(cy*w+cx)*4,r=d[s],g=d[s+1],b=d[s+2];
-    const threshold=5+Number(tol.value)*1.12,limit=threshold*threshold*3;
-    const visited=new Uint8Array(n),queue=new Int32Array(n);let head=0,tail=1,count=0;queue[0]=cy*w+cx;visited[queue[0]]=1;
-    while(head<tail){const pos=queue[head++],z=pos*4,dr=d[z]-r,dg=d[z+1]-g,db=d[z+2]-b;
+  function clear(){resetOpacity();clearTaps();clearBrush();resetPlacement();$('bgMotifPlacement').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;selection='none';mask=null;points=null;draft=null;gest=null;ui();render();say('Auswahl gelöscht. Das Originalbild bleibt unverändert.');}
+  function clearTaps(){
+    tapHistory.length=0;
+    tapBase=tapPrefix=tapSearch=null;
+    toleranceMoving=false;
+    clearTimeout(toleranceTimer);
+    tolerancePending=false;
+  }
+  function floodInto(tap,target){
+    const w=preview.width,h=preview.height,n=w*h,d=previewData.data;
+    if(!tapSearch)tapSearch={visited:new Uint8Array(n),queue:new Int32Array(n)};
+    const {visited,queue}=tapSearch;
+    visited.fill(0);
+    let head=0,tail=1;
+    queue[0]=tap.index;visited[tap.index]=1;
+    const seed=tap.index*4,r=d[seed],g=d[seed+1],b=d[seed+2];
+    const limit=(5+tap.tolerance*1.12)**2*3;
+    while(head<tail){
+      const pos=queue[head++],z=pos*4,dr=d[z]-r,dg=d[z+1]-g,db=d[z+2]-b;
       if(dr*dr+dg*dg+db*db>limit)continue;
-      if(!next[pos]){
-        next[pos]=1;
-        // Keep the delta in the already processed prefix of the flood queue.
-        queue[count++]=pos;
-      }
-      const x=pos%w,y=(pos/w)|0;
+      target[pos]=1;
+      const x=pos%w;
       if(x>0&&!visited[pos-1]){visited[pos-1]=1;queue[tail++]=pos-1;}
       if(x+1<w&&!visited[pos+1]){visited[pos+1]=1;queue[tail++]=pos+1;}
-      if(y>0&&!visited[pos-w]){visited[pos-w]=1;queue[tail++]=pos-w;}
-      if(y+1<h&&!visited[pos+w]){visited[pos+w]=1;queue[tail++]=pos+w;}
+      if(pos>=w&&!visited[pos-w]){visited[pos-w]=1;queue[tail++]=pos-w;}
+      if(pos<n-w&&!visited[pos+w]){visited[pos+w]=1;queue[tail++]=pos+w;}
     }
-    if(count===0){say('Diese Fläche ist bereits ausgewählt.');return;}
-    tapHistory.push(previous??{added:queue.slice(0,count)});
-    if(previous)clearBrush();
-    selected=next;points=null;selection='tap';
-    createMask();ui();render();say('Hintergrund ausgewählt. Weitere Flächen antippen oder die Kante anpassen.');
+  }
+  function refreshTapMask(){
+    const pixels=tapPrefix.slice();
+    floodInto(tapHistory.at(-1),pixels);
+    const next=canvas(preview.width,preview.height),ctx=next.getContext('2d',{willReadFrequently:true});
+    const image=ctx.createImageData(next.width,next.height);
+    for(let i=0;i<pixels.length;i++)image.data[i*4+3]=pixels[i]*255;
+    ctx.putImageData(image,0,0);
+    edgeMaskCache=null;
+    mask=next;
+  }
+  function updatePendingTolerance(){
+    if(!tolerancePending)return;
+    tolerancePending=false;
+    if(tapHistory.length)refreshTapMask();
+  }
+  function finishTolerance(){
+    clearTimeout(toleranceTimer);
+    toleranceMoving=false;
+    render();
+  }
+  function selectTap(p){
+    if(!inImage(p)||busy)return;
+    updatePendingTolerance();
+    const last=tapHistory.at(-1);
+    if(last){
+      floodInto(last,tapPrefix);
+    }else{
+      tapBase={selection,mask,points,brushStrokes};
+      tapPrefix=new Uint8Array(preview.width*preview.height);
+      clearBrush();
+    }
+    tapHistory.push({index:Math.floor(p.y)*preview.width+Math.floor(p.x),tolerance:Number(tol.value)});
+    points=null;selection='tap';
+    $('bgOriginal').checked=false;
+    refreshTapMask();ui();render();
+    say('Hintergrund ausgewählt. Mit „Ähnlichkeit“ passt du die letzte Fläche an.');
   }
   function undoTap(){
     if(busy||brushStroke||tapHistory.length===0)return;
-    const step=tapHistory.pop();
-    if(step.added){
-      for(const index of step.added)selected[index]=0;
-      createMask();
+    tolerancePending=false;
+    finishTolerance();
+    tapHistory.pop();
+    if(tapHistory.length){
+      tapPrefix.fill(0);
+      for(let i=0;i<tapHistory.length-1;i++)floodInto(tapHistory[i],tapPrefix);
+      tol.value=tapHistory.at(-1).tolerance;
+      refreshTapMask();
     }else{
-      selection=step.selection;mask=step.mask;points=step.points;selected=null;
+      ({selection,mask,points}=tapBase);
       if(selection==='alpha'&&kind.value==='original')kind.value='color';
-      clearBrush();brushStrokes=step.brushStrokes;rebuildBrush();
+      clearBrush();brushStrokes=tapBase.brushStrokes;rebuildBrush();
+      clearTaps();
       edgeMaskCache=null;
       if(!working())motifMoveMode=false;
     }
@@ -14128,7 +14190,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function lassoEnd(){const a=draft;draft=null;if(!a||a.length<5){say('Bitte das Motiv mit einem Finger vollständig umfahren.');render();return;}
     let area=0;for(let i=0;i<a.length;i++){const p=a[i],q=a[(i+1)%a.length];area+=p.x*q.y-q.x*p.y;}if(Math.abs(area)<40){say('Lasso zu klein. Bitte das Motiv umranden.');render();return;}
-    tapHistory.length=0;clearBrush();edgeMaskCache=null;points=a;selected=null;selection='lasso';mask=canvas(preview.width,preview.height);const c=mask.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,mask.width,mask.height);c.globalCompositeOperation='destination-out';c.beginPath();points.forEach((p,i)=>{i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y);});c.closePath();c.fill();c.globalCompositeOperation='source-over';ui();render();say('Motiv ausgewählt. Den Bereich außerhalb des Lassos kannst du als Hintergrund bearbeiten.');
+    clearTaps();clearBrush();edgeMaskCache=null;points=a;selection='lasso';mask=canvas(preview.width,preview.height);const c=mask.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,mask.width,mask.height);c.globalCompositeOperation='destination-out';c.beginPath();points.forEach((p,i)=>{i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y);});c.closePath();c.fill();c.globalCompositeOperation='source-over';ui();render();say('Motiv ausgewählt. Den Bereich außerhalb des Lassos kannst du als Hintergrund bearbeiten.');
   }
   function importedAlphaMask(){
     const data=previewData.data;
@@ -14148,14 +14210,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function start(){const p=source();if(!p?.loaded||!p.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}
     original=p.canvas;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
-    kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='70';lightMix.value=colorMix.value=backdropLight.value=backdropColor.value='0';$('bgBackdropGroup').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;selected=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
-    resetDesignPreview();designSettings=null;resetOpacity();tapHistory.length=0;clearBrush();brushSize.value='24';$('bgBrushPanel').open=false;resetPlacement();$('bgMotifPlacement').open=false;
+    kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='70';lightMix.value=colorMix.value=backdropLight.value=backdropColor.value='0';$('bgBackdropGroup').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
+    resetDesignPreview();designSettings=null;resetOpacity();clearTaps();clearBrush();brushSize.value='24';$('bgBrushPanel').open=false;resetPlacement();$('bgMotifPlacement').open=false;
     mask=importedAlphaMask();
     if(mask)selection='alpha';
     overlay.hidden=false;ui();
     say(mask?'Freistellung erkannt. Bei „Art“ kannst du direkt eine Farbe oder ein eigenes Bild wählen.':'Hintergrund antippen oder das Motiv mit Lasso umfahren. Schwarz ist voreingestellt.');fit();
   }
-  function close(){resetDesignPreview();designSettings=null;tapHistory.length=0;clearBrush();resetPlacement();edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;selected=null;photo=null;points=null;}
+  function close(){resetDesignPreview();designSettings=null;clearTaps();clearBrush();resetPlacement();edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;photo=null;points=null;}
   $('bgReplaceOpen').addEventListener('click',start);$('bgClose').addEventListener('click',close);
   $('bgTap').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='tap';draft=null;ui();render();say('Hintergrund antippen. Mehrere Flächen sind möglich.');});
   $('bgLasso').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='lasso';draft=null;ui();render();say('Mit einem Finger das Motiv umranden. Zwei Finger zoomen.');});
@@ -14167,7 +14229,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       motifMoveMode=bgMoveMode=false;
       $('bgOriginal').checked=false;
       setBrushMode(brushMode===mode?null:mode);
-      if(brushMode)say(mode==='erase'?'Mit einem Finger über die zu entfernende Stelle malen.':'Über die radierte Stelle malen, um sie wiederherzustellen.');
+      if(brushMode)say(mode==='erase'?'Mit einem Finger über die zu entfernende Stelle malen.':'Über ausgeblendete Stellen malen, um das Original dort wieder sichtbar zu machen.');
     });
   }
   brushSize.addEventListener('input',()=>{ui();render();});
@@ -14210,7 +14272,19 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   feather.addEventListener('input',()=>{ui();render();});
   clean.addEventListener('input',()=>{edgeMaskCache=null;ui();render();});
   smooth.addEventListener('change',()=>{edgeMaskCache=null;ui();render();});
-  tol.addEventListener('input',ui);
+  tol.addEventListener('input',()=>{
+    $('bgToleranceVal').textContent=tol.value;
+    const last=tapHistory.at(-1);
+    if(!last||last.tolerance===Number(tol.value))return;
+    last.tolerance=Number(tol.value);
+    tolerancePending=true;
+    toleranceMoving=true;
+    $('bgOriginal').checked=false;
+    clearTimeout(toleranceTimer);
+    toleranceTimer=setTimeout(finishTolerance,150);
+    render();
+  });
+  tol.addEventListener('change',finishTolerance);
   photoInput.addEventListener('change',async()=>{const file=photoInput.files?.[0];if(!file)return;const url=URL.createObjectURL(file),pic=new Image();
     try{await new Promise((ok,fail)=>{pic.onload=ok;pic.onerror=()=>fail(Error('Bild konnte nicht geladen werden.'));pic.src=url;});photo=pic;$('bgFileName').textContent='Gewählt: '+file.name;say('Hintergrundbild geladen. Es wird passend zugeschnitten.');}
     catch(e){say('Hintergrundbild: '+e.message);photo=null;}finally{URL.revokeObjectURL(url);ui();render();}
@@ -14242,7 +14316,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     e.preventDefault();
   });
   function pointerEnd(e){if(!gestures.has(e.pointerId))return;const isLast=gestures.size===1,was=gest?.type,p=point(e);gestures.delete(e.pointerId);
-    if(isLast){if(was==='brush'){viewport();finishBrush(e.type==='pointerup',brushPoint(p));}else if(e.type==='pointerup'&&was==='lasso')lassoEnd();else if(e.type==='pointerup'&&was==='tap'&&tool==='tap'){viewport();flood(toImage(p));}draft=null;gest=null;render();}
+    if(isLast){if(was==='brush'){viewport();finishBrush(e.type==='pointerup',brushPoint(p));}else if(e.type==='pointerup'&&was==='lasso')lassoEnd();else if(e.type==='pointerup'&&was==='tap'&&tool==='tap'){viewport();selectTap(toImage(p));}draft=null;gest=null;render();}
     else if(gestures.size===1){const q=[...gestures.values()][0];gest={type:'pan',start:q,panX,panY};}
     else gest=null;e.preventDefault();
   }
@@ -14280,6 +14354,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   window.addEventListener('pointercancel',finishSliderPointer);
 
   function exportCanvas(includeDesign=true){
+    updatePendingTolerance();
     if(!working())throw Error('Bitte zuerst einen Hintergrund auswählen.');
     const composite=compose(original,original.width,original.height);
     return includeDesign?withDesign(composite):composite;
@@ -14303,7 +14378,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   async function save(apply){if(busy||brushStroke||!working())return;busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
     try{const out=exportCanvas(),blob=await blobOf(out);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));close();}
-      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.85_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
+      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.86_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
     catch(e){say('Fehler: '+e.message);}finally{busy=false;ui();}
   }
   function designMatte(w=preview.width,h=preview.height){
