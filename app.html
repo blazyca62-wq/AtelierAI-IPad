@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.79</title>
+  <title>AtelierAI iPad 4.81</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.79</div>
+    <div class="title">AtelierAI · iPad 4.81</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1856,6 +1856,10 @@
     <div style="background:#dedbd4;border-radius:14px;display:flex;align-items:center;justify-content:center;min-height:260px;max-height:78vh;overflow:hidden"><canvas id="artCanvas" style="max-width:100%;max-height:76vh;object-fit:contain;touch-action:pinch-zoom"></canvas></div>
     <div style="background:#fff;border-radius:14px;padding:13px;max-height:80vh;overflow:auto" id="artControls">
       <p style="font-size:13px;color:#555">Jeder Regler ist unabhängig. Mehrere Effekte lassen sich kombinieren. 0 = aus.</p>
+      <label id="artTargetRow" hidden style="display:none;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;font-weight:650">
+        Bearbeiten
+        <select id="artTarget"><option value="motif">Motiv</option><option value="backdrop">Hintergrund</option></select>
+      </label>
       <div id="artSliders"></div>
       <div style="display:grid;gap:8px;margin-top:12px"><button id="artReset" class="secondary">Alles zurücksetzen: AN · Effekte AUS</button><button id="artSave">Bild als PNG speichern</button><button id="artApply">Für alle Module übernehmen</button><p id="artStatus" style="font-size:13px;color:#555" role="status"></p></div>
     </div>
@@ -12567,7 +12571,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         out[p]=rr/wr;out[p+1]=gg/wr;out[p+2]=bb/wr;out[p+3]=src[p+3];
       }return out;
     }
-    function transform(data,w,h,id,t){
+    function transform(data,w,h,id,t,values){
       const src=data.slice(),n=w*h;
       const radius=id==='edge'?Math.round(2+6*t):id==='depth'?Math.round(2+5*t):Math.round(3+7*t);
       const soft=(id==='edge'||id==='broken')?guidedSmooth(src,w,h,radius,id==='edge'?34:45):blurImage(src,w,h,radius);
@@ -12585,7 +12589,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         const edge=smooth(10,80,grad),protect=1-edge*.85;
         let R=r,G=g,B=b;
         if(id==='focus'){
-          const fx=(+artFocusX.value/100)*w,fy=(+artFocusY.value/100)*h;
+          const fx=(values.focusX/100)*w,fy=(values.focusY/100)*h;
           const dx=(x-fx)/(w*.78),dy=(y-fy)/(h*.78),radius=Math.sqrt(dx*dx+dy*dy);
           const outer=smooth(.20,.94,radius),v=t*outer;
           const grey=.2126*r+.7152*g+.0722*b;
@@ -12596,7 +12600,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           R+=7*t*center;G+=7*t*center;B+=7*t*center;
         }else if(id==='sun'){
           const nx=x/Math.max(1,w-1),ny=y/Math.max(1,h-1);
-          const dir=artSunDirection.value;
+          const dir=values.sunDirection;
           let directional=dir==='left'?1-nx:dir==='right'?nx:dir==='bottom'?ny:dir==='topleft'?(2-nx-ny)/2:dir==='topright'?(1+nx-ny)/2:1-ny;
           const spread=smooth(.05,.95,directional),local=.64+.36*smooth(45,205,broad[i]);
           const delta=t*(spread*.72-(1-spread)*.24)*40*local;
@@ -12668,20 +12672,126 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         data[p]=clamp(R);data[p+1]=clamp(G);data[p+2]=clamp(B);
       }
     }
-    function render(){if(!base||previewOriginal)return;const token=++revision;by('artStatus').textContent='Vorschau wird berechnet …';
-      setTimeout(()=>{if(token!==revision)return;let im=new Uint8ClampedArray(base.data),w=base.width,h=base.height;for(const [id] of effects){const raw=+by('art_'+id).value;const t=(['bright','sat','temp','shadow'].includes(id))?artAmountSigned(raw):artAmount(raw);if(t!==0)transform(im,w,h,id,t);}if(token!==revision)return;let out=new ImageData(im,w,h);ctx.putImageData(out,0,0);by('artStatus').textContent='Vorschau bereit · 4 neue Gestaltungsregler mit Richtungs- und Schwerpunktwahl.';},20);
+    const target=by('artTarget');
+    const targetRow=by('artTargetRow');
+    let onDesignClose=null,selectionAlpha=null,targets=null,targetKey='motif',mainArtState=null;
+    let targetCache={};
+
+    function applyArtEffects(values){
+      let data=null;
+      for(const [id] of effects){
+        const raw=values[id]||0;
+        const amount=['bright','sat','temp','shadow'].includes(id)?artAmountSigned(raw):artAmount(raw);
+        if(amount===0)continue;
+        if(!data)data=new Uint8ClampedArray(base.data);
+        transform(data,base.width,base.height,id,amount,values);
+      }
+      return data;
     }
-    function start(){const photo=window.__atelierArtBridge?.photo?.();const sourceCanvas=photo?.canvas;if(!photo?.loaded||!sourceCanvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}originalW=sourceCanvas.width;originalH=sourceCanvas.height;let k=Math.min(1,1000/Math.max(originalW,originalH));cv.width=Math.max(1,Math.round(originalW*k));cv.height=Math.max(1,Math.round(originalH*k));let c=workCanvas(cv.width,cv.height);c.getContext('2d').drawImage(sourceCanvas,0,0,cv.width,cv.height);base=pixels(c);overlay.style.display='block';previewOriginal=false;fitView();render();}
-    by('artOpenBtn').addEventListener('click',()=>{try{start()}catch(e){console.error('Gestaltung:',e);overlay.style.display='block';by('artStatus').textContent='Fehler beim Öffnen: '+e.message;}});
-    by('artClose').addEventListener('click',()=>{overlay.style.display='none';revision++;});
+    function captureTarget(){
+      if(targets)targets[targetKey]={values:readArtValues(),reset:resetSnapshot};
+    }
+    function loadTarget(key){
+      targetKey=key;target.value=key;
+      setArtValues(targets[key].values);
+      resetSnapshot=targets[key].reset;
+      syncArtReset();
+    }
+    function renderArt(){
+      if(!targets)return applyArtEffects(readArtValues())||base.data;
+      captureTarget();
+      for(const key of ['motif','backdrop']){
+        const values=targets[key].values,signature=JSON.stringify(values);
+        if(targetCache[key]?.signature!==signature)targetCache[key]={signature,data:applyArtEffects(values)};
+      }
+      const motif=targetCache.motif.data,backdrop=targetCache.backdrop.data;
+      if(!motif&&!backdrop)return base.data;
+      const output=new Uint8ClampedArray(base.data);
+      for(let i=0;i<output.length;i+=4){
+        const alpha=selectionAlpha[i+3]/255;
+        if(base.data[i+3]===0)continue;
+        for(let channel=0;channel<3;channel++){
+          const j=i+channel,original=base.data[j];
+          output[j]=original+(motif?alpha*(motif[j]-original):0)+(backdrop?(1-alpha)*(backdrop[j]-original):0);
+        }
+      }
+      return output;
+    }
+    function render(){
+      if(!base||previewOriginal)return;
+      const token=++revision;
+      by('artStatus').textContent='Vorschau wird berechnet …';
+      setTimeout(()=>{
+        if(token!==revision)return;
+        ctx.putImageData(new ImageData(renderArt(),base.width,base.height),0,0);
+        by('artStatus').textContent=targets?'Die Vorschau zeigt Motiv und Hintergrund zusammen.':'Vorschau bereit.';
+      },20);
+    }
+    function start(sourceCanvas,onClose=null,matte=null,previous=null){
+      if(!sourceCanvas?.width||!sourceCanvas?.height)throw Error('Bitte zuerst ein Foto öffnen.');
+      originalW=sourceCanvas.width;originalH=sourceCanvas.height;
+      const k=Math.min(1,1000/Math.max(originalW,originalH));
+      cv.width=Math.max(1,Math.round(originalW*k));cv.height=Math.max(1,Math.round(originalH*k));
+      const c=workCanvas(cv.width,cv.height),cx=c.getContext('2d',{willReadFrequently:true});
+      cx.drawImage(sourceCanvas,0,0,cv.width,cv.height);
+      base=pixels(c);
+      if(matte){
+        cx.clearRect(0,0,cv.width,cv.height);
+        cx.drawImage(matte,0,0,cv.width,cv.height);
+        selectionAlpha=pixels(c).data;
+        mainArtState={values:readArtValues(),reset:resetSnapshot};
+        targets=previous?.targets??{motif:{values:{},reset:null},backdrop:{values:{},reset:null}};
+        loadTarget(previous?.key??'motif');
+      }
+      targetRow.hidden=!matte;
+      targetRow.style.display=matte?'flex':'none';
+      targetCache={};
+      onDesignClose=onClose;
+      by('artClose').textContent=onClose?'Zurück zum Hintergrund':'Schließen';
+      by('artBefore').textContent=onClose?'Ohne Gestaltung vergleichen':'Original halten / vergleichen';
+      overlay.style.display='block';previewOriginal=false;fitView();render();
+    }
+    function finishDesign(applied){
+      const onClose=onDesignClose;
+      captureTarget();
+      const saved=targets?{targets,key:targetKey}:null;
+      if(mainArtState){
+        setArtValues(mainArtState.values);resetSnapshot=mainArtState.reset;syncArtReset();
+      }
+      onDesignClose=selectionAlpha=targets=mainArtState=null;
+      targetCache={};
+      overlay.style.display='none';revision++;
+      clearTimeout(timer);
+      onClose?.(applied,saved);
+    }
+    target.addEventListener('change',()=>{
+      if(!targets)return;
+      captureTarget();loadTarget(target.value);render();
+    });
+    window.__atelierArtBridge.openDesign=start;
+    by('artOpenBtn').addEventListener('click',()=>{
+      try{
+        const photo=window.__atelierArtBridge.photo();
+        if(!photo.loaded){alert('Bitte zuerst ein Foto öffnen.');return;}
+        start(photo.canvas);
+      }catch(e){
+        console.error('Gestaltung:',e);
+        overlay.style.display='block';by('artStatus').textContent='Fehler beim Öffnen: '+e.message;
+      }
+    });
+    by('artClose').addEventListener('click',()=>{if(!busy)finishDesign(false);});
     [artSunDirection,artFocusX,artFocusY].forEach(el=>el.addEventListener('input',()=>{resetSnapshot=null;syncArtReset();clearTimeout(timer);timer=setTimeout(render,120);}));
     effects.forEach(([id])=>by('art_'+id).addEventListener('input',()=>{resetSnapshot=null;syncArtReset();by('art_'+id+'_val').textContent=formatArtValue(id,by('art_'+id).value);clearTimeout(timer);timer=setTimeout(render,120);}));
     by('artReset').addEventListener('click',()=>{if(resetSnapshot){setArtValues(resetSnapshot);resetSnapshot=null;}else{resetSnapshot=readArtValues();setArtValues({});}syncArtReset();render();});
     function originalPreview(on){if(!base)return;previewOriginal=on;revision++;if(on)ctx.putImageData(base,0,0);else render();}
     by('artBefore').addEventListener('pointerdown',()=>originalPreview(true));['pointerup','pointercancel','pointerleave'].forEach(ev=>by('artBefore').addEventListener(ev,()=>originalPreview(false)));
-    async function fileFromCanvas(){return new Promise((resolve,reject)=>cv.toBlob(blob=>blob?resolve(blob):reject(new Error('PNG konnte nicht erzeugt werden')),'image/png'));}
-    by('artSave').addEventListener('click',async()=>{if(!base)return;try{if(previewOriginal)originalPreview(false);await new Promise(r=>setTimeout(r,180));let blob=await fileFromCanvas(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_Kuenstlerische_Gestaltung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}catch(e){by('artStatus').textContent=e.message;}});
-    by('artApply').addEventListener('click',async()=>{if(!base||busy)return;busy=true;by('artApply').disabled=true;try{if(previewOriginal)originalPreview(false);render();await new Promise(r=>setTimeout(r,350));let blob=await fileFromCanvas();await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));overlay.style.display='none';by('artStatus').textContent='Gestaltetes Bild in alle Module übernommen.';}catch(e){by('artStatus').textContent='Übernahme fehlgeschlagen: '+e.message;}finally{busy=false;by('artApply').disabled=false;}});
+    async function fileFromCanvas(){
+      clearTimeout(timer);revision++;
+      ctx.putImageData(new ImageData(renderArt(),base.width,base.height),0,0);
+      return new Promise((resolve,reject)=>cv.toBlob(blob=>blob?resolve(blob):reject(new Error('PNG konnte nicht erzeugt werden')),'image/png'));
+    }
+    by('artSave').addEventListener('click',async()=>{if(!base||busy)return;try{previewOriginal=false;let blob=await fileFromCanvas(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_Kuenstlerische_Gestaltung.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}catch(e){by('artStatus').textContent=e.message;}});
+    by('artApply').addEventListener('click',async()=>{if(!base||busy)return;busy=true;by('artApply').disabled=by('artClose').disabled=true;try{previewOriginal=false;let blob=await fileFromCanvas();await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));finishDesign(true);by('artStatus').textContent='Gestaltetes Bild in alle Module übernommen.';}catch(e){by('artStatus').textContent='Übernahme fehlgeschlagen: '+e.message;}finally{busy=false;by('artApply').disabled=by('artClose').disabled=false;}});
   })();
 
 </script>
@@ -13201,7 +13311,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.79</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.81</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -13257,7 +13367,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         <button id="bgClear" class="secondary" type="button">Auswahl zurücksetzen</button>
       </div>
     </div>
-    <div id="bgEditorFooter"><span id="bgStatus" role="status" aria-live="polite">Foto öffnen, dann Hintergrund auswählen.</span><button id="bgSave" type="button">PNG speichern</button><button id="bgApply" type="button">Als Malvorlage übernehmen</button></div>
+    <div id="bgEditorFooter"><span id="bgStatus" role="status" aria-live="polite">Foto öffnen, dann Hintergrund auswählen.</span><button id="bgDesign" class="secondary" type="button" disabled>Künstlerische Gestaltung</button><button id="bgSave" type="button">PNG speichern</button><button id="bgApply" type="button">Als Malvorlage übernehmen</button></div>
   </div>
 </div>
 <script>
@@ -13281,6 +13391,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   const say=t=>{status.textContent=t;};
   const working=()=>selection!=='none'&&!!mask;
   const tapHistory=[];
+  let designSettings=null;
   const brushSize=$('bgBrushSize');
   let brushMode=null,brushStroke=null,brushCursor=null,brushLayer=null,brushMaskCache=null;
   let brushStrokes=[],brushRevision=0;
@@ -13291,7 +13402,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     kind.querySelector('option[value="original"]').disabled=preCut;
     for(const option of [clean,smooth,feather])option.disabled=preCut;
     $('bgUndoTap').disabled=busy||!!brushStroke||tapHistory.length===0;
-    $('bgSave').disabled=$('bgApply').disabled=busy||!!brushStroke||!working()||(kind.value==='photo'&&!photo);
+    $('bgDesign').disabled=$('bgSave').disabled=$('bgApply').disabled=busy||!!brushStroke||!working()||(kind.value==='photo'&&!photo);
     $('bgPositionRow').hidden=kind.value!=='photo';$('bgMoveMode').textContent='Hintergrund verschieben: '+(bgMoveMode?'AN':'AUS');$('bgMoveMode').classList.toggle('active',bgMoveMode);$('bgMoveMode').classList.toggle('secondary',!bgMoveMode);$('bgPhotoZoomVal').textContent=Math.round(bgZoom*100)+' %';
     const canPlace=working()&&(kind.value!=='photo'||!!photo);
     $('bgMotifPlacement').hidden=!canPlace;
@@ -13954,13 +14065,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function start(){const p=source();if(!p?.loaded||!p.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}
     original=p.canvas;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
     kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='70';lightMix.value=colorMix.value=backdropLight.value=backdropColor.value='0';$('bgBackdropGroup').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;selected=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
-    tapHistory.length=0;clearBrush();brushSize.value='24';$('bgBrushPanel').open=false;resetPlacement();$('bgMotifPlacement').open=false;
+    designSettings=null;tapHistory.length=0;clearBrush();brushSize.value='24';$('bgBrushPanel').open=false;resetPlacement();$('bgMotifPlacement').open=false;
     mask=importedAlphaMask();
     if(mask)selection='alpha';
     overlay.hidden=false;ui();
     say(mask?'Freistellung erkannt. Bei „Art“ kannst du direkt eine Farbe oder ein eigenes Bild wählen.':'Hintergrund antippen oder das Motiv mit Lasso umfahren. Schwarz ist voreingestellt.');fit();
   }
-  function close(){tapHistory.length=0;clearBrush();resetPlacement();edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;selected=null;photo=null;points=null;}
+  function close(){designSettings=null;tapHistory.length=0;clearBrush();resetPlacement();edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;selected=null;photo=null;points=null;}
   $('bgReplaceOpen').addEventListener('click',start);$('bgClose').addEventListener('click',close);
   $('bgTap').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='tap';draft=null;ui();render();say('Hintergrund antippen. Mehrere Flächen sind möglich.');});
   $('bgLasso').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='lasso';draft=null;ui();render();say('Mit einem Finger das Motiv umranden. Zwei Finger zoomen.');});
@@ -14051,9 +14162,39 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function exportCanvas(){if(!working())throw Error('Bitte zuerst einen Hintergrund auswählen.');return compose(original,original.width,original.height);}
   async function save(apply){if(busy||brushStroke||!working())return;busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
     try{const out=exportCanvas(),blob=await blobOf(out);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));close();}
-      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.79_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
+      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.81_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
     catch(e){say('Fehler: '+e.message);}finally{busy=false;ui();}
   }
+  function designMatte(){
+    const {width:w,height:h}=preview;
+    const cutout=canvas(w,h),cx=cutout.getContext('2d');
+    cx.drawImage(preview,0,0);
+    const cut=selection==='alpha'?brushLayer:maskFor(w,h);
+    if(cut){
+      cx.globalCompositeOperation='destination-out';
+      cx.drawImage(cut,0,0);
+    }
+    const result=canvas(w,h),ctx=result.getContext('2d');
+    const offset=motifPlacement();
+    ctx.imageSmoothingQuality='high';
+    ctx.drawImage(cutout,offset.x,offset.y,w*motifScale,h*motifScale);
+    return result;
+  }
+  $('bgDesign').addEventListener('click',()=>{
+    const button=$('bgDesign');
+    if(button.disabled)return;
+    try{
+      const composite=exportCanvas();
+      window.__atelierArtBridge.openDesign(composite,(applied,settings)=>{
+        if(applied){close();return;}
+        designSettings=settings;
+        overlay.hidden=false;ui();render();
+        button.focus({preventScroll:true});
+      },designMatte(),designSettings);
+      overlay.hidden=true;
+      $('artClose').focus({preventScroll:true});
+    }catch(error){say('Gestaltung konnte nicht geöffnet werden. '+error.message);}
+  });
   $('bgSave').addEventListener('click',()=>save(false));$('bgApply').addEventListener('click',()=>save(true));
   window.addEventListener('resize',()=>{if(!overlay.hidden)render();});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden)close();});
 })();

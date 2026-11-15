@@ -1,3 +1,11 @@
+NEU IN 4.81 – MOTIV UND HINTERGRUND GETRENNT GESTALTEN
+
+Im Hintergrundeditor „Künstlerische Gestaltung“ öffnen. Unter „Bearbeiten“ zwischen „Motiv“ und „Hintergrund“ wechseln. Regler, Rezepte und Zurücksetzen beziehen sich auf die gewählte Seite. In der Vorschau erscheinen beide zusammen. Die Reglerwerte bleiben beim Wechsel erhalten. Beim Zurückgehen lässt sich die Platzierung ändern. Beim erneuten Öffnen erscheinen die zuletzt verwendeten Gestaltungseinstellungen. Das gestaltete Gesamtbild lässt sich in der künstlerischen Gestaltung als PNG speichern oder als Malvorlage übernehmen.
+
+NEU IN 4.80 – KÜNSTLERISCHE GESTALTUNG DIREKT ÖFFNEN
+
+Nach der Hintergrundauswahl öffnet die Schaltfläche „Künstlerische Gestaltung“ unten im Hintergrundeditor die aktuelle Komposition mit allen gewohnten Gestaltungsrezepten und Reglern. „Zurück zum Hintergrund“ öffnet die Komposition wieder an der gleichen Stelle mit der bisherigen Auswahl und den dazugehörigen Einstellungen. „Für alle Module übernehmen“ macht das gestaltete Bild zur Arbeitsvorlage.
+
 NEU IN 4.79 – FARBE AM STANDORT DES MOTIVS
 
 Die Farbharmonie des Motivs bezieht sich nach dem Platzieren auf die tatsächlich darunterliegende Umgebung. Beim Loslassen aktualisiert AtelierAI die Anpassung. Ein begrenzter Umgebungsfarbstich ergänzt die Eigenfarben des Motivs. Die Helligkeit lässt sich weiterhin mit „Licht / Tonwerte“ einstellen.
