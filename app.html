@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.83</title>
+  <title>AtelierAI iPad 4.84</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.83</div>
+    <div class="title">AtelierAI · iPad 4.84</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -12787,7 +12787,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         by('artStatus').textContent=targets?'Die Vorschau zeigt Motiv und Hintergrund zusammen.':'Vorschau bereit.';
       },20);
     }
-    function start(sourceCanvas,onClose=null,matte=null,previous=null){
+    function start(sourceCanvas,onClose=null,matte=null,previous=null,initialTarget=null){
       if(!sourceCanvas?.width||!sourceCanvas?.height)throw Error('Bitte zuerst ein Foto öffnen.');
       originalW=sourceCanvas.width;originalH=sourceCanvas.height;
       const k=Math.min(1,1000/Math.max(originalW,originalH));
@@ -12801,7 +12801,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         selectionAlpha=pixels(c).data;
         mainArtState={values:readArtValues(),reset:resetSnapshot};
         targets=previous?.targets??{motif:{values:{},reset:null},backdrop:{values:{},reset:null}};
-        loadTarget(previous?.key??'motif');
+        loadTarget(initialTarget??previous?.key??'motif');
       }
       targetRow.hidden=!matte;
       targetRow.style.display=matte?'flex':'none';
@@ -13372,7 +13372,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.83</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.84</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -13428,7 +13428,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         <button id="bgClear" class="secondary" type="button">Auswahl zurücksetzen</button>
       </div>
     </div>
-    <div id="bgEditorFooter"><span id="bgStatus" role="status" aria-live="polite">Foto öffnen, dann Hintergrund auswählen.</span><button id="bgDesign" class="secondary" type="button" disabled>Künstlerische Gestaltung</button><button id="bgSave" type="button">PNG speichern</button><button id="bgApply" type="button">Als Malvorlage übernehmen</button></div>
+    <div id="bgEditorFooter"><span id="bgStatus" role="status" aria-live="polite">Foto öffnen, dann Hintergrund auswählen.</span><button id="bgDesign" class="secondary" type="button" disabled>Motiv gestalten</button><button id="bgDesignBackdrop" class="secondary" type="button" disabled>Hintergrund gestalten</button><button id="bgSave" type="button">PNG speichern</button><button id="bgApply" type="button">Als Malvorlage übernehmen</button></div>
   </div>
 </div>
 <script>
@@ -13465,7 +13465,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     kind.querySelector('option[value="original"]').disabled=preCut;
     for(const option of [clean,smooth,feather])option.disabled=preCut;
     $('bgUndoTap').disabled=busy||!!brushStroke||tapHistory.length===0;
-    $('bgDesign').disabled=$('bgSave').disabled=$('bgApply').disabled=busy||!!brushStroke||!working()||(kind.value==='photo'&&!photo);
+    $('bgDesign').disabled=$('bgDesignBackdrop').disabled=$('bgSave').disabled=$('bgApply').disabled=busy||!!brushStroke||!working()||(kind.value==='photo'&&!photo);
     $('bgPositionRow').hidden=kind.value!=='photo';$('bgMoveMode').textContent='Hintergrund verschieben: '+(bgMoveMode?'AN':'AUS');$('bgMoveMode').classList.toggle('active',bgMoveMode);$('bgMoveMode').classList.toggle('secondary',!bgMoveMode);$('bgPhotoZoomVal').textContent=Math.round(bgZoom*100)+' %';
     const canPlace=working()&&(kind.value!=='photo'||!!photo);
     $('bgMotifPlacement').hidden=!canPlace;
@@ -14291,7 +14291,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   async function save(apply){if(busy||brushStroke||!working())return;busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
     try{const out=exportCanvas(),blob=await blobOf(out);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));close();}
-      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.83_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
+      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.84_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
     catch(e){say('Fehler: '+e.message);}finally{busy=false;ui();}
   }
   function designMatte(w=preview.width,h=preview.height){
@@ -14309,8 +14309,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     ctx.drawImage(cutout,offset.x*w/preview.width,offset.y*h/preview.height,w*motifScale,h*motifScale);
     return result;
   }
-  $('bgDesign').addEventListener('click',()=>{
-    const button=$('bgDesign');
+  function openLayerDesign(button,initialTarget){
     if(button.disabled)return;
     try{
       const composite=exportCanvas(false);
@@ -14322,11 +14321,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         overlay.hidden=false;ui();render();
         if(settings)say('Gestaltung übernommen. Motiv und Hintergrund bleiben getrennt bearbeitbar.');
         button.focus({preventScroll:true});
-      },designMatte(),designSettings);
+      },designMatte(),designSettings,initialTarget);
       overlay.hidden=true;
       $('artClose').focus({preventScroll:true});
     }catch(error){say('Gestaltung konnte nicht geöffnet werden. '+error.message);}
-  });
+  }
+  const motifDesign=$('bgDesign'),backdropDesign=$('bgDesignBackdrop');
+  motifDesign.addEventListener('click',()=>openLayerDesign(motifDesign,'motif'));
+  backdropDesign.addEventListener('click',()=>openLayerDesign(backdropDesign,'backdrop'));
   $('bgSave').addEventListener('click',()=>save(false));$('bgApply').addEventListener('click',()=>save(true));
   window.addEventListener('resize',()=>{if(!overlay.hidden)render();});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden)close();});
 })();

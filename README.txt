@@ -1,3 +1,7 @@
+NEU IN 4.84 – DIREKTE EINSTIEGE FÜR DIE GESTALTUNG
+
+Unten in „Hintergrund ersetzen“ öffnen „Motiv gestalten“ und „Hintergrund gestalten“ die künstlerische Gestaltung mit dem entsprechenden Bereich vorausgewählt. In der Vorschau bleiben beide sichtbar. Beim Zurückgehen erscheinen beide Anpassungen direkt im Hintergrundeditor. Die getrennten Einstellungen lassen sich jederzeit weiterbearbeiten.
+
 NEU IN 4.83 – FLÜSSIGERE HINTERGRUNDREGLER
 
 Beim Ziehen eines Reglers erscheint eine schnellere Vorschau mit den bereits berechneten Gestaltungseffekten. Beim Loslassen berechnet AtelierAI die Gestaltung für die endgültige Einstellung neu. Beim PNG-Export wird die Gestaltung für den aktuellen Stand berechnet und in den Abmessungen des Ausgangsbildes ausgegeben.
