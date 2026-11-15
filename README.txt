@@ -1,4 +1,4 @@
-NEU IN 4.68 – SAUBERE HINTERGRUNDKANTEN
+NEU IN 4.69 – SAUBERE HINTERGRUNDKANTEN
 =======================================
 Die bestehende Funktion „Hintergrund ersetzen“ wurde gezielt verbessert.
 - „Rand bereinigen“ (0–5 px, Start 2): schneidet den schmalen alten
