@@ -1,3 +1,13 @@
+NEU IN 4.74 – MOTIV PLATZIEREN
+
+Hintergrund antippen oder das Motiv per Lasso auswählen. „Motiv platzieren“ öffnen und die Motivgröße zwischen 25 % und 300 % einstellen. „Motiv verschieben“ einschalten und das Motiv mit einem Finger ziehen. Zwei Finger zoomen oder verschieben die Ansicht. Mit „Platzierung zurücksetzen“ kehrt das Motiv zu seiner ursprünglichen Größe und Position zurück.
+
+Bei „Vorhandenen bearbeiten“ füllt AtelierAI die frei gewordene Stelle mit Farben aus der Umgebung. Bei strukturierten Hintergründen kann die Füllung sichtbar sein. Die Platzierung wird beim PNG-Export und beim Übernehmen als Malvorlage berücksichtigt.
+
+NEU IN 4.73 – HINTERGRUND ANPASSEN
+
+Unter „Hintergrund ersetzen“ das Motiv bzw. den Hintergrund auswählen. Bei „Art“ lässt sich eine Farbe, ein eigenes Bild oder der vorhandene Hintergrund bearbeiten. Unter „Motiv integrieren → Hintergrund anpassen“ gibt es getrennte Regler für Licht und Farbharmonie. Links wird der Hintergrund dunkler, rechts heller. Die Farbharmonie übernimmt einen Teil der Motivfarben. Beide Regler starten bei 0 %. „Integration“ bestimmt die Gesamtstärke beider Bereiche. „Ohne Integration vergleichen“ zeigt das Bild vor diesen Anpassungen mit der gewählten Hintergrundart.
+
 NEU IN 4.72 – LICHT UND FARBE
 
 „Licht / Tonwerte“ lässt sich von −100 % bis +100 % einstellen. Links wird das Motiv dunkler, rechts heller. Das funktioniert auch bei schwarzem Hintergrund. Bei 0 % gibt es keine Tonwertkorrektur.
