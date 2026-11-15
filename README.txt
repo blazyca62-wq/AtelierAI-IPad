@@ -1,3 +1,7 @@
+NEU IN 4.89 – MOTIV UND HINTERGRUND IM PROJEKT WEITERBEARBEITEN
+
+„Übernehmen & zum Projekt“ übernimmt die Vorschau und sichert den bearbeitbaren Hintergrundstand im aktuellen Projektbereich. Nach dem Öffnen des Projekts unter „Werkzeuge → Hintergrund ersetzen“ weiterarbeiten. Die Freistellung, Pinselstriche, Platzierung, Deckkraft und getrennte Gestaltung werden wiederhergestellt. Das gilt für die automatische Speicherung und für .atelierprojekt-Dateien. Bereits mit 4.88 gespeicherte Kompositionen können mit den ursprünglichen Bildern neu freigestellt werden.
+
 NEU IN 4.88 – ZUM PROJEKT UND DIREKT RADIEREN
 
 „Übernehmen & zum Projekt“ übernimmt das zusammengesetzte Bild als Malvorlage in den aktuellen Projektbereich und öffnet das Projektmenü. Dort lädt „Projekt speichern“ eine .atelierprojekt-Datei herunter. AtelierAI speichert den übernommenen Stand auch automatisch im Browser.

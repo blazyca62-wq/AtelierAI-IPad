@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.88</title>
+  <title>AtelierAI iPad 4.89</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.88</div>
+    <div class="title">AtelierAI · iPad 4.89</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -2387,7 +2387,22 @@
 
   let sourceCanvas = document.createElement('canvas');
   let sourceCtx = sourceCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
-  window.__atelierArtBridge = { photo:()=>({loaded,canvas:sourceCanvas}), load:(blob,done)=>loadPhoto(blob,true,done) };
+  window.__atelierArtBridge = {
+    photo:()=>({loaded,canvas:sourceCanvas}),
+    load:(blob,done)=>loadPhoto(blob,true,done),
+    background:()=>studioProject?.areas[studioProject.active]?.background,
+    async applyBackground(blob,background){
+      if(studioBusy)throw Error('Das Projekt speichert gerade. Bitte gleich erneut übernehmen.');
+      studioEnsure();
+      const area=studioProject.areas[studioProject.active];
+      await new Promise((resolve,reject)=>loadPhoto(blob,true,error=>error?reject(error):resolve()));
+      area.background=background;
+      studioDirty();
+    },
+    encodeCanvas:studioEncode,
+    encodeFile:studioDataURL,
+    decodeImage:studioImage
+  };
 
   let formCanvas = document.createElement('canvas');
   let formCtx = formCanvas.getContext('2d', { colorSpace:'srgb', willReadFrequently: true });
@@ -3972,7 +3987,7 @@
   }
   async function studioAutoSave(){
     if(!loaded||!studioPending)return;
-    if(studioBusy||window.atelierEditorBusy?.()){studioTimer=setTimeout(studioAutoSave,6000);return;}
+    if(studioBusy||window.atelierEditorBusy?.()||window.__atelierArtBridge.backgroundBusy?.()){studioTimer=setTimeout(studioAutoSave,6000);return;}
     await studioRun(studioPersist);
   }
   function studioRemember(){try{if(studioProject)localStorage.setItem('atelierai-last-project',studioProject.id);else localStorage.removeItem('atelierai-last-project');}catch(e){}}
@@ -4004,14 +4019,31 @@
     const c=document.createElement('canvas');c.width=Math.max(1,Math.round(photo.width*f));c.height=Math.max(1,Math.round(photo.height*f));
     const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(photo,0,0,c.width,c.height);return c;
   }
-  function studioEncode(c){return new Promise((resolve,reject)=>{
-    let done=false,reader;const finish=(error,value)=>{if(done)return;done=true;clearTimeout(timer);error?reject(error):resolve(value);};
-    const timer=setTimeout(()=>{finish(Error('Bildspeicherung dauert zu lange. Bitte erneut speichern.'));try{reader?.abort();}catch(e){}},20000);
-    try{c.toBlob(blob=>{
-      if(done)return;if(!blob){finish(Error('Bild konnte nicht gespeichert werden.'));return;}
-      try{reader=new FileReader();reader.onload=()=>finish(null,reader.result);reader.onerror=reader.onabort=()=>finish(Error('Bild konnte nicht gespeichert werden.'));reader.readAsDataURL(blob);}catch(e){finish(e);}
-    },'image/png');}catch(e){finish(e);}
-  });}
+  function studioDataURL(blob){
+    return new Promise((resolve,reject)=>{
+      if(!blob){reject(Error('Bild konnte nicht gespeichert werden.'));return;}
+      const reader=new FileReader();
+      const finish=(error,value)=>{clearTimeout(timer);error?reject(error):resolve(value);};
+      const timer=setTimeout(()=>{
+        finish(Error('Bildspeicherung dauert zu lange. Bitte erneut speichern.'));
+        reader.abort();
+      },20000);
+      reader.onload=()=>finish(null,reader.result);
+      reader.onerror=reader.onabort=()=>finish(Error('Bild konnte nicht gespeichert werden.'));
+      try{reader.readAsDataURL(blob);}catch(error){finish(error);}
+    });
+  }
+  function studioEncode(canvas){
+    return new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(Error('Bildspeicherung dauert zu lange. Bitte erneut speichern.')),20000);
+      try{
+        canvas.toBlob(blob=>{
+          clearTimeout(timer);
+          studioDataURL(blob).then(resolve,reject);
+        },'image/png');
+      }catch(error){clearTimeout(timer);reject(error);}
+    });
+  }
   function studioEnsure(){
     if(!studioProject)studioProject={format:'AtelierAI-Bildprojekt',version:1,id:studioId(),name:'Mein Bild',active:0,areas:[]};
     if(!studioProject.areas.length)studioProject.areas.push({id:studioId(),name:planBook.name||'Gesamtbild'});
@@ -10607,6 +10639,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const oldMap=current.cropMap||{x:0,y:0,w:1,h:1};
     if(!current.fullView)current.fullView=studioClone(current);
     else studioMergeCropSamples(current);
+    delete current.background;
     current.cropMap={x:oldMap.x+box.x/sourceCanvas.width*oldMap.w,y:oldMap.y+box.y/sourceCanvas.height*oldMap.h,w:box.w/sourceCanvas.width*oldMap.w,h:box.h/sourceCanvas.height*oldMap.h};
     return current;
   }
@@ -13378,7 +13411,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.88</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.89</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -13447,7 +13480,15 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   const $=id=>document.getElementById(id);
   const overlay=$('bgEditorOverlay'),stage=$('bgStage'),screen=$('bgPreview'),screenCtx=screen.getContext('2d');
   const status=$('bgStatus'),kind=$('bgKind'),color=$('bgColor'),photoInput=$('bgPhotoInput'),feather=$('bgFeather'),clean=$('bgClean'),smooth=$('bgSmooth'),tol=$('bgTolerance');
-  const source=()=>window.__atelierArtBridge?.photo?.();
+  const bridge=window.__atelierArtBridge;
+  const launcher=$('bgReplaceOpen');
+  bridge.backgroundBusy=()=>busy;
+  let sourceData=null,photoFile=null,photoData=null,photoRevision=0;
+  const savedControls=[
+    'bgKind','bgColor','bgTolerance','bgClean','bgFeather','bgIntegrate','bgLightMix','bgColorMix',
+    'bgBackdropLight','bgBackdropColor','bgBrushSize','bgEraseStrength','bgBrushSoftness'
+  ];
+  const isImageData=value=>typeof value==='string'&&/^data:(?:image\/[a-z0-9.+-]+|application\/octet-stream)?;base64,/i.test(value);
   const integrate=$('bgIntegrate'),lightMix=$('bgLightMix'),colorMix=$('bgColorMix');
   const backdropLight=$('bgBackdropLight'),backdropColor=$('bgBackdropColor');
   let bgShiftX=0,bgShiftY=0,bgZoom=1,bgMoveMode=false;
@@ -13487,6 +13528,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const canPlace=working()&&(kind.value!=='photo'||!!photo);
     $('bgMotifPlacement').hidden=!canPlace;
     $('bgClose').disabled=busy;
+    $('bgSide').inert=busy;
     $('bgUndoStroke').disabled=busy||!!brushStroke||brushStrokes.length===0;
     $('bgBrushSizeVal').textContent=brushSize.value+' px';
     for(const slider of [eraseStrength,brushSoftness]){
@@ -14252,9 +14294,18 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     ui();render();say('Letztes Antippen rückgängig gemacht.');
   }
+  function lassoMask(path){
+    const result=canvas(preview.width,preview.height),ctx=result.getContext('2d');
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,result.width,result.height);
+    ctx.globalCompositeOperation='destination-out';
+    ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);
+    for(const point of path.slice(1))ctx.lineTo(point.x,point.y);
+    ctx.closePath();ctx.fill();ctx.globalCompositeOperation='source-over';
+    return result;
+  }
   function lassoEnd(){const a=draft;draft=null;if(!a||a.length<5){say('Bitte das Motiv mit einem Finger vollständig umfahren.');render();return;}
     let area=0;for(let i=0;i<a.length;i++){const p=a[i],q=a[(i+1)%a.length];area+=p.x*q.y-q.x*p.y;}if(Math.abs(area)<40){say('Lasso zu klein. Bitte das Motiv umranden.');render();return;}
-    clearTaps();if(selection!=='manual')clearBrush();edgeMaskCache=null;points=a;selection='lasso';mask=canvas(preview.width,preview.height);const c=mask.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,mask.width,mask.height);c.globalCompositeOperation='destination-out';c.beginPath();points.forEach((p,i)=>{i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y);});c.closePath();c.fill();c.globalCompositeOperation='source-over';ui();render();say('Motiv ausgewählt. Den Bereich außerhalb des Lassos kannst du als Hintergrund bearbeiten.');
+    clearTaps();if(selection!=='manual')clearBrush();edgeMaskCache=null;points=a;selection='lasso';mask=lassoMask(points);ui();render();say('Motiv ausgewählt. Den Bereich außerhalb des Lassos kannst du als Hintergrund bearbeiten.');
   }
   function importedAlphaMask(){
     const data=previewData.data;
@@ -14272,18 +14323,99 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     ctx.putImageData(image,0,0);
     return result;
   }
-  function start(){const p=source();if(!p?.loaded||!p.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}
-    original=p.canvas;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
+  function resetWorkspace(image){
+    original=image;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
     kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='70';lightMix.value=colorMix.value=backdropLight.value=backdropColor.value='0';$('bgBackdropGroup').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
     resetDesignPreview();designSettings=null;resetOpacity();clearTaps();clearBrush();brushSize.value='24';eraseStrength.value='100';brushSoftness.value='35';$('bgBrushPanel').open=true;resetPlacement();$('bgMotifPlacement').open=false;
+    sourceData=photoFile=photoData=null;
+    delete $('bgFileName').dataset.name;
+    photoRevision++;
     mask=importedAlphaMask();
     if(mask)selection='alpha';
-    overlay.hidden=false;ui();
-    say(mask?'Freistellung erkannt. Bei „Art“ kannst du direkt eine Farbe oder ein eigenes Bild wählen.':'Hintergrund antippen, das Motiv umranden oder direkt radieren. Schwarz ist voreingestellt.');fit();
   }
-  function close(){resetDesignPreview();designSettings=null;clearTaps();clearBrush();resetPlacement();edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;photo=null;points=null;}
+  function restoredMask(type,path){
+    if(type==='manual')return canvas(preview.width,preview.height);
+    if(type==='alpha')return importedAlphaMask();
+    if(type==='lasso'&&path?.length>=5)return lassoMask(path);
+    return null;
+  }
+  async function captureBackground(){
+    // Snapshot the editable settings before encoding images asynchronously.
+    const settings=JSON.parse(JSON.stringify({
+      photoName:photoFile?.name??$('bgFileName').dataset.name??'',
+      selection,points,tool,brushStrokes,taps:tapHistory,
+      tapBase:tapBase&&{selection:tapBase.selection,points:tapBase.points,brushStrokes:tapBase.brushStrokes},
+      controls:savedControls.map(id=>$(id).value),smooth:smooth.checked,
+      bgShiftX,bgShiftY,bgZoom,motifX,motifY,motifScale,motifOpacity,designSettings
+    }));
+    const [source,backdrop]=await Promise.all([
+      sourceData??bridge.encodeCanvas(original),
+      photoData??(photoFile?bridge.encodeFile(photoFile):null)
+    ]);
+    return {version:1,source,photo:backdrop,...settings};
+  }
+  function restoreBackground(saved,image,backdrop){
+    resetWorkspace(image);
+    sourceData=saved.source;
+    photoData=saved.photo;
+    photo=backdrop;
+    $('bgFileName').dataset.name=saved.photoName||'';
+    if(photo)$('bgFileName').textContent='Gewählt: '+(saved.photoName||'Hintergrundbild');
+    savedControls.forEach((id,index)=>{
+      if(typeof saved.controls[index]==='string')$(id).value=saved.controls[index];
+    });
+    smooth.checked=saved.smooth;
+    ({bgShiftX,bgShiftY,bgZoom,motifX,motifY,motifScale,motifOpacity}=saved);
+    $('bgPhotoZoom').value=String(Math.round(bgZoom*100));
+    $('bgMotifScale').value=String(Math.round(motifScale*100));
+    $('bgMotifOpacity').value=String(Math.round(motifOpacity*100));
+    designSettings=saved.designSettings;
+    tool=saved.tool==='lasso'?'lasso':'tap';
+    selection=saved.selection;
+    points=saved.points;
+    brushStrokes=saved.brushStrokes;
+    if(selection==='tap'){
+      if(!saved.taps.length||!saved.tapBase)throw Error('Die Auswahl im Projekt ist unvollständig.');
+      tapBase={...saved.tapBase,mask:restoredMask(saved.tapBase.selection,saved.tapBase.points)};
+      const size=preview.width*preview.height;
+      tapPrefix=new Uint8Array(size);
+      for(const tap of saved.taps){
+        if(!Number.isInteger(tap.index)||tap.index<0||tap.index>=size||!Number.isFinite(tap.tolerance))throw Error('Ein Auswahlpunkt liegt außerhalb des Bildes.');
+        tapHistory.push(tap);
+        if(tapHistory.length<saved.taps.length)floodInto(tap,tapPrefix);
+      }
+      refreshTapMask();
+    }else{
+      mask=restoredMask(selection,points);
+    }
+    if(!working())throw Error('Die Auswahl im Projekt konnte nicht gelesen werden.');
+    rebuildBrush();
+  }
+  async function start(){
+    const current=bridge.photo();
+    if(!current?.loaded||!current.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}
+    launcher.disabled=true;
+    try{
+      const data=bridge.background();
+      if(data){
+        const {source,photo,...settings}=data;
+        if(settings.version!==1||!isImageData(source)||(photo&&!isImageData(photo)))throw Error('Die Ebenendaten im Projekt sind ungültig.');
+        const [image,backdrop]=await Promise.all([bridge.decodeImage(source),photo?bridge.decodeImage(photo):null]);
+        if(bridge.background()!==data)return;
+        restoreBackground({source,photo,...JSON.parse(JSON.stringify(settings))},image,backdrop);
+      }else{
+        resetWorkspace(current.canvas);
+      }
+      overlay.hidden=false;ui();fit();
+      say(data?'Projekt geöffnet. Motiv und Hintergrund sind getrennt bearbeitbar.':mask?'Freistellung erkannt. Bei „Art“ kannst du direkt eine Farbe oder ein eigenes Bild wählen.':'Hintergrund antippen, das Motiv umranden oder direkt radieren. Schwarz ist voreingestellt.');
+    }catch(error){
+      close();
+      alert('Hintergrund konnte nicht geöffnet werden. '+error.message);
+    }finally{launcher.disabled=false;}
+  }
+  function close(){resetDesignPreview();designSettings=null;clearTaps();clearBrush();resetPlacement();edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;photo=null;points=null;sourceData=photoData=photoFile=null;photoRevision++;}
   function cancel(){if(!busy)close();}
-  $('bgReplaceOpen').addEventListener('click',start);$('bgClose').addEventListener('click',cancel);
+  launcher.addEventListener('click',start);$('bgClose').addEventListener('click',cancel);
   $('bgTap').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='tap';draft=null;ui();render();say('Hintergrund antippen. Mehrere Flächen sind möglich.');});
   $('bgLasso').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='lasso';draft=null;ui();render();say('Mit einem Finger das Motiv umranden. Zwei Finger zoomen.');});
   $('bgFit').addEventListener('click',fit);$('bgClear').addEventListener('click',clear);
@@ -14353,9 +14485,21 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     render();
   });
   tol.addEventListener('change',finishTolerance);
-  photoInput.addEventListener('change',async()=>{const file=photoInput.files?.[0];if(!file)return;const url=URL.createObjectURL(file),pic=new Image();
-    try{await new Promise((ok,fail)=>{pic.onload=ok;pic.onerror=()=>fail(Error('Bild konnte nicht geladen werden.'));pic.src=url;});photo=pic;$('bgFileName').textContent='Gewählt: '+file.name;say('Hintergrundbild geladen. Es wird passend zugeschnitten.');}
-    catch(e){say('Hintergrundbild: '+e.message);photo=null;}finally{URL.revokeObjectURL(url);ui();render();}
+  photoInput.addEventListener('change',async()=>{
+    const file=photoInput.files?.[0];if(!file)return;
+    const revision=++photoRevision,url=URL.createObjectURL(file),pic=new Image();
+    try{
+      await new Promise((ok,fail)=>{pic.onload=ok;pic.onerror=()=>fail(Error('Bild konnte nicht geladen werden.'));pic.src=url;});
+      if(revision!==photoRevision)return;
+      photo=pic;photoFile=file;photoData=null;
+      $('bgFileName').textContent='Gewählt: '+file.name;
+      say('Hintergrundbild geladen. Es wird passend zugeschnitten.');
+    }catch(error){
+      if(revision===photoRevision)say('Hintergrundbild: '+error.message);
+    }finally{
+      URL.revokeObjectURL(url);
+      if(revision===photoRevision){ui();render();}
+    }
   });
   stage.addEventListener('pointerdown',e=>{if(!preview||busy||e.pointerType==='mouse'&&e.button!==0)return;stage.setPointerCapture(e.pointerId);const p=point(e);gestures.set(e.pointerId,p);
     if(gestures.size===2){finishBrush(false);draft=null;const a=[...gestures.values()],mid={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2};viewport();gest={type:'pinch',dist:Math.max(1,Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)),zoom,mid,focus:toImage(mid)};render();}
@@ -14456,15 +14600,15 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(busy||brushStroke||!working())return;
     busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
     try{
-      const blob=await blobOf(exportCanvas());
+      const blobJob=blobOf(exportCanvas());
       if(apply){
-        const bridge=window.__atelierArtBridge;
-        await new Promise((resolve,reject)=>bridge.load(blob,err=>err?reject(err):resolve()));
+        const [blob,background]=await Promise.all([blobJob,captureBackground()]);
+        await bridge.applyBackground(blob,background);
         close();
         bridge.openProjectMenu();
       }else{
-        const url=URL.createObjectURL(blob),link=document.createElement('a');
-        link.href=url;link.download='AtelierAI_4.88_Hintergrund.png';link.click();
+        const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
+        link.href=url;link.download='AtelierAI_4.89_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
