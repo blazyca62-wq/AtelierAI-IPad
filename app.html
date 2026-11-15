@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.78</title>
+  <title>AtelierAI iPad 4.79</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.78</div>
+    <div class="title">AtelierAI · iPad 4.79</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -13201,7 +13201,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.78</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.79</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -13241,7 +13241,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         <label>Integration <input id="bgIntegrate" type="range" min="0" max="100" value="70" step="5"><output id="bgIntegrateVal">70 %</output></label>
         <label>Licht / Tonwerte <input id="bgLightMix" type="range" min="-100" max="100" value="0" step="5"><output id="bgLightMixVal">0 %</output></label>
         <label>Farbharmonie <input id="bgColorMix" type="range" min="0" max="100" value="0" step="5"><output id="bgColorMixVal">0 %</output></label>
-        <p>Links wird es dunkler, rechts heller. Die Farbharmonie passt das Motiv farblich an den Hintergrund an.</p>
+        <p>Links wird es dunkler, rechts heller. Die Farbharmonie fügt einen Farbstich aus der Umgebung am platzierten Motiv hinzu. Eigenfarben bleiben erkennbar.</p>
         <details id="bgBackdropGroup">
           <summary>Hintergrund anpassen</summary>
           <label>Licht / Tonwerte <input id="bgBackdropLight" aria-label="Licht und Tonwerte des Hintergrunds" type="range" min="-100" max="100" value="0" step="5"><output id="bgBackdropLightVal">0 %</output></label>
@@ -13486,16 +13486,20 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     return distance;
   }
 
-  function sceneSample(image,w,h){
+  function sceneSample(image,w,h,placement){
     const c=canvas(w,h),ctx=c.getContext('2d',{willReadFrequently:true});
-    ctx.drawImage(image,0,0,w,h);
+    if(placement){
+      // Map the background to subject coordinates at its placed position.
+      const scale=placement.scale;
+      ctx.drawImage(image,-placement.x*w/(preview.width*scale),-placement.y*h/(preview.height*scale),w/scale,h/scale);
+    }else ctx.drawImage(image,0,0,w,h);
     return ctx.getImageData(0,0,w,h).data;
   }
 
-  function lightField(backdrop,useOriginal,preCut=false){
+  function lightField(backdrop,useOriginal,preCut,placement){
     const scale=Math.min(1,180/Math.max(preview.width,preview.height));
     const w=Math.max(1,Math.round(preview.width*scale)),h=Math.max(1,Math.round(preview.height*scale));
-    const alpha=sceneSample(edgeMask(),w,h),before=sceneSample(preview,w,h),after=sceneSample(backdrop,w,h);
+    const alpha=sceneSample(edgeMask(),w,h),before=sceneSample(preview,w,h),after=sceneSample(backdrop,w,h,placement);
     const outside=contourDistances(alpha,w,h,false),inside=contourDistances(alpha,w,h,true);
     const radius=Math.max(2,Math.round(Math.max(w,h)*.10));
     let weight=0,oldY=0,newY=0,oldR=0,oldB=0,newR=0,newB=0;
@@ -13603,16 +13607,31 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
             data[i]=newR;data[i+1]=newG;data[i+2]=newB;
             continue;
           }
-          // Build a valid tint around the new luminance, then blend toward it.
-          // A saturated source channel must not suppress the whole adjustment.
           const tintR=row[a+1]*(1-f)+row[b+1]*f;
           const tintB=row[a+2]*(1-f)+row[b+2]*f;
           const tintG=-(.2126*tintR+.0722*tintB)/.7152;
-          const gamut=Math.min(1,colorHeadroom(targetY,tintR),colorHeadroom(targetY,tintG),colorHeadroom(targetY,tintB));
           const blend=color*(row[a+3]*(1-f)+row[b+3]*f);
-          data[i]=newR+blend*(targetY+gamut*tintR-newR);
-          data[i+1]=newG+blend*(targetY+gamut*tintG-newG);
-          data[i+2]=newB+blend*(targetY+gamut*tintB-newB);
+          const ownR=newR-targetY,ownG=newG-targetY,ownB=newB-targetY;
+          let chromaR,chromaG,chromaB;
+          if(isBackdrop){
+            const gamut=Math.min(1,colorHeadroom(targetY,tintR),colorHeadroom(targetY,tintG),colorHeadroom(targetY,tintB));
+            chromaR=ownR*(1-blend)+blend*gamut*tintR;
+            chromaG=ownG*(1-blend)+blend*gamut*tintG;
+            chromaB=ownB*(1-blend)+blend*gamut*tintB;
+          }else{
+            // Add reflected color without replacing the motif's own hue.
+            const nativeChroma=Math.max(Math.abs(ownR),Math.abs(ownG),Math.abs(ownB));
+            const tintStrength=Math.max(1,Math.abs(tintR),Math.abs(tintG),Math.abs(tintB));
+            const ambient=blend*Math.min(.72,(29-.10*Math.min(115,nativeChroma))/tintStrength);
+            const preserve=1-.10*blend;
+            chromaR=ownR*preserve+ambient*tintR;
+            chromaG=ownG*preserve+ambient*tintG;
+            chromaB=ownB*preserve+ambient*tintB;
+          }
+          const gamut=Math.min(1,colorHeadroom(targetY,chromaR),colorHeadroom(targetY,chromaG),colorHeadroom(targetY,chromaB));
+          data[i]=targetY+chromaR*gamut;
+          data[i+1]=targetY+chromaG*gamut;
+          data[i+2]=targetY+chromaB*gamut;
         }
       }
       ctx.putImageData(tile,0,top);
@@ -13755,7 +13774,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function layerSettings(compare){
     return [mask,brushRevision,clean.value,smooth.checked,feather.value,kind.value,color.value,photo,bgShiftX,bgShiftY,bgZoom,integrate.value,lightMix.value,colorMix.value,backdropLight.value,backdropColor.value,compare];
   }
-  function prepareLayers(base,w,h,compare,placing){
+  function prepareLayers(base,w,h,compare,placing,lightingPosition){
     const amount=compare?0:Number(integrate.value)/100;
     const light=amount*Number(lightMix.value)/100,colorStrength=.78*amount*Number(colorMix.value)/100;
     const bgLight=amount*Number(backdropLight.value)/100,bgColor=.78*amount*Number(backdropColor.value)/100;
@@ -13777,7 +13796,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     oc.drawImage(base,0,0,w,h);
     if(light||colorStrength){
       // Reference the chosen backdrop before grading either layer.
-      const scene=lightField(backdrop,useOriginal&&!placing,preCut);
+      const scene=lightField(backdrop,useOriginal&&!placing,preCut,lightingPosition);
       if(scene)gradeLayer(oc,matte,scene,w,h,light,colorStrength);
       else if(light)gradeLayer(oc,matte,{w:1,h:1,field:[0,0,0,0]},w,h,light,0);
     }
@@ -13802,12 +13821,16 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     return {motif:out,backdrop};
   }
 
-  function motifPlacement(){
-    const center=motifChanged()?motifBounds():null;
-    return {
-      x:motifX+(center?.x??0)*(1-motifScale),
-      y:motifY+(center?.y??0)*(1-motifScale)
-    };
+  function motifPlacement(x=motifX,y=motifY){
+    const center=x||y||motifScale!==1?motifBounds():null;
+    return {x:x+(center?.x??0)*(1-motifScale),y:y+(center?.y??0)*(1-motifScale),scale:motifScale};
+  }
+
+  function lightingPlacement(compare,isPreview){
+    if(compare||!Number(integrate.value)||(!Number(lightMix.value)&&!Number(colorMix.value)))return null;
+    if(kind.value==='color')return null;
+    // Keep the graded layer cached while dragging. Refresh at the drop position.
+    return isPreview&&gest?.type==='motif'?motifPlacement(gest.x,gest.y):motifPlacement();
   }
   function brushPoint(p){
     const pt=toImage(p),offset=motifPlacement();
@@ -13818,13 +13841,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const placing=selection==='alpha'||(motifChanged()&&!!motifBounds());
     if(!placing&&!(kind.value==='original'&&brushLayer))return prepareLayers(base,w,h,compare,false).motif;
     let layers;
+    const lighting=lightingPlacement(compare,base===preview);
     if(base===preview){
-      const settings=layerSettings(compare);
+      const settings=[...layerSettings(compare),lighting?.x,lighting?.y,lighting?.scale];
       if(!placementCache||settings.some((v,i)=>v!==placementCache.settings[i])){
-        placementCache={settings,layers:prepareLayers(base,w,h,compare,true)};
+        placementCache={settings,layers:prepareLayers(base,w,h,compare,true,lighting)};
       }
       layers=placementCache.layers;
-    }else layers=prepareLayers(base,w,h,compare,true);
+    }else layers=prepareLayers(base,w,h,compare,true,lighting);
     const out=base===preview?canvas(w,h):layers.backdrop,ctx=out.getContext('2d');
     const offset=motifPlacement(),x=offset.x*w/preview.width,y=offset.y*h/preview.height;
     if(out!==layers.backdrop)ctx.drawImage(layers.backdrop,0,0);
@@ -13835,7 +13859,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function render(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;paint();});}
   function composedPreview(){
     const compare=$('bgCompare').checked;
-    const settings=[...layerSettings(compare),motifX,motifY,motifScale];
+    const lighting=lightingPlacement(compare,true);
+    const settings=[...layerSettings(compare),motifX,motifY,motifScale,lighting?.x,lighting?.y,lighting?.scale];
     if(!compositeCache||settings.some((value,i)=>value!==compositeCache.settings[i])){
       compositeCache={settings,canvas:compose(preview,preview.width,preview.height,compare)};
     }
@@ -14026,7 +14051,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function exportCanvas(){if(!working())throw Error('Bitte zuerst einen Hintergrund auswählen.');return compose(original,original.width,original.height);}
   async function save(apply){if(busy||brushStroke||!working())return;busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
     try{const out=exportCanvas(),blob=await blobOf(out);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));close();}
-      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.78_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
+      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.79_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
     catch(e){say('Fehler: '+e.message);}finally{busy=false;ui();}
   }
   $('bgSave').addEventListener('click',()=>save(false));$('bgApply').addEventListener('click',()=>save(true));

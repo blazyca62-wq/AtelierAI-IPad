@@ -1,3 +1,7 @@
+NEU IN 4.79 – FARBE AM STANDORT DES MOTIVS
+
+Die Farbharmonie des Motivs bezieht sich nach dem Platzieren auf die tatsächlich darunterliegende Umgebung. Beim Loslassen aktualisiert AtelierAI die Anpassung. Ein begrenzter Umgebungsfarbstich ergänzt die Eigenfarben des Motivs. Die Helligkeit lässt sich weiterhin mit „Licht / Tonwerte“ einstellen.
+
 NEU IN 4.78 – TRANSPARENTE PNG ALS FERTIGE FREISTELLUNG
 
 Die PNG über „Foto öffnen“ laden. „Hintergrund ersetzen“ erkennt die Transparenz und übernimmt die Freistellung einschließlich halbtransparenter Kanten. Bei „Art → Eigenes Bild“ kann sofort ein Hintergrundbild ausgewählt werden. Auch einfarbige Hintergründe, Motivplatzierung und nachträgliches Radieren sind möglich. Bei normalen Fotos bleibt die Freistellung per Antippen oder Lasso verfügbar.
