@@ -1,3 +1,9 @@
+NEU IN 4.72 – LICHT UND FARBE
+
+„Licht / Tonwerte“ lässt sich von −100 % bis +100 % einstellen. Links wird das Motiv dunkler, rechts heller. Das funktioniert auch bei schwarzem Hintergrund. Bei 0 % gibt es keine Tonwertkorrektur.
+„Farbharmonie“ übernimmt deutlich mehr vom örtlichen Farbstich. Bei neutralen Hintergründen wird vor allem die Sättigung im Motiv sanfter. Die Farbharmonie verändert die Helligkeit dabei kaum.
+„Integration“ startet bei 70 %. Licht und Farbharmonie starten bei 0 %, sodass die Anpassung erst beim Verstellen sichtbar wird.
+
 NEU IN 4.71 – MOTIV INTEGRIEREN
 
 Im Fenster „Hintergrund ersetzen“ passt „Motiv integrieren“ Tonwerte und Farbe an das Licht rund ums Motiv an. Bei Hintergründen mit unterschiedlichen Farben oder Lichtzonen wirkt sich die Position des Hintergrundbilds auf das Motiv aus. An der Kontur kann die Umgebungsfarbe stärker sichtbar werden.

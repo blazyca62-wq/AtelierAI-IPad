@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.71</title>
+  <title>AtelierAI iPad 4.72</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.71</div>
+    <div class="title">AtelierAI · iPad 4.72</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -13197,7 +13197,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.71</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.72</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -13216,10 +13216,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         <button id="bgPhotoReset" type="button" class="secondary">Hintergrund zentrieren</button>
         <p>Verschieben einschalten, dann das Bild mit einem Finger ziehen. Zwei Finger bewegen weiterhin die gesamte Ansicht.</p></div>
         <strong>3 · Motiv integrieren</strong>
-        <label>Integration <input id="bgIntegrate" type="range" min="0" max="100" value="0" step="5"><output id="bgIntegrateVal">0 %</output></label>
-        <label>Licht / Tonwerte <input id="bgLightMix" type="range" min="0" max="100" value="80" step="5"><output id="bgLightMixVal">80 %</output></label>
-        <label>Farbharmonie <input id="bgColorMix" type="range" min="0" max="100" value="65" step="5"><output id="bgColorMixVal">65 %</output></label>
-        <p>Das Licht rund ums Motiv beeinflusst seine Tonwerte und Farbe. Erhöhe die Integration, bis das Motiv zum Hintergrund passt.</p>
+        <label>Integration <input id="bgIntegrate" type="range" min="0" max="100" value="70" step="5"><output id="bgIntegrateVal">70 %</output></label>
+        <label>Licht / Tonwerte <input id="bgLightMix" type="range" min="-100" max="100" value="0" step="5"><output id="bgLightMixVal">0 %</output></label>
+        <label>Farbharmonie <input id="bgColorMix" type="range" min="0" max="100" value="0" step="5"><output id="bgColorMixVal">0 %</output></label>
+        <p>Licht: links dunkler, rechts heller. Farbharmonie übernimmt den örtlichen Farbstich des Hintergrunds. Integration regelt die Gesamtstärke.</p>
         <label><span>Ohne Integration vergleichen</span><input id="bgCompare" type="checkbox" style="width:22px;height:22px"></label>
         <label>Rand bereinigen <input id="bgClean" type="range" min="0" max="5" step="1" value="2"><output id="bgCleanVal">2 px</output></label>
         <label><span>Kante glätten</span><input id="bgSmooth" type="checkbox" checked style="width:22px;height:22px"></label>
@@ -13253,7 +13253,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     $('bgToleranceRow').hidden=tool!=='tap';$('bgColorRow').hidden=kind.value!=='color';$('bgPhotoRow').hidden=kind.value!=='photo';$('bgFileName').hidden=kind.value!=='photo';
     $('bgSave').disabled=$('bgApply').disabled=busy||!working()||(kind.value==='photo'&&!photo);
     $('bgPositionRow').hidden=kind.value!=='photo';$('bgMoveMode').textContent='Hintergrund verschieben: '+(bgMoveMode?'AN':'AUS');$('bgMoveMode').classList.toggle('active',bgMoveMode);$('bgMoveMode').classList.toggle('secondary',!bgMoveMode);$('bgPhotoZoomVal').textContent=Math.round(bgZoom*100)+' %';
-    for(const [id,el] of [['bgIntegrateVal',integrate],['bgLightMixVal',lightMix],['bgColorMixVal',colorMix]])$(id).textContent=el.value+' %';$('bgFeatherVal').textContent=feather.value+' px';$('bgCleanVal').textContent=clean.value+' px';$('bgToleranceVal').textContent=tol.value;
+    for(const [id,el] of [['bgIntegrateVal',integrate],['bgColorMixVal',colorMix]])$(id).textContent=el.value+' %';
+    $('bgLightMixVal').textContent=(Number(lightMix.value)>0?'+':'')+lightMix.value+' %';$('bgFeatherVal').textContent=feather.value+' px';$('bgCleanVal').textContent=clean.value+' px';$('bgToleranceVal').textContent=tol.value;
   }
   function fit(){zoom=1;panX=panY=0;render();}
   function viewport(){const w=stage.clientWidth,h=stage.clientHeight;if(!preview||!w||!h)return null;fitScale=Math.min(w/preview.width,h/preview.height);drawScale=fitScale*zoom;drawX=(w-preview.width*drawScale)/2+panX;drawY=(h-preview.height*drawScale)/2+panY;return {w,h};}
@@ -13405,7 +13406,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         for(let k=0;k<4;k++)table[idx+k]=table[idx-stride*4+k]+row[k];
       }
     }
-    const field=new Float32Array(w*h*3);
+    const field=new Float32Array(w*h*4);
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
       const i=y*w+x,x0=Math.max(0,x-radius),x1=Math.min(w,x+radius+1);
       const y0=Math.max(0,y-radius),y1=Math.min(h,y+radius+1);
@@ -13416,10 +13417,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const blue=hasLight?sum(2)/localWeight:newB;
       const light=hasLight?luminance(r,sum(1)/localWeight,blue):newY;
       const rim=Math.exp(-inside[i]/Math.max(1,radius*.32));
-      const tonalShift=.65*(newY-oldY)+.50*(light-newY);
-      field[i*3]=clamp(tonalShift,-110,95);
-      field[i*3+1]=clamp(.30*(newR-newY)+.70*(r-light)-.42*(oldR-oldY),-72,72)*(.55+.45*rim);
-      field[i*3+2]=clamp(.30*(newB-newY)+.70*(blue-light)-.42*(oldB-oldY),-72,72)*(.55+.45*rim);
+      const tonalShift=.40*(newY-oldY)+.85*(light-newY);
+      field[i*4]=clamp(tonalShift,-120,120);
+      field[i*4+1]=(.20*(newR-newY)+.80*(r-light)-.22*(oldR-oldY))*1.85;
+      field[i*4+2]=(.20*(newB-newY)+.80*(blue-light)-.22*(oldB-oldY))*1.85;
+      field[i*4+3]=.82+.18*rim;
     }
     return {w,h,field};
   }
@@ -13434,7 +13436,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       columns[x]=Math.floor(fx);
       fractions[x]=fx-columns[x];
     }
-    const tileH=Math.max(1,Math.floor(350000/w)),row=new Float32Array(fw*3);
+    const tileH=Math.max(1,Math.floor(350000/w)),row=new Float32Array(fw*4);
     for(let top=0;top<h;top+=tileH){
       const height=Math.min(tileH,h-top);
       const tile=ctx.getImageData(0,top,w,height),data=tile.data;
@@ -13446,23 +13448,30 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         for(let x=0;x<w;x++){
           const i=(y*w+x)*4;
           if(maskData[i+3]===255||data[i+3]===0)continue;
-          const a=columns[x]*3,b=Math.min(fw-1,columns[x]+1)*3,f=fractions[x];
-          const yShift=(row[a]*(1-f)+row[b]*f)*light;
-          const rShift=(row[a+1]*(1-f)+row[b+1]*f)*color;
-          const bShift=(row[a+2]*(1-f)+row[b+2]*f)*color;
-          const gShift=-(.2126*rShift+.0722*bShift)/.7152;
-          const r=data[i],g=data[i+1],blue=data[i+2],l=luminance(r,g,blue)/255;
-          const meanShift=yShift<0
-            ? yShift*1.45*l*(1-.62*l*l)
-            : yShift*1.28*(1-l)*(.42+.85*l);
-          const toneScale=meanShift<0 ? 1+meanShift/Math.max(1,l*255) : 1-meanShift/Math.max(1,(1-l)*255);
-          const toneLift=meanShift>0 ? 255*(1-toneScale) : 0;
+          const a=columns[x]*4,b=Math.min(fw-1,columns[x]+1)*4,f=fractions[x];
+          const r=data[i],g=data[i+1],blue=data[i+2],originalY=luminance(r,g,blue);
+          const localLight=(row[a]*(1-f)+row[b]*f)/120;
+          // The sign controls the direction. Scene light changes the strength locally.
+          const strength=1.85+.85*Math.sign(light)*localLight;
+          const targetY=light?255*Math.pow(originalY/255,Math.pow(2,-light*strength)):originalY;
+          const shift=targetY-originalY;
+          const toneScale=shift<0 ? targetY/originalY : shift>0 ? (255-targetY)/(255-originalY) : 1;
+          const toneLift=shift>0 ? 255*(1-toneScale) : 0;
           const newR=r*toneScale+toneLift,newG=g*toneScale+toneLift,newB=blue*toneScale+toneLift;
-          // Keep color shifts inside the RGB gamut without clipping individual channels.
-          const strength=clamp(Math.min(colorHeadroom(newR,rShift),colorHeadroom(newG,gShift),colorHeadroom(newB,bShift)),0,1);
-          data[i]=newR+rShift*strength;
-          data[i+1]=newG+gShift*strength;
-          data[i+2]=newB+bShift*strength;
+          if(!color){
+            data[i]=newR;data[i+1]=newG;data[i+2]=newB;
+            continue;
+          }
+          // Build a valid tint around the new luminance, then blend toward it.
+          // A saturated source channel must not suppress the whole adjustment.
+          const tintR=row[a+1]*(1-f)+row[b+1]*f;
+          const tintB=row[a+2]*(1-f)+row[b+2]*f;
+          const tintG=-(.2126*tintR+.0722*tintB)/.7152;
+          const gamut=Math.min(1,colorHeadroom(targetY,tintR),colorHeadroom(targetY,tintG),colorHeadroom(targetY,tintB));
+          const blend=color*(row[a+3]*(1-f)+row[b+3]*f);
+          data[i]=newR+blend*(targetY+gamut*tintR-newR);
+          data[i+1]=newG+blend*(targetY+gamut*tintG-newG);
+          data[i+2]=newB+blend*(targetY+gamut*tintB-newB);
         }
       }
       ctx.putImageData(tile,0,top);
@@ -13472,7 +13481,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function compose(base,w,h,compare=false){
     if(!working())return base;
     const amount=compare?0:Number(integrate.value)/100;
-    const light=amount*Number(lightMix.value)/100,colorStrength=amount*Number(colorMix.value)/100;
+    const light=amount*Number(lightMix.value)/100,colorStrength=.78*amount*Number(colorMix.value)/100;
     const backdrop=canvas(w,h),bc=backdrop.getContext('2d');
     if(kind.value==='photo'){
       if(!photo)throw Error('Bitte zuerst ein Hintergrundbild auswählen.');
@@ -13487,6 +13496,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       // Sample at the preview aspect ratio, before cutting the replacement to the background mask.
       const scene=lightField(backdrop);
       if(scene)relightMotif(oc,matte,scene,w,h,light,colorStrength);
+      else if(light)relightMotif(oc,matte,{w:1,h:1,field:[0,0,0,0]},w,h,light,0);
     }
     bc.globalCompositeOperation='destination-in';bc.drawImage(matte,0,0);
     oc.drawImage(backdrop,0,0);
@@ -13536,7 +13546,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function start(){const p=source();if(!p?.loaded||!p.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}
     original=p.canvas;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
-    kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='0';lightMix.value='80';colorMix.value='65';edgeMaskCache=previewMatte=compositeCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;selected=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
+    kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='70';lightMix.value='0';colorMix.value='0';edgeMaskCache=previewMatte=compositeCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;selected=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
     overlay.hidden=false;ui();say('Hintergrund antippen oder das Motiv mit Lasso umfahren. Schwarz ist voreingestellt.');fit();
   }
   function close(){edgeMaskCache=previewMatte=compositeCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;selected=null;photo=null;points=null;}
@@ -13576,7 +13586,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function exportCanvas(){if(!working())throw Error('Bitte zuerst einen Hintergrund auswählen.');return compose(original,original.width,original.height);}
   async function save(apply){if(busy||!working())return;busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
     try{const out=exportCanvas(),blob=await blobOf(out);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));close();}
-      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.71_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
+      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.72_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
     catch(e){say('Fehler: '+e.message);}finally{busy=false;ui();}
   }
   $('bgSave').addEventListener('click',()=>save(false));$('bgApply').addEventListener('click',()=>save(true));
