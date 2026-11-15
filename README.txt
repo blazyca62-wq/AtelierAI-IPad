@@ -1,3 +1,7 @@
+NEU IN 4.85 – EINSTELLBARE MOTIV-DECKKRAFT
+
+Unter „Hintergrund ersetzen → Motiv platzieren“ stellt „Motiv-Deckkraft“ die Sichtbarkeit von 0 % bis 100 % ein. Bei 0 % bleibt der Hintergrund sichtbar, bei 100 % hat das Motiv wieder seine ursprüngliche Deckkraft. Dazwischen scheint der Hintergrund durch das Motiv hindurch. Der Wert gilt für die Vorschau, die künstlerische Gestaltung und den Export.
+
 NEU IN 4.84 – DIREKTE EINSTIEGE FÜR DIE GESTALTUNG
 
 Unten in „Hintergrund ersetzen“ öffnen „Motiv gestalten“ und „Hintergrund gestalten“ die künstlerische Gestaltung mit dem entsprechenden Bereich vorausgewählt. In der Vorschau bleiben beide sichtbar. Beim Zurückgehen erscheinen beide Anpassungen direkt im Hintergrundeditor. Die getrennten Einstellungen lassen sich jederzeit weiterbearbeiten.
