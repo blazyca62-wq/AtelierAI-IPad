@@ -1,3 +1,7 @@
+NEU IN 4.82 – GESTALTUNG BEIM ZURÜCKGEHEN BEHALTEN
+
+„Zurück zum Hintergrund“ und „Gestaltung übernehmen und zurück“ übernehmen die getrennten Gestaltungseinstellungen in die laufende Hintergrundbearbeitung. Motiv und Hintergrund bleiben als getrennte Ebenen verfügbar. Motivgröße, Platzierung und Hintergrund können weiter geändert werden. Beim erneuten Öffnen stehen beide Reglersätze bereit. „PNG speichern“ im Hintergrundeditor exportiert die Gestaltung in den Abmessungen des Ausgangsbildes.
+
 NEU IN 4.81 – MOTIV UND HINTERGRUND GETRENNT GESTALTEN
 
 Im Hintergrundeditor „Künstlerische Gestaltung“ öffnen. Unter „Bearbeiten“ zwischen „Motiv“ und „Hintergrund“ wechseln. Regler, Rezepte und Zurücksetzen beziehen sich auf die gewählte Seite. In der Vorschau erscheinen beide zusammen. Die Reglerwerte bleiben beim Wechsel erhalten. Beim Zurückgehen lässt sich die Platzierung ändern. Beim erneuten Öffnen erscheinen die zuletzt verwendeten Gestaltungseinstellungen. Das gestaltete Gesamtbild lässt sich in der künstlerischen Gestaltung als PNG speichern oder als Malvorlage übernehmen.
