@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.77</title>
+  <title>AtelierAI iPad 4.78</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.77</div>
+    <div class="title">AtelierAI · iPad 4.78</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -13201,7 +13201,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.77</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.78</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -13287,6 +13287,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function ui(){
     for(const [id,value] of [['bgTap','tap'],['bgLasso','lasso']]){$(id).classList.toggle('active',tool===value);$(id).classList.toggle('secondary',tool!==value);$(id).setAttribute('aria-pressed',String(tool===value));}
     $('bgToleranceRow').hidden=tool!=='tap';$('bgColorRow').hidden=kind.value!=='color';$('bgPhotoRow').hidden=kind.value!=='photo';$('bgFileName').hidden=kind.value!=='photo';
+    const preCut=selection==='alpha';
+    kind.querySelector('option[value="original"]').disabled=preCut;
+    for(const option of [clean,smooth,feather])option.disabled=preCut;
     $('bgUndoTap').disabled=busy||!!brushStroke||tapHistory.length===0;
     $('bgSave').disabled=$('bgApply').disabled=busy||!!brushStroke||!working()||(kind.value==='photo'&&!photo);
     $('bgPositionRow').hidden=kind.value!=='photo';$('bgMoveMode').textContent='Hintergrund verschieben: '+(bgMoveMode?'AN':'AUS');$('bgMoveMode').classList.toggle('active',bgMoveMode);$('bgMoveMode').classList.toggle('secondary',!bgMoveMode);$('bgPhotoZoomVal').textContent=Math.round(bgZoom*100)+' %';
@@ -13322,6 +13325,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   // and means preview and full-resolution exports use the same cutout.
   function cleanEdgeMask(){
     if(!working())return null;
+    if(selection==='alpha')return mask;
     if(edgeMaskCache)return edgeMaskCache;
     const radius=Number(clean.value),w=mask.width,h=mask.height,n=w*h;
     if(!radius&&!smooth.checked){edgeMaskCache=mask;return mask;}
@@ -13435,7 +13439,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
   function maskFor(w,h){
     if(!working())return null;
-    const src=edgeMask(),softness=Number(feather.value),radius=softness*Math.max(1,w/preview.width);
+    const src=edgeMask(),softness=selection==='alpha'?0:Number(feather.value),radius=softness*Math.max(1,w/preview.width);
     const forPreview=w===preview.width&&h===preview.height;
     if(forPreview&&previewMatte?.src===src&&previewMatte.softness===softness)return previewMatte.canvas;
     const remember=m=>{
@@ -13488,7 +13492,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     return ctx.getImageData(0,0,w,h).data;
   }
 
-  function lightField(backdrop,useOriginal){
+  function lightField(backdrop,useOriginal,preCut=false){
     const scale=Math.min(1,180/Math.max(preview.width,preview.height));
     const w=Math.max(1,Math.round(preview.width*scale)),h=Math.max(1,Math.round(preview.height*scale));
     const alpha=sceneSample(edgeMask(),w,h),before=sceneSample(preview,w,h),after=sceneSample(backdrop,w,h);
@@ -13498,11 +13502,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     for(let i=0;i<w*h;i++){
       const j=i*4;
       if(!outside[i]||outside[i]>radius*2||alpha[j+3]<240)continue;
-      const p=(before[j+3]/255)*(after[j+3]/255)/(1+outside[i]/radius);
+      const targetY=luminance(after[j],after[j+1],after[j+2]);
+      const p=(preCut?1:before[j+3]/255)*(after[j+3]/255)/(1+outside[i]/radius);
       weight+=p;
-      oldY+=p*luminance(before[j],before[j+1],before[j+2]);
-      newY+=p*luminance(after[j],after[j+1],after[j+2]);
-      oldR+=p*before[j];oldB+=p*before[j+2];
+      oldY+=p*(preCut?targetY:luminance(before[j],before[j+1],before[j+2]));
+      newY+=p*targetY;
+      oldR+=p*(preCut?targetY:before[j]);oldB+=p*(preCut?targetY:before[j+2]);
       newR+=p*after[j];newB+=p*after[j+2];
     }
     if(weight<.01)return null;
@@ -13754,7 +13759,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const amount=compare?0:Number(integrate.value)/100;
     const light=amount*Number(lightMix.value)/100,colorStrength=.78*amount*Number(colorMix.value)/100;
     const bgLight=amount*Number(backdropLight.value)/100,bgColor=.78*amount*Number(backdropColor.value)/100;
-    const useOriginal=kind.value==='original';
+    const preCut=selection==='alpha';
+    const useOriginal=kind.value==='original'&&!preCut;
     if(useOriginal&&!placing&&!light&&!colorStrength&&!bgLight&&!bgColor)return {motif:base};
     const backdrop=canvas(w,h),bc=backdrop.getContext('2d',{willReadFrequently:useOriginal||!!(bgLight||bgColor)});
     if(kind.value==='photo'){
@@ -13771,7 +13777,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     oc.drawImage(base,0,0,w,h);
     if(light||colorStrength){
       // Reference the chosen backdrop before grading either layer.
-      const scene=lightField(backdrop,useOriginal&&!placing);
+      const scene=lightField(backdrop,useOriginal&&!placing,preCut);
       if(scene)gradeLayer(oc,matte,scene,w,h,light,colorStrength);
       else if(light)gradeLayer(oc,matte,{w:1,h:1,field:[0,0,0,0]},w,h,light,0);
     }
@@ -13788,7 +13794,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }
       return {motif:out};
     }
-    oc.globalCompositeOperation='destination-out';oc.drawImage(matte,0,0);
+    // The PNG already contains the exact subject alpha. Only apply any manual erasing.
+    const cut=preCut?brushLayer:matte;
+    if(cut){
+      oc.globalCompositeOperation='destination-out';oc.drawImage(cut,0,0,w,h);
+    }
     return {motif:out,backdrop};
   }
 
@@ -13805,7 +13815,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function compose(base,w,h,compare=false){
     if(!working())return base;
-    const placing=motifChanged()&&!!motifBounds();
+    const placing=selection==='alpha'||(motifChanged()&&!!motifBounds());
     if(!placing&&!(kind.value==='original'&&brushLayer))return prepareLayers(base,w,h,compare,false).motif;
     let layers;
     if(base===preview){
@@ -13889,6 +13899,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       createMask();
     }else{
       selection=step.selection;mask=step.mask;points=step.points;selected=null;
+      if(selection==='alpha'&&kind.value==='original')kind.value='color';
       clearBrush();brushStrokes=step.brushStrokes;rebuildBrush();
       edgeMaskCache=null;
       if(!working())motifMoveMode=false;
@@ -13899,10 +13910,30 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     let area=0;for(let i=0;i<a.length;i++){const p=a[i],q=a[(i+1)%a.length];area+=p.x*q.y-q.x*p.y;}if(Math.abs(area)<40){say('Lasso zu klein. Bitte das Motiv umranden.');render();return;}
     tapHistory.length=0;clearBrush();edgeMaskCache=null;points=a;selected=null;selection='lasso';mask=canvas(preview.width,preview.height);const c=mask.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,mask.width,mask.height);c.globalCompositeOperation='destination-out';c.beginPath();points.forEach((p,i)=>{i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y);});c.closePath();c.fill();c.globalCompositeOperation='source-over';ui();render();say('Motiv ausgewählt. Den Bereich außerhalb des Lassos kannst du als Hintergrund bearbeiten.');
   }
+  function importedAlphaMask(){
+    const data=previewData.data;
+    let hasClear=false,hasVisible=false;
+    for(let i=3;i<data.length;i+=4){
+      if(data[i]===0)hasClear=true;
+      if(data[i]>=128)hasVisible=true;
+      if(hasClear&&hasVisible)break;
+    }
+    if(!hasClear||!hasVisible)return null;
+    const result=canvas(preview.width,preview.height),ctx=result.getContext('2d');
+    const image=ctx.createImageData(result.width,result.height);
+    image.data.fill(255);
+    for(let i=3;i<data.length;i+=4)image.data[i]=255-data[i];
+    ctx.putImageData(image,0,0);
+    return result;
+  }
   function start(){const p=source();if(!p?.loaded||!p.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}
     original=p.canvas;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
     kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='70';lightMix.value=colorMix.value=backdropLight.value=backdropColor.value='0';$('bgBackdropGroup').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;selected=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
-    tapHistory.length=0;clearBrush();brushSize.value='24';$('bgBrushPanel').open=false;resetPlacement();$('bgMotifPlacement').open=false;overlay.hidden=false;ui();say('Hintergrund antippen oder das Motiv mit Lasso umfahren. Schwarz ist voreingestellt.');fit();
+    tapHistory.length=0;clearBrush();brushSize.value='24';$('bgBrushPanel').open=false;resetPlacement();$('bgMotifPlacement').open=false;
+    mask=importedAlphaMask();
+    if(mask)selection='alpha';
+    overlay.hidden=false;ui();
+    say(mask?'Freistellung erkannt. Bei „Art“ kannst du direkt eine Farbe oder ein eigenes Bild wählen.':'Hintergrund antippen oder das Motiv mit Lasso umfahren. Schwarz ist voreingestellt.');fit();
   }
   function close(){tapHistory.length=0;clearBrush();resetPlacement();edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;selected=null;photo=null;points=null;}
   $('bgReplaceOpen').addEventListener('click',start);$('bgClose').addEventListener('click',close);
@@ -13995,7 +14026,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function exportCanvas(){if(!working())throw Error('Bitte zuerst einen Hintergrund auswählen.');return compose(original,original.width,original.height);}
   async function save(apply){if(busy||brushStroke||!working())return;busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
     try{const out=exportCanvas(),blob=await blobOf(out);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));close();}
-      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.77_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
+      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.78_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
     catch(e){say('Fehler: '+e.message);}finally{busy=false;ui();}
   }
   $('bgSave').addEventListener('click',()=>save(false));$('bgApply').addEventListener('click',()=>save(true));

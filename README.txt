@@ -1,3 +1,7 @@
+NEU IN 4.78 – TRANSPARENTE PNG ALS FERTIGE FREISTELLUNG
+
+Die PNG über „Foto öffnen“ laden. „Hintergrund ersetzen“ erkennt die Transparenz und übernimmt die Freistellung einschließlich halbtransparenter Kanten. Bei „Art → Eigenes Bild“ kann sofort ein Hintergrundbild ausgewählt werden. Auch einfarbige Hintergründe, Motivplatzierung und nachträgliches Radieren sind möglich. Bei normalen Fotos bleibt die Freistellung per Antippen oder Lasso verfügbar.
+
 NEU IN 4.77 – RADIERGUMMI FÜR DIE FREISTELLUNG
 
 Motiv mit dem Lasso freistellen oder den Hintergrund antippen. „Rand mit Radiergummi korrigieren“ öffnen und die Pinselgröße einstellen. „Radieren“ blendet Motivteile aus. Mit „Zurückmalen“ lassen sich zuvor radierte Stellen übermalen und damit bis zur ursprünglichen Freistellung wieder einblenden. „Letzten Pinselstrich rückgängig“ nimmt jeweils einen Radier- oder Zurückmalstrich zurück. Mit zwei Fingern lässt sich die Ansicht weiter zoomen. Die Korrektur wird beim PNG-Export und beim Übernehmen als Malvorlage berücksichtigt.
