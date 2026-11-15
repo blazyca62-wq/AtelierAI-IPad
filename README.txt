@@ -1,3 +1,7 @@
+NEU IN 4.87 – WEICH UND TEILWEISE RADIEREN
+
+Unter „Hintergrund ersetzen → Radieren und Zurückmalen“ findest du zwei Regler. „Radierstärke“ bestimmt, wie viel pro Strich ausgeblendet wird. Bei 30 % scheint der Hintergrund leicht durch. Ein neuer Strich über dieselbe Stelle verstärkt den Effekt. „Weiche Pinselkante“ lässt den Rand des Strichs auslaufen. Bei 0 % ist die Kante scharf. Standard sind 100 % Radierstärke und 35 % weiche Pinselkante. Mit „Zurückmalen“ kannst du übermalte Stellen wieder einblenden. Die Wirkung ist in der Vorschau und im PNG-Export sichtbar.
+
 NEU IN 4.86 – LIVE-ÄHNLICHKEIT UND ZURÜCKMALEN
 
 Nach dem Antippen einer Hintergrundfläche kannst du mit „Ähnlichkeit“ genau diese Fläche live vergrößern oder verkleinern. Frühere Flächen behalten ihre eigene Einstellung. „Letztes Antippen rückgängig“ entfernt die zuletzt gewählte Fläche.

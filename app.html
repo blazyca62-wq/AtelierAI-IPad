@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.86</title>
+  <title>AtelierAI iPad 4.87</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.86</div>
+    <div class="title">AtelierAI · iPad 4.87</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -13372,7 +13372,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.86</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.87</strong><button id="bgClose" class="secondary" type="button">Schließen</button></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -13387,6 +13387,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
             <button id="bgRestore" class="secondary" type="button" aria-pressed="false">Zurückmalen</button>
           </div>
           <label>Pinselgröße <input id="bgBrushSize" type="range" min="2" max="200" value="24"><output id="bgBrushSizeVal">24 px</output></label>
+          <label>Radierstärke <input id="bgEraseStrength" type="range" min="1" max="100" value="100"><output id="bgEraseStrengthVal">100 %</output></label>
+          <label>Weiche Pinselkante <input id="bgBrushSoftness" type="range" min="0" max="100" value="35"><output id="bgBrushSoftnessVal">35 %</output></label>
           <button id="bgUndoStroke" class="secondary" type="button" disabled>Letzten Pinselstrich rückgängig</button>
           <p>Mit einem Finger malen. Zwei Finger zoomen oder verschieben die Ansicht.</p>
         </details>
@@ -13459,7 +13461,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   let designSettings=null,designCorrection=null,fastPreview=null;
   let sliderPointer=null,sliderTimer=0,sliderMoving=false;
   let designMaskCache=null;
-  const brushSize=$('bgBrushSize');
+  const brushSize=$('bgBrushSize'),eraseStrength=$('bgEraseStrength'),brushSoftness=$('bgBrushSoftness');
   let brushMode=null,brushStroke=null,brushCursor=null,brushLayer=null,brushCoverage=null,brushMaskCache=null;
   let brushStrokes=[],brushRevision=0;
   function ui(){
@@ -13481,6 +13483,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     $('bgBrushPanel').hidden=!canPlace;
     $('bgUndoStroke').disabled=busy||!!brushStroke||brushStrokes.length===0;
     $('bgBrushSizeVal').textContent=brushSize.value+' px';
+    for(const slider of [eraseStrength,brushSoftness]){
+      $(slider.id+'Val').textContent=slider.value+' %';
+      slider.disabled=brushMode==='restore';
+    }
     for(const [id,mode] of [['bgErase','erase'],['bgRestore','restore']]){
       const button=$(id),active=brushMode===mode;
       button.classList.toggle('active',active);
@@ -13563,31 +13569,63 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     edgeMaskCache=result;
     return result;
   }
-  function strokeSegment(stroke,from,to){
+  function rasterBrushStroke(stroke){
+    const {points,radius,softness}=stroke;
+    if(!points.length)return null;
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    for(const p of points){
+      minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);
+      maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);
+    }
+    const x=Math.max(0,Math.floor(minX-radius-1)),y=Math.max(0,Math.floor(minY-radius-1));
+    const width=Math.min(preview.width,Math.ceil(maxX+radius+1))-x;
+    const height=Math.min(preview.height,Math.ceil(maxY+radius+1))-y;
+    if(width<=0||height<=0)return null;
+    const stamp=canvas(width,height),ctx=stamp.getContext('2d');
+    ctx.translate(-x,-y);
+    ctx.strokeStyle=ctx.fillStyle='#fff';
+    ctx.lineCap=ctx.lineJoin='round';
+    if(points.length>1){
+      ctx.beginPath();
+      ctx.moveTo(points[0].x,points[0].y);
+      for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);
+    }
+    const falloff=radius*softness;
+    const rings=Math.min(20,Math.max(1,Math.ceil(falloff)));
+    // Paint a single mask for the complete stroke so overlaps and touch
+    // sampling frequency do not increase the chosen strength.
+    for(let i=0;i<rings;i++){
+      const r=radius-falloff*(i+.5)/rings;
+      ctx.globalAlpha=1/(rings-i);
+      if(points.length>1){
+        ctx.lineWidth=r*2;
+        ctx.stroke();
+      }else{
+        ctx.beginPath();ctx.arc(points[0].x,points[0].y,r,0,2*Math.PI);ctx.fill();
+      }
+    }
+    return {stamp,x,y};
+  }
+  function applyBrushStroke(ctx,raster,strength,operation){
+    ctx.save();
+    ctx.globalCompositeOperation=operation;
+    ctx.globalAlpha=strength;
+    ctx.drawImage(raster.stamp,raster.x,raster.y);
+    ctx.restore();
+  }
+  function commitBrushStroke(stroke){
+    const raster=rasterBrushStroke(stroke);
+    if(!raster)return;
     if(!brushLayer){
       brushLayer=canvas(preview.width,preview.height);
-      brushCoverage=canvas(preview.width,preview.height);
+      if(selection!=='alpha')brushCoverage=canvas(preview.width,preview.height);
     }
-    drawStroke(brushCoverage.getContext('2d'),stroke,from,to,'source-over');
-    drawStroke(brushLayer.getContext('2d'),stroke,from,to,stroke.mode==='restore'?'destination-out':'source-over');
-  }
-  function drawStroke(ctx,stroke,from,to,operation){
-    ctx.globalCompositeOperation=operation;
-    ctx.strokeStyle=ctx.fillStyle='#fff';
-    ctx.lineCap='round';
-    ctx.lineWidth=stroke.radius*2;
-    ctx.beginPath();
-    if(from){
-      ctx.moveTo(from.x,from.y);ctx.lineTo(to.x,to.y);ctx.stroke();
-    }else{
-      ctx.arc(to.x,to.y,stroke.radius,0,2*Math.PI);ctx.fill();
-    }
+    if(brushCoverage)applyBrushStroke(brushCoverage.getContext('2d'),raster,stroke.strength,'source-over');
+    applyBrushStroke(brushLayer.getContext('2d'),raster,stroke.strength,stroke.mode==='restore'?'destination-out':'source-over');
   }
   function rebuildBrush(){
     brushLayer=brushCoverage=null;
-    for(const stroke of brushStrokes){
-      stroke.points.forEach((point,i)=>strokeSegment(stroke,stroke.points[i-1],point));
-    }
+    for(const stroke of brushStrokes)commitBrushStroke(stroke);
     brushRevision++;
   }
   function clearBrush(){
@@ -13604,33 +13642,49 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const stroke=brushStroke,prior=stroke.points.at(-1);
     if(prior&&Math.hypot(p.x-prior.x,p.y-prior.y)<.25)return;
     stroke.points.push(p);
-    strokeSegment(stroke,prior,p);
     brushRevision++;
   }
   function finishBrush(commit,p){
     if(!brushStroke)return;
     if(commit){
       addBrushPoint(p);
+      commitBrushStroke(brushStroke);
       brushStrokes.push(brushStroke);
-    }else if(brushStroke.points.length)rebuildBrush();
+    }
     brushStroke=brushCursor=null;
+    brushRevision++;
     ui();render();
   }
 
-  function edgeMask(){
-    const base=cleanEdgeMask();
-    if(!base||!brushLayer)return base;
+  function maskWithBrush(base){
+    const active=brushStroke?.points.length?brushStroke:null;
+    if(!active&&!base)return brushLayer;
+    if(!brushLayer&&!active)return base;
     if(brushMaskCache?.base===base&&brushMaskCache.revision===brushRevision)return brushMaskCache.canvas;
-    const result=canvas(base.width,base.height),ctx=result.getContext('2d');
-    ctx.drawImage(base,0,0);
-    if(selection!=='alpha'){
-      // The painted area replaces the base mask. Only erasing adds mask alpha back.
+    const result=canvas(preview.width,preview.height),ctx=result.getContext('2d');
+    if(base)ctx.drawImage(base,0,0);
+    if(brushCoverage){
+      // Accumulated coverage removes the base contribution at painted pixels.
       ctx.globalCompositeOperation='destination-out';
       ctx.drawImage(brushCoverage,0,0);
       ctx.globalCompositeOperation='lighter';
     }
-    ctx.drawImage(brushLayer,0,0);
+    if(brushLayer)ctx.drawImage(brushLayer,0,0);
+    if(active){
+      const raster=rasterBrushStroke(active);
+      if(raster)applyBrushStroke(ctx,raster,active.strength,active.mode==='restore'?'destination-out':'source-over');
+    }
     brushMaskCache={base,revision:brushRevision,canvas:result};
+    return result;
+  }
+  function edgeMask(){
+    const base=cleanEdgeMask();
+    if(selection!=='alpha')return maskWithBrush(base);
+    const erasing=maskWithBrush(null);
+    if(!erasing)return base;
+    const result=canvas(base.width,base.height),ctx=result.getContext('2d');
+    ctx.drawImage(base,0,0);
+    ctx.drawImage(erasing,0,0);
     return result;
   }
 
@@ -14011,7 +14065,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       return {motif:out};
     }
     // The PNG already contains the exact subject alpha. Only apply any manual erasing.
-    const cut=preCut?brushLayer:matte;
+    const cut=preCut?maskWithBrush(null):matte;
     if(cut){
       oc.globalCompositeOperation='destination-out';oc.drawImage(cut,0,0,w,h);
     }
@@ -14036,7 +14090,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function compose(base,w,h,compare=false){
     if(!working())return base;
     const placing=selection==='alpha'||motifOpacity<1||(motifChanged()&&!!motifBounds());
-    if(!placing&&!(kind.value==='original'&&brushLayer))return prepareLayers(base,w,h,compare,false).motif;
+    if(!placing&&!(kind.value==='original'&&(brushLayer||brushStroke?.points.length)))return prepareLayers(base,w,h,compare,false).motif;
     let layers;
     const isPreview=base===preview||base===fastPreview;
     const lighting=lightingPlacement(compare,isPreview);
@@ -14072,7 +14126,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const lighting=lightingPlacement(compare,true);
     const moving=sliderMoving||gest?.type==='motif'||gest?.type==='background'||gest?.type==='brush';
     const hasDesign=!compare&&window.__atelierArtBridge?.hasLayerDesign?.(designSettings);
-    const fast=toleranceMoving||!!(moving&&hasDesign);
+    const fast=toleranceMoving||gest?.type==='brush'||!!(moving&&hasDesign);
     const settings=[...layerSettings(compare),motifX,motifY,motifScale,motifOpacity,lighting?.x,lighting?.y,lighting?.scale,designSettings,fast];
     if(!compositeCache||settings.some((value,i)=>value!==compositeCache.settings[i])){
       const base=fast?interactivePreview():preview;
@@ -14211,7 +14265,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function start(){const p=source();if(!p?.loaded||!p.canvas?.width){alert('Bitte zuerst ein Foto öffnen.');return;}
     original=p.canvas;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
     kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='70';lightMix.value=colorMix.value=backdropLight.value=backdropColor.value='0';$('bgBackdropGroup').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
-    resetDesignPreview();designSettings=null;resetOpacity();clearTaps();clearBrush();brushSize.value='24';$('bgBrushPanel').open=false;resetPlacement();$('bgMotifPlacement').open=false;
+    resetDesignPreview();designSettings=null;resetOpacity();clearTaps();clearBrush();brushSize.value='24';eraseStrength.value='100';brushSoftness.value='35';$('bgBrushPanel').open=false;resetPlacement();$('bgMotifPlacement').open=false;
     mask=importedAlphaMask();
     if(mask)selection='alpha';
     overlay.hidden=false;ui();
@@ -14232,7 +14286,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(brushMode)say(mode==='erase'?'Mit einem Finger über die zu entfernende Stelle malen.':'Über ausgeblendete Stellen malen, um das Original dort wieder sichtbar zu machen.');
     });
   }
-  brushSize.addEventListener('input',()=>{ui();render();});
+  for(const slider of [brushSize,eraseStrength,brushSoftness])slider.addEventListener('input',()=>{ui();render();});
   $('bgUndoStroke').addEventListener('click',()=>{
     if(busy||brushStroke||!brushStrokes.length)return;
     brushStrokes.pop();rebuildBrush();
@@ -14293,7 +14347,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(gestures.size===2){finishBrush(false);draft=null;const a=[...gestures.values()],mid={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2};viewport();gest={type:'pinch',dist:Math.max(1,Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)),zoom,mid,focus:toImage(mid)};render();}
     else if(gestures.size===1){viewport();const q=toImage(p);if(bgMoveMode&&kind.value==='photo'&&photo){gest={type:'background',start:p,bgX:bgShiftX,bgY:bgShiftY};}else if(motifMoveMode&&working()){gest={type:'motif',start:p,x:motifX,y:motifY};}else if(brushMode&&working()&&!busy){
       gest={type:'brush',start:p};brushCursor=p;
-      brushStroke={mode:brushMode,radius:Number(brushSize.value)/2,points:[]};
+      const erasing=brushMode==='erase';
+      brushStroke={mode:brushMode,radius:Number(brushSize.value)/2,
+        strength:erasing?Number(eraseStrength.value)/100:1,
+        softness:erasing?Number(brushSoftness.value)/100:0,points:[]};
       ui();render();
     }else if(tool==='lasso'&&inImage(q)){draft=[q];gest={type:'lasso',id:e.pointerId};}else gest={type:'tap',pos:p,start:p,panX,panY};}e.preventDefault();
   });
@@ -14378,14 +14435,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   async function save(apply){if(busy||brushStroke||!working())return;busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
     try{const out=exportCanvas(),blob=await blobOf(out);if(apply){await new Promise((resolve,reject)=>window.__atelierArtBridge.load(blob,err=>err?reject(err):resolve()));close();}
-      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.86_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
+      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AtelierAI_4.87_Hintergrund.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),4000);say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');}}
     catch(e){say('Fehler: '+e.message);}finally{busy=false;ui();}
   }
   function designMatte(w=preview.width,h=preview.height){
     const source=w===preview.width&&h===preview.height?preview:original;
     const cutout=canvas(w,h),cx=cutout.getContext('2d');
     cx.drawImage(source,0,0,w,h);
-    const cut=selection==='alpha'?brushLayer:maskFor(w,h);
+    const cut=selection==='alpha'?maskWithBrush(null):maskFor(w,h);
     if(cut){
       cx.globalCompositeOperation='destination-out';
       cx.drawImage(cut,0,0,w,h);
