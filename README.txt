@@ -1,3 +1,7 @@
+NEU IN 4.75 – VORHANDENER HINTERGRUND BLEIBT SICHTBAR
+
+„Vorhandenen bearbeiten“ verwendet das Foto als feste Grundlage für die Platzierung. Beim Verschieben oder Skalieren wird nur die alte Motivfläche aufgefüllt. Der übrige Hintergrund bleibt als Orientierung erhalten. Bei einer Auswahl mit sehr wenig sichtbarem Hintergrund wird die Füllung aus dem verfügbaren Rand berechnet.
+
 NEU IN 4.74 – MOTIV PLATZIEREN
 
 Hintergrund antippen oder das Motiv per Lasso auswählen. „Motiv platzieren“ öffnen und die Motivgröße zwischen 25 % und 300 % einstellen. „Motiv verschieben“ einschalten und das Motiv mit einem Finger ziehen. Zwei Finger zoomen oder verschieben die Ansicht. Mit „Platzierung zurücksetzen“ kehrt das Motiv zu seiner ursprünglichen Größe und Position zurück.
