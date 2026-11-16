@@ -1,3 +1,7 @@
+NEU IN 4.90 – NUANCEN AUS EINER ZIELFARBE
+
+Unter „Flächenberater → Nuancen aus einer Zielfarbe erzeugen“ einen Zielton über das Farbfeld wählen oder direkt im Bild antippen. Die Nuancenstärke verändert den Abstand der vier Farben. Die Strichvorschau verwendet die angegebenen sichtbaren Flächenanteile. Daneben lässt sich der in linearem sRGB berechnete Gesamteindruck mit dem Zielton vergleichen. Über „Mischrezepte berechnen“ erhältst du Startrezepte aus der im Flächenberater gewählten Palette. Prüfe die Wirkung deiner Pigmente auf einer kleinen Malprobe.
+
 IN-APP-HILFE AKTUALISIERT
 
 Öffne oben „? Hilfe“. Die durchsuchbaren Anleitungen erklären die Hintergrundbearbeitung vom Freistellen bis zum getrennt weiterbearbeitbaren Projekt. Sie enthalten auch Lasso-Malaufbau mit Original S/W, Mischpaletten, Farbübertragung, Raster und Export. Die Hilfe ist auch offline verfügbar. Falls die installierte App „Update bereit“ anzeigt, lade die aktualisierte Fassung über diese Schaltfläche.

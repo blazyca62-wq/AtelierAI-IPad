@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.89</title>
+  <title>AtelierAI iPad 4.90</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.89</div>
+    <div class="title">AtelierAI · iPad 4.90</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1648,7 +1648,30 @@
         <button id="surfaceIsolationGrayBtn" class="secondary" aria-pressed="false" style="width:100%;margin-top:8px;">Mittelgrauer Hintergrund: Aus</button>
 
 
-        <details data-picture-palette="surfaceMixPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details><label for="surfaceMixPalette">Palette für alle acht Mischungen</label><select id="surfaceMixPalette" style="width:100%;padding:9px;margin:6px 0"><option value="artisan">Winsor &amp; Newton Artisan · Öl</option><option value="system3">Daler-Rowney System3 · Acryl</option><option value="watercolor">Horadam + Akademie · Aquarell</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select>
+        <details data-picture-palette="surfaceMixPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details><label for="surfaceMixPalette">Mischpalette für den Flächenberater</label><select id="surfaceMixPalette" style="width:100%;padding:9px;margin:6px 0"><option value="artisan">Winsor &amp; Newton Artisan · Öl</option><option value="system3">Daler-Rowney System3 · Acryl</option><option value="watercolor">Horadam + Akademie · Aquarell</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select>
+        <details id="surfaceNuances" class="pc-card" style="margin-top:10px">
+          <summary style="padding:8px 0;cursor:pointer"><b>Nuancen aus einer Zielfarbe erzeugen</b></summary>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0">
+            <label for="surfaceNuanceTarget">Zielton</label>
+            <input id="surfaceNuanceTarget" type="color" value="#a6c3de" style="width:46px;height:42px">
+            <button id="surfaceNuancePick" type="button" class="secondary" aria-pressed="false">Zielton im Bild antippen</button>
+          </div>
+          <div class="control-line">
+            <label for="surfaceNuanceStrength">Nuancenstärke</label>
+            <input id="surfaceNuanceStrength" type="range" min="0" max="100" value="50">
+            <output id="surfaceNuanceStrengthVal" for="surfaceNuanceStrength">50 %</output>
+          </div>
+          <p id="surfaceNuanceStatus" class="tiny" role="status"></p>
+          <canvas id="surfaceNuancePreview" width="150" height="70" aria-label="Strichvorschau der vier berechneten Nuancen" style="display:block;position:static;inset:auto;width:100%;height:auto;touch-action:auto;image-rendering:pixelated;border-radius:6px"></canvas>
+          <div class="grid2" style="margin-top:8px">
+            <div class="tiny"><div id="surfaceNuanceTargetSwatch" style="height:24px;border-radius:4px"></div>Zielton</div>
+            <div class="tiny"><div id="surfaceNuanceMeanSwatch" style="height:24px;border-radius:4px"></div>Gesamteindruck</div>
+          </div>
+          <p class="tiny">Die Anteile beziehen sich auf die sichtbare Fläche. Lass den Malgrund zwischen den Strichen stehen.</p>
+          <div id="surfaceNuanceColors"></div>
+          <button id="surfaceNuanceRecipes" type="button" class="secondary" style="margin-top:8px">Mischrezepte berechnen</button>
+          <p id="surfaceNuanceRecipeStatus" class="tiny" role="status"></p>
+        </details>
         <label class="base-suggestion-switch"><input id="showBaseMixesSurface" type="checkbox"> Gemeinsame Basismischungen anzeigen</label>
         <div id="surfaceResults" class="pc-card"><span class="tiny">Noch kein Bereich analysiert.</span></div>
         <div id="surfaceBaseResults" class="pc-card" style="margin-top:10px"><span class="tiny">Gemeinsame Basisfarbe: Nach der Analyse kann eine der Hauptfarben als Ausgangsmischung gewählt werden.</span></div>
@@ -8796,6 +8819,189 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   });
 
 
+  // The weighted offsets sum to zero before conversion back to 8-bit sRGB.
+  // Fit each channel inside the display gamut while keeping that balance.
+  const surfaceNuanceColors = [
+    {name:'Heller Malgrund', share:55, shift:[0, .56, .34]},
+    {name:'Kühle Striche', share:20, shift:[-1, -.55, -.14]},
+    {name:'Schattenflecken', share:15, shift:[0, -.68, -.37]},
+    {name:'Warme Akzente', share:10, shift:[1, .08, -.30]}
+  ];
+  function calculateSurfaceNuances(target, strength){
+    const weights=surfaceNuanceColors.map(color=>color.share/100);
+    const channels=target.map((value, channel)=>{
+      const center=srgb8ToLinear(value);
+      const candidates=surfaceNuanceColors.map(color=>srgb8ToLinear(value+color.shift[channel]*strength*.76));
+      const mean=candidates.reduce((sum, candidate, i)=>sum+candidate*weights[i],0);
+      const offsets=candidates.map(candidate=>candidate-mean);
+      const lowest=Math.min(...offsets), highest=Math.max(...offsets);
+      const fit=Math.min(1, lowest<0 ? center/-lowest : 1, highest>0 ? (1-center)/highest : 1);
+      return offsets.map(offset=>linearToSrgb8(center+offset*fit));
+    });
+    return surfaceNuanceColors.map((color, i)=>({...color,rgb:channels.map(values=>values[i])}));
+  }
+
+  function surfaceNuancePattern(width, height){
+    // Sort a directional noise field so the marks have the stated area shares.
+    const noise=(x,y)=>{
+      const value=Math.sin(x*127.1+y*311.7+10)*43758.5453;
+      return value-Math.floor(value);
+    };
+    const points=Array.from({length:width*height},(_,i)=>{
+      const x=i%width, y=Math.floor(i/width);
+      const u=(x-.65*y)/9, v=y/2.8;
+      const a=Math.floor(u), b=Math.floor(v), s=u-a, t=v-b;
+      const top=(1-s)*noise(a,b)+s*noise(a+1,b);
+      const bottom=(1-s)*noise(a,b+1)+s*noise(a+1,b+1);
+      return {i,value:(1-t)*top+t*bottom+.14*noise(x+100,y+100)};
+    }).sort((a,b)=>a.value-b.value);
+    const pattern=new Uint8Array(points.length);
+    let first=0, share=0;
+    surfaceNuanceColors.forEach((color,index)=>{
+      share+=color.share;
+      const end=Math.round(share*points.length/100);
+      for(let i=first;i<end;i++)pattern[points[i].i]=index;
+      first=end;
+    });
+    return pattern;
+  }
+
+  const surfaceNuancePanel=document.getElementById('surfaceNuances');
+  const surfaceNuanceTarget=document.getElementById('surfaceNuanceTarget');
+  const surfaceNuancePick=document.getElementById('surfaceNuancePick');
+  const surfaceNuanceStrength=document.getElementById('surfaceNuanceStrength');
+  const surfaceNuanceStrengthVal=document.getElementById('surfaceNuanceStrengthVal');
+  const surfaceNuanceStatus=document.getElementById('surfaceNuanceStatus');
+  const surfaceNuancePreview=document.getElementById('surfaceNuancePreview');
+  const surfaceNuanceTargetSwatch=document.getElementById('surfaceNuanceTargetSwatch');
+  const surfaceNuanceMeanSwatch=document.getElementById('surfaceNuanceMeanSwatch');
+  const surfaceNuanceList=document.getElementById('surfaceNuanceColors');
+  const surfaceNuanceRecipes=document.getElementById('surfaceNuanceRecipes');
+  const surfaceNuanceRecipeStatus=document.getElementById('surfaceNuanceRecipeStatus');
+  const surfaceNuancePalette=document.getElementById('surfaceMixPalette');
+  let surfaceNuancePickArmed=false, surfaceNuancePreviewPattern=null;
+  let surfaceNuanceEntries=[], surfaceNuanceRecipeRevision=0;
+
+  function setSurfaceNuancePick(armed){
+    surfaceNuancePickArmed=armed;
+    surfaceNuancePick.setAttribute('aria-pressed',String(armed));
+    surfaceNuancePick.classList.toggle('active',armed);
+    surfaceNuancePick.classList.toggle('secondary',!armed);
+    surfaceNuancePick.textContent=armed?'Aufnahme abbrechen':'Zielton im Bild antippen';
+  }
+
+  function invalidateSurfaceNuanceRecipes(){
+    surfaceNuanceRecipeRevision++;
+    surfaceNuanceRecipeStatus.textContent='';
+    surfaceNuanceRecipes.disabled=!surfaceNuanceEntries.length;
+    for(const entry of surfaceNuanceEntries)entry.recipe.replaceChildren();
+  }
+
+  function renderSurfaceNuances(){
+    if(!surfaceNuancePanel.open)return;
+    invalidateSurfaceNuanceRecipes();
+    const target=surfaceNuanceTarget.value.slice(1).match(/../g).map(part=>parseInt(part,16));
+    const strength=Number(surfaceNuanceStrength.value);
+    const colors=calculateSurfaceNuances(target,strength);
+    const mean=linearAverageRGB(colors.map(color=>color.rgb),colors.map(color=>color.share));
+    const targetHex=rgbHex(target), meanHex=rgbHex(mean);
+    const distinct=new Set(colors.map(color=>rgbHex(color.rgb))).size;
+    surfaceNuanceStrengthVal.textContent=strength+' %';
+    surfaceNuanceTargetSwatch.style.background=targetHex;
+    surfaceNuanceMeanSwatch.style.background=meanHex;
+    surfaceNuanceStatus.textContent='Ziel '+targetHex+' · Gesamtton '+meanHex+
+      (strength>0 && distinct<4?' · Bei diesem Zielton sind nur geringe Nuancen möglich.':'');
+    const {width,height}=surfaceNuancePreview;
+    const context=surfaceNuancePreview.getContext('2d');
+    const image=context.createImageData(width,height);
+    surfaceNuancePreviewPattern ??= surfaceNuancePattern(width,height);
+    surfaceNuancePreviewPattern.forEach((index,pixel)=>{
+      const [r,g,b]=colors[index].rgb;
+      const i=pixel*4;
+      image.data[i]=r;image.data[i+1]=g;image.data[i+2]=b;image.data[i+3]=255;
+    });
+    context.putImageData(image,0,0);
+    surfaceNuanceList.replaceChildren();
+    surfaceNuanceEntries=colors.map(color=>{
+      const row=document.createElement('div');
+      row.className='swatch-line';
+      const swatch=document.createElement('div');
+      swatch.className='small-swatch';
+      swatch.style.background=rgbHex(color.rgb);
+      const content=document.createElement('div');
+      const label=document.createElement('b');
+      label.textContent=color.share+' % · '+color.name;
+      const recipe=document.createElement('div');
+      recipe.className='tiny';
+      content.append(label,recipe);
+      row.append(swatch,content);
+      surfaceNuanceList.append(row);
+      return {rgb:color.rgb,recipe};
+    });
+    surfaceNuanceRecipes.disabled=false;
+  }
+
+  function pickSurfaceNuance(e){
+    if(!surfaceNuancePickArmed)return false;
+    const point=canvasPoint(e.clientX,e.clientY);
+    const x=(point.x-offsetX)/scale, y=(point.y-offsetY)/scale;
+    if(x<0||y<0||x>=img.width||y>=img.height)return true;
+    surfaceNuanceTarget.value=rgbHex(sampleDisplayedPixel(x,y));
+    setSurfaceNuancePick(false);
+    hint.textContent='Zielton für die Nuancen aufgenommen.';
+    renderSurfaceNuances();
+    return true;
+  }
+
+  surfaceNuancePanel.addEventListener('toggle',()=>{
+    if(surfaceNuancePanel.open)renderSurfaceNuances();
+    else{
+      if(surfaceNuancePickArmed)hint.textContent='Aufnahme des Zieltons beendet.';
+      setSurfaceNuancePick(false);
+      invalidateSurfaceNuanceRecipes();
+    }
+  });
+  surfaceNuanceTarget.addEventListener('input',renderSurfaceNuances);
+  surfaceNuanceStrength.addEventListener('input',renderSurfaceNuances);
+  surfaceNuancePalette.addEventListener('change',invalidateSurfaceNuanceRecipes);
+  surfaceNuancePick.addEventListener('click',()=>{
+    if(!loaded){surfaceNuanceStatus.textContent='Öffne ein Foto oder wähle den Zielton im Farbfeld.';return;}
+    setSurfaceNuancePick(!surfaceNuancePickArmed);
+    hint.textContent=surfaceNuancePickArmed?'Tippe den gewünschten Zielton im Bild an.':'Aufnahme des Zieltons beendet.';
+    if(surfaceNuancePickArmed){
+      surfaceMode=null;surfacePreview=null;
+      draw();
+    }
+  });
+
+  surfaceNuanceRecipes.addEventListener('click',async()=>{
+    invalidateSurfaceNuanceRecipes();
+    const revision=surfaceNuanceRecipeRevision;
+    const palette=surfaceNuancePalette.value;
+    const paletteName=surfaceNuancePalette.selectedOptions[0].textContent;
+    surfaceNuanceRecipes.disabled=true;
+    surfaceNuanceRecipeStatus.textContent='Mischrezepte werden berechnet …';
+    const cache=new Map();
+    for(const {rgb,recipe} of surfaceNuanceEntries){
+      await new Promise(resolve=>setTimeout(resolve,20));
+      if(revision!==surfaceNuanceRecipeRevision)return;
+      if(palette!==surfaceNuancePalette.value){invalidateSurfaceNuanceRecipes();return;}
+      const hex=rgbHex(rgb);
+      try{
+        if(!cache.has(hex))cache.set(hex,chooseMixes(rgb,palette)[0]);
+        const mix=cache.get(hex);
+        recipe.textContent=mix ? mix.names.map((name,i)=>
+          mix.parts[i].toLocaleString('de-DE')+' Teile '+name).join(' + ') :
+          'Kein Rezept für die aktive Palette verfügbar.';
+        if(mix?.watercolor)recipe.append(' · '+Math.round(mix.coverage*100)+' % Farbauftrag auf Weiß');
+      }catch(error){
+        recipe.textContent='Mischrezept konnte nicht berechnet werden.';
+      }
+    }
+    surfaceNuanceRecipes.disabled=false;
+    surfaceNuanceRecipeStatus.textContent=paletteName+' · Mengen als Startrezepte auf einer Malprobe prüfen.';
+  });
+
   function ideaColor(){
     if(!ideasBase)return null;
     let [h,sv,v]=rgbToHsv(ideasBase);
@@ -10158,6 +10364,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
   });
   surfaceCircleBtn.addEventListener('click',()=>{
+    setSurfaceNuancePick(false);
     surfaceMode='circle'; areaPickerMode=null; smartPickerArmed=false; surfaceSelectedIndex=null;
     if(!activeIsolatedColor) surfaceMarkCanvas=null;
     if(loaded) surfacePreview={shape:'circle',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
@@ -10167,6 +10374,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     draw();
   });
   surfaceRectBtn.addEventListener('click',()=>{
+    setSurfaceNuancePick(false);
     surfaceMode='rect'; areaPickerMode=null; smartPickerArmed=false; surfaceSelectedIndex=null;
     if(!activeIsolatedColor) surfaceMarkCanvas=null;
     if(loaded) surfacePreview={shape:'rect',x:img.width/2,y:img.height/2,size:Number(surfaceSize.value)/Math.max(scale,.05)};
@@ -10177,6 +10385,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   });
   surfaceClearMarkBtn.addEventListener('click',clearSurfaceMark);
   surfaceResetBtn.addEventListener('click',()=>{
+    setSurfaceNuancePick(false);
     surfaceMode=null; surfacePreview=null; surfaceClusters=[]; surfaceSelectedIndex=null; surfaceAnalyzedZoom=null; cancelIsolation();
     surfaceResults.innerHTML='<span class="tiny">Noch kein Bereich analysiert.</span>';
     surfaceBaseIndex=0;surfaceBaseRecipes=[];
@@ -10554,7 +10763,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       sec.classList.add('tool-page-active');
       if(btn) btn.classList.add('active');
       active=sec;
-      if(sec.id!=='surfaceAdvisorPanel'){surfaceMode=null;surfacePreview=null;}
+      if(sec.id!=='surfaceAdvisorPanel'){surfaceMode=null;surfacePreview=null;setSurfaceNuancePick(false);}
       else if(loaded){surfaceCircleBtn.click();}
       document.getElementById('build32Dock').hidden=sec.id!=='build32Panel'||!build32Data;
       // Bei erneuter Aktivierung derselben Werkzeugseite die Scrollposition rechts erhalten.
@@ -10865,6 +11074,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
   fitBtn.addEventListener('click',fitImage);
   function resetPhotoFilters(){
+    setSurfaceNuancePick(false);
+    invalidateSurfaceNuanceRecipes();
     croppedFormsSnapshot=null;
     sketchActive=false;resetSketchImage();
     surfaceMode=null;surfacePreview=null;surfaceClusters=[];surfaceSelectedIndex=null;
@@ -10920,6 +11131,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
   // Select only on release: a second finger or a drag never samples a color.
   function selectViewerPoint(e){
+    if(pickSurfaceNuance(e)){e.preventDefault();return;}
     if(placePlanMarker(e)){e.preventDefault();return;}
     // Farbnummern direkt antippen: auch im Pipettenmodus und unabhängig vom aktiven Werkzeug.
     // Gezielte Platzierung hat darüber weiterhin Vorrang.
@@ -12952,6 +13164,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    ["Farbflächen und kleine Farbflecken glätten", "8/16/32/48/64 Farben", "„Angrenzende Farben verblenden“ macht den Übergang zwischen Nachbarfarben weicher. „Kleine Farbflecken auffüllen“ lässt kleine Farbinseln in der angrenzenden größeren Fläche aufgehen. Prüfe mit beiden Reglern feine Details. Bei 0 bleibt die jeweilige Änderung aus."],
    ["Farben aus einem Referenzbild übernehmen", "Farbübertragung", "Öffne das Ausgangsfoto und danach „Farbübertragung → Referenzbild auswählen“. AtelierAI ordnet 128 Farbpaare zu. Die Bildform bleibt erhalten. Stelle Stärke, Farbsättigung und selektive Pastellfarben ein. „Nur Farbgrenzen glätten“ mildert bei Bedarf die Übergänge der Farbflächen. Bei 0 bleiben die Grenzen klar. Vergleiche mit dem Original und prüfe Details per Zwei-Finger-Zoom. Wähle „PNG speichern“ oder „Für alle Module übernehmen“."],
    ["Farbe mit Kreis- oder Punkt-Pipette aufnehmen", "Farbmischung → Kreis-Pipette / Punkt-Pipette", "Die Kreis-Pipette ist die Standardauswahl. Stelle den Radius ein und tippe ins Bild. Der echte Durchschnitt bleibt getrennt vom sanft aufgehellten Zielton für das Mischrezept sichtbar. Die Punkt-Pipette nimmt eine einzelne Stelle auf. „Nur diese Farbe zeigen“ findet passende Flächen. Mit „Farbähnlichkeit“ und „Helligkeitsbereich“ kannst du die Auswahl erweitern oder eingrenzen."],
+   ["Eine Zielfarbe mit mehreren Nuancen malen", "Flächenberater → Nuancen aus einer Zielfarbe erzeugen", "Wähle einen Zielton im Farbfeld oder tippe die Farbe im Bild an. Stelle die Nuancenstärke ein. Vergleiche die Strichvorschau mit dem berechneten Gesamtton. Die Prozentwerte beziehen sich auf die sichtbaren Flächenanteile. Wähle deine Mischpalette und lass dir bei Bedarf Mischrezepte berechnen."],
    ["Farben einer Fläche untersuchen und eine Basis mischen", "Flächenberater", "Wähle Kreis oder Rechteck und tippe ins Bild. AtelierAI analysiert die sichtbare Auswahl und zeigt bis zu acht Farben von hell nach dunkel. Du kannst eine Farbe als gemeinsame Basis wählen. Für geeignete Nuancen werden Zugaben zu dieser Basis vorgeschlagen. „Gemeinsame Basismischungen anzeigen“ kannst du bei Bedarf einschalten."],
    ["Mischrezept korrigieren und für später merken", "Farbmischung", "Nimm die Zielfarbe auf und wähle unter „Mischpalette“ dein Material. Das individuelle Rezept steht zuerst. Weitere Einzelrezepte kannst du aufklappen, gemeinsame Basismischungen per Schalter anzeigen. Prüfe einen Farbauftrag und nutze bei Bedarf „Rezept zur Korrektur suchen“. Mit „Diese Mischung passt – fürs nächste Mal merken“ kannst du eine bewährte Mischung oder Zugabe für ähnliche Zielfarben in derselben Palette bestätigen. Die Bestätigung bleibt in diesem Browser."],
    ["Farbweg zwischen zwei Bildfarben planen", "Farbreise", "Öffne „Farbreise“ und tippe zuerst die Grundfarbe, dann die Zielfarbe im Bild an. Der Regler zeigt Zwischenfarben. Die Mischvorschläge beziehen sich auf die aktive Palette."],
@@ -13003,7 +13216,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    ["Motiv platzieren und integrieren", "Ändert Position, Größe und Deckkraft des Motivs. Licht und Farbharmonie lassen sich für Motiv und Hintergrund getrennt abstimmen."],
    ["Farbübertragung", "Überträgt die Farbwirkung eines Referenzbildes mit 128 Farbpaaren. Sättigung, Pastellwirkung und weiche Farbgrenzen sind einstellbar."],
    ["Punkt-, Kreis- und Maler-Pipette", "Nimmt eine einzelne Stelle oder eine Farbfläche auf. In der Kreis-Pipette sind Durchschnitt und Zielton für das Mischrezept getrennt sichtbar."],
-   ["Flächenberater", "Ermittelt bis zu acht Farben in einem sichtbaren Kreis oder Rechteck, sortiert von hell nach dunkel. Ermittelt mögliche Zugaben zu einer gewählten Basisfarbe."],
+   ["Flächenberater", "Ermittelt bis zu acht Farben in einem sichtbaren Kreis oder Rechteck, sortiert von hell nach dunkel. Berechnet auf Wunsch aus einem Zielton vier neue Nuancen mit Flächenanteilen und Strichvorschau."],
    ["Farbreise", "Zeigt Zwischenfarben von einer Bildfarbe zur nächsten und bietet Mischvorschläge für die gewählte Palette."],
    ["Bild exportieren", "Speichert die Bildansicht als PNG oder JPEG, auf Wunsch mit Raster. Der Hintergrundeditor bietet zusätzlich einen eigenen PNG-Export."]
  ];
@@ -13480,7 +13693,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.89</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.90</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -14677,7 +14890,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download='AtelierAI_4.89_Hintergrund.png';link.click();
+        link.href=url;link.download='AtelierAI_4.90_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }

@@ -1,6 +1,6 @@
-const VERSION='4.89';
+const VERSION='4.90';
 const PREFIX='atelierai-offline-'+encodeURIComponent(self.registration.scope)+'-';
-const CACHE=PREFIX+VERSION+'-hilfe';
+const CACHE=PREFIX+VERSION;
 const FILES=['app.html','index.html','START.html','manifest.webmanifest','icon-192.png','icon-512.png'];
 const urlFor=p=>new URL(p,self.registration.scope).href;
 self.addEventListener('install',event=>{
