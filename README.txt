@@ -1,3 +1,7 @@
+NEU IN 4.94 – HELLERER MALGRUND BEI HOHEM KONTRAST
+
+Im Flächenberater wird der Malgrund bei höherem Farbkontrast heller. Die dunkleren Farbflecken gleichen diese Aufhellung entsprechend ihren Flächenanteilen aus. Bei „Gesamtton aufhellen“ auf 0 bleibt der berechnete Gesamteindruck beim aufgenommenen Zielton. Die Farbfelder, die Strichvorschau und die Mischrezepte verwenden dieselben berechneten Farbtöne.
+
 NEU IN 4.93 – GESAMTTON OPTISCHER FARBMISCHUNGEN AUFHELLEN
 
 Im Flächenberater startet „Gesamtton aufhellen“ bei +5 Helligkeitspunkten (CIELAB L*). Der Regler reicht von 0 bis +12. Die Vorschau und die Mischrezepte verwenden die berechneten aufgehellten Farben. Bei 0 entspricht der gewichtete Gesamteindruck wieder der aufgenommenen Zielfarbe. Zielton und Gesamteindruck werden nun als deckende Farbfelder angezeigt.
