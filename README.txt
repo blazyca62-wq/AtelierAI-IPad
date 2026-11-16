@@ -1,3 +1,7 @@
+NEU IN 5.04 – GROSSE FARBFELDER NEBEN DEM BILD
+
+Tippe ein Farbfeld im Flächenberater an. Die große Farbfläche öffnet sich in der Seitenleiste. Das Bild bleibt sichtbar und lässt sich wie gewohnt verschieben und zoomen. Tippe erneut auf das Farbfeld oder auf „Schließen“, um die Vergrößerung zu schließen.
+
 NEU IN 5.03 – FARBFELDER VERGRÖSSERN
 
 Tippe im Flächenberater auf den Malgrund oder ein anderes Farbfeld in der Liste. Die Farbe öffnet sich groß mit Name, Flächenanteil und ggf. Mischverhältnis.
