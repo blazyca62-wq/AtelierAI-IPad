@@ -1,3 +1,7 @@
+NEU IN 4.97 – 500 FARBLINIEN
+
+Die Vorschau im Flächenberater zeigt 500 gleich dünne Linien. Jedes Prozent Flächenanteil entspricht fünf Linien.
+
 NEU IN 4.96 – 100 FARBLINIEN
 
 Die Vorschau im Flächenberater zeigt genau 100 gleich dünne Linien. Jedes Prozent Flächenanteil entspricht einer Linie.
