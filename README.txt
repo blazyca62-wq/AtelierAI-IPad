@@ -1,3 +1,7 @@
+NEU IN 5.00 – EINE MILLION FARBPUNKTE
+
+Die Vorschau im Flächenberater mischt eine Million feine Farbpunkte über die gesamte Fläche. Jedes Prozent Flächenanteil entspricht 10.000 Punkten. Das Feld wird einmal gemischt und behält beim Einstellen der Farben seine Verteilung.
+
 NEU IN 4.99 – 1.000 FARBPUNKTE
 
 Die Vorschau im Flächenberater zeigt 1.000 gleich große, leicht versetzte Farbpunkte. Jedes Prozent Flächenanteil entspricht zehn Punkten. Die Zwischenräume zeigen den berechneten Gesamtton.
