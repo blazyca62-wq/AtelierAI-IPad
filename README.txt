@@ -1,3 +1,7 @@
+IN-APP-HILFE AKTUALISIERT
+
+Öffne oben „? Hilfe“. Die durchsuchbaren Anleitungen erklären die Hintergrundbearbeitung vom Freistellen bis zum getrennt weiterbearbeitbaren Projekt. Sie enthalten auch Lasso-Malaufbau mit Original S/W, Mischpaletten, Farbübertragung, Raster und Export. Die Hilfe ist auch offline verfügbar. Falls die installierte App „Update bereit“ anzeigt, lade die aktualisierte Fassung über diese Schaltfläche.
+
 NEU IN 4.89 – MOTIV UND HINTERGRUND IM PROJEKT WEITERBEARBEITEN
 
 „Übernehmen & zum Projekt“ übernimmt die Vorschau und sichert den bearbeitbaren Hintergrundstand im aktuellen Projektbereich. Nach dem Öffnen des Projekts unter „Werkzeuge → Hintergrund ersetzen“ weiterarbeiten. Die Freistellung, Pinselstriche, Platzierung, Deckkraft und getrennte Gestaltung werden wiederhergestellt. Das gilt für die automatische Speicherung und für .atelierprojekt-Dateien. Bereits mit 4.88 gespeicherte Kompositionen können mit den ursprünglichen Bildern neu freigestellt werden.
