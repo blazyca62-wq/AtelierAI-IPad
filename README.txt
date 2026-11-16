@@ -1,3 +1,7 @@
+NEU IN 4.92 – UNTERSCHIEDLICHE FARBTÖNE MIT GEMEINSAMER FARBWIRKUNG
+
+Im Flächenberater unter „Nuancen aus einer Zielfarbe erzeugen“ einen Zielton aufnehmen. Der Regler „Farbkontrast“ erzeugt neben dem Malgrund rötliche, grünliche und kühle Verschiebungen. Welche Töne daraus entstehen, hängt von der Zielfarbe ab. Die Vorschau zeigt die Farben nebeneinander und den in linearem sRGB berechneten Gesamtton. Die Mengen in den einzelnen Mischrezepten beziehen sich auf das Anmischen des jeweiligen Farbtons. Seine Prozentzahl in der Vorschau beschreibt den sichtbaren Flächenanteil beim Malen.
+
 NEU IN 4.91 – FARBPROBE UND NUANCEN KORRIGIERT
 
 Antippen im Flächenberater übernimmt die RGB-Farbe des Bildpixels als Zielton. Die Nuancen variieren Tonwert und Sättigung innerhalb der Farbfamilie des Zieltons. Neutrale Töne bleiben neutral. Die angegebenen Flächenanteile ergeben in der Bildschirmberechnung zusammen ungefähr den Zielton. Mischrezepte mit zu stark abweichender simulierter Farbe werden ausgeblendet.
