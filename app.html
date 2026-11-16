@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.02</title>
+  <title>AtelierAI iPad 5.03</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -148,6 +148,12 @@
     .pc-card{border:1px solid #d8d8d8;border-radius:10px;padding:9px;margin-top:8px;background:#fafafa}
     .swatch-line{display:flex;align-items:center;gap:8px;margin:6px 0}
     .small-swatch{width:44px;height:34px;border-radius:7px;border:1px solid #777;flex:0 0 auto}
+    button.surface-nuance-swatch{height:44px;padding:0;}
+    .surface-nuance-swatch:focus-visible{outline:3px solid #174c75;outline-offset:2px;}
+    #surfaceNuanceSwatchDialog{box-sizing:border-box;width:min(640px,92vw);max-height:90dvh;overflow:auto;border:1px solid #888;border-radius:16px;padding:16px;background:#f7f5f0;color:#222;}
+    #surfaceNuanceSwatchDialog::backdrop{background:#0007;}
+    #surfaceNuanceSwatchLarge{width:100%;height:min(52dvh,420px);border-radius:8px;margin:12px 0;}
+    #surfaceNuanceSwatchDialog form{display:flex;justify-content:flex-end;}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
     .control-line{display:grid;grid-template-columns:92px 1fr 42px;gap:6px;align-items:center;margin:7px 0}
 
@@ -1062,7 +1068,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 5.02</div>
+    <div class="title">AtelierAI · iPad 5.03</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1674,7 +1680,7 @@
             <div><div id="surfaceNuanceTargetSwatch" style="height:24px;border-radius:4px"></div><span class="tiny">Zielton</span></div>
             <div><div id="surfaceNuanceMeanSwatch" style="height:24px;border-radius:4px"></div><span class="tiny">Aus der Ferne · berechnet</span></div>
           </div>
-          <p class="tiny">Die Vorschau fasst eine Million Farbpunkte in linearem Licht zusammen. Bei „Gesamtton aufhellen“ auf 0 ist der Zielton die Referenz.</p>
+          <p class="tiny">Die Vorschau fasst eine Million Farbpunkte in linearem Licht zusammen. Bei „Gesamtton aufhellen“ auf 0 ist der Zielton die Referenz. Tippe ein Farbfeld an, um es zu vergrößern.</p>
           <div id="surfaceNuanceColors"></div>
           <button id="surfaceNuanceRecipes" type="button" class="secondary" style="margin-top:8px">Mischrezepte berechnen</button>
           <p id="surfaceNuanceRecipeStatus" class="tiny" role="status"></p>
@@ -1939,6 +1945,13 @@
       </div>
     </div>
   </div>
+
+<dialog id="surfaceNuanceSwatchDialog" aria-labelledby="surfaceNuanceSwatchTitle" aria-describedby="surfaceNuanceSwatchInfo">
+  <h3 id="surfaceNuanceSwatchTitle" style="margin:0"></h3>
+  <p id="surfaceNuanceSwatchInfo" style="margin:6px 0 0"></p>
+  <div id="surfaceNuanceSwatchLarge" aria-hidden="true"></div>
+  <form method="dialog"><button type="submit" class="secondary" autofocus>Schließen</button></form>
+</dialog>
 
 <script>
 (() => {
@@ -8989,6 +9002,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   const surfaceNuanceTargetSwatch=document.getElementById('surfaceNuanceTargetSwatch');
   const surfaceNuanceMeanSwatch=document.getElementById('surfaceNuanceMeanSwatch');
   const surfaceNuanceList=document.getElementById('surfaceNuanceColors');
+  const surfaceNuanceSwatchDialog=document.getElementById('surfaceNuanceSwatchDialog');
+  const surfaceNuanceSwatchTitle=document.getElementById('surfaceNuanceSwatchTitle');
+  const surfaceNuanceSwatchInfo=document.getElementById('surfaceNuanceSwatchInfo');
+  const surfaceNuanceSwatchLarge=document.getElementById('surfaceNuanceSwatchLarge');
   const surfaceNuanceRecipes=document.getElementById('surfaceNuanceRecipes');
   const surfaceNuanceRecipeStatus=document.getElementById('surfaceNuanceRecipeStatus');
   const surfaceNuancePalette=document.getElementById('surfaceMixPalette');
@@ -9125,12 +9142,23 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     surfaceNuanceEntries=colors.map((color,index)=>{
       const row=document.createElement('div');
       row.className='swatch-line';
-      const swatch=document.createElement('div');
-      swatch.className='small-swatch';
-      swatch.style.background=rgbHex(color.rgb);
+      const hex=rgbHex(color.rgb);
+      const swatch=document.createElement('button');
+      swatch.type='button';
+      swatch.className='small-swatch surface-nuance-swatch';
+      swatch.style.backgroundColor=hex;
+      swatch.setAttribute('aria-label',color.name+' vergrößern');
+      swatch.setAttribute('aria-haspopup','dialog');
+      swatch.addEventListener('click',()=>{
+        surfaceNuanceSwatchTitle.textContent=color.name;
+        surfaceNuanceSwatchInfo.textContent=color.share+' % Flächenanteil · '+hex+
+          (color.tint?' · Mischverhältnis '+color.tint:'');
+        surfaceNuanceSwatchLarge.style.backgroundColor=hex;
+        surfaceNuanceSwatchDialog.showModal();
+      });
       const content=document.createElement('div');
       const label=document.createElement('b');
-      label.textContent=color.share+' % · '+color.name+' · '+rgbHex(color.rgb);
+      label.textContent=color.share+' % · '+color.name+' · '+hex;
       const recipe=document.createElement('div');
       recipe.className='tiny';
       content.append(label);
@@ -13909,7 +13937,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.02</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.03</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -15106,7 +15134,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download='AtelierAI_5.02_Hintergrund.png';link.click();
+        link.href=url;link.download='AtelierAI_5.03_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }

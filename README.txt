@@ -1,3 +1,7 @@
+NEU IN 5.03 – FARBFELDER VERGRÖSSERN
+
+Tippe im Flächenberater auf den Malgrund oder ein anderes Farbfeld in der Liste. Die Farbe öffnet sich groß mit Name, Flächenanteil und ggf. Mischverhältnis.
+
 NEU IN 5.02 – ARTISAN-TUBENFARBEN IM FLÄCHENBERATER
 
 Aktiviere „Artisan-Tubenfarben neben dem Malgrund“. AtelierAI berechnet den Malgrund wie bisher und sucht für die übrige Fläche passende Artisan-Tubenfarben oder Aufhellungen mit Titanweiß oder Kadmiumgelb hell. Die Prozentwerte beschreiben die sichtbare Fläche. Ein Verhältnis wie 3:1 gibt die Teile Tubenfarbe zu Aufheller an. Die angezeigte Abweichung bezieht sich auf die Bildschirmvorschau.
