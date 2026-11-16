@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.01</title>
+  <title>AtelierAI iPad 5.02</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 5.01</div>
+    <div class="title">AtelierAI · iPad 5.02</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1666,6 +1666,8 @@
             <input id="surfaceNuanceLift" type="range" min="0" max="12" value="5">
             <output id="surfaceNuanceLiftVal" for="surfaceNuanceLift">+5</output>
           </div>
+          <label style="display:block;margin-top:8px"><input id="surfaceNuanceArtisan" type="checkbox"> Artisan-Tubenfarben neben dem Malgrund</label>
+          <p id="surfaceNuanceArtisanMatch" class="tiny" role="status" hidden></p>
           <p id="surfaceNuanceStatus" class="tiny" role="status"></p>
           <canvas id="surfaceNuancePreview" width="500" height="250" aria-label="Optische Mischung aus einer Million Farbpunkten" style="display:block;position:static;inset:auto;width:100%;height:auto;aspect-ratio:1000/465;touch-action:auto;border-radius:6px"></canvas>
           <div class="grid2" style="margin-top:8px">
@@ -8892,6 +8894,78 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     return surfaceNuanceColors.map((color,i)=>({...color,rgb:channels.map(channel=>channel[i])}));
   }
 
+  let surfaceArtisanCandidates;
+
+  function calculateSurfaceArtisan(ground,target){
+    const lightness=surfaceLinearRgbToOklab(ground.rgb.map(srgb8ToLinear))[0];
+    surfaceArtisanCandidates ??= PALETTES.artisan.flatMap(([name,rgb])=>{
+      const original={name,rgb};
+      const tints=['Titanium White','Cadmium Yellow Light'].flatMap(lightener=>{
+        if(name===lightener)return [];
+        const [,addition]=PALETTES.artisan.find(([tube])=>tube===lightener);
+        return [[3,1],[1,1],[1,3],[1,7]].map(parts=>({
+          name, tint:parts[0]+':'+parts[1]+' mit '+lightener,
+          rgb:pigmentMix([rgb,addition],parts,'artisan')
+        }));
+      });
+      const originalLightness=surfaceLinearRgbToOklab(rgb.map(srgb8ToLinear))[0];
+      return [original,...tints.filter(tint=>surfaceLinearRgbToOklab(tint.rgb.map(srgb8ToLinear))[0]>originalLightness)]
+        .map(color=>{
+          const linear=color.rgb.map(srgb8ToLinear);
+          return {...color,linear,lightness:surfaceLinearRgbToOklab(linear)[0]};
+        });
+    });
+    const candidates=surfaceArtisanCandidates.filter(color=>color.lightness<=lightness);
+    if(!candidates.length)return [{...ground,share:100}];
+    const goal=surfaceLinearRgbToOklab(target.map(srgb8ToLinear));
+    function error(r,g,b){
+      const [l,a,c]=surfaceLinearRgbToOklab([r,g,b]);
+      return (l-goal[0])**2+(a-goal[1])**2+(c-goal[2])**2;
+    }
+    const base=ground.rgb.map(channel=>srgb8ToLinear(channel)*ground.share/100);
+    const remainder=100-ground.share;
+    const amounts=candidates.map(()=>0);
+    let best=Infinity, initial=0, current=base;
+    candidates.forEach(({linear},i)=>{
+      const next=base.map((value,channel)=>value+linear[channel]*remainder/100);
+      const score=error(...next);
+      if(score<best){best=score;initial=i;current=next;}
+    });
+    amounts[initial]=remainder;
+    // Move whole percentage points between colors. A small cost favors
+    // fewer paint swatches when they give practically the same result.
+    for(const step of [15,5,1]){
+      for(let pass=0;pass<30;pass++){
+        let from=-1, to=-1, nextColor;
+        let improvement=1e-10;
+        amounts.forEach((amount,i)=>{
+          if(amount<step)return;
+          const [r,g,b]=candidates[i].linear;
+          candidates.forEach(({linear},j)=>{
+            if(i===j)return;
+            const fraction=step/100;
+            const nr=current[0]+fraction*(linear[0]-r);
+            const ng=current[1]+fraction*(linear[1]-g);
+            const nb=current[2]+fraction*(linear[2]-b);
+            const score=error(nr,ng,nb);
+            const extra=(Number(amounts[j]===0)-Number(amount===step))*.000016;
+            if(best-score-extra>improvement){
+              improvement=best-score-extra;
+              from=i;to=j;nextColor=[nr,ng,nb];
+            }
+          });
+        });
+        if(from<0)break;
+        amounts[from]-=step;
+        amounts[to]+=step;
+        current=nextColor;
+        best=error(...current);
+      }
+    }
+    return [ground,...candidates.map(({name,rgb,tint},i)=>({name,rgb,tint,share:amounts[i]}))
+      .filter(color=>color.share).sort((a,b)=>b.share-a.share)];
+  }
+
   function matchingSurfaceNuanceRecipe(target, mixes){
     const targetLab=rgbToLabFast(target);
     return mixes.find(mix=>{
@@ -8902,6 +8976,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
 
   const surfaceNuancePanel=document.getElementById('surfaceNuances');
+  const surfaceNuanceArtisan=document.getElementById('surfaceNuanceArtisan');
+  const surfaceNuanceArtisanMatch=document.getElementById('surfaceNuanceArtisanMatch');
   const surfaceNuanceTarget=document.getElementById('surfaceNuanceTarget');
   const surfaceNuancePick=document.getElementById('surfaceNuancePick');
   const surfaceNuanceStrength=document.getElementById('surfaceNuanceStrength');
@@ -8942,6 +9018,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const pointsPerPixel=8;
     const countBase=pointsPerPixel+1;
     const placeValues=colors.map((_,index)=>countBase**index);
+    const usePackedCounts=colors.length<=4;
     const shares=colors.map(color=>color.share).join(',');
     if(surfaceNuanceDotPreview?.shares!==shares){
       const indices=new Uint8Array(width*height*pointsPerPixel);
@@ -8964,18 +9041,35 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         indices[j]=current;
       }
       // Group neighboring points before display scaling can blend encoded RGB values.
-      const pixelMixes=new Uint16Array(width*height);
-      for(let pixel=0, point=0;pixel<pixelMixes.length;pixel++){
-        for(let i=0;i<pointsPerPixel;i++,point++){
-          pixelMixes[pixel]+=placeValues[indices[point]];
+      let pixelMixes;
+      if(usePackedCounts){
+        pixelMixes=new Uint16Array(width*height);
+        for(let pixel=0, point=0;pixel<pixelMixes.length;pixel++){
+          for(let i=0;i<pointsPerPixel;i++,point++){
+            pixelMixes[pixel]+=placeValues[indices[point]];
+          }
         }
       }
       const image=context.createImageData(width,height);
       for(let offset=3;offset<image.data.length;offset+=4)image.data[offset]=255;
-      surfaceNuanceDotPreview={shares,pixelMixes,image};
+      surfaceNuanceDotPreview={shares,pixelMixes,indices:usePackedCounts?null:indices,image};
     }
-    const {pixelMixes,image}=surfaceNuanceDotPreview;
+    const {pixelMixes,indices,image}=surfaceNuanceDotPreview;
     const palette=colors.map(color=>color.rgb.map(srgb8ToLinear));
+    if(!pixelMixes){
+      for(let point=0,offset=0;point<indices.length;offset+=4){
+        let r=0,g=0,b=0;
+        for(let i=0;i<pointsPerPixel;i++,point++){
+          const [red,green,blue]=palette[indices[point]];
+          r+=red;g+=green;b+=blue;
+        }
+        image.data[offset]=linearToSrgb8(r/pointsPerPixel);
+        image.data[offset+1]=linearToSrgb8(g/pointsPerPixel);
+        image.data[offset+2]=linearToSrgb8(b/pointsPerPixel);
+      }
+      context.putImageData(image,0,0);
+      return;
+    }
     const shades=new Uint32Array(countBase**colors.length);
     for(let pixel=0, offset=0;pixel<pixelMixes.length;pixel++,offset+=4){
       const key=pixelMixes[pixel];
@@ -9005,7 +9099,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const target=surfaceNuanceTarget.value.slice(1).match(/../g).map(part=>parseInt(part,16));
     const strength=Number(surfaceNuanceStrength.value);
     const lift=Number(surfaceNuanceLift.value);
-    const colors=calculateSurfaceNuances(target,strength,lift);
+    const standard=calculateSurfaceNuances(target,strength,lift);
+    const artisan=surfaceNuanceArtisan.checked;
+    const recipeTarget=linearAverageRGB(standard.map(color=>color.rgb),standard.map(color=>color.share));
+    const colors=artisan?calculateSurfaceArtisan(standard[0],recipeTarget):standard;
     const mean=linearAverageRGB(colors.map(color=>color.rgb),colors.map(color=>color.share));
     const targetHex=rgbHex(target), meanHex=rgbHex(mean);
     const distinct=new Set(colors.map(color=>rgbHex(color.rgb))).size;
@@ -9014,10 +9111,18 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     surfaceNuanceTargetSwatch.style.background=targetHex;
     surfaceNuanceMeanSwatch.style.background=meanHex;
     surfaceNuanceStatus.textContent='Ziel '+targetHex+' · Gesamtton '+meanHex+
-      (strength>0 && distinct<4?' · Dieser Zielton lässt wenig Spielraum für Farbkontraste.':'');
+      (!artisan && strength>0 && distinct<4?' · Dieser Zielton lässt wenig Spielraum für Farbkontraste.':'');
+    surfaceNuanceArtisanMatch.hidden=!artisan;
+    if(artisan){
+      const difference=deltaE76FromLab(rgbToLabFast(recipeTarget),rgbToLabFast(mean));
+      surfaceNuanceArtisanMatch.textContent='Abweichung vom gewünschten Gesamtton (ΔE): '+difference.toLocaleString('de-DE',{maximumFractionDigits:1})+
+        (colors.length===1?' · Für diesen sehr dunklen Malgrund ist keine passende Ergänzung verfügbar.':
+          difference>=5?' · Mit diesem Malgrund und diesen Tubenfarben bleibt ein sichtbarer Unterschied.':'');
+    }
+    surfaceNuanceRecipes.textContent=artisan?'Mischrezept für Malgrund berechnen':'Mischrezepte berechnen';
     drawSurfaceNuanceDots(colors);
     surfaceNuanceList.replaceChildren();
-    surfaceNuanceEntries=colors.map(color=>{
+    surfaceNuanceEntries=colors.map((color,index)=>{
       const row=document.createElement('div');
       row.className='swatch-line';
       const swatch=document.createElement('div');
@@ -9028,11 +9133,18 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       label.textContent=color.share+' % · '+color.name+' · '+rgbHex(color.rgb);
       const recipe=document.createElement('div');
       recipe.className='tiny';
-      content.append(label,recipe);
+      content.append(label);
+      if(artisan && index>0){
+        const application=document.createElement('div');
+        application.className='tiny';
+        application.textContent=color.tint?'Mischverhältnis '+color.tint:'Direkt aus der Tube';
+        content.append(application);
+      }
+      content.append(recipe);
       row.append(swatch,content);
       surfaceNuanceList.append(row);
       return {rgb:color.rgb,recipe};
-    });
+    }).slice(0,artisan?1:colors.length);
     surfaceNuanceRecipes.disabled=false;
   }
 
@@ -9063,6 +9175,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
   });
   surfaceNuanceTarget.addEventListener('input',renderSurfaceNuances);
+  surfaceNuanceArtisan.addEventListener('change',renderSurfaceNuances);
   surfaceNuanceStrength.addEventListener('input',renderSurfaceNuances);
   surfaceNuanceLift.addEventListener('input',renderSurfaceNuances);
   surfaceNuancePalette.addEventListener('change',invalidateSurfaceNuanceRecipes);
@@ -9079,15 +9192,16 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   surfaceNuanceRecipes.addEventListener('click',async()=>{
     invalidateSurfaceNuanceRecipes();
     const revision=surfaceNuanceRecipeRevision;
-    const palette=surfaceNuancePalette.value;
-    const paletteName=surfaceNuancePalette.selectedOptions[0].textContent;
+    const artisan=surfaceNuanceArtisan.checked;
+    const palette=artisan?'artisan':surfaceNuancePalette.value;
+    const paletteName=artisan?'Winsor & Newton Artisan · Öl':surfaceNuancePalette.selectedOptions[0].textContent;
     surfaceNuanceRecipes.disabled=true;
     surfaceNuanceRecipeStatus.textContent='Mischrezepte werden berechnet …';
     const cache=new Map();
     for(const {rgb,recipe} of surfaceNuanceEntries){
       await new Promise(resolve=>setTimeout(resolve,20));
       if(revision!==surfaceNuanceRecipeRevision)return;
-      if(palette!==surfaceNuancePalette.value){invalidateSurfaceNuanceRecipes();return;}
+      if(!artisan && palette!==surfaceNuancePalette.value){invalidateSurfaceNuanceRecipes();return;}
       const hex=rgbHex(rgb);
       try{
         if(!cache.has(hex))cache.set(hex,matchingSurfaceNuanceRecipe(rgb,chooseMixes(rgb,palette)));
@@ -13266,7 +13380,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    ["Farbflächen und kleine Farbflecken glätten", "8/16/32/48/64 Farben", "„Angrenzende Farben verblenden“ macht den Übergang zwischen Nachbarfarben weicher. „Kleine Farbflecken auffüllen“ lässt kleine Farbinseln in der angrenzenden größeren Fläche aufgehen. Prüfe mit beiden Reglern feine Details. Bei 0 bleibt die jeweilige Änderung aus."],
    ["Farben aus einem Referenzbild übernehmen", "Farbübertragung", "Öffne das Ausgangsfoto und danach „Farbübertragung → Referenzbild auswählen“. AtelierAI ordnet 128 Farbpaare zu. Die Bildform bleibt erhalten. Stelle Stärke, Farbsättigung und selektive Pastellfarben ein. „Nur Farbgrenzen glätten“ mildert bei Bedarf die Übergänge der Farbflächen. Bei 0 bleiben die Grenzen klar. Vergleiche mit dem Original und prüfe Details per Zwei-Finger-Zoom. Wähle „PNG speichern“ oder „Für alle Module übernehmen“."],
    ["Farbe mit Kreis- oder Punkt-Pipette aufnehmen", "Farbmischung → Kreis-Pipette / Punkt-Pipette", "Die Kreis-Pipette ist die Standardauswahl. Stelle den Radius ein und tippe ins Bild. Der echte Durchschnitt bleibt getrennt vom sanft aufgehellten Zielton für das Mischrezept sichtbar. Die Punkt-Pipette nimmt eine einzelne Stelle auf. „Nur diese Farbe zeigen“ findet passende Flächen. Mit „Farbähnlichkeit“ und „Helligkeitsbereich“ kannst du die Auswahl erweitern oder eingrenzen."],
-   ["Eine Zielfarbe mit mehreren Nuancen malen", "Flächenberater → Nuancen aus einer Zielfarbe erzeugen", "Wähle einen Zielton im Farbfeld oder tippe die Farbe im Bild an. Stelle den Farbkontrast ein. Mit höherem Kontrast wird der Malgrund heller. AtelierAI stimmt die dunkleren Farben so ab, dass der berechnete Gesamteindruck aus der Ferne zum gewählten Ton passt. „Gesamtton aufhellen“ hebt die Wirkung der gesamten Farbgruppe an und startet bei +5. Auf 0 entspricht der berechnete Gesamteindruck dem Zielton. Vergleiche die optisch gemischte Vorschau mit dem Zielton. Die Farbpunkte werden für die Anzeige in linearem Licht zusammengefasst. Beim Malen kannst du die Farben in diesen Anteilen nebeneinandersetzen. Wähle deine Mischpalette und lass dir bei Bedarf Mischrezepte berechnen."],
+   ["Eine Zielfarbe mit mehreren Nuancen malen", "Flächenberater → Nuancen aus einer Zielfarbe erzeugen", "Wähle einen Zielton im Farbfeld oder tippe die Farbe im Bild an. Stelle den Farbkontrast ein. Mit höherem Kontrast wird der Malgrund heller. AtelierAI stimmt die dunkleren Farben so ab, dass der berechnete Gesamteindruck aus der Ferne zum gewählten Ton passt. „Gesamtton aufhellen“ hebt die Wirkung der gesamten Farbgruppe an und startet bei +5. Auf 0 entspricht der berechnete Gesamteindruck dem Zielton. Vergleiche die optisch gemischte Vorschau mit dem Zielton. Die Farbpunkte werden für die Anzeige in linearem Licht zusammengefasst. Beim Malen kannst du die Farben in diesen Anteilen nebeneinandersetzen. Wähle deine Mischpalette und lass dir bei Bedarf Mischrezepte berechnen. Für Artisan-Öl kannst du „Artisan-Tubenfarben neben dem Malgrund“ einschalten. Ergänzungen kommen direkt aus der Tube oder werden mit Titanweiß oder Kadmiumgelb hell aufgehellt. Ein Verhältnis von 3:1 bedeutet drei Teile Tubenfarbe und einen Teil Aufheller."],
    ["Farben einer Fläche untersuchen und eine Basis mischen", "Flächenberater", "Wähle Kreis oder Rechteck und tippe ins Bild. AtelierAI analysiert die sichtbare Auswahl und zeigt bis zu acht Farben von hell nach dunkel. Du kannst eine Farbe als gemeinsame Basis wählen. Für geeignete Nuancen werden Zugaben zu dieser Basis vorgeschlagen. „Gemeinsame Basismischungen anzeigen“ kannst du bei Bedarf einschalten."],
    ["Mischrezept korrigieren und für später merken", "Farbmischung", "Nimm die Zielfarbe auf und wähle unter „Mischpalette“ dein Material. Das individuelle Rezept steht zuerst. Weitere Einzelrezepte kannst du aufklappen, gemeinsame Basismischungen per Schalter anzeigen. Prüfe einen Farbauftrag und nutze bei Bedarf „Rezept zur Korrektur suchen“. Mit „Diese Mischung passt – fürs nächste Mal merken“ kannst du eine bewährte Mischung oder Zugabe für ähnliche Zielfarben in derselben Palette bestätigen. Die Bestätigung bleibt in diesem Browser."],
    ["Farbweg zwischen zwei Bildfarben planen", "Farbreise", "Öffne „Farbreise“ und tippe zuerst die Grundfarbe, dann die Zielfarbe im Bild an. Der Regler zeigt Zwischenfarben. Die Mischvorschläge beziehen sich auf die aktive Palette."],
@@ -13795,7 +13909,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.01</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.02</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -14992,7 +15106,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download='AtelierAI_5.01_Hintergrund.png';link.click();
+        link.href=url;link.download='AtelierAI_5.02_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }

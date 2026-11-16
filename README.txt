@@ -1,3 +1,7 @@
+NEU IN 5.02 – ARTISAN-TUBENFARBEN IM FLÄCHENBERATER
+
+Aktiviere „Artisan-Tubenfarben neben dem Malgrund“. AtelierAI berechnet den Malgrund wie bisher und sucht für die übrige Fläche passende Artisan-Tubenfarben oder Aufhellungen mit Titanweiß oder Kadmiumgelb hell. Die Prozentwerte beschreiben die sichtbare Fläche. Ein Verhältnis wie 3:1 gibt die Teile Tubenfarbe zu Aufheller an. Die angezeigte Abweichung bezieht sich auf die Bildschirmvorschau.
+
 NEU IN 5.01 – FARBTREUERE VORSCHAU BEI HOHEM KONTRAST
 
 Die Vorschau fasst die eine Million Farbpunkte für die Bildschirmanzeige in linearem Licht zusammen. Dadurch liegt das Punktfeld bei hohem Farbkontrast näher am berechneten Gesamtton. Bei „Gesamtton aufhellen“ auf 0 dient der aufgenommene Zielton als Referenz.
