@@ -1,3 +1,7 @@
+NEU IN 4.99 – 1.000 FARBPUNKTE
+
+Die Vorschau im Flächenberater zeigt 1.000 gleich große, leicht versetzte Farbpunkte. Jedes Prozent Flächenanteil entspricht zehn Punkten. Die Zwischenräume zeigen den berechneten Gesamtton.
+
 NEU IN 4.98 – 1.000 FARBLINIEN
 
 Die Vorschau im Flächenberater zeigt 1.000 gleich dünne Linien auf derselben Fläche. Jedes Prozent Flächenanteil entspricht zehn Linien.
