@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.04</title>
+  <title>AtelierAI iPad 5.05</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1067,7 +1067,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 5.04</div>
+    <div class="title">AtelierAI · iPad 5.05</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1661,6 +1661,11 @@
             <input id="surfaceNuanceTarget" type="color" value="#a6c3de" style="width:46px;height:42px">
             <button id="surfaceNuancePick" type="button" class="secondary" aria-pressed="false">Zielton im Bild antippen</button>
           </div>
+          <div class="control-line" style="margin-top:6px">
+            <label for="surfaceNuanceTargetLift">Zielton aufhellen</label>
+            <input id="surfaceNuanceTargetLift" type="range" min="0" max="12" value="0">
+            <output id="surfaceNuanceTargetLiftVal" for="surfaceNuanceTargetLift">0</output>
+          </div>
           <div class="control-line">
             <label for="surfaceNuanceStrength">Farbkontrast</label>
             <input id="surfaceNuanceStrength" type="range" min="0" max="100" value="50">
@@ -1679,7 +1684,7 @@
             <div><div id="surfaceNuanceTargetSwatch" style="height:24px;border-radius:4px"></div><span class="tiny">Zielton</span></div>
             <div><div id="surfaceNuanceMeanSwatch" style="height:24px;border-radius:4px"></div><span class="tiny">Aus der Ferne · berechnet</span></div>
           </div>
-          <p class="tiny">Die Vorschau fasst eine Million Farbpunkte in linearem Licht zusammen. Bei „Gesamtton aufhellen“ auf 0 ist der Zielton die Referenz. Tippe ein Farbfeld an, um es neben dem Bild zu vergrößern.</p>
+          <p class="tiny">„Zielton aufhellen“ verändert die Basis für den Malgrund. Bei 0 gilt die gewählte oder gemessene Farbe. Tippe ein Farbfeld an, um es neben dem Bild zu vergrößern.</p>
           <div id="surfaceNuanceColors"></div>
           <section id="surfaceNuanceSwatchPanel" hidden aria-labelledby="surfaceNuanceSwatchTitle">
             <h3 id="surfaceNuanceSwatchTitle" style="margin:0"></h3>
@@ -8866,21 +8871,22 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     ];
   }
 
+  function liftSurfaceNuanceLinear(rgb,lift){
+    const targetLinear=rgb.map(srgb8ToLinear);
+    // Raise CIELAB lightness with a gentler adjustment near white.
+    if(lift<=0)return targetLinear;
+    const y=.2126*targetLinear[0]+.7152*targetLinear[1]+.0722*targetLinear[2];
+    if(y>=1)return targetLinear;
+    const lightness=y>216/24389 ? 116*Math.cbrt(y)-16 : y*(24389/27);
+    const raised=lightness+lift*Math.min(1,(100-lightness)/12);
+    const raisedY=raised>8 ? ((raised+16)/116)**3 : raised/(24389/27);
+    const whiteShare=(raisedY-y)/(1-y);
+    return targetLinear.map(channel=>channel+(1-channel)*whiteShare);
+  }
+
   function calculateSurfaceNuances(target, strength, lift=0){
     const amount=strength/100;
-    let targetLinear=target.map(srgb8ToLinear);
-    // Raise the CIELAB lightness by mixing the linear target toward white.
-    // Reduce the adjustment gradually near white to retain highlight detail.
-    if(lift>0){
-      const y=.2126*targetLinear[0]+.7152*targetLinear[1]+.0722*targetLinear[2];
-      if(y<1){
-        const lightness=y>216/24389 ? 116*Math.cbrt(y)-16 : y*(24389/27);
-        const raised=lightness+lift*Math.min(1,(100-lightness)/12);
-        const raisedY=raised>8 ? ((raised+16)/116)**3 : raised/(24389/27);
-        const whiteShare=(raisedY-y)/(1-y);
-        targetLinear=targetLinear.map(channel=>channel+(1-channel)*whiteShare);
-      }
-    }
+    const targetLinear=liftSurfaceNuanceLinear(target,lift);
     const targetLab=surfaceLinearRgbToOklab(targetLinear);
     const samples=surfaceNuanceColors.map(({offset})=>surfaceOklabToLinearRgb(
       targetLab.map((value,i)=>value+amount*offset[i])
@@ -8990,6 +8996,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   const surfaceNuanceArtisan=document.getElementById('surfaceNuanceArtisan');
   const surfaceNuanceArtisanMatch=document.getElementById('surfaceNuanceArtisanMatch');
   const surfaceNuanceTarget=document.getElementById('surfaceNuanceTarget');
+  const surfaceNuanceTargetLift=document.getElementById('surfaceNuanceTargetLift');
+  const surfaceNuanceTargetLiftVal=document.getElementById('surfaceNuanceTargetLiftVal');
+  let surfaceNuancePickedLift=3;
   const surfaceNuancePick=document.getElementById('surfaceNuancePick');
   const surfaceNuanceStrength=document.getElementById('surfaceNuanceStrength');
   const surfaceNuanceStrengthVal=document.getElementById('surfaceNuanceStrengthVal');
@@ -9124,7 +9133,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function renderSurfaceNuances(){
     if(!surfaceNuancePanel.open)return;
     invalidateSurfaceNuanceRecipes();
-    const target=surfaceNuanceTarget.value.slice(1).match(/../g).map(part=>parseInt(part,16));
+    const source=surfaceNuanceTarget.value.slice(1).match(/../g).map(part=>parseInt(part,16));
+    const targetLift=Number(surfaceNuanceTargetLift.value);
+    const target=targetLift>0?liftSurfaceNuanceLinear(source,targetLift).map(linearToSrgb8):source;
+    surfaceNuanceTargetLiftVal.textContent=targetLift>0?'+'+targetLift:'0';
     const strength=Number(surfaceNuanceStrength.value);
     const lift=Number(surfaceNuanceLift.value);
     const standard=calculateSurfaceNuances(target,strength,lift);
@@ -9138,7 +9150,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     surfaceNuanceLiftVal.textContent=lift>0?'+'+lift:'0';
     surfaceNuanceTargetSwatch.style.background=targetHex;
     surfaceNuanceMeanSwatch.style.background=meanHex;
-    surfaceNuanceStatus.textContent='Ziel '+targetHex+' · Gesamtton '+meanHex+
+    surfaceNuanceStatus.textContent=(targetLift>0?'Farbprobe '+rgbHex(source)+' · ':'')+
+      'Ziel '+targetHex+' · Gesamtton '+meanHex+
       (!artisan && strength>0 && distinct<4?' · Dieser Zielton lässt wenig Spielraum für Farbkontraste.':'');
     surfaceNuanceArtisanMatch.hidden=!artisan;
     if(artisan){
@@ -9209,6 +9222,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     // Canvas returns a typed array. rgbHex maps channels to strings.
     surfaceNuanceTarget.value=rgbHex([sample[0],sample[1],sample[2]]).toLowerCase();
+    surfaceNuanceTargetLift.value=String(surfaceNuancePickedLift);
     setSurfaceNuancePick(false);
     hint.textContent='Zielton für die Nuancen aufgenommen.';
     renderSurfaceNuances();
@@ -9223,7 +9237,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       invalidateSurfaceNuanceRecipes();
     }
   });
-  surfaceNuanceTarget.addEventListener('input',renderSurfaceNuances);
+  surfaceNuanceTarget.addEventListener('input',()=>{
+    surfaceNuanceTargetLift.value='0';
+    renderSurfaceNuances();
+  });
+  surfaceNuanceTargetLift.addEventListener('input',()=>{
+    surfaceNuancePickedLift=Number(surfaceNuanceTargetLift.value);
+    renderSurfaceNuances();
+  });
   surfaceNuanceArtisan.addEventListener('change',renderSurfaceNuances);
   surfaceNuanceStrength.addEventListener('input',renderSurfaceNuances);
   surfaceNuanceLift.addEventListener('input',renderSurfaceNuances);
@@ -13958,7 +13979,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.04</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.05</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -15155,7 +15176,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download='AtelierAI_5.04_Hintergrund.png';link.click();
+        link.href=url;link.download='AtelierAI_5.05_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }

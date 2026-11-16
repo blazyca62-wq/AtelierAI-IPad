@@ -1,3 +1,7 @@
+NEU IN 5.05 – ZIELTON AUFHELLEN
+
+Beim ersten Aufnehmen im Bild startet „Zielton aufhellen“ bei +3 CIELAB-Helligkeitsstufen. Zielton und Malgrund werden anhand der Korrektur neu berechnet. Die gemessene Farbprobe wird bei aktiver Korrektur daneben angezeigt. Bei 0 gilt wieder die gemessene Farbe. Wenn du den Regler verstellst, übernimmt die nächste Aufnahme deine Einstellung. Ein manuell gewählter Ton startet bei 0.
+
 NEU IN 5.04 – GROSSE FARBFELDER NEBEN DEM BILD
 
 Tippe ein Farbfeld im Flächenberater an. Die große Farbfläche öffnet sich in der Seitenleiste. Das Bild bleibt sichtbar und lässt sich wie gewohnt verschieben und zoomen. Tippe erneut auf das Farbfeld oder auf „Schließen“, um die Vergrößerung zu schließen.
