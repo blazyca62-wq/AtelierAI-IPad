@@ -1,3 +1,7 @@
+NEU IN 4.91 – FARBPROBE UND NUANCEN KORRIGIERT
+
+Antippen im Flächenberater übernimmt die RGB-Farbe des Bildpixels als Zielton. Die Nuancen variieren Tonwert und Sättigung innerhalb der Farbfamilie des Zieltons. Neutrale Töne bleiben neutral. Die angegebenen Flächenanteile ergeben in der Bildschirmberechnung zusammen ungefähr den Zielton. Mischrezepte mit zu stark abweichender simulierter Farbe werden ausgeblendet.
+
 NEU IN 4.90 – NUANCEN AUS EINER ZIELFARBE
 
 Unter „Flächenberater → Nuancen aus einer Zielfarbe erzeugen“ einen Zielton über das Farbfeld wählen oder direkt im Bild antippen. Die Nuancenstärke verändert den Abstand der vier Farben. Die Strichvorschau verwendet die angegebenen sichtbaren Flächenanteile. Daneben lässt sich der in linearem sRGB berechnete Gesamteindruck mit dem Zielton vergleichen. Über „Mischrezepte berechnen“ erhältst du Startrezepte aus der im Flächenberater gewählten Palette. Prüfe die Wirkung deiner Pigmente auf einer kleinen Malprobe.
