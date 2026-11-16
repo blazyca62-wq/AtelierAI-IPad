@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 4.92</title>
+  <title>AtelierAI iPad 4.93</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 4.92</div>
+    <div class="title">AtelierAI · iPad 4.93</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1661,11 +1661,16 @@
             <input id="surfaceNuanceStrength" type="range" min="0" max="100" value="50">
             <output id="surfaceNuanceStrengthVal" for="surfaceNuanceStrength">50 %</output>
           </div>
+          <div class="control-line" style="margin-top:6px">
+            <label for="surfaceNuanceLift">Gesamtton aufhellen</label>
+            <input id="surfaceNuanceLift" type="range" min="0" max="12" value="5">
+            <output id="surfaceNuanceLiftVal" for="surfaceNuanceLift">+5</output>
+          </div>
           <p id="surfaceNuanceStatus" class="tiny" role="status"></p>
           <canvas id="surfaceNuancePreview" width="150" height="70" aria-label="Vorschau mit vier nebeneinanderliegenden Farbtönen" style="display:block;position:static;inset:auto;width:100%;height:auto;touch-action:auto;image-rendering:pixelated;border-radius:6px"></canvas>
           <div class="grid2" style="margin-top:8px">
-            <div class="tiny"><div id="surfaceNuanceTargetSwatch" style="height:24px;border-radius:4px"></div>Zielton</div>
-            <div class="tiny"><div id="surfaceNuanceMeanSwatch" style="height:24px;border-radius:4px"></div>Aus der Ferne · berechnet</div>
+            <div><div id="surfaceNuanceTargetSwatch" style="height:24px;border-radius:4px"></div><span class="tiny">Zielton</span></div>
+            <div><div id="surfaceNuanceMeanSwatch" style="height:24px;border-radius:4px"></div><span class="tiny">Aus der Ferne · berechnet</span></div>
           </div>
           <p class="tiny">Setze die Farbflecken nebeneinander und lass den Malgrund dazwischen sichtbar. Die Prozentwerte geben die sichtbaren Flächenanteile an.</p>
           <div id="surfaceNuanceColors"></div>
@@ -8848,9 +8853,21 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     ];
   }
 
-  function calculateSurfaceNuances(target, strength){
+  function calculateSurfaceNuances(target, strength, lift=0){
     const amount=strength/100;
-    const targetLinear=target.map(srgb8ToLinear);
+    let targetLinear=target.map(srgb8ToLinear);
+    // Raise the CIELAB lightness by mixing the linear target toward white.
+    // Reduce the adjustment gradually near white to retain highlight detail.
+    if(lift>0){
+      const y=.2126*targetLinear[0]+.7152*targetLinear[1]+.0722*targetLinear[2];
+      if(y<1){
+        const lightness=y>216/24389 ? 116*Math.cbrt(y)-16 : y*(24389/27);
+        const raised=lightness+lift*Math.min(1,(100-lightness)/12);
+        const raisedY=raised>8 ? ((raised+16)/116)**3 : raised/(24389/27);
+        const whiteShare=(raisedY-y)/(1-y);
+        targetLinear=targetLinear.map(channel=>channel+(1-channel)*whiteShare);
+      }
+    }
     const targetLab=surfaceLinearRgbToOklab(targetLinear);
     const samples=surfaceNuanceColors.map(({offset})=>surfaceOklabToLinearRgb(
       targetLab.map((value,i)=>value+amount*offset[i])
@@ -8906,6 +8923,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   const surfaceNuancePick=document.getElementById('surfaceNuancePick');
   const surfaceNuanceStrength=document.getElementById('surfaceNuanceStrength');
   const surfaceNuanceStrengthVal=document.getElementById('surfaceNuanceStrengthVal');
+  const surfaceNuanceLift=document.getElementById('surfaceNuanceLift');
+  const surfaceNuanceLiftVal=document.getElementById('surfaceNuanceLiftVal');
   const surfaceNuanceStatus=document.getElementById('surfaceNuanceStatus');
   const surfaceNuancePreview=document.getElementById('surfaceNuancePreview');
   const surfaceNuanceTargetSwatch=document.getElementById('surfaceNuanceTargetSwatch');
@@ -8937,11 +8956,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     invalidateSurfaceNuanceRecipes();
     const target=surfaceNuanceTarget.value.slice(1).match(/../g).map(part=>parseInt(part,16));
     const strength=Number(surfaceNuanceStrength.value);
-    const colors=calculateSurfaceNuances(target,strength);
+    const lift=Number(surfaceNuanceLift.value);
+    const colors=calculateSurfaceNuances(target,strength,lift);
     const mean=linearAverageRGB(colors.map(color=>color.rgb),colors.map(color=>color.share));
     const targetHex=rgbHex(target), meanHex=rgbHex(mean);
     const distinct=new Set(colors.map(color=>rgbHex(color.rgb))).size;
     surfaceNuanceStrengthVal.textContent=strength+' %';
+    surfaceNuanceLiftVal.textContent=lift>0?'+'+lift:'0';
     surfaceNuanceTargetSwatch.style.background=targetHex;
     surfaceNuanceMeanSwatch.style.background=meanHex;
     surfaceNuanceStatus.textContent='Ziel '+targetHex+' · Gesamtton '+meanHex+
@@ -9004,6 +9025,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   });
   surfaceNuanceTarget.addEventListener('input',renderSurfaceNuances);
   surfaceNuanceStrength.addEventListener('input',renderSurfaceNuances);
+  surfaceNuanceLift.addEventListener('input',renderSurfaceNuances);
   surfaceNuancePalette.addEventListener('change',invalidateSurfaceNuanceRecipes);
   surfaceNuancePick.addEventListener('click',()=>{
     if(!loaded){surfaceNuanceStatus.textContent='Öffne ein Foto oder wähle den Zielton im Farbfeld.';return;}
@@ -13205,7 +13227,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    ["Farbflächen und kleine Farbflecken glätten", "8/16/32/48/64 Farben", "„Angrenzende Farben verblenden“ macht den Übergang zwischen Nachbarfarben weicher. „Kleine Farbflecken auffüllen“ lässt kleine Farbinseln in der angrenzenden größeren Fläche aufgehen. Prüfe mit beiden Reglern feine Details. Bei 0 bleibt die jeweilige Änderung aus."],
    ["Farben aus einem Referenzbild übernehmen", "Farbübertragung", "Öffne das Ausgangsfoto und danach „Farbübertragung → Referenzbild auswählen“. AtelierAI ordnet 128 Farbpaare zu. Die Bildform bleibt erhalten. Stelle Stärke, Farbsättigung und selektive Pastellfarben ein. „Nur Farbgrenzen glätten“ mildert bei Bedarf die Übergänge der Farbflächen. Bei 0 bleiben die Grenzen klar. Vergleiche mit dem Original und prüfe Details per Zwei-Finger-Zoom. Wähle „PNG speichern“ oder „Für alle Module übernehmen“."],
    ["Farbe mit Kreis- oder Punkt-Pipette aufnehmen", "Farbmischung → Kreis-Pipette / Punkt-Pipette", "Die Kreis-Pipette ist die Standardauswahl. Stelle den Radius ein und tippe ins Bild. Der echte Durchschnitt bleibt getrennt vom sanft aufgehellten Zielton für das Mischrezept sichtbar. Die Punkt-Pipette nimmt eine einzelne Stelle auf. „Nur diese Farbe zeigen“ findet passende Flächen. Mit „Farbähnlichkeit“ und „Helligkeitsbereich“ kannst du die Auswahl erweitern oder eingrenzen."],
-   ["Eine Zielfarbe mit mehreren Nuancen malen", "Flächenberater → Nuancen aus einer Zielfarbe erzeugen", "Wähle einen Zielton im Farbfeld oder tippe die Farbe im Bild an. Stelle den Farbkontrast ein. AtelierAI erzeugt unterschiedliche Farbtöne und berechnet anhand ihrer sichtbaren Flächenanteile den Gesamteindruck aus der Ferne. Betrachte die Vorschau und male die Farben nebeneinander. Die Prozentwerte beziehen sich auf die sichtbaren Flächenanteile. Wähle deine Mischpalette und lass dir bei Bedarf Mischrezepte berechnen."],
+   ["Eine Zielfarbe mit mehreren Nuancen malen", "Flächenberater → Nuancen aus einer Zielfarbe erzeugen", "Wähle einen Zielton im Farbfeld oder tippe die Farbe im Bild an. Stelle den Farbkontrast ein. AtelierAI erzeugt unterschiedliche Farbtöne und berechnet anhand ihrer sichtbaren Flächenanteile den Gesamteindruck aus der Ferne. „Gesamtton aufhellen“ hebt die Wirkung der gesamten Farbgruppe an und startet bei +5. Auf 0 entspricht der berechnete Gesamteindruck dem Zielton. Betrachte die Vorschau und male die Farben nebeneinander. Die Prozentwerte beziehen sich auf die sichtbaren Flächenanteile. Wähle deine Mischpalette und lass dir bei Bedarf Mischrezepte berechnen."],
    ["Farben einer Fläche untersuchen und eine Basis mischen", "Flächenberater", "Wähle Kreis oder Rechteck und tippe ins Bild. AtelierAI analysiert die sichtbare Auswahl und zeigt bis zu acht Farben von hell nach dunkel. Du kannst eine Farbe als gemeinsame Basis wählen. Für geeignete Nuancen werden Zugaben zu dieser Basis vorgeschlagen. „Gemeinsame Basismischungen anzeigen“ kannst du bei Bedarf einschalten."],
    ["Mischrezept korrigieren und für später merken", "Farbmischung", "Nimm die Zielfarbe auf und wähle unter „Mischpalette“ dein Material. Das individuelle Rezept steht zuerst. Weitere Einzelrezepte kannst du aufklappen, gemeinsame Basismischungen per Schalter anzeigen. Prüfe einen Farbauftrag und nutze bei Bedarf „Rezept zur Korrektur suchen“. Mit „Diese Mischung passt – fürs nächste Mal merken“ kannst du eine bewährte Mischung oder Zugabe für ähnliche Zielfarben in derselben Palette bestätigen. Die Bestätigung bleibt in diesem Browser."],
    ["Farbweg zwischen zwei Bildfarben planen", "Farbreise", "Öffne „Farbreise“ und tippe zuerst die Grundfarbe, dann die Zielfarbe im Bild an. Der Regler zeigt Zwischenfarben. Die Mischvorschläge beziehen sich auf die aktive Palette."],
@@ -13734,7 +13756,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.92</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 4.93</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -14931,7 +14953,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download='AtelierAI_4.92_Hintergrund.png';link.click();
+        link.href=url;link.download='AtelierAI_4.93_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }

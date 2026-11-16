@@ -1,3 +1,7 @@
+NEU IN 4.93 – GESAMTTON OPTISCHER FARBMISCHUNGEN AUFHELLEN
+
+Im Flächenberater startet „Gesamtton aufhellen“ bei +5 Helligkeitspunkten (CIELAB L*). Der Regler reicht von 0 bis +12. Die Vorschau und die Mischrezepte verwenden die berechneten aufgehellten Farben. Bei 0 entspricht der gewichtete Gesamteindruck wieder der aufgenommenen Zielfarbe. Zielton und Gesamteindruck werden nun als deckende Farbfelder angezeigt.
+
 NEU IN 4.92 – UNTERSCHIEDLICHE FARBTÖNE MIT GEMEINSAMER FARBWIRKUNG
 
 Im Flächenberater unter „Nuancen aus einer Zielfarbe erzeugen“ einen Zielton aufnehmen. Der Regler „Farbkontrast“ erzeugt neben dem Malgrund rötliche, grünliche und kühle Verschiebungen. Welche Töne daraus entstehen, hängt von der Zielfarbe ab. Die Vorschau zeigt die Farben nebeneinander und den in linearem sRGB berechneten Gesamtton. Die Mengen in den einzelnen Mischrezepten beziehen sich auf das Anmischen des jeweiligen Farbtons. Seine Prozentzahl in der Vorschau beschreibt den sichtbaren Flächenanteil beim Malen.
