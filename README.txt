@@ -1,3 +1,7 @@
+NEU IN 5.01 – FARBTREUERE VORSCHAU BEI HOHEM KONTRAST
+
+Die Vorschau fasst die eine Million Farbpunkte für die Bildschirmanzeige in linearem Licht zusammen. Dadurch liegt das Punktfeld bei hohem Farbkontrast näher am berechneten Gesamtton. Bei „Gesamtton aufhellen“ auf 0 dient der aufgenommene Zielton als Referenz.
+
 NEU IN 5.00 – EINE MILLION FARBPUNKTE
 
 Die Vorschau im Flächenberater mischt eine Million feine Farbpunkte über die gesamte Fläche. Jedes Prozent Flächenanteil entspricht 10.000 Punkten. Das Feld wird einmal gemischt und behält beim Einstellen der Farben seine Verteilung.

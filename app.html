@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.00</title>
+  <title>AtelierAI iPad 5.01</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1062,7 +1062,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 5.00</div>
+    <div class="title">AtelierAI · iPad 5.01</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1667,12 +1667,12 @@
             <output id="surfaceNuanceLiftVal" for="surfaceNuanceLift">+5</output>
           </div>
           <p id="surfaceNuanceStatus" class="tiny" role="status"></p>
-          <canvas id="surfaceNuancePreview" width="1600" height="625" aria-label="Vorschau mit einer Million Farbpunkten" style="display:block;position:static;inset:auto;width:100%;height:auto;aspect-ratio:1000/465;touch-action:auto;border-radius:6px"></canvas>
+          <canvas id="surfaceNuancePreview" width="500" height="250" aria-label="Optische Mischung aus einer Million Farbpunkten" style="display:block;position:static;inset:auto;width:100%;height:auto;aspect-ratio:1000/465;touch-action:auto;border-radius:6px"></canvas>
           <div class="grid2" style="margin-top:8px">
             <div><div id="surfaceNuanceTargetSwatch" style="height:24px;border-radius:4px"></div><span class="tiny">Zielton</span></div>
             <div><div id="surfaceNuanceMeanSwatch" style="height:24px;border-radius:4px"></div><span class="tiny">Aus der Ferne · berechnet</span></div>
           </div>
-          <p class="tiny">Die Vorschau mischt eine Million feine Farbpunkte. Ihre Anzahl pro Farbe entspricht dem jeweiligen Flächenanteil.</p>
+          <p class="tiny">Die Vorschau fasst eine Million Farbpunkte in linearem Licht zusammen. Bei „Gesamtton aufhellen“ auf 0 ist der Zielton die Referenz.</p>
           <div id="surfaceNuanceColors"></div>
           <button id="surfaceNuanceRecipes" type="button" class="secondary" style="margin-top:8px">Mischrezepte berechnen</button>
           <p id="surfaceNuanceRecipeStatus" class="tiny" role="status"></p>
@@ -8939,9 +8939,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function drawSurfaceNuanceDots(colors){
     const {width,height}=surfaceNuancePreview;
     const context=surfaceNuancePreview.getContext('2d');
+    const pointsPerPixel=8;
+    const countBase=pointsPerPixel+1;
+    const placeValues=colors.map((_,index)=>countBase**index);
     const shares=colors.map(color=>color.share).join(',');
     if(surfaceNuanceDotPreview?.shares!==shares){
-      const indices=new Uint8Array(width*height);
+      const indices=new Uint8Array(width*height*pointsPerPixel);
       let start=0, share=0;
       colors.forEach((color,index)=>{
         share+=color.share;
@@ -8960,17 +8963,38 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         indices[i]=indices[j];
         indices[j]=current;
       }
+      // Group neighboring points before display scaling can blend encoded RGB values.
+      const pixelMixes=new Uint16Array(width*height);
+      for(let pixel=0, point=0;pixel<pixelMixes.length;pixel++){
+        for(let i=0;i<pointsPerPixel;i++,point++){
+          pixelMixes[pixel]+=placeValues[indices[point]];
+        }
+      }
       const image=context.createImageData(width,height);
       for(let offset=3;offset<image.data.length;offset+=4)image.data[offset]=255;
-      surfaceNuanceDotPreview={shares,indices,image};
+      surfaceNuanceDotPreview={shares,pixelMixes,image};
     }
-    const {indices,image}=surfaceNuanceDotPreview;
-    const palette=colors.map(color=>color.rgb);
-    for(let i=0, offset=0;i<indices.length;i++,offset+=4){
-      const rgb=palette[indices[i]];
-      image.data[offset]=rgb[0];
-      image.data[offset+1]=rgb[1];
-      image.data[offset+2]=rgb[2];
+    const {pixelMixes,image}=surfaceNuanceDotPreview;
+    const palette=colors.map(color=>color.rgb.map(srgb8ToLinear));
+    const shades=new Uint32Array(countBase**colors.length);
+    for(let pixel=0, offset=0;pixel<pixelMixes.length;pixel++,offset+=4){
+      const key=pixelMixes[pixel];
+      if(!shades[key]){
+        const linear=[0,0,0];
+        for(let i=0;i<colors.length;i++){
+          const count=Math.floor(key/placeValues[i])%countBase;
+          for(let channel=0;channel<3;channel++){
+            linear[channel]+=palette[i][channel]*count;
+          }
+        }
+        const [r,g,b]=linear.map(value=>linearToSrgb8(value/pointsPerPixel));
+        // Reserve zero for combinations that have not been calculated yet.
+        shades[key]=1+((r<<16)|(g<<8)|b);
+      }
+      const rgb=shades[key]-1;
+      image.data[offset]=rgb>>>16;
+      image.data[offset+1]=(rgb>>>8)&255;
+      image.data[offset+2]=rgb&255;
     }
     context.putImageData(image,0,0);
   }
@@ -13242,7 +13266,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    ["Farbflächen und kleine Farbflecken glätten", "8/16/32/48/64 Farben", "„Angrenzende Farben verblenden“ macht den Übergang zwischen Nachbarfarben weicher. „Kleine Farbflecken auffüllen“ lässt kleine Farbinseln in der angrenzenden größeren Fläche aufgehen. Prüfe mit beiden Reglern feine Details. Bei 0 bleibt die jeweilige Änderung aus."],
    ["Farben aus einem Referenzbild übernehmen", "Farbübertragung", "Öffne das Ausgangsfoto und danach „Farbübertragung → Referenzbild auswählen“. AtelierAI ordnet 128 Farbpaare zu. Die Bildform bleibt erhalten. Stelle Stärke, Farbsättigung und selektive Pastellfarben ein. „Nur Farbgrenzen glätten“ mildert bei Bedarf die Übergänge der Farbflächen. Bei 0 bleiben die Grenzen klar. Vergleiche mit dem Original und prüfe Details per Zwei-Finger-Zoom. Wähle „PNG speichern“ oder „Für alle Module übernehmen“."],
    ["Farbe mit Kreis- oder Punkt-Pipette aufnehmen", "Farbmischung → Kreis-Pipette / Punkt-Pipette", "Die Kreis-Pipette ist die Standardauswahl. Stelle den Radius ein und tippe ins Bild. Der echte Durchschnitt bleibt getrennt vom sanft aufgehellten Zielton für das Mischrezept sichtbar. Die Punkt-Pipette nimmt eine einzelne Stelle auf. „Nur diese Farbe zeigen“ findet passende Flächen. Mit „Farbähnlichkeit“ und „Helligkeitsbereich“ kannst du die Auswahl erweitern oder eingrenzen."],
-   ["Eine Zielfarbe mit mehreren Nuancen malen", "Flächenberater → Nuancen aus einer Zielfarbe erzeugen", "Wähle einen Zielton im Farbfeld oder tippe die Farbe im Bild an. Stelle den Farbkontrast ein. Mit höherem Kontrast wird der Malgrund heller. AtelierAI stimmt die dunkleren Farben so ab, dass der berechnete Gesamteindruck aus der Ferne zum gewählten Ton passt. „Gesamtton aufhellen“ hebt die Wirkung der gesamten Farbgruppe an und startet bei +5. Auf 0 entspricht der berechnete Gesamteindruck dem Zielton. Vergleiche die Vorschau aus einer Million fein verteilter Farbpunkte mit dem Zielton. Die Anzahl der Punkte pro Farbe entspricht ihrem Flächenanteil. Beim Malen kannst du die Farben in diesen Anteilen nebeneinandersetzen. Wähle deine Mischpalette und lass dir bei Bedarf Mischrezepte berechnen."],
+   ["Eine Zielfarbe mit mehreren Nuancen malen", "Flächenberater → Nuancen aus einer Zielfarbe erzeugen", "Wähle einen Zielton im Farbfeld oder tippe die Farbe im Bild an. Stelle den Farbkontrast ein. Mit höherem Kontrast wird der Malgrund heller. AtelierAI stimmt die dunkleren Farben so ab, dass der berechnete Gesamteindruck aus der Ferne zum gewählten Ton passt. „Gesamtton aufhellen“ hebt die Wirkung der gesamten Farbgruppe an und startet bei +5. Auf 0 entspricht der berechnete Gesamteindruck dem Zielton. Vergleiche die optisch gemischte Vorschau mit dem Zielton. Die Farbpunkte werden für die Anzeige in linearem Licht zusammengefasst. Beim Malen kannst du die Farben in diesen Anteilen nebeneinandersetzen. Wähle deine Mischpalette und lass dir bei Bedarf Mischrezepte berechnen."],
    ["Farben einer Fläche untersuchen und eine Basis mischen", "Flächenberater", "Wähle Kreis oder Rechteck und tippe ins Bild. AtelierAI analysiert die sichtbare Auswahl und zeigt bis zu acht Farben von hell nach dunkel. Du kannst eine Farbe als gemeinsame Basis wählen. Für geeignete Nuancen werden Zugaben zu dieser Basis vorgeschlagen. „Gemeinsame Basismischungen anzeigen“ kannst du bei Bedarf einschalten."],
    ["Mischrezept korrigieren und für später merken", "Farbmischung", "Nimm die Zielfarbe auf und wähle unter „Mischpalette“ dein Material. Das individuelle Rezept steht zuerst. Weitere Einzelrezepte kannst du aufklappen, gemeinsame Basismischungen per Schalter anzeigen. Prüfe einen Farbauftrag und nutze bei Bedarf „Rezept zur Korrektur suchen“. Mit „Diese Mischung passt – fürs nächste Mal merken“ kannst du eine bewährte Mischung oder Zugabe für ähnliche Zielfarben in derselben Palette bestätigen. Die Bestätigung bleibt in diesem Browser."],
    ["Farbweg zwischen zwei Bildfarben planen", "Farbreise", "Öffne „Farbreise“ und tippe zuerst die Grundfarbe, dann die Zielfarbe im Bild an. Der Regler zeigt Zwischenfarben. Die Mischvorschläge beziehen sich auf die aktive Palette."],
@@ -13771,7 +13795,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.00</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.01</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -14968,7 +14992,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download='AtelierAI_5.00_Hintergrund.png';link.click();
+        link.href=url;link.download='AtelierAI_5.01_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
