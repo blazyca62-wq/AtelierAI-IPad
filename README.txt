@@ -1,3 +1,11 @@
+NEU IN 4.96 – 100 FARBLINIEN
+
+Die Vorschau im Flächenberater zeigt genau 100 gleich dünne Linien. Jedes Prozent Flächenanteil entspricht einer Linie.
+
+NEU IN 4.95 – STREIFENVORSCHAU IM FLÄCHENBERATER
+
+Alle Farblinien sind gleich dünn. Der Flächenanteil jeder Farbe bestimmt die Anzahl ihrer Linien. Die Linien jeder Farbe sind über die Vorschau verteilt. So lässt sich der Gesamteindruck aus etwas Abstand mit dem Zielton vergleichen.
+
 NEU IN 4.94 – HELLERER MALGRUND BEI HOHEM KONTRAST
 
 Im Flächenberater wird der Malgrund bei höherem Farbkontrast heller. Die dunkleren Farbflecken gleichen diese Aufhellung entsprechend ihren Flächenanteilen aus. Bei „Gesamtton aufhellen“ auf 0 bleibt der berechnete Gesamteindruck beim aufgenommenen Zielton. Die Farbfelder, die Strichvorschau und die Mischrezepte verwenden dieselben berechneten Farbtöne.
