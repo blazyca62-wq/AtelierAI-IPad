@@ -1,3 +1,12 @@
+NEU IN 5.14 – EINBLENDRICHTUNG DER TONWERTE
+==========================================
+
+Form & Licht → Tonwerte. Beim Ziehen nach rechts zeigt „Hell“ zuerst die
+hellsten und dann die weniger hellen Stellen. „Mittel“ und „Dunkel“ zeigen
+jeweils zuerst die dunkelsten Stellen ihrer Gruppe. Bei 0 ist die Gruppe
+ausgeblendet, bei 100 vollständig sichtbar. Dieselbe Malreihenfolge gilt für
+Aquarell und Öl.
+
 NEU IN 5.13 – NUR DIESE EBENE ANZEIGEN
 =====================================
 
