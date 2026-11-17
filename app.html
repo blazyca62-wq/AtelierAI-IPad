@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.14</title>
+  <title>AtelierAI iPad 5.15</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -91,6 +91,7 @@
     .hint{position:absolute;left:14px;bottom:14px;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);border:1px solid rgba(0,0,0,.08);padding:8px 10px;border-radius:10px;font-size:13px;color:#444;pointer-events:none;}
     .toneRow,.formsRow{display:grid;grid-template-columns:70px 1fr 42px;align-items:center;gap:8px;margin:10px 0;}
     .toneRow label,.formsRow label{font-size:14px;font-weight:600;}
+    .toneRow .toneDirection{grid-column:2/-1;justify-self:start;max-width:100%;min-height:34px;padding:4px 8px;font-size:13px;}
     input[type=range]{width:100%;}
     .toneValue,.formsValue{text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:#444;}
     .toneToggle{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
@@ -1083,7 +1084,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.14</div>
+    <div class="title">AtelierAI 5.15</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1339,19 +1340,22 @@
           <label for="lightSlider">Hell</label>
           <input id="lightSlider" aria-describedby="toneRevealOrder" type="range" min="0" max="100" value="100">
           <div class="toneValue" id="lightValue">100</div>
+          <select id="lightToneDirection" class="toneDirection" aria-label="Helle Töne: Einblendrichtung"><option value="light-first" selected>Hell → Dunkel</option><option value="dark-first">Dunkel → Hell</option></select>
         </div>
         <div class="toneRow">
           <label for="midSlider">Mittel</label>
           <input id="midSlider" aria-describedby="toneRevealOrder" type="range" min="0" max="100" value="100">
           <div class="toneValue" id="midValue">100</div>
+          <select id="midToneDirection" class="toneDirection" aria-label="Mitteltöne: Einblendrichtung"><option value="light-first">Hell → Dunkel</option><option value="dark-first" selected>Dunkel → Hell</option></select>
         </div>
         <div class="toneRow">
           <label for="darkSlider">Dunkel</label>
           <input id="darkSlider" aria-describedby="toneRevealOrder" type="range" min="0" max="100" value="100">
           <div class="toneValue" id="darkValue">100</div>
+          <select id="darkToneDirection" class="toneDirection" aria-label="Dunkle Töne: Einblendrichtung"><option value="light-first">Hell → Dunkel</option><option value="dark-first" selected>Dunkel → Hell</option></select>
         </div>
 
-        <p class="tiny" id="toneRevealOrder">Hell beginnt bei den hellsten Stellen. Mittel und Dunkel beginnen jeweils bei den dunkelsten.</p>
+        <p class="tiny" id="toneRevealOrder">Die Richtung bestimmt, welche Töne in der jeweiligen Gruppe beim Ziehen nach rechts zuerst erscheinen.</p>
       </div>
 
       <div id="colorAnalysisPanel" hidden aria-hidden="true" style="display:none">
@@ -2256,6 +2260,19 @@
   const lightSlider = document.getElementById('lightSlider');
   const midSlider = document.getElementById('midSlider');
   const darkSlider = document.getElementById('darkSlider');
+  const toneDirections={
+    light:document.getElementById('lightToneDirection'),
+    mid:document.getElementById('midToneDirection'),
+    dark:document.getElementById('darkToneDirection')
+  };
+  const TONE_DIRECTIONS_KEY='atelierai-tone-directions';
+  try{
+    const saved=JSON.parse(localStorage.getItem(TONE_DIRECTIONS_KEY)||'null');
+    for(const [band,control] of Object.entries(toneDirections)){
+      const direction=saved?.[band];
+      if(direction==='light-first'||direction==='dark-first')control.value=direction;
+    }
+  }catch(e){}
   const lightValue = document.getElementById('lightValue');
   const midValue = document.getElementById('midValue');
   const darkValue = document.getElementById('darkValue');
@@ -9584,11 +9601,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     return 0.2126*r + 0.7152*g + 0.0722*b;
   }
 
-  function toneStrength(lum,band,sliderVal){
+  function toneStrength(lum,band,sliderVal,direction){
     if(sliderVal<=0)return 0;
     if(sliderVal>=100)return 1;
-    // Each band spans 85 luminance levels. Only the light band starts at its bright end.
-    const distance=band==='light'?255-lum:band==='mid'?lum-85:lum;
+    const lowerBound=band==='light'?170:band==='mid'?85:0;
+    const offset=lum-lowerBound;
+    const distance=direction==='light-first'?85-offset:offset;
     return distance<=sliderVal*.85?1:0;
   }
 
@@ -10194,6 +10212,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const grayBg=toneBackgroundPixels;
 
     const lv=+lightSlider.value, mv=+midSlider.value, dv=+darkSlider.value;
+    const lightDirection=toneDirections.light.value;
+    const midDirection=toneDirections.mid.value;
+    const darkDirection=toneDirections.dark.value;
 
     for(let i=0;i<src.data.length;i+=4){
       const r=src.data[i], g=src.data[i+1], b=src.data[i+2], a=src.data[i+3];
@@ -10204,9 +10225,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       else band='dark';
 
       const strength =
-        band==='light' ? toneStrength(lum,'light',lv) :
-        band==='mid' ? toneStrength(lum,'mid',mv) :
-        toneStrength(lum,'dark',dv);
+        band==='light' ? toneStrength(lum,'light',lv,lightDirection) :
+        band==='mid' ? toneStrength(lum,'mid',mv,midDirection) :
+        toneStrength(lum,'dark',dv,darkDirection);
 
       if(strength>0 && toneView!=='off'){
         // Dieser Tonwert soll farbig sichtbar bleiben.
@@ -10471,6 +10492,15 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   globalZoom.addEventListener('input',()=>setGlobalZoom(globalZoom.value));
   globalZoom.addEventListener('change',refreshSurfaceAfterZoom);
 
+  for(const control of Object.values(toneDirections)){
+    control.addEventListener('change',()=>{
+      try{
+        const settings=Object.fromEntries(Object.entries(toneDirections).map(([band,select])=>[band,select.value]));
+        localStorage.setItem(TONE_DIRECTIONS_KEY,JSON.stringify(settings));
+      }catch(e){}
+      scheduleToneImage();
+    });
+  }
   [lightSlider,midSlider,darkSlider].forEach(sl=>{
     sl.addEventListener('input',()=>{
       lightValue.textContent=lightSlider.value;
@@ -13583,7 +13613,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    ["Gemeinsame Basismischungen finden", "Palettenplan", "Nimm Farbproben auf und speichere ihre Mischrezepte. Im Palettenplan kannst du prüfen, welche Farben sich aus einer gemeinsamen Basismischung ableiten lassen. Die Einzelrezepte bleiben verfügbar."],
    ["Bild auf wenige Farben reduzieren", "8/16/32/48/64 Farben", "Wähle die Farbzahl und tippe auf „Farben erkennen“. Du kannst Farbfamilien einblenden oder mit „Eine Farbe ansehen“ eine erkannte Farbe einzeln prüfen. „Originalfarbe ersetzen“ tauscht eine erkannte Farbe aus. Nutze für einzelne Bildpartien ein Lasso oder ein Detail-Kästchen."],
    ["Große Formen erkennen", "Großformen", "Großformen-Modul öffnen, wenige Stufen wählen und das Original vergleichen. „Augen zusammenkneifen“ kann helfen, Nebendetails zu unterdrücken."],
-   ["Tonwerte prüfen", "Tonwerte", "Unter „Form & Licht → Tonwerte“ blendet Hell zuerst die hellsten Stellen ein. Mittel und Dunkel beginnen jeweils am dunklen Rand ihrer Gruppe. Ziehe den Regler nach rechts, um weitere Stellen einzublenden. Bei 0 ist die jeweilige Gruppe ausgeblendet, bei 100 vollständig sichtbar."],
+   ["Tonwerte prüfen", "Tonwerte", "Unter „Form & Licht → Tonwerte“ stellst du für jeden Regler einzeln „Hell → Dunkel“ oder „Dunkel → Hell“ ein. Ziehe den Regler nach rechts, um weitere Stellen einzublenden. Bei 0 ist die jeweilige Gruppe ausgeblendet, bei 100 vollständig sichtbar."],
    ["Raster oder Bildausschnitt verwenden", "Vorlage → Raster einrichten", "Blende das Raster ein und passe Größe und Position an. Wähle ein Rasterkästchen oder übernimm den sichtbaren Ausschnitt als Malvorlage. Im Ausschnitt kannst du Ursprungsraster und Feinraster getrennt einblenden. Das Feinraster richtet sich an der alten Einteilung aus. „Zum Gesamtbild“ führt zurück."],
    ["Aquarell in Lasuren planen", "Aquarell", "Auf Papierweiß und transparente, kumulative Schichten achten. Beginne mit sehr hellen großen Flächen und steigere die Tonwerte langsam. Die Lasurvorschau ersetzt keinen Probeauftrag auf Aquarellpapier."],
    ["Mehrere Ansichten vergleichen", "Bildvarianten", "„Mein Malprojekt · Varianten & Notizen“ öffnen. Zwischen A, B und C wechseln; jede Variante behält ihre eigene Bearbeitung. Farbnotizen an markanten Stellen ergänzen."],
@@ -14107,7 +14137,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.14</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.15</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -15600,7 +15630,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.14_PNG_Ebenen.png':'AtelierAI_5.14_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.15_PNG_Ebenen.png':'AtelierAI_5.15_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }

@@ -1,3 +1,11 @@
+NEU IN 5.15 – EINBLENDRICHTUNG PRO TONWERTREGLER
+================================================
+
+Form & Licht → Tonwerte. Unter jedem der drei Regler stellst du die
+Einblendrichtung „Hell → Dunkel“ oder „Dunkel → Hell“ separat ein. Die Wahl
+gilt innerhalb der jeweiligen Tonwertgruppe. AtelierAI speichert sie in
+diesem Browser. Bei 0 ist die Gruppe ausgeblendet, bei 100 ganz sichtbar.
+
 NEU IN 5.14 – EINBLENDRICHTUNG DER TONWERTE
 ==========================================
 
