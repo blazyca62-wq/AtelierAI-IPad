@@ -1,3 +1,14 @@
+NEU IN 5.09 – MALANSICHT FÜR PNG-EBENEN
+=====================================
+
+Vorlage → Hintergrund ersetzen → PNG-Ebenen → Malansicht.
+Wähle den Hintergrund oder ein Motiv. Weichzeichnung, Großformen und
+Farbreduktion auf 8, 16, 32, 48 oder 64 Farben lassen sich pro Ebene kombinieren.
+Beim Weichzeichnen entstehen an den Übergängen Zwischentöne. Alle drei
+Einstellungen auf „Aus“ zeigen die Originalansicht der gewählten Ebene.
+Die Ebenen bleiben einzeln ein- und ausblendbar. Die Projektdatei sichert
+die Originalbilder, die Sichtbarkeit und die Einstellungen der Malansicht.
+
 NEU IN 5.08 – PNG-EBENEN
 ========================
 
