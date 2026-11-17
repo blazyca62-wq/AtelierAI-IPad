@@ -1,3 +1,15 @@
+NEU IN 5.13 – NUR DIESE EBENE ANZEIGEN
+=====================================
+
+Vorlage → Hintergrund ersetzen → PNG-Ebenen. Schalte „Nur diese Ebene“ ein
+und tippe auf den Namen der gewünschten Ebene. Beim Ausschalten gelten
+wieder die Häkchen und die Einstellung „Malreihenfolge“.
+
+„Untergrund ohne Bild“ steht bei den Ebenen zur Verfügung. Wähle Weiß oder
+Transparent für die Einzelansicht eines Motivs oder wenn du das Häkchen
+beim Hintergrund entfernst. „Übernehmen & zum Projekt“ und PNG-Export
+verwenden die sichtbare Ansicht. Das Projekt speichert die Ebenen und Einstellungen.
+
 NEU IN 5.12 – WEISSER UNTERGRUND FÜR DIE MALVORLAGE
 ==================================================
 
