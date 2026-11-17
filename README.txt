@@ -1,12 +1,15 @@
-NEU IN 5.06 – WERKZEUGLEISTE
-================================
+NEU IN 5.07 – WERKZEUGE NACH MALABLAUF
+=========================================
 
-- Lasso: Direkt oben antippen, die Stelle im Foto mit einem Finger umfahren und die Farbzahl wählen.
-- Bildaufbau: Vorzeichnung, Großformen, Tonwerte und Farbaufbau mit 8 bis 64 Farben.
-- Farbe: Farbanalyse, Farbmischung, Farbmischpult, Farbreise, Flächenberater und Mischpalette.
-- Bearbeiten: Korrektur, Lasuren, Farben bearbeiten, Künstlerische Gestaltung, Farbübertragung und Hintergrund ersetzen.
-- Ansicht & Export: Bewegen, Pipette, Raster, Bildausschnitte, Ansicht speichern und Bildexport.
-- Projekte werden weiterhin über „Projekt“ geöffnet und gespeichert.
+- Vorlage: Bildausschnitt, Raster, Zoom und Hintergrund vorbereiten.
+- Form & Licht: Großformen, Tonwerte und Vorzeichnung.
+- Farben: Farbaufbau, Farbanalyse, Farbmischung und Palette.
+- Ausarbeiten: Lasuren, Flächenberater, Farbreise und Bildkorrekturen.
+- Export & Hilfe: Bild und Ansichten sichern, Hilfe öffnen.
+- Menüs und Werkzeugeinstellungen liegen über dem Bild. Schließen gibt die verdeckte Fläche frei.
+- Lasso: Farben → Farbaufbau · 8 bis 64 Farben → Lasso-Bereich wählen.
+  Beim Zeichnen klappt das Werkzeugfeld zu. Nach einer gültigen Auswahl erscheint es wieder.
+- Die Farbpalette und Original S/W findest du nach der Farberkennung unter „Erkannte Farben“.
 
 NEU IN 5.05 – ZIELTON AUFHELLEN
 
