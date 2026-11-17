@@ -1,3 +1,13 @@
+NEU IN 5.06 – WERKZEUGLEISTE
+================================
+
+- Lasso: Direkt oben antippen, die Stelle im Foto mit einem Finger umfahren und die Farbzahl wählen.
+- Bildaufbau: Vorzeichnung, Großformen, Tonwerte und Farbaufbau mit 8 bis 64 Farben.
+- Farbe: Farbanalyse, Farbmischung, Farbmischpult, Farbreise, Flächenberater und Mischpalette.
+- Bearbeiten: Korrektur, Lasuren, Farben bearbeiten, Künstlerische Gestaltung, Farbübertragung und Hintergrund ersetzen.
+- Ansicht & Export: Bewegen, Pipette, Raster, Bildausschnitte, Ansicht speichern und Bildexport.
+- Projekte werden weiterhin über „Projekt“ geöffnet und gespeichert.
+
 NEU IN 5.05 – ZIELTON AUFHELLEN
 
 Beim ersten Aufnehmen im Bild startet „Zielton aufhellen“ bei +3 CIELAB-Helligkeitsstufen. Zielton und Malgrund werden anhand der Korrektur neu berechnet. Die gemessene Farbprobe wird bei aktiver Korrektur daneben angezeigt. Bei 0 gilt wieder die gemessene Farbe. Wenn du den Regler verstellst, übernimmt die nächste Aufnahme deine Einstellung. Ein manuell gewählter Ton startet bei 0.

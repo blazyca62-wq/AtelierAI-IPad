@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.05</title>
+  <title>AtelierAI iPad 5.06</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -22,19 +22,9 @@
     .app{height:100%;display:flex;flex-direction:column;gap:10px;padding:12px;}
     .topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 12px;}
 
-    /* 3.42: Einzeilige Kopfzeile; das Werkzeugmenü überlagert das Bild, statt es zu verkleinern. */
-    .topbar{flex-wrap:nowrap;position:relative;z-index:12;gap:8px;padding:7px 10px;min-height:56px;}
-    .topbar .title{font-size:17px;margin-right:auto;white-space:nowrap;}
-    .topbar>button,.topbar>.filelabel,.topbar>.moreTools>summary{font-size:14px;padding:9px 12px;white-space:nowrap;min-height:40px;}
-    .moreTools{position:relative;flex:0 0 auto;}
-    .moreTools>summary{display:flex;align-items:center;list-style:none;cursor:pointer;background:#e9e7e1;border-radius:12px;color:#202020;font-weight:650;}
-    .moreTools>summary::-webkit-details-marker{display:none;}
-    /* 3.65: menu floats over the image rather than covering the right-hand tab bar */
-    .moreToolsPanel{position:fixed;left:24px;right:auto;top:115px;z-index:200;width:min(340px,80vw);max-height:70vh;overflow-y:auto;padding:10px;background:white;border:1px solid #d8d6d0;box-shadow:0 12px 28px #0003;border-radius:14px;display:flex;flex-direction:column;gap:8px;}
-    .moreToolsPanel button{font-size:14px;min-height:44px;text-align:left;}
-    .moreToolsPanel button[hidden]{display:none;}
-    body.image-focus .moreToolsPanel button{white-space:normal;}
-    @media(max-width:700px){.topbar{gap:5px}.topbar .title{font-size:12px}.topbar>button,.topbar>.filelabel,.topbar>.moreTools>summary{font-size:12px;padding:7px 8px;}}
+    .topbar{position:relative;z-index:12;gap:6px 8px;padding:7px 10px;min-height:56px;}
+    .topbar .title{font-size:17px;margin-right:8px;white-space:nowrap;}
+    .topbar>button,.topbar>.filelabel{font-size:14px;padding:9px 12px;min-height:44px;}
     .title{font-weight:700;font-size:20px;margin-right:auto;}
     button,.filelabel{
       appearance:none;border:0;border-radius:12px;background:var(--btn);color:var(--btnText);
@@ -171,19 +161,37 @@
     .section.accordion.open > .accordion-head{margin-bottom:7px}
 
 
-    .toolnav-wrap{
-      position:sticky; top:0; z-index:30; background:#f3f3f3;
-      padding:7px 0 8px; border-bottom:1px solid #ccc; margin-bottom:8px;
-    }
     .toolnav{
-      display:flex; gap:6px; overflow-x:auto; overflow-y:hidden;
-      -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:0 3px 3px;
+      position:relative;z-index:11;display:flex;flex:0 0 auto;flex-wrap:wrap;gap:4px;
+      padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:14px;
     }
-    .toolnav::-webkit-scrollbar{display:none}
-    .toolnav button{
-      flex:0 0 auto; min-height:42px; padding:8px 11px; border-radius:9px;
-      white-space:nowrap; font-size:14px;
+    .toolnav-group>summary,.toolnav>button{
+      display:flex;align-items:center;gap:6px;min-height:44px;padding:6px 11px;
+      border-radius:9px;background:#f0eee8;color:var(--text);font-size:14px;font-weight:650;
+      cursor:pointer;list-style:none;
     }
+    .toolnav-group>summary::-webkit-details-marker{display:none;}
+    .toolnav-group>summary::after{content:"";width:6px;height:6px;border:solid currentColor;
+      border-width:0 1.5px 1.5px 0;transform:rotate(45deg) translateY(-2px);}
+    .toolnav-group[open]>summary,.toolnav>button[aria-pressed="true"]{background:#303530;color:white;}
+    .toolnav-group[data-current]>summary{box-shadow:inset 0 -2px 0 #60806b;}
+    .toolnav-menu{
+      position:absolute;top:calc(100% + 4px);left:var(--menu-left,0);width:min(285px,100%);
+      max-height:56vh;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:12px;
+      background:var(--panel);box-shadow:0 8px 20px #0002;
+    }
+    .toolnav-menu button{
+      display:block;text-align:left;width:100%;min-height:44px;padding:7px 10px;
+      border-radius:7px;font-size:14px;background:transparent;color:var(--text);
+    }
+    .toolnav-menu button:hover,.toolnav-menu button[aria-current="true"]{background:#ecefe9;}
+    .toolnav-menu button:disabled{opacity:.45;cursor:default;}
+    .toolnav-menu button[hidden]{display:none;}
+    .toolnav :is(button,summary):focus-visible{outline:2px solid #285b9a;outline-offset:-2px;}
+    #toolnavLasso{border:1px solid #c8d1c8;}
+    .build32-start{display:grid;gap:7px;margin:0 0 14px;}
+    .build32-count{display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
+    .build32-count select{min-height:44px;font:inherit;}
     aside.side > .section.tool-page{display:none !important}
     aside.side > .section.tool-page.tool-page-active{display:block !important}
     aside.side > .section.tool-page .accordion-head{display:none !important}
@@ -198,10 +206,6 @@
       overflow-y:auto !important;
       overscroll-behavior:contain;
       -webkit-overflow-scrolling:touch;
-    }
-    @media (max-width: 900px){
-      .toolnav-wrap{top:0}
-      .toolnav button{min-height:46px;font-size:15px}
     }
 
 
@@ -236,9 +240,9 @@
     /* 4.11: iPad-Kopfzeile ohne seitlich abgeschnittene Bedienelemente */
     .topbar, body.image-focus .topbar{flex-wrap:wrap;justify-content:flex-start;height:auto;min-width:0;gap:6px 8px;}
     .topbar .title{margin-right:8px;}
-    .topbar>button,.topbar>.filelabel,.topbar>.moreTools{flex:0 0 auto;max-width:100%;}
-    .topbar>button,.topbar>.filelabel,.topbar>.moreTools>summary{white-space:normal;text-align:center;}
-    @media(max-width:1100px){.topbar>button,.topbar>.filelabel,.topbar>.moreTools>summary{font-size:13px;padding:8px 10px;}}
+    .topbar>button,.topbar>.filelabel{flex:0 0 auto;max-width:100%;}
+    .topbar>button,.topbar>.filelabel{white-space:normal;text-align:center;}
+    @media(max-width:1100px){.topbar>button,.topbar>.filelabel{font-size:13px;padding:8px 10px;}}
 </style>
 </head>
 <body>
@@ -1067,7 +1071,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI · iPad 5.05</div>
+    <div class="title">AtelierAI · iPad 5.06</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1077,8 +1081,7 @@
     <button id="imageFocusBtn" class="secondary" aria-pressed="false">Bild größer</button>
     <button id="visibleCropBack" type="button" class="secondary" hidden>Zum Gesamtbild</button>
     <button id="gridCellCropApply" type="button" hidden disabled>Als Malvorlage übernehmen</button>
-    <details class="moreTools" id="moreTools"><summary aria-label="Weitere Werkzeuge">Werkzeuge ▾</summary>
-      <div class="moreToolsPanel">
+    <div id="pendingToolActions" hidden>
         <button id="saveCurrentViewBtn" type="button">Ansicht speichern</button>
         <button id="bgReplaceOpen" type="button" class="secondary">Hintergrund ersetzen</button>
         <button id="visibleCropBtn" type="button" class="secondary" disabled>Sichtbaren Ausschnitt als Malvorlage übernehmen</button>
@@ -1096,29 +1099,6 @@
       </select>
     </label>
   </div>
-
-  <script>
-  // Position the overflow menu safely inside the picture column on iPad.
-  (()=>{
-    const menu=document.getElementById('moreTools');
-    const panel=menu.querySelector('.moreToolsPanel');
-    const reposition=()=>{
-      const viewer=document.getElementById('viewer');
-      if(!viewer)return;
-      const rect=viewer.getBoundingClientRect();
-      const available=Math.max(180,window.innerWidth-24);
-      const desired=Math.min(340,available);
-      panel.style.width=desired+'px';
-      panel.style.left=Math.max(8,Math.min(rect.left+12,window.innerWidth-desired-8))+'px';
-      panel.style.top=Math.max(8,Math.min(rect.top+12,window.innerHeight-180))+'px';
-      panel.style.maxHeight=Math.max(160,window.innerHeight-Math.max(8,rect.top+12)-12)+'px';
-    };
-    menu.addEventListener('toggle',()=>{if(menu.open)reposition();});
-    window.addEventListener('resize',()=>{if(menu.open)reposition();});
-    menu.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>{menu.open=false;}));
-    document.addEventListener('pointerdown',event=>{if(menu.open&&!menu.contains(event.target))menu.open=false;});
-  })();
-  </script>
 
   <div class="workspace">
     <div class="viewer-column">
@@ -1159,6 +1139,12 @@
 
       <div class="section" id="build32Panel">
         <h3>Farbaufbau · 8 / 16 / 32 / 48 / 64 Farben</h3>
+        <div class="build32-start">
+          <div class="grid2"><button id="build32Lasso" type="button" class="secondary" aria-pressed="false">Lasso-Bereich wählen</button><button id="build32LassoClear" type="button" class="secondary" disabled>Bereich aufheben</button></div>
+        <p id="build32LassoStatus" class="tiny" role="status">Lasso: freie Fläche mit einem Finger oder der Maus umfahren, um ihre Farben separat zu erkennen. Zwei Finger zoomen wie bisher. Kein Raster nötig.</p>
+          <div class="build32-count"><label for="build32CountSide">Anzahl Farben</label><select id="build32CountSide"><option value="8">8</option><option value="16">16</option><option value="32" selected>32</option><option value="48">48</option><option value="64">64</option></select></div>
+          <button id="build32Analyze" style="width:100%">32 Farben erkennen</button>
+        </div>
         <p>Farbbereiche Schritt für Schritt einblenden. Der zuletzt bewegte Regler bestimmt die Ansicht.</p>
         <div class="grid2" style="margin-bottom:8px"><button id="build32Grid" class="secondary">Feinraster ein</button><button id="build32Pick" class="secondary">Mischung aufnehmen</button></div>
         <button type="button" data-original-grid-toggle class="secondary" aria-pressed="false" style="width:100%;margin-bottom:7px">Ursprungsraster ein</button>
@@ -1179,11 +1165,8 @@
 
         <button id="build32DetailCell" class="secondary" type="button" style="width:100%;margin-top:7px" aria-pressed="false">Detail-Kästchen auswählen: Aus</button>
         <p id="build32DetailCellStatus" class="tiny">Raster einschalten → Detail-Kästchen auswählen → ein Kästchen antippen. Die aktuell gewählte 8/16/32/48/64-Farbzahl wird dann nur in diesem Kästchen neu berechnet.</p>
-        <div class="grid2" style="margin-top:8px"><button id="build32Lasso" type="button" class="secondary" aria-pressed="false">Lasso-Bereich wählen</button><button id="build32LassoClear" type="button" class="secondary" disabled>Bereich aufheben</button></div>
-        <p id="build32LassoStatus" class="tiny" role="status">Lasso: freie Fläche mit einem Finger oder der Maus umfahren, um ihre Farben separat zu erkennen. Zwei Finger zoomen wie bisher. Kein Raster nötig.</p>
         <p class="tiny">Mischung aufnehmen: eine sichtbare Farbfläche antippen. Das Raster wird nicht mitgemessen.</p>
-        <label>Darstellung <select id="build32PaintModeSide"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Einfache Öl-/Acryl-Mischungen</option></select></label><label id="build32SimpleLimitLabelSide" hidden>Mischungen <select id="build32SimpleLimitSide" aria-label="Anzahl einfacher Öl-/Acryl-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><p class="tiny">Ungemischt: Farben der gewählten Palette. Aquarell mit Wasserverdünnung und Papierweiß; Öl ohne Ausmischen. Einfache Öl-/Acryl-Mischungen: mit Weiß, Gelb oder Blau, bei Bedarf zusätzlich Weiß. Bildschirm-Simulation.</p><label for="build32CountSide">Anzahl Farben</label><select id="build32CountSide" style="min-height:44px;margin:8px"><option value="8">8</option><option value="16">16</option><option value="32" selected>32</option><option value="48">48</option><option value="64">64</option></select>
-        <button id="build32Analyze" style="width:100%">32 Farben erkennen</button>
+        <label>Darstellung <select id="build32PaintModeSide"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Einfache Öl-/Acryl-Mischungen</option></select></label><label id="build32SimpleLimitLabelSide" hidden>Mischungen <select id="build32SimpleLimitSide" aria-label="Anzahl einfacher Öl-/Acryl-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><p class="tiny">Ungemischt: Farben der gewählten Palette. Aquarell mit Wasserverdünnung und Papierweiß; Öl ohne Ausmischen. Einfache Öl-/Acryl-Mischungen: mit Weiß, Gelb oder Blau, bei Bedarf zusätzlich Weiß. Bildschirm-Simulation.</p>
 
 
         <details id="build32StagesPanel" style="margin:12px 0" open>
@@ -6998,6 +6981,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(!b)return;
     b.textContent=build32LassoArmed?'Lasso zeichnen: Ein':'Lasso-Bereich wählen';b.setAttribute('aria-pressed',String(build32LassoArmed));
     b.classList.toggle('active',build32LassoArmed);b.classList.toggle('secondary',!build32LassoArmed);
+    document.getElementById('toolnavLasso')?.setAttribute('aria-pressed',String(build32LassoArmed));
     clear.disabled=!build32LassoPoints&&!build32LassoDraft;
     status.textContent=build32LassoArmed?'Jetzt auf dem Originalbild mit einem Finger oder der Maus die Fläche umfahren. Zwei Finger zoomen.':
       build32DetailCell?.kind==='lasso'?'Lasso aktiv · '+build32DetailCell.palette.length+' Farben innerhalb der Kontur. Außerhalb bleibt das Originalfoto sichtbar.':
@@ -8329,7 +8313,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   document.getElementById('build32Grid').addEventListener('click',()=>{gridToggleBtn.click();syncBuild32Grid();});
   document.getElementById('build32GridDensity').addEventListener('input',e=>{gridDensity.value=e.target.value;gridDensity.dispatchEvent(new Event('input'));syncBuild32Grid();clearBuild32DetailCell();draw();});
   document.getElementById('build32Lasso').addEventListener('click',()=>{
-    if(!loaded){build32Status.textContent='Bitte zuerst ein Foto öffnen.';return;}
+    if(!loaded){hint.textContent='Bitte zuerst ein Foto öffnen.';return;}
     build32LassoArmed=!build32LassoArmed;
     if(build32LassoArmed){
       build32DetailCellArmed=false;syncBuild32DetailCellButton();
@@ -10971,58 +10955,65 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
 
 
-  function setupCompactSidebar(){
+  function setupToolNavigation(){
     const side=document.querySelector('aside.side');
-    if(!side) return;
+    const groups=[
+      {name:'Bildaufbau', pages:[
+        ['sketchPanel','Vorzeichnung'],['formsPanel','Großformen'],['tonesPanel','Tonwerte'],
+        ['build32Panel','Farbaufbau · 8 bis 64 Farben']
+      ]},
+      {name:'Farbe', pages:[
+        ['sampleColorPanel','Farbanalyse'],['paintMixPanel','Farbmischung'],['colorAdvisorPanel','Farbmischpult'],
+        ['colorJourneyPanel','Farbreise'],['surfaceAdvisorPanel','Flächenberater'],['mixPalettePanel','Mischpalette']
+      ]},
+      {name:'Bearbeiten', pages:[
+        ['correctionStudioPanel','Korrektur'],['glazePanel','Lasuren']
+      ], actions:['colorEditOpen','artOpenBtn','colorTransferOpen','bgReplaceOpen','applyAllModulesBtn']},
+      {name:'Ansicht & Export', pages:[
+        ['toolPanel','Bewegen / Pipette'],['gridSavePanel','Raster & Speichern']
+      ], actions:['fitBtn','visibleCropBtn','gridCellCropBtn','saveCurrentViewBtn','mainExportBtn','resetBtn']}
+    ];
 
-    const sections=[...side.querySelectorAll(':scope > .section')].filter(sec=>!['colorIdeasPanel','colorAnalysisPanel'].includes(sec.id));
-    if(!sections.length) return;
-
-    // 1.9 hatte die Bereiche bereits als Accordion umgebaut.
-    // Für 1.10 holen wir den Inhalt wieder aus diesem Verhalten heraus
-    // und zeigen immer genau eine Werkzeugseite.
-    const labels={
-      toolPanel:'Werkzeug',
-      formsPanel:'Großformen',
-      build32Panel:'32 / 48 / 64 Farben',
-      sketchPanel:'Vorzeichnung',
-      tonesPanel:'Tonwerte',
-      paintMixPanel:'Mischen',
-      colorAdvisorPanel:'Farbmischpult',
-      colorJourneyPanel:'Farbreise',
-      surfaceAdvisorPanel:'Flächenberater',
-      glazePanel:'Lasuren',
-      correctionStudioPanel:'Korrektur',
-      mixPalettePanel:'Mischpalette',
-      gridSavePanel:'Raster & Speichern',
-      sampleColorPanel:'Farbe'
-    };
-
-    const nav=document.createElement('div');
-    nav.className='toolnav-wrap';
-    const strip=document.createElement('div');
-    strip.className='toolnav';
-    nav.appendChild(strip);
-    side.insertBefore(nav,side.firstChild);
-
+    const sections=[];
+    const pageButtons=new Map();
+    const nav=document.createElement('nav');
+    nav.className='toolnav';
+    nav.setAttribute('aria-label','AtelierAI Werkzeuge');
+    document.querySelector('.workspace').before(nav);
     let active=null;
+    let openGroup=null;
 
-    function sectionName(sec){
-      if(labels[sec.id]) return labels[sec.id];
-      const oldTitle=sec.querySelector(':scope > h3');
-      if(oldTitle) return oldTitle.textContent.trim();
-      const accTitle=sec.querySelector(':scope > .accordion-head .acc-title');
-      if(accTitle) return accTitle.textContent.trim();
-      return 'Werkzeug';
+    function closeGroup(restoreFocus=false){
+      if(!openGroup)return;
+      openGroup.open=false;
+      if(restoreFocus)openGroup.querySelector('summary').focus({preventScroll:true});
+      openGroup=null;
     }
 
-    function normalize(sec){
+    function revealSide(){
+      if(document.body.classList.contains('image-focus'))document.getElementById('imageFocusBtn').click();
+    }
+
+    const lasso=document.createElement('button');
+    lasso.type='button';
+    lasso.id='toolnavLasso';
+    lasso.textContent='Lasso';
+    lasso.setAttribute('aria-pressed','false');
+    lasso.addEventListener('click',()=>{
+      closeGroup();
+      revealSide();
+      window.activateToolPage('build32Panel');
+      side.scrollTop=0;
+      document.getElementById('build32Lasso').click();
+    });
+    nav.append(lasso);
+
+    function normalize(sec,name){
       sec.classList.add('tool-page');
       sec.classList.remove('open');
 
       const head=sec.querySelector(':scope > .accordion-head');
       const body=sec.querySelector(':scope > .accordion-body');
-      const name=sectionName(sec);
 
       if(head) head.style.display='none';
       if(body){
@@ -11039,15 +11030,22 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         const h=sec.querySelector(':scope > h3');
         if(h){ h.classList.add('tool-page-title'); }
       }
-      return name;
     }
 
     function show(sec,btn){
       const previousSection=active;
       sections.forEach(x=>x.classList.remove('tool-page-active'));
-      [...strip.querySelectorAll('button')].forEach(b=>b.classList.remove('active'));
+      for(const button of pageButtons.values())button.removeAttribute('aria-current');
+      for(const group of nav.querySelectorAll('.toolnav-group'))group.removeAttribute('data-current');
       sec.classList.add('tool-page-active');
-      if(btn) btn.classList.add('active');
+      btn.setAttribute('aria-current','true');
+      btn.closest('.toolnav-group').setAttribute('data-current','');
+      if(sec.id!=='build32Panel' && build32LassoArmed){
+        build32LassoArmed=false;
+        build32LassoDraft=null;
+        syncBuild32LassoButtons();
+        draw();
+      }
       active=sec;
       if(sec.id!=='surfaceAdvisorPanel'){surfaceMode=null;surfacePreview=null;setSurfaceNuancePick(false);}
       else if(loaded){surfaceCircleBtn.click();}
@@ -11075,24 +11073,71 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
 
     window.activateToolPage=function(id){
-      const sec=sections.find(x=>x.id===id);
-      if(!sec) return false;
-      const btn=[...strip.querySelectorAll('button')].find(b=>b.dataset.targetId===id);
-      show(sec,btn||null);
+      const button=pageButtons.get(id);
+      if(!button)return false;
+      show(document.getElementById(id),button);
       return true;
     };
 
-    sections.forEach((sec,i)=>{
-      const name=normalize(sec);
-      const b=document.createElement('button');
-      b.type='button';
-      b.textContent=name;
-      b.className='secondary';
-      b.dataset.targetId=sec.id||'';
-      b.addEventListener('click',()=>show(sec,b));
-      strip.appendChild(b);
-      if(i===0) show(sec,b);
+    for(const {name,pages,actions=[]} of groups){
+      const group=document.createElement('details');
+      group.className='toolnav-group';
+      const summary=document.createElement('summary');
+      summary.textContent=name;
+      const menu=document.createElement('div');
+      menu.className='toolnav-menu';
+      group.append(summary,menu);
+      nav.append(group);
+
+      summary.addEventListener('click',event=>{
+        event.preventDefault();
+        const wasOpen=group===openGroup;
+        closeGroup();
+        if(wasOpen)return;
+        group.open=true;
+        openGroup=group;
+        const available=nav.clientWidth-menu.offsetWidth;
+        menu.style.setProperty('--menu-left',Math.max(0,Math.min(group.offsetLeft,available))+'px');
+      });
+
+      for(const [id,label] of pages){
+        const section=document.getElementById(id);
+        sections.push(section);
+        normalize(section,label);
+        const button=document.createElement('button');
+        button.type='button';
+        button.textContent=label;
+        button.setAttribute('aria-controls',id);
+        button.addEventListener('click',()=>{
+          closeGroup(true);
+          revealSide();
+          show(section,button);
+        });
+        pageButtons.set(id,button);
+        menu.append(button);
+      }
+
+      // Some editors create their existing launch buttons later in the document.
+      document.addEventListener('DOMContentLoaded',()=>{
+        for(const id of actions)menu.append(document.getElementById(id));
+      },{once:true});
+      menu.addEventListener('click',event=>{
+        const button=event.target.closest('button');
+        if(button&&!button.hasAttribute('aria-controls'))closeGroup();
+      },true);
+    }
+
+    document.addEventListener('pointerdown',event=>{
+      if(!nav.contains(event.target))closeGroup();
     });
+    document.addEventListener('keydown',event=>{
+      if(event.key==='Escape'&&openGroup){
+        event.preventDefault();
+        closeGroup(true);
+      }
+    });
+    window.addEventListener('resize',()=>closeGroup());
+    window.activateToolPage('toolPanel');
   }
   document.getElementById('sketchWaterBtn').addEventListener('click',()=>sketchPreset('water'));
   document.getElementById('sketchOilBtn').addEventListener('click',()=>sketchPreset('oil'));
@@ -11105,7 +11150,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   sketchSaveBtn.addEventListener('click',()=>saveSketchImage());
   syncSketchControls();
 
-  setupCompactSidebar();
+  setupToolNavigation();
 
 
   // Punkt-Pipette wird nach einem echten Tippen beim Loslassen verarbeitet.
@@ -11601,7 +11646,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   // 2.47: selective, non-destructive colour editor. All masks refer to input photo.
   (()=>{
     const button=document.createElement('button');button.textContent='Farben bearbeiten';button.id='colorEditOpen';
-    document.getElementById('moreTools').before(button);
+    document.getElementById('pendingToolActions').append(button);
     const panel=document.createElement('div');panel.id='colorEditor';panel.hidden=true;
     panel.innerHTML=`<div class="ce-head"><strong>Farben gezielt bearbeiten</strong><button id="ceClose" class="secondary">Menü schließen</button></div>
     <div class="ce-body"><div class="ce-stage"><canvas id="ceCanvas"></canvas><canvas id="ceReviewCanvas" hidden aria-hidden="true"></canvas><span id="ceReviewBadge" hidden>Prüfansicht</span><svg id="ceLassoOutline" aria-hidden="true"></svg><div id="ceCircle" hidden aria-hidden="true"></div></div><div class="ce-controls">
@@ -13436,7 +13481,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 <script>
 (()=>{
  const guides = [
-   ["Hintergrund ersetzen oder Motiv freistellen", "Werkzeuge → Hintergrund ersetzen", "Öffne ein Foto. Tippe mit „Hintergrund antippen“ nacheinander auf zusammenhängende Hintergrundflächen. „Ähnlichkeit“ passt die zuletzt angetippte Fläche direkt im Bild an. „Letztes Antippen rückgängig“ nimmt sie zurück. Bei einem unruhigen Hintergrund wähle „Motiv mit Lasso“ und umfahre das Motiv. Eine transparente PNG wird über „Foto öffnen“ bereits freigestellt geladen. Unter „Art“ wählst du „Farbe / Schwarz“, „Eigenes Bild“ oder bei einem normalen Foto „Vorhandenen bearbeiten“."],
+   ["Hintergrund ersetzen oder Motiv freistellen", "Bearbeiten → Hintergrund ersetzen", "Öffne ein Foto. Tippe mit „Hintergrund antippen“ nacheinander auf zusammenhängende Hintergrundflächen. „Ähnlichkeit“ passt die zuletzt angetippte Fläche direkt im Bild an. „Letztes Antippen rückgängig“ nimmt sie zurück. Bei einem unruhigen Hintergrund wähle „Motiv mit Lasso“ und umfahre das Motiv. Eine transparente PNG wird über „Foto öffnen“ bereits freigestellt geladen. Unter „Art“ wählst du „Farbe / Schwarz“, „Eigenes Bild“ oder bei einem normalen Foto „Vorhandenen bearbeiten“."],
    ["Weich radieren und Motivteile zurückmalen", "Hintergrund ersetzen → Radieren und Zurückmalen", "Du kannst sofort auf dem Foto radieren. Stelle die Pinselgröße ein. Eine Radierstärke von 30 % lässt den Hintergrund leicht durchscheinen. Weitere Striche verstärken die Wirkung. „Weiche Pinselkante“ lässt den Strich am Rand auslaufen. Mit „Zurückmalen“ blendest du Stellen wieder ein, die durch Antippen, Lasso oder Radieren ausgeblendet wurden. Bei transparenten PNGs lassen sich die ursprünglich sichtbaren Teile wiederherstellen. „Letzten Pinselstrich rückgängig“ nimmt den letzten Strich zurück. Male mit einem Finger und zoome mit zwei Fingern."],
    ["Farbsäume und Kanten nachbessern", "Hintergrund ersetzen", "„Rand bereinigen“ schneidet alte Hintergrundfarbe am Motivrand ab. Verringere den Wert, wenn feine Details verloren gehen. „Kante glätten“ mildert Treppchen. „Weiche Kante“ bestimmt den Übergang entlang der Freistellung. Für einzelne Stellen gibt es den Radierpinsel mit „Weiche Pinselkante“. Nutze „Original vergleichen“ zur Kontrolle oder „Auswahl zurücksetzen“ für eine neue Freistellung."],
    ["Motiv oder Hintergrund verschieben und skalieren", "Hintergrund ersetzen → Motiv platzieren", "Nach dem Freistellen kannst du „Motivgröße“ ändern und mit „Motiv verschieben“ das Motiv mit einem Finger ziehen. „Motiv-Deckkraft“ steuert, wie stark der Hintergrund durch das Motiv scheint. „Platzierung zurücksetzen“ stellt die ursprüngliche Platzierung wieder her. Bei „Eigenes Bild“ regelst du die Hintergrundgröße separat. Schalte „Hintergrund verschieben“ ein, um das Bild zu ziehen. „Hintergrund zentrieren“ setzt den Ausschnitt zurück. Zwei Finger bewegen die gesamte Ansicht. Bei „Vorhandenen bearbeiten“ wird die frei gewordene Motivfläche mit Farben aus der Umgebung gefüllt."],
@@ -13444,9 +13489,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    ["Motiv und Hintergrund getrennt gestalten", "Hintergrund ersetzen → Motiv gestalten / Hintergrund gestalten", "Öffne unten „Motiv gestalten“ oder „Hintergrund gestalten“. Unter „Bearbeiten“ kannst du zwischen beiden Ebenen wechseln. Regler, Rezepte und Zurücksetzen beziehen sich auf die gewählte Ebene. Die Vorschau zeigt beide gemeinsam. Halte „Ohne Gestaltung vergleichen“ gedrückt, um die Wirkung zu prüfen. „Zurück zum Hintergrund“ oder „Gestaltung übernehmen und zurück“ übernimmt beide Einstellungen in den Hintergrundeditor. Dort kannst du die Platzierung und Gestaltung weiter bearbeiten."],
    ["Motiv und Hintergrund im Projekt getrennt speichern", "Hintergrund ersetzen → Übernehmen & zum Projekt", "Tippe vor dem Schließen des Hintergrundeditors auf „Übernehmen & zum Projekt“. Die Komposition wird zur Malvorlage im aktiven Bereich. Gleichzeitig wird der bearbeitbare Stand mit Freistellung, Pinselstrichen, Platzierung, Deckkraft und Gestaltung gespeichert. Im Projektmenü lädt „Projekt speichern“ eine .atelierprojekt-Datei herunter. Nach dem Öffnen des Projekts gehst du wieder auf „Werkzeuge → Hintergrund ersetzen“. Das funktioniert auch mit dem automatisch gespeicherten Projekt. Bei einer bereits in 4.88 zusammengefügten Komposition brauchst du zum erneuten Freistellen die Ausgangsbilder."],
    ["Hintergrundkomposition als PNG exportieren", "Hintergrund ersetzen → PNG speichern", "„PNG speichern“ exportiert das zusammengesetzte Bild in den Abmessungen des Ausgangsfotos. Zum späteren getrennten Bearbeiten verwende zusätzlich „Übernehmen & zum Projekt“ und speichere die .atelierprojekt-Datei."],
-   ["Farben nur in einem Lasso-Bereich erkennen", "8/16/32/48/64 Farben → Lasso-Bereich wählen", "Tippe auf „Lasso-Bereich wählen“ und umrande die Fläche mit einem Finger. Wähle danach 8, 16, 32, 48 oder 64 Farben oder tippe auf „Farben erkennen“. Du kannst die Farbzahl wechseln. Die Kontur bleibt erhalten und außerhalb siehst du das Original. „Bereich aufheben“ beendet die lokale Auswahl. Für ein Rasterfeld nutze „Detail-Kästchen auswählen“."],
-   ["Mit 8 Farben beginnen und helle oder dunkle Farben ergänzen", "8/16/32/48/64 Farben → Malaufbau · 8 bis 64 Farben", "Wähle bei Bedarf zuerst ein Lasso. Tippe auf „8 → 16 → 32 → 48 → 64 vorbereiten“. Beginne mit 8 Farben und wechsle dann zur nächsten Stufe. Die Regler „Hell → Dunkel“ und „Dunkel → Hell“ schalten neue helle und dunkle Farben unabhängig zu. „Nur neue Farben“ zeigt die Ergänzungen der aktuellen Stufe, „Bisher“ die frühere Stufe und „Zusammen“ beides. Bei „Grundbild“ kannst du später übermalen und verfeinern. „Endgültige Farben“ zeigt die fertigen Farbflächen Schritt für Schritt."],
-   ["Original S/W im Lasso einblenden", "8/16/32/48/64 Farben → Original S/W", "Blende einen Teil der Farben aus und ziehe „Original S/W“ nach rechts. Nicht zugeschaltete Flächen innerhalb des Lassos zeigen dann das Original in Schwarzweiß. Sichtbare Farben bleiben farbig. Außerhalb der Kontur bleibt das Original farbig. Sind alle lokalen Farben eingeblendet, gibt es keine freien Flächen für die Schwarzweiß-Ansicht. Das gilt für Farberkennung, beide Malaufbau-Arten und die Einzelfarbansicht."],
+   ["Farben nur in einem Lasso-Bereich erkennen", "Lasso in der oberen Werkzeugleiste", "Tippe oben auf „Lasso“ und umrande die Fläche mit einem Finger. Wähle danach 8, 16, 32, 48 oder 64 Farben oder tippe auf „Farben erkennen“. Du kannst die Farbzahl wechseln. Die Kontur bleibt erhalten und außerhalb siehst du das Original. „Bereich aufheben“ beendet die lokale Auswahl. Für ein Rasterfeld nutze „Detail-Kästchen auswählen“."],
+   ["Mit 8 Farben beginnen und helle oder dunkle Farben ergänzen", "Bildaufbau → Farbaufbau · 8 bis 64 Farben → Malaufbau", "Wähle bei Bedarf zuerst ein Lasso. Tippe auf „8 → 16 → 32 → 48 → 64 vorbereiten“. Beginne mit 8 Farben und wechsle dann zur nächsten Stufe. Die Regler „Hell → Dunkel“ und „Dunkel → Hell“ schalten neue helle und dunkle Farben unabhängig zu. „Nur neue Farben“ zeigt die Ergänzungen der aktuellen Stufe, „Bisher“ die frühere Stufe und „Zusammen“ beides. Bei „Grundbild“ kannst du später übermalen und verfeinern. „Endgültige Farben“ zeigt die fertigen Farbflächen Schritt für Schritt."],
+   ["Original S/W im Lasso einblenden", "Bildaufbau → Farbaufbau · 8 bis 64 Farben → Original S/W", "Blende einen Teil der Farben aus und ziehe „Original S/W“ nach rechts. Nicht zugeschaltete Flächen innerhalb des Lassos zeigen dann das Original in Schwarzweiß. Sichtbare Farben bleiben farbig. Außerhalb der Kontur bleibt das Original farbig. Sind alle lokalen Farben eingeblendet, gibt es keine freien Flächen für die Schwarzweiß-Ansicht. Das gilt für Farberkennung, beide Malaufbau-Arten und die Einzelfarbansicht."],
    ["Farbflächen und kleine Farbflecken glätten", "8/16/32/48/64 Farben", "„Angrenzende Farben verblenden“ macht den Übergang zwischen Nachbarfarben weicher. „Kleine Farbflecken auffüllen“ lässt kleine Farbinseln in der angrenzenden größeren Fläche aufgehen. Prüfe mit beiden Reglern feine Details. Bei 0 bleibt die jeweilige Änderung aus."],
    ["Farben aus einem Referenzbild übernehmen", "Farbübertragung", "Öffne das Ausgangsfoto und danach „Farbübertragung → Referenzbild auswählen“. AtelierAI ordnet 128 Farbpaare zu. Die Bildform bleibt erhalten. Stelle Stärke, Farbsättigung und selektive Pastellfarben ein. „Nur Farbgrenzen glätten“ mildert bei Bedarf die Übergänge der Farbflächen. Bei 0 bleiben die Grenzen klar. Vergleiche mit dem Original und prüfe Details per Zwei-Finger-Zoom. Wähle „PNG speichern“ oder „Für alle Module übernehmen“."],
    ["Farbe mit Kreis- oder Punkt-Pipette aufnehmen", "Farbmischung → Kreis-Pipette / Punkt-Pipette", "Die Kreis-Pipette ist die Standardauswahl. Stelle den Radius ein und tippe ins Bild. Der echte Durchschnitt bleibt getrennt vom sanft aufgehellten Zielton für das Mischrezept sichtbar. Die Punkt-Pipette nimmt eine einzelne Stelle auf. „Nur diese Farbe zeigen“ findet passende Flächen. Mit „Farbähnlichkeit“ und „Helligkeitsbereich“ kannst du die Auswahl erweitern oder eingrenzen."],
@@ -13979,7 +14024,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.05</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.06</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildbereich für die Hintergrundauswahl"><canvas id="bgPreview"></canvas></div>
       <div id="bgSide">
@@ -15176,7 +15221,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download='AtelierAI_5.05_Hintergrund.png';link.click();
+        link.href=url;link.download='AtelierAI_5.06_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
