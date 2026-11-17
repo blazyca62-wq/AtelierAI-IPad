@@ -1,3 +1,16 @@
+NEU IN 5.10 – MALREIHENFOLGE UND SCHWARZ-WEISS PRO EBENE
+======================================================
+
+Vorlage → Hintergrund ersetzen → PNG-Ebenen. Schalte „Malreihenfolge“ ein und
+tippe auf „Hintergrund“ oder einen Ebenennamen. Sichtbare Ebenen von hinten bis
+zur gewählten Ebene werden angezeigt. Die Häkchen bestimmen weiterhin, welche
+Ebenen sichtbar sind. Schalte die Malreihenfolge für die ganze Ansicht aus.
+
+Der Ebenenname wählt auch die Ebene für „Malansicht“. Dort kannst du
+„Schwarz-Weiß“ einzeln einschalten und mit Großformen, Weichzeichnung oder
+Farbreduktion kombinieren. Die Auswahl und Einstellungen bleiben im Projekt.
+Der PNG-Export enthält die gerade sichtbare Ansicht.
+
 NEU IN 5.09 – MALANSICHT FÜR PNG-EBENEN
 =====================================
 
