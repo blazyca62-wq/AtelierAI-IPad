@@ -1,3 +1,11 @@
+NEU IN 5.12 – WEISSER UNTERGRUND FÜR DIE MALVORLAGE
+==================================================
+
+Vorlage → Hintergrund ersetzen → PNG-Ebenen. Entferne das Häkchen neben
+„Hintergrund“ und wähle unter „Untergrund“ Weiß oder Transparent. Die Auswahl
+gilt für die Vorschau, „Übernehmen & zum Projekt“ und den PNG-Export.
+Das Projekt behält die Auswahl und das ausgeblendete Hintergrundbild.
+
 NEU IN 5.11 – HINTERGRUND AUSBLENDEN
 ===================================
 
