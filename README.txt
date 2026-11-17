@@ -1,3 +1,13 @@
+NEU IN 5.08 – PNG-EBENEN
+========================
+
+Vorlage → Hintergrund ersetzen → PNG-Ebenen. Öffne zunächst das Hintergrundbild,
+danach über „PNG-Ebene hinzufügen“ die transparenten Motive von hinten nach vorne.
+Gleich große PNGs behalten ihre Position. Andere Größen werden mittig eingepasst.
+Die Häkchen steuern die Sichtbarkeit. „PNG speichern“ exportiert das sichtbare
+Ergebnis. „Übernehmen & zum Projekt“ und anschließend „Projekt speichern“ sichern
+das Hintergrundbild und alle importierten Ebenen einzeln in der Projektdatei.
+
 NEU IN 5.07 – WERKZEUGE NACH MALABLAUF
 =========================================
 
