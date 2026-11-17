@@ -1,3 +1,11 @@
+NEU IN 5.11 – HINTERGRUND AUSBLENDEN
+===================================
+
+Vorlage → Hintergrund ersetzen → PNG-Ebenen. Über das Häkchen neben
+„Hintergrund“ lässt sich auch die unterste Ebene ein- und ausblenden.
+Das Schachbrett markiert transparente Stellen in der Vorschau. Beim PNG-Export
+bleiben diese Stellen transparent. Das Atelier-Projekt speichert die Sichtbarkeit.
+
 NEU IN 5.10 – MALREIHENFOLGE UND SCHWARZ-WEISS PRO EBENE
 ======================================================
 

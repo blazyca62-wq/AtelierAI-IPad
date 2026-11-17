@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.10</title>
+  <title>AtelierAI iPad 5.11</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1083,7 +1083,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.10</div>
+    <div class="title">AtelierAI 5.11</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -13592,7 +13592,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 <script>
 (()=>{
  const guides = [
-   ["Transparente PNG-Ebenen zusammensetzen", "Vorlage → Hintergrund ersetzen → PNG-Ebenen", "Öffne zuerst das Hintergrundbild. Füge dann über „PNG-Ebene hinzufügen“ die transparenten Motive von hinten nach vorne ein. Gleich große PNGs behalten ihre Position. Andere Größen werden mittig eingepasst. Mit den Häkchen kannst du Ebenen ein- und ausblenden. Tippe auf den Ebenennamen, um ihre Malansicht mit Schwarz-Weiß, Weichzeichnung, Großformen oder Farbreduktion einzustellen. Bei aktiver „Malreihenfolge“ zeigt Atelier die angekreuzten Ebenen bis zur angetippten Ebene. Schalte die Malreihenfolge aus, um wieder alle angekreuzten Ebenen zu sehen. Über „Übernehmen & zum Projekt“ und „Projekt speichern“ sicherst du den gesamten Ebenenstapel."],
+   ["Transparente PNG-Ebenen zusammensetzen", "Vorlage → Hintergrund ersetzen → PNG-Ebenen", "Öffne zuerst das Hintergrundbild. Füge dann über „PNG-Ebene hinzufügen“ die transparenten Motive von hinten nach vorne ein. Gleich große PNGs behalten ihre Position. Andere Größen werden mittig eingepasst. Mit den Häkchen kannst du auch den Hintergrund ausblenden. Das Schachbrett zeigt transparente Stellen an. Tippe auf den Ebenennamen, um ihre Malansicht mit Schwarz-Weiß, Weichzeichnung, Großformen oder Farbreduktion einzustellen. Bei aktiver „Malreihenfolge“ zeigt Atelier die angekreuzten Ebenen bis zur angetippten Ebene. Schalte die Malreihenfolge aus, um wieder alle angekreuzten Ebenen zu sehen. Über „Übernehmen & zum Projekt“ und „Projekt speichern“ sicherst du den gesamten Ebenenstapel."],
    ["Hintergrund ersetzen oder Motiv freistellen", "Vorlage → Hintergrund ersetzen", "Öffne ein Foto. Tippe mit „Hintergrund antippen“ nacheinander auf zusammenhängende Hintergrundflächen. „Ähnlichkeit“ passt die zuletzt angetippte Fläche direkt im Bild an. „Letztes Antippen rückgängig“ nimmt sie zurück. Bei einem unruhigen Hintergrund wähle „Motiv mit Lasso“ und umfahre das Motiv. Eine transparente PNG wird über „Foto öffnen“ bereits freigestellt geladen. Unter „Art“ wählst du „Farbe / Schwarz“, „Eigenes Bild“ oder bei einem normalen Foto „Vorhandenen bearbeiten“."],
    ["Weich radieren und Motivteile zurückmalen", "Hintergrund ersetzen → Radieren und Zurückmalen", "Du kannst sofort auf dem Foto radieren. Stelle die Pinselgröße ein. Eine Radierstärke von 30 % lässt den Hintergrund leicht durchscheinen. Weitere Striche verstärken die Wirkung. „Weiche Pinselkante“ lässt den Strich am Rand auslaufen. Mit „Zurückmalen“ blendest du Stellen wieder ein, die durch Antippen, Lasso oder Radieren ausgeblendet wurden. Bei transparenten PNGs lassen sich die ursprünglich sichtbaren Teile wiederherstellen. „Letzten Pinselstrich rückgängig“ nimmt den letzten Strich zurück. Male mit einem Finger und zoome mit zwei Fingern."],
    ["Farbsäume und Kanten nachbessern", "Hintergrund ersetzen", "„Rand bereinigen“ schneidet alte Hintergrundfarbe am Motivrand ab. Verringere den Wert, wenn feine Details verloren gehen. „Kante glätten“ mildert Treppchen. „Weiche Kante“ bestimmt den Übergang entlang der Freistellung. Für einzelne Stellen gibt es den Radierpinsel mit „Weiche Pinselkante“. Nutze „Original vergleichen“ zur Kontrolle oder „Auswahl zurücksetzen“ für eine neue Freistellung."],
@@ -14123,9 +14123,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 #bgLayerList button{min-width:42px}
 #bgSide .bg-layer-visibility{min-width:40px;min-height:44px;justify-content:center}
 #bgSide .bg-layer-name{text-align:left}
-#bgLayerList input,#bgPaintSequence,#bgStudyGray{width:20px;height:20px;flex:none}
+#bgLayerList input,#bgBaseVisible,#bgPaintSequence,#bgStudyGray{width:20px;height:20px;flex:none}
 #bgSide #bgPaintSequenceRow,#bgSide #bgLayerBaseSelect{min-height:43px}
-#bgLayerBaseSelect{width:100%}
+#bgLayerBaseRow{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:6px}
 #bgLayerStudy{display:grid;gap:9px;border-top:1px solid #ddd;padding-top:10px}
 #bgLayerStudy label{min-height:36px}
 #bgLayerStudy select{max-width:62%}
@@ -14150,7 +14150,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.10</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.11</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -14165,7 +14165,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           <input id="bgLayerInput" type="file" accept=".png,image/png" hidden>
           <label id="bgPaintSequenceRow" hidden>Malreihenfolge <input id="bgPaintSequence" type="checkbox"></label>
           <p id="bgPaintSequenceHelp" hidden>Tippe eine Ebene an. Sichtbare Ebenen bis dorthin werden angezeigt.</p>
-          <button id="bgLayerBaseSelect" class="secondary bg-layer-name" type="button" data-study-index="-1" aria-pressed="true" aria-describedby="bgLayerFileName" hidden>Hintergrund</button>
+          <div id="bgLayerBaseRow" hidden>
+            <label class="bg-layer-visibility"><input id="bgBaseVisible" type="checkbox" aria-label="Ebenensichtbarkeit: Hintergrund" checked></label>
+            <button id="bgLayerBaseSelect" class="secondary bg-layer-name" type="button" data-study-index="-1" aria-pressed="true" aria-describedby="bgLayerFileName">Hintergrund</button>
+          </div>
           <p id="bgLayerFileName" hidden></p>
           <ol id="bgLayerList" aria-label="PNG-Ebenen von hinten nach vorne"></ol>
           <div id="bgLayerStudy" hidden>
@@ -14257,7 +14260,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   let pngMode=false,pngBase=null,pngLayers=[],pngPreview=null;
   const layerBaseInput=$('bgLayerBaseInput'),layerInput=$('bgLayerInput');
   let studyIndex=-1;
-  const paintSequence=$('bgPaintSequence');
+  const paintSequence=$('bgPaintSequence'),baseVisible=$('bgBaseVisible');
   const studyControls={gray:$('bgStudyGray'),blur:$('bgStudyBlur'),forms:$('bgStudyForms'),colors:$('bgStudyColors')};
   const normalizeStudy=(settings={})=>({
     gray:settings?.gray===true,
@@ -14306,7 +14309,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function composePngLayers(w,h){
     const result=canvas(w,h),ctx=result.getContext('2d');
     ctx.imageSmoothingQuality='high';
-    drawStudyLayer(ctx,pngBase,0,0,w,h);
+    if(pngBase.visible)drawStudyLayer(ctx,pngBase,0,0,w,h);
     const end=paintSequence.checked?studyIndex+1:pngLayers.length;
     for(let i=0;i<end;i++){
       const layer=pngLayers[i];
@@ -14354,6 +14357,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
   function showPngRows(){
     $('bgLayerFileName').textContent=pngBase?.name??'';
+    baseVisible.checked=pngBase?.visible??true;
     const list=$('bgLayerList');
     list.replaceChildren();
     for(const [index,layer] of pngLayers.entries()){
@@ -14423,9 +14427,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
 
   async function capturePngStack(){
-    const encode=async ({file,data,name,study})=>({name,data:data??await bridge.encodeFile(file),study:{...study}});
-    const base=await encode(pngBase);
-    const layers=await Promise.all(pngLayers.map(async entry=>({...await encode(entry),visible:entry.visible})));
+    const encode=async ({file,data,name,study,visible})=>({
+      name,data:data??await bridge.encodeFile(file),study:{...study},visible
+    });
+    const [base,...layers]=await Promise.all([pngBase,...pngLayers].map(encode));
     return {version:2,mode:'pngLayers',base,layers,studyIndex,paintSequence:paintSequence.checked};
   }
 
@@ -14449,7 +14454,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     $('bgCutoutControls').hidden=pngMode;
     $('bgLayerControls').hidden=!pngMode;
     $('bgLayerEmpty').hidden=!pngMode||!!pngBase;
-    for(const id of ['bgLayerStudy','bgPaintSequenceRow','bgLayerBaseSelect','bgLayerFileName'])$(id).hidden=!pngBase;
+    for(const id of ['bgLayerStudy','bgPaintSequenceRow','bgLayerBaseRow','bgLayerFileName'])$(id).hidden=!pngBase;
     $('bgPaintSequenceHelp').hidden=!pngBase||!paintSequence.checked;
     $('bgCutoutMode').disabled=busy||!preview;
     $('bgLayersMode').disabled=busy;
@@ -15138,11 +15143,22 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     return compositeCache.canvas;
   }
+  let transparencyPattern=null;
   function paint(){
     if(!pngMode)updatePendingTolerance();
     const v=viewport();
     if(!v){screenCtx.clearRect(0,0,screen.width,screen.height);return;}const dpr=Math.min(2,window.devicePixelRatio||1);if(screen.width!==Math.round(v.w*dpr)||screen.height!==Math.round(v.h*dpr)){screen.width=Math.round(v.w*dpr);screen.height=Math.round(v.h*dpr);}
     screenCtx.setTransform(dpr,0,0,dpr,0,0);screenCtx.fillStyle='#373737';screenCtx.fillRect(0,0,v.w,v.h);
+    if(pngMode&&!pngBase.visible){
+      if(!transparencyPattern){
+        const tile=canvas(20,20),tileCtx=tile.getContext('2d');
+        tileCtx.fillStyle='#f2f2f2';tileCtx.fillRect(0,0,20,20);
+        tileCtx.fillStyle='#dedede';tileCtx.fillRect(0,0,10,10);tileCtx.fillRect(10,10,10,10);
+        transparencyPattern=screenCtx.createPattern(tile,'repeat');
+      }
+      screenCtx.fillStyle=transparencyPattern||'#f2f2f2';
+      screenCtx.fillRect(drawX,drawY,v.scene.width*drawScale,v.scene.height*drawScale);
+    }
     let active=v.scene;
     try{if(!pngMode&&working()&&!$('bgOriginal').checked&&(kind.value!=='photo'||photo))active=composedPreview();}catch(_e){}
     screenCtx.imageSmoothingEnabled=true;screenCtx.imageSmoothingQuality='high';screenCtx.drawImage(active,drawX,drawY,v.scene.width*drawScale,v.scene.height*drawScale);
@@ -15392,6 +15408,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   layerBaseInput.addEventListener('change',()=>importPngStackFile(layerBaseInput,true));
   layerInput.addEventListener('change',()=>importPngStackFile(layerInput,false));
   $('bgLayerBaseSelect').addEventListener('click',()=>selectStudyLayer(-1));
+  baseVisible.addEventListener('change',()=>{
+    if(!pngBase||busy)return;
+    pngBase.visible=baseVisible.checked;
+    renderPngStack();
+  });
   paintSequence.addEventListener('change',renderPngStack);
   for(const [key,control] of Object.entries(studyControls)){
     control.addEventListener('change',()=>{
@@ -15596,7 +15617,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.10_PNG_Ebenen.png':'AtelierAI_5.10_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.11_PNG_Ebenen.png':'AtelierAI_5.11_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
