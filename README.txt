@@ -1,4 +1,11 @@
-NEU IN 5.15 – EINBLENDRICHTUNG PRO TONWERTREGLER
+NEU IN 5.16 · EBENEN VERSCHIEBEN
+PNG-Ebenen öffnen, eine Ebene antippen und „Ebene verschieben: AN“ wählen.
+Mit einem Finger im Bild ziehen; zwei Finger zoomen und verschieben die Ansicht.
+Position X/Y ermöglicht genaue Angaben in Bildpixeln. „Position zurücksetzen“ stellt die Originalposition dieser Ebene wieder her.
+„Übernehmen & zum Projekt“ wählen, danach das Projekt speichern. Die Positionen bleiben beim Öffnen erhalten.
+Ältere JSON-Projekte ohne Positionsangaben starten unverändert bei X=0, Y=0.
+
+NEU IN 5.16 – EINBLENDRICHTUNG PRO TONWERTREGLER
 ================================================
 
 Form & Licht → Tonwerte. Unter jedem der drei Regler stellst du die
