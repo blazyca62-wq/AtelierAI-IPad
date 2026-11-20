@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.24</title>
+  <title>AtelierAI iPad 5.25</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1097,7 +1097,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.24</div>
+    <div class="title">AtelierAI 5.25</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1927,6 +1927,8 @@
 <label>Pinselgröße <input id="artRetouchSize" type="range" min="4" max="300" value="60"><output id="artRetouchSizeVal">60 px</output></label>
 <label id="artRetouchStrengthRow">Stärke <input id="artRetouchStrength" type="range" min="1" max="100" value="25"><output id="artRetouchStrengthVal">25 %</output></label>
 <div id="artRetouchColorRow" hidden>
+<button id="artRetouchPick" class="secondary" type="button" aria-pressed="false">Pipette · Farbe aus Gesamtbild</button>
+<p id="artRetouchPickHint" role="status">Pipette einschalten und auf eine Farbe im Gesamtbild tippen.</p>
 <label>Pinselfarbe <input id="artRetouchColor" type="color" value="#d9b76f" aria-label="Pinselfarbe"></label>
 <label>Deckkraft <input id="artRetouchOpacity" type="range" min="1" max="100" value="15"><output id="artRetouchOpacityVal">15 %</output></label>
 <p>1–10 % für sehr zarte Lasuren, 100 % für deckende Farbe. Weitere Pinselstriche bauen die Farbe auf. Farbe lässt sich auch auf transparente Stellen innerhalb der Ebene malen.</p>
@@ -13195,7 +13197,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(overlay.style.display==='none')return;
       e.preventDefault();stage.setPointerCapture(e.pointerId);
       active.set(e.pointerId,{x:e.clientX,y:e.clientY});
-      if(active.size===1&&retouchMode.value!=='off'&&beginRetouch({x:e.clientX,y:e.clientY})){gesture={kind:'retouch'};}
+      if(active.size===1&&retouchPicking){gesture={kind:'pick',x:e.clientX,y:e.clientY,px:panX,py:panY};}
+      else if(active.size===1&&retouchMode.value!=='off'&&beginRetouch({x:e.clientX,y:e.clientY})){gesture={kind:'retouch'};}
       else if(active.size===1){gesture={kind:'pan',x:e.clientX,y:e.clientY,px:panX,py:panY};}
       else if(active.size>=2){finishRetouch(false);const [a,b]=[...active.values()];gesture={kind:'pinch',distance:Math.max(1,dist(a,b)),zoom,center:mid(a,b),px:panX,py:panY};}
     });
@@ -13205,10 +13208,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         const c=mid(a,b),newZoom=Math.max(1,Math.min(12,gesture.zoom*dist(a,b)/gesture.distance)),ratio=newZoom/gesture.zoom;
         const rect=stage.getBoundingClientRect(),ox=gesture.center.x-rect.left-rect.width/2,oy=gesture.center.y-rect.top-rect.height/2;
         zoom=newZoom;panX=gesture.px+(c.x-gesture.center.x)+(1-ratio)*(ox-gesture.px);panY=gesture.py+(c.y-gesture.center.y)+(1-ratio)*(oy-gesture.py);showView();
-      }else if(gesture?.kind==='retouch'){updateRetouch({x:e.clientX,y:e.clientY});}
+      }else if(gesture?.kind==='pick'){if(Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)>8){gesture.kind='pan';panX=gesture.px+e.clientX-gesture.x;panY=gesture.py+e.clientY-gesture.y;showView();}}
+      else if(gesture?.kind==='retouch'){updateRetouch({x:e.clientX,y:e.clientY});}
       else if(gesture?.kind==='pan'){panX=gesture.px+e.clientX-gesture.x;panY=gesture.py+e.clientY-gesture.y;showView();}
     });
-    function endPointer(e){if(!active.has(e.pointerId))return;if(gesture?.kind==='retouch'){if(e.type==='pointerup')updateRetouch({x:e.clientX,y:e.clientY});finishRetouch(e.type==='pointerup');}active.delete(e.pointerId);if(active.size===1){const a=[...active.values()][0];gesture={kind:'pan',x:a.x,y:a.y,px:panX,py:panY};}else gesture=null;}
+    function endPointer(e){if(!active.has(e.pointerId))return;if(gesture?.kind==='pick'&&e.type==='pointerup'&&Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)<=8)pickRetouchColor({x:e.clientX,y:e.clientY});if(gesture?.kind==='retouch'){if(e.type==='pointerup')updateRetouch({x:e.clientX,y:e.clientY});finishRetouch(e.type==='pointerup');}active.delete(e.pointerId);if(active.size===1){const a=[...active.values()][0];gesture={kind:'pan',x:a.x,y:a.y,px:panX,py:panY};}else gesture=null;}
     ['pointerup','pointercancel','lostpointercapture'].forEach(t=>stage.addEventListener(t,endPointer));
     by('artZoomIn').addEventListener('click',()=>setZoom(zoom*1.5));
     by('artZoomOut').addEventListener('click',()=>setZoom(zoom/1.5));
@@ -13427,7 +13431,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const c=workCanvas(cv.width,cv.height);c.getContext('2d').drawImage(fullArtSource,0,0,c.width,c.height);
       base=pixels(c);targetCache={};render();
     }
-  let retouchStroke=null;
+  let retouchStroke=null,retouchPicking=false;
   const retouchMode=by('artRetouchMode');
   function invalidateRetouch(e){e.data=null;e.file=null;e.studyCanvas=e.hitCanvas=e.focusCanvas=e.harmonyCanvas=e.harmonySource=null;}
   function retouchPoint(p,e){
@@ -13521,17 +13525,43 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }else {s.entry.image=s.image;s.entry.data=s.data;s.entry.file=s.file;s.entry.studyCanvas=s.entry.hitCanvas=s.entry.focusCanvas=s.entry.harmonyCanvas=null;}
     retouchStroke=null;refreshRetouch();
   }
+
+  function setRetouchPicking(on){
+    retouchPicking=on;
+    by('artRetouchPick').setAttribute('aria-pressed',String(on));
+    by('artRetouchPick').textContent=on?'Pipette aktiv · Farbe im Bild antippen':'Pipette · Farbe aus Gesamtbild';
+    by('artRetouchPickHint').textContent=on?'Auf Nebel, Hintergrund oder eine beliebige sichtbare Ebene tippen. Danach kannst du sofort malen.':'Pipette einschalten und auf eine Farbe im Gesamtbild tippen.';
+    stage.style.cursor=on?'crosshair':'';
+  }
+  function pickRetouchColor(p){
+    if(!base||!retouchPicking)return;
+    const r=cv.getBoundingClientRect(),x=Math.floor((p.x-r.left)*cv.width/r.width),y=Math.floor((p.y-r.top)*cv.height/r.height);
+    if(x<0||y<0||x>=cv.width||y>=cv.height){artSay('Bitte innerhalb des Bildes auf eine Farbe tippen.');return;}
+    // Compose into a temporary canvas: the context is only sampled, never painted.
+    const sample=workCanvas(cv.width,cv.height),sc=sample.getContext('2d');
+    if(previewOriginal&&retouchEntry?.retouchOriginal)sc.drawImage(retouchEntry.retouchOriginal,0,0,sample.width,sample.height);
+    else sc.putImageData(new ImageData(previewOriginal?base.data:renderArt(),base.width,base.height),0,0);
+    window.__atelierArtBridge.layerPreview?.(sample);
+    const rgb=sc.getImageData(x,y,1,1).data;
+    if(!rgb[3]){artSay('Diese Stelle ist transparent. Bitte eine sichtbare Bildfarbe wählen.');return;}
+    const hex='#'+Array.from(rgb.slice(0,3),v=>v.toString(16).padStart(2,'0')).join('');
+    by('artRetouchColor').value=hex;retouchMode.value='paint';syncRetouchPaint();setRetouchPicking(false);
+    by('artRetouchPickHint').textContent='Farbe '+hex.toUpperCase()+' aufgenommen · jetzt auf der gewählten Ebene malen.';
+    artSay('Umgebungsfarbe aufgenommen. Deckkraft bleibt erhalten; nur die gewählte Ebene wird bemalt.');
+  }
+  by('artRetouchPick').addEventListener('click',()=>{finishRetouch(false);setRetouchPicking(!retouchPicking);});
+
   function syncRetouchPaint(){
     const painting=retouchMode.value==='paint';
     by('artRetouchColorRow').hidden=!painting;
     by('artRetouchStrengthRow').hidden=painting;
   }
   retouchMode.addEventListener('change',()=>{
-    syncRetouchPaint();
+    setRetouchPicking(false);syncRetouchPaint();
     artSay(retouchMode.value==='off'?'Pinsel ausgeschaltet.':'Pinsel aktiv · mit einem Finger malen, mit zwei Fingern zoomen.');
   });
   for(const [id,unit] of [['artRetouchSize',' px'],['artRetouchStrength',' %'],['artRetouchSoft',' %'],['artRetouchOpacity',' %']])by(id).addEventListener('input',()=>by(id+'Val').textContent=by(id).value+unit);
-  by('artRetouchPanel').addEventListener('toggle',()=>{if(!by('artRetouchPanel').open){finishRetouch(false);retouchMode.value='off';}});
+  by('artRetouchPanel').addEventListener('toggle',()=>{if(!by('artRetouchPanel').open){finishRetouch(false);setRetouchPicking(false);retouchMode.value='off';}});
   by('artRetouchUndo').onclick=()=>{
     if(retouchStroke)return;const e=retouchEntry,old=e?.retouchUndo?.pop();
     if(!old){artSay('Kein Pinselstrich auf dieser Ebene zum Zurücknehmen.');return;}
@@ -13652,7 +13682,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     function start(sourceCanvas,onClose=null,matte=null,previous=null,initialTarget=null){
       if(!sourceCanvas?.width||!sourceCanvas?.height)throw Error('Bitte zuerst ein Foto öffnen.');
-      retouchStroke=null;retouchEntry={image:sourceCanvas,name:window.__atelierLayerWorkspace?'Gewählte Ebene':'Bild'};retouchMode.value='off';syncRetouchPaint();by('artRetouchPanel').hidden=!!matte;
+      retouchStroke=null;retouchEntry={image:sourceCanvas,name:window.__atelierLayerWorkspace?'Gewählte Ebene':'Bild'};retouchMode.value='off';setRetouchPicking(false);syncRetouchPaint();by('artRetouchPanel').hidden=!!matte;
       fullArtSource=sourceCanvas;originalW=sourceCanvas.width;originalH=sourceCanvas.height;
       const k=Math.min(1,1000/Math.max(originalW,originalH));
       cv.width=Math.max(1,Math.round(originalW*k));cv.height=Math.max(1,Math.round(originalH*k));
@@ -13677,7 +13707,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       overlay.style.display='block';previewOriginal=false;fitView();render();
     }
     function finishDesign(applied){
-      finishRetouch(false);retouchMode.value='off';
+      finishRetouch(false);setRetouchPicking(false);retouchMode.value='off';
       const onClose=onDesignClose;
       captureTarget();
       const saved=targets?{targets,key:targetKey}:null;
@@ -14340,7 +14370,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.24</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.25</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -16147,7 +16177,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.24_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.24_Motiv_Transparent.png':'AtelierAI_5.24_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.25_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.25_Motiv_Transparent.png':'AtelierAI_5.25_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
@@ -16211,9 +16241,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function moduleContext(index){
     const below=canvas(pngBase.image.width,pngBase.image.height),above=canvas(below.width,below.height);
+    if(hiddenBaseFill.value==='white'){const bc=below.getContext('2d');bc.fillStyle='#fff';bc.fillRect(0,0,below.width,below.height);}
     for(let i=-1;i<pngLayers.length;i++){
       if(i===index)continue;
       const entry=i<0?pngBase:pngLayers[i],target=i<index?below:above;
+      if(i<0?!showPngBase():(soloLayer.checked?i!==studyIndex:!entry.visible)||(paintSequence.checked&&i>studyIndex))continue;
       target.getContext('2d').drawImage(fullStudyLayer(entry,i),0,0);
     }
     return {below,above};
