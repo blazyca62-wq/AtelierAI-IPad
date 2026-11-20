@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.21</title>
+  <title>AtelierAI iPad 5.24</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1097,7 +1097,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.21</div>
+    <div class="title">AtelierAI 5.24</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1913,7 +1913,7 @@
 
 <div id="artStudio" style="display:none;position:fixed;inset:0;z-index:1500;background:#f2f1ed;overflow:auto;padding:12px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#222">
   <div style="max-width:1100px;margin:auto">
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><strong style="font-size:19px;margin-right:auto">Künstlerische Gestaltung · 10 Effekte</strong><button id="artZoomOut" class="secondary" type="button">−</button><span id="artZoomLabel" style="min-width:45px;text-align:center">100 %</span><button id="artZoomIn" class="secondary" type="button">+</button><button id="artZoomFit" class="secondary" type="button">Einpassen</button><button id="artBefore" class="secondary">Original halten / vergleichen</button><button id="artClose" class="secondary">Schließen</button></div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><strong style="font-size:19px;margin-right:auto">Künstlerische Gestaltung · Pinsel und Effekte</strong><button id="artZoomOut" class="secondary" type="button">−</button><span id="artZoomLabel" style="min-width:45px;text-align:center">100 %</span><button id="artZoomIn" class="secondary" type="button">+</button><button id="artZoomFit" class="secondary" type="button">Einpassen</button><button id="artBefore" class="secondary">Original halten / vergleichen</button><button id="artClose" class="secondary">Schließen</button></div>
   <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:12px" id="artLayout">
     <div style="background:#dedbd4;border-radius:14px;display:flex;align-items:center;justify-content:center;min-height:260px;max-height:78vh;overflow:hidden"><canvas id="artCanvas" style="max-width:100%;max-height:76vh;object-fit:contain;touch-action:pinch-zoom"></canvas></div>
     <div style="background:#fff;border-radius:14px;padding:13px;max-height:80vh;overflow:auto" id="artControls">
@@ -1922,6 +1922,18 @@
         Bearbeiten
         <select id="artTarget"><option value="motif">Motiv</option><option value="backdrop">Hintergrund</option></select>
       </label>
+<details id="artRetouchPanel"><summary>Pinsel · Malen, Weichzeichnen &amp; Radieren</summary>
+<label>Werkzeug <select id="artRetouchMode"><option value="off">Pinsel aus · Ansicht bewegen</option><option value="paint">Mit Farbe malen</option><option value="blur">Weichzeichnen</option><option value="erase">Weich radieren</option><option value="restore">Zurückmalen</option></select></label>
+<label>Pinselgröße <input id="artRetouchSize" type="range" min="4" max="300" value="60"><output id="artRetouchSizeVal">60 px</output></label>
+<label id="artRetouchStrengthRow">Stärke <input id="artRetouchStrength" type="range" min="1" max="100" value="25"><output id="artRetouchStrengthVal">25 %</output></label>
+<div id="artRetouchColorRow" hidden>
+<label>Pinselfarbe <input id="artRetouchColor" type="color" value="#d9b76f" aria-label="Pinselfarbe"></label>
+<label>Deckkraft <input id="artRetouchOpacity" type="range" min="1" max="100" value="15"><output id="artRetouchOpacityVal">15 %</output></label>
+<p>1–10 % für sehr zarte Lasuren, 100 % für deckende Farbe. Weitere Pinselstriche bauen die Farbe auf. Farbe lässt sich auch auf transparente Stellen innerhalb der Ebene malen.</p>
+</div>
+<label>Weiche Pinselkante <input id="artRetouchSoft" type="range" min="0" max="100" value="80"><output id="artRetouchSoftVal">80 %</output></label>
+<button id="artRetouchUndo" class="secondary" type="button">Letzten Pinselstrich zurück</button>
+<p>Im Ebenenmodus wird nur die gewählte Ebene bearbeitet. Mit einem Finger malen, mit zwei Fingern zoomen. Zurückmalen stellt den Stand vor der ersten Pinselbearbeitung wieder her. Mehrere Striche verstärken die Wirkung. Pinselgröße in Bildpixeln. Pinsel aus schaltet wieder auf Verschieben der Ansicht.</p></details>
       <div id="artSliders"></div>
       <div style="display:grid;gap:8px;margin-top:12px"><button id="artReset" class="secondary">Alles zurücksetzen: AN · Effekte AUS</button><button id="artSave">Bild als PNG speichern</button><button id="artApply">Für alle Module übernehmen</button><p id="artStatus" style="font-size:13px;color:#555" role="status"></p></div>
     </div>
@@ -13183,8 +13195,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(overlay.style.display==='none')return;
       e.preventDefault();stage.setPointerCapture(e.pointerId);
       active.set(e.pointerId,{x:e.clientX,y:e.clientY});
-      if(active.size===1){gesture={kind:'pan',x:e.clientX,y:e.clientY,px:panX,py:panY};}
-      else if(active.size>=2){const [a,b]=[...active.values()];gesture={kind:'pinch',distance:Math.max(1,dist(a,b)),zoom,center:mid(a,b),px:panX,py:panY};}
+      if(active.size===1&&retouchMode.value!=='off'&&beginRetouch({x:e.clientX,y:e.clientY})){gesture={kind:'retouch'};}
+      else if(active.size===1){gesture={kind:'pan',x:e.clientX,y:e.clientY,px:panX,py:panY};}
+      else if(active.size>=2){finishRetouch(false);const [a,b]=[...active.values()];gesture={kind:'pinch',distance:Math.max(1,dist(a,b)),zoom,center:mid(a,b),px:panX,py:panY};}
     });
     stage.addEventListener('pointermove',e=>{
       if(!active.has(e.pointerId))return;e.preventDefault();active.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -13192,9 +13205,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         const c=mid(a,b),newZoom=Math.max(1,Math.min(12,gesture.zoom*dist(a,b)/gesture.distance)),ratio=newZoom/gesture.zoom;
         const rect=stage.getBoundingClientRect(),ox=gesture.center.x-rect.left-rect.width/2,oy=gesture.center.y-rect.top-rect.height/2;
         zoom=newZoom;panX=gesture.px+(c.x-gesture.center.x)+(1-ratio)*(ox-gesture.px);panY=gesture.py+(c.y-gesture.center.y)+(1-ratio)*(oy-gesture.py);showView();
-      }else if(gesture?.kind==='pan'){panX=gesture.px+e.clientX-gesture.x;panY=gesture.py+e.clientY-gesture.y;showView();}
+      }else if(gesture?.kind==='retouch'){updateRetouch({x:e.clientX,y:e.clientY});}
+      else if(gesture?.kind==='pan'){panX=gesture.px+e.clientX-gesture.x;panY=gesture.py+e.clientY-gesture.y;showView();}
     });
-    function endPointer(e){if(!active.has(e.pointerId))return;active.delete(e.pointerId);if(active.size===1){const a=[...active.values()][0];gesture={kind:'pan',x:a.x,y:a.y,px:panX,py:panY};}else gesture=null;}
+    function endPointer(e){if(!active.has(e.pointerId))return;if(gesture?.kind==='retouch'){if(e.type==='pointerup')updateRetouch({x:e.clientX,y:e.clientY});finishRetouch(e.type==='pointerup');}active.delete(e.pointerId);if(active.size===1){const a=[...active.values()][0];gesture={kind:'pan',x:a.x,y:a.y,px:panX,py:panY};}else gesture=null;}
     ['pointerup','pointercancel','lostpointercapture'].forEach(t=>stage.addEventListener(t,endPointer));
     by('artZoomIn').addEventListener('click',()=>setZoom(zoom*1.5));
     by('artZoomOut').addEventListener('click',()=>setZoom(zoom/1.5));
@@ -13404,6 +13418,127 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     let onDesignClose=null,selectionAlpha=null,targets=null,targetKey='motif',mainArtState=null;
     let targetCache={};
 
+
+    let retouchEntry=null;
+    const artSay=text=>{by('artStatus').textContent=text;};
+    function refreshRetouch(){
+      if(!retouchEntry)return;
+      fullArtSource=retouchEntry.image;
+      const c=workCanvas(cv.width,cv.height);c.getContext('2d').drawImage(fullArtSource,0,0,c.width,c.height);
+      base=pixels(c);targetCache={};render();
+    }
+  let retouchStroke=null;
+  const retouchMode=by('artRetouchMode');
+  function invalidateRetouch(e){e.data=null;e.file=null;e.studyCanvas=e.hitCanvas=e.focusCanvas=e.harmonyCanvas=e.harmonySource=null;}
+  function retouchPoint(p,e){
+    const r=cv.getBoundingClientRect();
+    return {x:(p.x-r.left)*e.image.width/r.width,y:(p.y-r.top)*e.image.height/r.height};
+  }
+
+  function retouchBlur(source,radius){
+    const scale=Math.min(1,1400/Math.max(source.width,source.height));
+    const sample=workCanvas(Math.max(1,Math.round(source.width*scale)),Math.max(1,Math.round(source.height*scale)));
+    const sc=sample.getContext('2d');sc.drawImage(source,0,0,sample.width,sample.height);
+    const raw=sc.getImageData(0,0,sample.width,sample.height),w=sample.width,h=sample.height;
+    const r=Math.max(1,Math.round(radius*scale*.16)),count=2*r+1;
+    let src=new Float32Array(raw.data.length),dst=new Float32Array(raw.data.length);
+    for(let i=0;i<src.length;i+=4){const a=raw.data[i+3]/255;for(let c=0;c<3;c++)src[i+c]=raw.data[i+c]*a;src[i+3]=a;}
+    // Sliding separable box blur on premultiplied colors, independent of canvas.filter.
+    for(const horizontal of [true,false]){
+      const lines=horizontal?h:w,length=horizontal?w:h,stride=horizontal?4:w*4;
+      for(let line=0;line<lines;line++){
+        const offset=horizontal?line*w*4:line*4,sums=[0,0,0,0];
+        for(let k=-r;k<=r;k++){const i=offset+Math.max(0,Math.min(length-1,k))*stride;for(let c=0;c<4;c++)sums[c]+=src[i+c];}
+        for(let x=0;x<length;x++){
+          const i=offset+x*stride;for(let c=0;c<4;c++)dst[i+c]=sums[c]/count;
+          const a=offset+Math.max(0,x-r)*stride,b=offset+Math.min(length-1,x+r+1)*stride;
+          for(let c=0;c<4;c++)sums[c]+=src[b+c]-src[a+c];
+        }
+      }
+      [src,dst]=[dst,src];
+    }
+    for(let i=0;i<src.length;i+=4){const a=src[i+3];for(let c=0;c<3;c++)raw.data[i+c]=a?src[i+c]/a:0;raw.data[i+3]=a*255;}
+    sc.putImageData(raw,0,0);return sample;
+  }
+
+  function beginRetouch(p){
+    const e=retouchEntry;if(!e||targets||busy||previewOriginal)return false;
+    window.__atelierArtBridge.layerRetouchChanged?.();
+    const before=workCanvas(e.image.width,e.image.height);before.getContext('2d').drawImage(e.image,0,0);
+    if(!e.retouchOriginal)e.retouchOriginal=before;
+    const out=workCanvas(before.width,before.height);out.getContext('2d').drawImage(before,0,0);
+    const target=workCanvas(before.width,before.height),tc=target.getContext('2d');
+    const mode=retouchMode.value;
+    const radius=Number(by('artRetouchSize').value)/2;
+    if(mode==='blur'){
+      tc.drawImage(retouchBlur(before,radius),0,0,target.width,target.height);
+      // Preserve silhouette alpha; blur RGB with premultiplied canvas filtering.
+    }else if(mode==='restore')tc.drawImage(e.retouchOriginal,0,0);
+    const coverage=workCanvas(before.width,before.height);
+    retouchStroke={entry:e,before,image:e.image,data:e.data,file:e.file,out,target,coverage,mode,radius,
+      strength:Number(by(mode==='paint'?'artRetouchOpacity':'artRetouchStrength').value)/100,
+      color:[1,3,5].map(i=>parseInt(by('artRetouchColor').value.slice(i,i+2),16)),soft:Number(by('artRetouchSoft').value)/100,last:retouchPoint(p,e),box:null};
+    e.image=out;invalidateRetouch(e);return true;
+  }
+  function updateRetouch(p){
+    const s=retouchStroke;if(!s)return;
+    const q=retouchPoint(p,s.entry),prev=s.last||q,ctx=s.coverage.getContext('2d');
+    const n=Math.max(1,Math.ceil(Math.hypot(q.x-prev.x,q.y-prev.y)/Math.max(1,s.radius*.15)));
+    // Maximum coverage makes strength independent of pointer event frequency.
+    ctx.globalCompositeOperation='lighten';
+    for(let k=0;k<=n;k++){
+      const x=prev.x+(q.x-prev.x)*k/n,y=prev.y+(q.y-prev.y)*k/n;
+      const gradient=ctx.createRadialGradient(x,y,Math.max(0,s.radius*(1-s.soft)*.999),x,y,s.radius);
+      gradient.addColorStop(0,'white');gradient.addColorStop(1,s.soft?'black':'white');
+      ctx.fillStyle=gradient;ctx.fillRect(x-s.radius,y-s.radius,2*s.radius,2*s.radius);
+    }
+    const x0=Math.max(0,Math.floor(Math.min(prev.x,q.x)-s.radius-1)),y0=Math.max(0,Math.floor(Math.min(prev.y,q.y)-s.radius-1));
+    const x1=Math.min(s.out.width,Math.ceil(Math.max(prev.x,q.x)+s.radius+1)),y1=Math.min(s.out.height,Math.ceil(Math.max(prev.y,q.y)+s.radius+1));
+    s.last=q;if(x1<=x0||y1<=y0)return;
+    const w=x1-x0,h=y1-y0,raw=s.before.getContext('2d').getImageData(x0,y0,w,h),dest=s.target.getContext('2d').getImageData(x0,y0,w,h).data;
+    const mask=ctx.getImageData(x0,y0,w,h).data;
+    for(let i=0;i<raw.data.length;i+=4){
+      const a=mask[i]/255*s.strength;
+      if(s.mode==='paint'){
+        const oa=raw.data[i+3]/255,na=a+oa*(1-a);
+        for(let c=0;c<3;c++)raw.data[i+c]=na?(s.color[c]*a+raw.data[i+c]*oa*(1-a))/na:0;
+        raw.data[i+3]=na*255;
+      }else if(s.mode==='erase')raw.data[i+3]*=1-a;
+      else if(s.mode==='restore'){
+        const oa=raw.data[i+3]/255,ta=dest[i+3]/255,na=oa*(1-a)+ta*a;
+        for(let c=0;c<3;c++)raw.data[i+c]=na?(raw.data[i+c]*oa*(1-a)+dest[i+c]*ta*a)/na:0;
+        raw.data[i+3]=na*255;
+      }else if(dest[i+3])for(let c=0;c<3;c++)raw.data[i+c]=raw.data[i+c]*(1-a)+dest[i+c]*a;
+    }
+    s.out.getContext('2d').putImageData(raw,x0,y0);invalidateRetouch(s.entry);refreshRetouch();
+  }
+  function finishRetouch(commit){
+    const s=retouchStroke;if(!s)return;
+    if(commit){
+      (s.entry.retouchUndo??=[]).push({image:s.image,data:s.data,file:s.file});
+      if(s.entry.retouchUndo.length>5)s.entry.retouchUndo.shift();
+      artSay('Pinselstrich auf „'+s.entry.name+'“ übernommen.');
+    }else {s.entry.image=s.image;s.entry.data=s.data;s.entry.file=s.file;s.entry.studyCanvas=s.entry.hitCanvas=s.entry.focusCanvas=s.entry.harmonyCanvas=null;}
+    retouchStroke=null;refreshRetouch();
+  }
+  function syncRetouchPaint(){
+    const painting=retouchMode.value==='paint';
+    by('artRetouchColorRow').hidden=!painting;
+    by('artRetouchStrengthRow').hidden=painting;
+  }
+  retouchMode.addEventListener('change',()=>{
+    syncRetouchPaint();
+    artSay(retouchMode.value==='off'?'Pinsel ausgeschaltet.':'Pinsel aktiv · mit einem Finger malen, mit zwei Fingern zoomen.');
+  });
+  for(const [id,unit] of [['artRetouchSize',' px'],['artRetouchStrength',' %'],['artRetouchSoft',' %'],['artRetouchOpacity',' %']])by(id).addEventListener('input',()=>by(id+'Val').textContent=by(id).value+unit);
+  by('artRetouchPanel').addEventListener('toggle',()=>{if(!by('artRetouchPanel').open){finishRetouch(false);retouchMode.value='off';}});
+  by('artRetouchUndo').onclick=()=>{
+    if(retouchStroke)return;const e=retouchEntry,old=e?.retouchUndo?.pop();
+    if(!old){artSay('Kein Pinselstrich auf dieser Ebene zum Zurücknehmen.');return;}
+    Object.assign(e,old);e.studyCanvas=e.hitCanvas=e.focusCanvas=e.harmonyCanvas=null;refreshRetouch();artSay('Pinselstrich zurückgenommen.');
+  };
+
+
     function applyArtEffects(values,image=base){
       let data=null;
       for(const [id] of effects){
@@ -13517,6 +13652,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     function start(sourceCanvas,onClose=null,matte=null,previous=null,initialTarget=null){
       if(!sourceCanvas?.width||!sourceCanvas?.height)throw Error('Bitte zuerst ein Foto öffnen.');
+      retouchStroke=null;retouchEntry={image:sourceCanvas,name:window.__atelierLayerWorkspace?'Gewählte Ebene':'Bild'};retouchMode.value='off';syncRetouchPaint();by('artRetouchPanel').hidden=!!matte;
       fullArtSource=sourceCanvas;originalW=sourceCanvas.width;originalH=sourceCanvas.height;
       const k=Math.min(1,1000/Math.max(originalW,originalH));
       cv.width=Math.max(1,Math.round(originalW*k));cv.height=Math.max(1,Math.round(originalH*k));
@@ -13541,6 +13677,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       overlay.style.display='block';previewOriginal=false;fitView();render();
     }
     function finishDesign(applied){
+      finishRetouch(false);retouchMode.value='off';
       const onClose=onDesignClose;
       captureTarget();
       const saved=targets?{targets,key:targetKey}:null;
@@ -13579,11 +13716,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     [artSunDirection,artFocusX,artFocusY].forEach(el=>el.addEventListener('input',()=>{resetSnapshot=null;syncArtReset();clearTimeout(timer);timer=setTimeout(render,120);}));
     effects.forEach(([id])=>by('art_'+id).addEventListener('input',()=>{resetSnapshot=null;syncArtReset();by('art_'+id+'_val').textContent=formatArtValue(id,by('art_'+id).value);clearTimeout(timer);timer=setTimeout(render,120);}));
     by('artReset').addEventListener('click',()=>{if(resetSnapshot){setArtValues(resetSnapshot);resetSnapshot=null;}else{resetSnapshot=readArtValues();setArtValues({});}syncArtReset();render();});
-    function originalPreview(on){if(!base)return;previewOriginal=on;revision++;if(on){ctx.putImageData(base,0,0);window.__atelierArtBridge.layerPreview?.(cv);}else render();}
+    function originalPreview(on){if(!base)return;previewOriginal=on;revision++;if(on){if(retouchEntry?.retouchOriginal){ctx.clearRect(0,0,cv.width,cv.height);ctx.drawImage(retouchEntry.retouchOriginal,0,0,cv.width,cv.height);}else ctx.putImageData(base,0,0);window.__atelierArtBridge.layerPreview?.(cv);}else render();}
     by('artBefore').addEventListener('pointerdown',()=>originalPreview(true));['pointerup','pointercancel','pointerleave'].forEach(ev=>by('artBefore').addEventListener(ev,()=>originalPreview(false)));
     async function fileFromCanvas(){
       clearTimeout(timer);revision++;
-      if(window.__atelierLayerWorkspace){
+      if(!targets){
         const full=window.__atelierArtBridge.layerArtOutput();
         return new Promise((resolve,reject)=>full.toBlob(blob=>blob?resolve(blob):reject(Error('PNG konnte nicht erzeugt werden.')),'image/png'));
       }
@@ -14203,7 +14340,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.21</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.24</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -16010,7 +16147,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.21_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.21_Motiv_Transparent.png':'AtelierAI_5.21_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.24_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.24_Motiv_Transparent.png':'AtelierAI_5.24_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
@@ -16081,7 +16218,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     return {below,above};
   }
-  function mergeModuleResult(entry,index,edited){
+  function mergeModuleResult(entry,index,edited,allowAlpha=false){
     // Change only RGB inside the image. Preserve original native dimensions,
     // alpha, off-canvas content, and the layer's independent position.
     const g=layerGeometry(entry,index),out=canvas(entry.image.width,entry.image.height),ctx=out.getContext('2d');
@@ -16094,8 +16231,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const change=cc.getImageData(0,0,out.width,out.height).data;
     for(let y=0;y<out.height;y++)for(let x=0;x<out.width;x++){
       const i=(y*out.width+x)*4,fx=(g.flipX?out.width-x-.5:x+.5)*g.scale+g.x,fy=(g.flipY?out.height-y-.5:y+.5)*g.scale+g.y;
-      if(fx<0||fy<0||fx>=edited.width||fy>=edited.height||!original.data[i+3]||!change[i+3])continue;
+      if(fx<0||fy<0||fx>=edited.width||fy>=edited.height||(!allowAlpha&&(!original.data[i+3]||!change[i+3])))continue;
       for(let c=0;c<3;c++)original.data[i+c]=change[i+c];
+      if(allowAlpha)original.data[i+3]=change[i+3];
     }
     ctx.putImageData(original,0,0);return out;
   }
@@ -16142,7 +16280,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         const edited=await bridge.decodeImage(data.image);
         if(moduleWorkspace!==state)return;
         if(edited.width!==pngBase.image.width||edited.height!==pngBase.image.height)throw Error('Die Bildgröße wurde verändert. Bitte im Modul zur ursprünglichen Vorlage zurückkehren.');
-        const result=mergeModuleResult(state.entry,state.index,edited),encoded=await bridge.encodeCanvas(result);
+        const result=mergeModuleResult(state.entry,state.index,edited,data.allowAlpha===true),encoded=await bridge.encodeCanvas(result);
         if(moduleWorkspace!==state)return;
         const e=state.entry;e.moduleUndo={image:e.image,data:e.data,file:e.file,study:{...e.study},harmony:{...normalizeHarmony(e.harmony)}};
         e.image=result;e.data=encoded;e.file=null;e.study=normalizeStudy();e.harmony=normalizeHarmony();e.studyCanvas=e.hitCanvas=e.focusCanvas=e.harmonyCanvas=e.harmonySource=null;
@@ -16197,7 +16335,7 @@ html.layer-workspace #studioMenu,html.layer-workspace #studioProjects,html.layer
     const raw=ctx.getImageData(0,0,w,h),original=sourcePixels(w,h).data;
     for(let i=0;i<raw.data.length;i+=4){
       if(raw.data[i+3]===0&&original[i+3])for(let c=0;c<3;c++)raw.data[i+c]=original[i+c];
-      raw.data[i+3]=original[i+3];
+      if(!state.allowAlpha)raw.data[i+3]=original[i+3];
     }
     ctx.putImageData(raw,0,0);return out;
   }
@@ -16207,6 +16345,7 @@ html.layer-workspace #studioMenu,html.layer-workspace #studioProjects,html.layer
     ctx.drawImage(state.below,0,0,w,h);ctx.drawImage(restrictLayer(input,w,h),0,0);ctx.drawImage(state.above,0,0,w,h);
     return out;
   }
+  bridge.layerRetouchChanged=()=>{if(state)state.allowAlpha=true;};
   bridge.layerRestrict=input=>state?restrictLayer(input):input;
   bridge.layerComposite=composite;
   bridge.layerPreview=target=>{
@@ -16243,7 +16382,7 @@ html.layer-workspace #studioMenu,html.layer-workspace #studioProjects,html.layer
         }
         if(!result)result=bridge.layerMainCanvas();
         if(!result?.width)throw Error('Keine fertige Bildansicht verfügbar.');
-        send('atelier-layer-result',{image:restrictLayer(result).toDataURL('image/png')});
+        send('atelier-layer-result',{image:restrictLayer(result).toDataURL('image/png'),allowAlpha:state.allowAlpha===true});
       }catch(error){send('atelier-layer-error',{message:'Nicht übernommen: '+error.message});}
       finally{finishing=false;}
     }
