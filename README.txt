@@ -1,3 +1,18 @@
+NEU IN 5.18 – EINE EBENE IN DEN VORHANDENEN MODULEN BEARBEITEN
+1. Hintergrund ersetzen → PNG-Ebenen, Ebene am Namen auswählen.
+2. Unter Malansicht das gewünschte Modul wählen und „Ebene im Modul bearbeiten“ drücken.
+3. Die gewählte Ebene ist die Arbeitsvorlage; das Gesamtbild mit allen davor- und dahinterliegenden Ebenen bleibt als Vorschau sichtbar. Die vorhandene Werkzeugleiste erlaubt den Modulwechsel.
+4. „Ebene übernehmen & zurück“ setzt nur diese Ebene ein. Die Position, native Größe und Transparenz bleiben erhalten. Die übrigen Ebenen bleiben getrennt.
+5. „Abbrechen & zurück“ verwirft die Sitzung. „Letzte Modulbearbeitung rückgängig“ ist bis zum Schließen der Ebenenansicht verfügbar.
+
+Bei mehreren nacheinander verwendeten Modulen den gewünschten Zwischenstand mit „Zwischenstand für weitere Module“ oder dem Übernehmen-Knopf des jeweiligen Moduls festhalten. Das ändert nur die Arbeitsvorlage dieser Sitzung. Anschließend kann ein weiteres Modul geöffnet werden.
+Analyse-, Misch- und Lasurhilfen stehen ebenfalls für die gewählte Ebene zur Verfügung; sie verändern nur dann Bildpixel, wenn das jeweilige Werkzeug eine Bildbearbeitung anbietet.
+Die Vorschau zeigt alle geladenen Ebenen. Vordergrundmotive verdecken den bearbeiteten Hintergrund weiterhin an der richtigen Stelle.
+Beim Rückweg wird die Gesamtansicht eingeschaltet; Malreihenfolge und Einzelansicht können danach wieder gewählt werden.
+Verbindungen, die in den geladenen Ebenen fehlen, werden nicht rekonstruiert.
+Die fertigen Ebenen mit „Übernehmen & zum Projekt“ übernehmen und wie gewohnt als Projekt sichern.
+Die Dateien im ZIP zusammenlassen: layer-workspace.html enthält die vorhandenen Module für die Ebenensitzung und funktioniert ohne externe Dienste.
+
 NEU IN 5.17 – EBENEN ALS MALHILFE
 Unter Hintergrund ersetzen → PNG-Ebenen:
 • Ebene über ihren Namen oder durch Antippen eines sichtbaren Motivs wählen. Ziehen bewegt die Ansicht; Verschieben bleibt ein eigener Schalter.

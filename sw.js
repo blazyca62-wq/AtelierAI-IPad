@@ -1,7 +1,7 @@
-const VERSION='5.17';
+const VERSION='5.18';
 const PREFIX='atelierai-offline-'+encodeURIComponent(self.registration.scope)+'-';
 const CACHE=PREFIX+VERSION;
-const FILES=['app.html','index.html','START.html','manifest.webmanifest','icon-192.png','icon-512.png'];
+const FILES=['app.html','layer-workspace.html','index.html','START.html','manifest.webmanifest','icon-192.png','icon-512.png'];
 const urlFor=p=>new URL(p,self.registration.scope).href;
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
