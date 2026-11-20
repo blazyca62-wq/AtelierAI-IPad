@@ -1,3 +1,28 @@
+NEU IN 5.21 – FREIGESTELLTE MOTIVE ALS TRANSPARENTE PNG SPEICHERN
+
+1. Foto öffnen → Vorlage → Hintergrund ersetzen → Freistellen.
+2. „Hintergrund antippen“ verwenden oder mit „Motiv mit Lasso“ das Motiv umranden. Mit Radieren und Zurückmalen die Auswahl nachbessern.
+3. Unter „2 · Hintergrund wählen“ bei „Art“ die Auswahl „Transparent – nur Motiv“ setzen.
+4. Durchsichtige Bereiche werden im Bild als Schachbrett angezeigt. Rand bereinigen / Kante glätten / weiche Kante dienen wie gewohnt der Kantenkorrektur.
+5. Unten „Motiv als transparentes PNG speichern“ drücken und die PNG-Datei in Dateien sichern. Das Schachbrett und der bisherige Ersatzhintergrund gehören nicht zur PNG.
+6. Später im gewünschten Bild unter PNG-Ebenen den Einfügeplatz wählen und „PNG-Motiv einfügen“ drücken. Die gespeicherte PNG auswählen, platzieren und gegebenenfalls an die Umgebung anpassen.
+
+Bei „Transparent – nur Motiv“ bleibt die automatische Integration mit einem Ersatzhintergrund aus; sie kann später im Ebenenmodus passend zum neuen Bild angewandt werden. Motivgestaltung, Platzierung, Deckkraft und die Freistellkanten bleiben nutzbar.
+„Übernehmen & zum Projekt“ kann auch den transparenten Stand einschließlich bearbeitbarer Freistellung übernehmen.
+
+NEU IN 5.20 – PNG-EBENEN AUTOMATISCH INTEGRIEREN
+Zusätzlich zu den Funktionen aus 5.19:
+
+• „Neue Motive automatisch anpassen“ ist anfangs eingeschaltet. Beim Einfügen oder Ersetzen einer PNG-Ebene wird ihre Umgebung ausgewertet und eine Anpassung mit 70 % Stärke vorgeschlagen. Mit dem Häkchen lässt sich das ausschalten.
+• Für bereits vorhandene Ebenen: Ebene wählen → „Automatisch integrieren“ → „Ebene an Umgebung anpassen“.
+• Die Automatik berücksichtigt die anderen sichtbaren Ebenen an der aktuellen Motivposition. Sie gleicht Licht und Farbstimmung behutsam an und dämpft bei Bedarf eine zu hohe Sättigung. Eigene Motivfarben und Bilddetails bleiben erkennbar.
+• „Stärke“ regelt die Wirkung von 0 bis 100 %. „Ohne Anpassung vergleichen“ zeigt die gewählte Ebene ohne diese automatische Korrektur. Dieser Vergleich ist nur eine Vorschau und verändert den Export nicht.
+• „Anpassung zurücksetzen“ entfernt die automatische Korrektur. Die bisherigen Farbregler bleiben unabhängig davon nutzbar.
+• Nach Verschieben, Größenänderung, Spiegelung oder Wechsel des Hintergrunds die Anpassung per Knopfdruck neu berechnen. Erneutes Berechnen verstärkt den Effekt nicht schrittweise: Es dient immer dieselbe unintegrierte Ebene als Ausgangspunkt.
+• Ist keine sichtbare Umgebung vorhanden oder liegt das Motiv außerhalb des Bilds, bleibt es unverändert. Die Ebene kann trotzdem eingefügt und platziert werden.
+• Speichern und Wiederöffnen behalten die Einstellungen je Ebene bei. Alte Projekte starten ohne automatische Korrekturen ihrer vorhandenen Ebenen.
+• Beim Bearbeiten in den vorhandenen Modulen ist die integrierte Ebene bereits enthalten. Beim Rückweg wird die Anpassung nicht ein zweites Mal aufgetragen. „Letzte Modulbearbeitung rückgängig“ stellt auch die vorherigen Integrationseinstellungen wieder her.
+
 NEU IN 5.19 – MOTIVE KOMBINIEREN
 Basis ist die von dir bestätigte Version 5.18. Die vorhandenen Module bleiben nutzbar.
 
