@@ -1,4 +1,14 @@
-NEU IN 5.26 – FREIGESTELLTE MOTIVE ALS TRANSPARENTE PNG SPEICHERN
+AtelierAI iPad 5.28 – Lasso korrigieren
+
+Letzten Abschnitt zurück: nimmt einen Zeichenabschnitt oder Korrekturschritt zurück.
+Linienstück korrigieren: Anfang und Ende einer fehlerhaften Strecke auf der Linie antippen. Vom grünen Punkt zum orangefarbenen Ziel neu zeichnen. „Korrektur übernehmen“ verbindet das neue Stück mit der übrigen Kontur. Danach „Auswahl schließen“. Auch bei bereits geschlossenen Lasso-Auswahlen möglich.
+Zwei Finger zoomen/verschieben weiterhin. Absetzen ist jederzeit möglich.
+
+AtelierAI iPad 5.27 – Motiv-Lasso in mehreren Abschnitten
+
+Motiv mit Lasso: Pencil oder Finger absetzen, mit zwei Fingern verschieben/zoomen, am grünen Linienende weiterzeichnen. Erst „Auswahl schließen“ übernimmt die Kontur. „Neu beginnen“ verwirft die offene Kontur. Beim Zeichnen mit dem Pencil dienen Finger nur zum Verschieben/Zoomen.
+
+NEU IN 5.27 – FREIGESTELLTE MOTIVE ALS TRANSPARENTE PNG SPEICHERN
 
 1. Foto öffnen → Vorlage → Hintergrund ersetzen → Freistellen.
 2. „Hintergrund antippen“ verwenden oder mit „Motiv mit Lasso“ das Motiv umranden. Mit Radieren und Zurückmalen die Auswahl nachbessern.
@@ -577,10 +587,10 @@ AtelierAI 3.46 – Werkzeugmenü öffnet sich jetzt über der linken Bildspalte 
 
 4.38: Farbübertragung – Original-/Ergebnisvorschau mit Zwei-Finger-Zoom (1–12×), Verschieben und Einpassen-Knopf. Nur die Anzeige wird skaliert, Farbpaare, Pixelwerte, Export und sonstige Module bleiben unverändert. Keine automatische Bewertung der Bildähnlichkeit.
 
-5.26: Pinsel direkt in Künstlerische Gestaltung: Weichzeichnen, weich radieren, Zurückmalen mit Größe, Stärke und weicher Pinselkante. Fünf Pinselstriche rückgängig pro Modulsitzung. Im Ebenenmodus: Ebene wählen → Modul Künstlerische Gestaltung → Ebene im Modul bearbeiten. Ganzes Bild bleibt sichtbar; nur die gewählte Ebene wird bearbeitet. Übernehmen & zurück erhält Transparenz, Position, Größe und Spiegelung. Für den Wechsel in weitere Module innerhalb der Modulansicht: Für alle Module übernehmen. Zurückmalen bezieht sich auf den Stand beim Öffnen der Gestaltung. Im separaten Motiv/Hintergrund-Gestaltungsdialog sind die Pinsel ausgeblendet.
+5.27: Pinsel direkt in Künstlerische Gestaltung: Weichzeichnen, weich radieren, Zurückmalen mit Größe, Stärke und weicher Pinselkante. Fünf Pinselstriche rückgängig pro Modulsitzung. Im Ebenenmodus: Ebene wählen → Modul Künstlerische Gestaltung → Ebene im Modul bearbeiten. Ganzes Bild bleibt sichtbar; nur die gewählte Ebene wird bearbeitet. Übernehmen & zurück erhält Transparenz, Position, Größe und Spiegelung. Für den Wechsel in weitere Module innerhalb der Modulansicht: Für alle Module übernehmen. Zurückmalen bezieht sich auf den Stand beim Öffnen der Gestaltung. Im separaten Motiv/Hintergrund-Gestaltungsdialog sind die Pinsel ausgeblendet.
 
-5.26: Künstlerische Gestaltung → Pinsel → Mit Farbe malen. Pinselfarbe auswählen, Deckkraft 1–100 % (Standard 15 %), Größe und weiche Pinselkante einstellen. Ein Strich hält die gewählte Deckkraft; weitere Striche bauen Farbe auf. Transparente Stellen innerhalb der Ebene können bemalt werden. Rückgängig und Zurückmalen funktionieren auch für Farbe. Im Ebenenmodus werden neue Farbpixel und deren Alpha beim Zurückübernehmen und Speichern erhalten.
+5.27: Künstlerische Gestaltung → Pinsel → Mit Farbe malen. Pinselfarbe auswählen, Deckkraft 1–100 % (Standard 15 %), Größe und weiche Pinselkante einstellen. Ein Strich hält die gewählte Deckkraft; weitere Striche bauen Farbe auf. Transparente Stellen innerhalb der Ebene können bemalt werden. Rückgängig und Zurückmalen funktionieren auch für Farbe. Im Ebenenmodus werden neue Farbpixel und deren Alpha beim Zurückübernehmen und Speichern erhalten.
 
-5.26: Künstlerische Gestaltung → Pinsel → Mit Farbe malen → Pipette · Farbe aus Gesamtbild. Eine sichtbare Umgebungsfarbe antippen, anschließend direkt auf der gewählten Ebene malen. Die Pipette liest das zusammengesetzte Bild inklusive sichtbarer Hintergrund- und Vordergrundebenen; sie verändert keine Bildpixel. Deckkraft bleibt erhalten. Transparente Stellen werden nicht als Farbe übernommen. Zwei Finger zoomen weiterhin, Ziehen verschiebt die Ansicht statt versehentlich eine Farbe zu übernehmen.
+5.27: Künstlerische Gestaltung → Pinsel → Mit Farbe malen → Pipette · Farbe aus Gesamtbild. Eine sichtbare Umgebungsfarbe antippen, anschließend direkt auf der gewählten Ebene malen. Die Pipette liest das zusammengesetzte Bild inklusive sichtbarer Hintergrund- und Vordergrundebenen; sie verändert keine Bildpixel. Deckkraft bleibt erhalten. Transparente Stellen werden nicht als Farbe übernommen. Zwei Finger zoomen weiterhin, Ziehen verschiebt die Ansicht statt versehentlich eine Farbe zu übernehmen.
 
-5.26: Ebenen mit zwei Fingern skalieren. Gewünschte Ebene auswählen und „Ebene verschieben & Größe“ einschalten. Ein Finger verschiebt; zwei Finger ändern die Motivgröße und Platzierung um den berührten Bildpunkt. Ohne diesen Modus zoomen zwei Finger die Ansicht. Der Größenregler zeigt den neuen Wert mit an. Aufbau-Schritt zurück nimmt die Geste zurück. Größe, Position und Spiegelung bleiben beim Speichern erhalten.
+5.27: Ebenen mit zwei Fingern skalieren. Gewünschte Ebene auswählen und „Ebene verschieben & Größe“ einschalten. Ein Finger verschiebt; zwei Finger ändern die Motivgröße und Platzierung um den berührten Bildpunkt. Ohne diesen Modus zoomen zwei Finger die Ansicht. Der Größenregler zeigt den neuen Wert mit an. Aufbau-Schritt zurück nimmt die Geste zurück. Größe, Position und Spiegelung bleiben beim Speichern erhalten.
