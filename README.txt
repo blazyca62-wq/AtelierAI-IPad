@@ -1,3 +1,19 @@
+NEU IN 5.19 – MOTIVE KOMBINIEREN
+Basis ist die von dir bestätigte Version 5.18. Die vorhandenen Module bleiben nutzbar.
+
+Unter Hintergrund ersetzen → PNG-Ebenen:
+• Einfügen: Ebene in der Liste wählen, dann bei „Neues Motiv einfügen“ den Platz bestimmen: vor oder hinter der gewählten Ebene, ganz vorne oder direkt vor dem Hintergrund. „PNG-Motiv einfügen“ öffnet die Dateiauswahl.
+• Ersetzen: Eine PNG-Ebene wählen → „Gewählte PNG-Ebene ersetzen“. Das neue PNG übernimmt den Stapelplatz, die Position und Spiegelung; die Größe wird ohne Verzerrung in den bisherigen Motivrahmen eingepasst. Die Farbeinstellungen des neuen Motivs starten neutral.
+• Reihenfolge: „Weiter nach hinten / vorne“ oder „Stapelplatz“ verwenden. 1 ist die hinterste PNG-Ebene direkt vor dem Hintergrund. Der Hintergrund bleibt immer ganz hinten.
+• Platzieren: „Ebene verschieben“ einschalten und mit einem Finger ziehen. Zwei Finger bewegen und zoomen die Ansicht. Die Größe lässt sich von 5 bis 500 % einstellen; das Seitenverhältnis bleibt erhalten.
+• Spiegeln: „Links ↔ rechts“ bzw. „Oben ↔ unten“. Die hervorgehobenen Schalter sind aktiv. „Größe & Spiegelung zurücksetzen“ setzt nur diese Anpassungen zurück; „Position zurücksetzen“ zentriert die Ebene.
+• Rückgängig: „Aufbau-Schritt zurück“ hält bis zu zehn Schritte der aktuellen Ebenensitzung bereit, z. B. Einfügen, Ersetzen, Entfernen, Stapelwechsel, Verschieben, Größe oder Spiegeln. Der Verlauf wird beim Schließen nicht gespeichert.
+• Module: Auch vergrößerte oder gespiegelte Motive können über „Ebene im Modul bearbeiten“ bearbeitet und an ihrer richtigen Position zurück übernommen werden. Alle Ebenen bleiben in der Modulvorschau sichtbar.
+• Speichern: „Übernehmen & zum Projekt“ und wie gewohnt das Projekt sichern. Reihenfolge, Position, Größe und Spiegelung bleiben erhalten. Ältere Projekte werden ohne Größenänderung oder Spiegelung geöffnet.
+
+Für freigestellte Motive eine PNG-Datei mit echtem transparentem Hintergrund verwenden. Eine weiße Fläche oder ein ins Bild gemaltes Schachbrett ist kein transparenter Hintergrund.
+Alle Dateien des ZIPs zusammenlassen und START.html bzw. app.html wie gewohnt öffnen.
+
 NEU IN 5.18 – EINE EBENE IN DEN VORHANDENEN MODULEN BEARBEITEN
 1. Hintergrund ersetzen → PNG-Ebenen, Ebene am Namen auswählen.
 2. Unter Malansicht das gewünschte Modul wählen und „Ebene im Modul bearbeiten“ drücken.

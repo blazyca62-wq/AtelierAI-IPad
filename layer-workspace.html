@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.18</title>
+  <title>AtelierAI iPad 5.19</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1097,7 +1097,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.18</div>
+    <div class="title">AtelierAI 5.19</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -14203,7 +14203,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.18</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.19</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -14214,7 +14214,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         <div id="bgLayerControls" hidden>
           <button id="bgLayerBaseOpen" type="button">Hintergrundbild öffnen</button>
           <input id="bgLayerBaseInput" type="file" accept="image/*" hidden>
-          <button id="bgLayerAdd" class="secondary" type="button" disabled>PNG-Ebene hinzufügen</button>
+          <label>Neues Motiv einfügen <select id="bgLayerInsertWhere">
+            <option value="after">Vor gewählter Ebene</option><option value="before">Hinter gewählter Ebene</option>
+            <option value="front">Ganz vorne</option><option value="back">Direkt vor Hintergrund</option>
+          </select></label>
+          <button id="bgLayerAdd" class="secondary" type="button" disabled>PNG-Motiv einfügen</button>
+          <button id="bgLayerUndoScene" class="secondary" type="button" disabled>Aufbau-Schritt zurück</button>
           <input id="bgLayerInput" type="file" accept=".png,image/png" hidden>
           <label id="bgPaintSequenceRow" hidden>Malreihenfolge <input id="bgPaintSequence" type="checkbox"></label>
           <p id="bgPaintSequenceHelp" hidden>Tippe eine Ebene an. Sichtbare Ebenen bis dorthin werden angezeigt.</p>
@@ -14235,6 +14240,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           <p>Vordere Ebenen ausblenden zeigt die Motive bis zur gewählten Ebene. Verdeckte Teile sind nur sichtbar, wenn sie in der PNG-Ebene enthalten sind. Hervorheben ist eine Vorschau und wird nicht ins Bild übernommen.</p>
           <div id="bgLayerStudy" hidden>
             <strong id="bgLayerStudyTitle">Malansicht</strong>
+            <details open><summary>Motiv &amp; Reihenfolge</summary>
+            <button id="bgLayerReplace" class="secondary" type="button" disabled>Gewählte PNG-Ebene ersetzen</button>
+            <label>Stapelplatz <select id="bgLayerOrder" aria-label="Stapelplatz von hinten nach vorne"></select></label>
+            <div class="bg-choice"><button id="bgLayerBackward" class="secondary" type="button">Weiter nach hinten</button><button id="bgLayerForward" class="secondary" type="button">Weiter nach vorne</button></div>
+            <p>Die Liste läuft vom Hintergrund zum Vordergrund. Der Hintergrund bleibt ganz hinten. Ersetzen behält den Platz im Stapel und passt das neue Motiv in die bisherige Größe ein.</p>
+            </details>
             <label>Modul <select id="bgLayerModule">
               <option value="formsPanel">Großformen</option><option value="tonesPanel">Tonwerte</option>
               <option value="build32Panel">Farbaufbau · 8 bis 64</option><option value="colorEditOpen">Farben verändern</option>
@@ -14250,6 +14261,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
             <label>Position X <input id="bgLayerPositionX" type="number" step="1" min="-100000" max="100000" value="0" style="width:100px"> px</label>
             <label>Position Y <input id="bgLayerPositionY" type="number" step="1" min="-100000" max="100000" value="0" style="width:100px"> px</label>
             <button id="bgLayerResetPosition" class="secondary" type="button">Position zurücksetzen</button>
+            <label>Motivgröße <input id="bgLayerScale" type="range" min="5" max="500" step="1" value="100"><output id="bgLayerScaleVal">100 %</output></label>
+            <div class="bg-choice"><button id="bgLayerFlipX" class="secondary" type="button" aria-pressed="false">Links ↔ rechts</button><button id="bgLayerFlipY" class="secondary" type="button" aria-pressed="false">Oben ↔ unten</button></div>
+            <button id="bgLayerResetTransform" class="secondary" type="button">Größe &amp; Spiegelung zurücksetzen</button>
             <details open><summary>Farben dieser Ebene</summary>
             <label>Helligkeit <input id="bgStudyLight" type="range" min="-100" max="100" value="0"><output id="bgStudyLightVal">0</output></label>
             <label>Wärme <input id="bgStudyWarmth" type="range" min="-100" max="100" value="0"><output id="bgStudyWarmthVal">0</output></label>
@@ -14343,7 +14357,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   let sourceData=null,photoFile=null,photoData=null,photoRevision=0;
   let pngMode=false,pngBase=null,pngLayers=[],pngPreview=null,moduleWorkspace=null;
   const layerBaseInput=$('bgLayerBaseInput'),layerInput=$('bgLayerInput');
-  let studyIndex=-1,pngMoveMode=false,pngMoveRaf=0;
+  let studyIndex=-1,pngMoveMode=false,pngMoveRaf=0,pendingLayerImport=null,scaleHistorySaved=false;
+  const pngSceneHistory=[];
+  const normalizeTransform=(t={})=>({scale:Number.isFinite(t?.scale)?Math.max(.05,Math.min(5,t.scale)):1,flipX:t?.flipX===true,flipY:t?.flipY===true});
   const normalizePosition=(p={})=>({x:Number.isFinite(p?.x)?Math.max(-100000,Math.min(100000,p.x)):0,y:Number.isFinite(p?.y)?Math.max(-100000,Math.min(100000,p.y)):0});
   function syncPngPosition(){
     const layer=selectedStudyLayer(),pos=normalizePosition(layer?.position);
@@ -14355,6 +14371,17 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     $('bgLayerPositionX').value=String(Math.round(pos.x*10)/10);
     $('bgLayerPositionY').value=String(Math.round(pos.y*10)/10);
     $('bgLayerResetPosition').disabled=!layer||busy;
+    const transform=normalizeTransform(layer?.transform);
+    $('bgLayerScale').value=String(Math.round(transform.scale*100));
+    $('bgLayerScaleVal').textContent=Math.round(transform.scale*100)+' %';
+    for(const [id,key] of [['bgLayerFlipX','flipX'],['bgLayerFlipY','flipY']]){
+      $(id).setAttribute('aria-pressed',String(transform[key]));$(id).classList.toggle('secondary',!transform[key]);
+    }
+    $('bgLayerReplace').disabled=!layer||studyIndex<0||busy;
+    $('bgLayerOrder').disabled=busy||studyIndex<0;
+    $('bgLayerBackward').disabled=busy||studyIndex<=0;
+    $('bgLayerForward').disabled=busy||studyIndex<0||studyIndex>=pngLayers.length-1;
+    $('bgLayerUndoScene').disabled=busy||!pngSceneHistory.length;
     stage.style.cursor=pngMode&&pngMoveMode?'move':'';
   }
   function queuePngMove(){
@@ -14433,26 +14460,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   const showPngBase=()=>soloLayer.checked?studyIndex<0:pngBase.visible;
 
   function composePngLayers(w,h,view=false){
-    const result=canvas(w,h),ctx=result.getContext('2d');
-    ctx.imageSmoothingQuality='high';
-    if(hiddenBaseFill.value==='white'){
-      ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);
-    }
-    if(showPngBase()){
-      const pos=normalizePosition(pngBase.position);
-      drawStudyLayer(ctx,pngBase,pos.x*w/pngBase.image.width,pos.y*h/pngBase.image.height,w,h,view&&studyIndex!==-1,view);
-    }
+    const result=canvas(w,h),ctx=result.getContext('2d');ctx.imageSmoothingQuality='high';
+    if(hiddenBaseFill.value==='white'){ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);}
+    if(showPngBase())drawPlacedStudyLayer(ctx,pngBase,-1,w,h,view&&studyIndex!==-1,view);
     const start=soloLayer.checked?Math.max(0,studyIndex):0;
     const end=soloLayer.checked||paintSequence.checked?studyIndex+1:pngLayers.length;
     for(let i=start;i<end;i++){
-      const layer=pngLayers[i];
-      if(!soloLayer.checked&&!layer.visible)continue;
-      const {image}=layer;
-      const scale=Math.min(pngBase.image.width/image.width,pngBase.image.height/image.height);
-      const width=image.width*scale*w/pngBase.image.width;
-      const height=image.height*scale*h/pngBase.image.height;
-      const pos=normalizePosition(layer.position);
-      drawStudyLayer(ctx,layer,(w-width)/2+pos.x*w/pngBase.image.width,(h-height)/2+pos.y*h/pngBase.image.height,width,height,view&&studyIndex!==i,view);
+      const layer=pngLayers[i];if(!soloLayer.checked&&!layer.visible)continue;
+      drawPlacedStudyLayer(ctx,layer,i,w,h,view&&studyIndex!==i,view);
     }
     return result;
   }
@@ -14462,6 +14477,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(!layer)return;
     syncPngPosition();
     $('bgLayerUndoModule').disabled=!layer.moduleUndo;
+    const order=$('bgLayerOrder');order.replaceChildren();
+    if(studyIndex<0){const option=document.createElement('option');option.textContent='Hintergrund';option.value='-1';order.append(option);order.disabled=true;}
+    else{for(let i=0;i<pngLayers.length;i++){const option=document.createElement('option');option.value=String(i);option.textContent=(i+1)+' / '+pngLayers.length+(i===0?' · hinten':i===pngLayers.length-1?' · vorne':'');order.append(option);}order.value=String(studyIndex);order.disabled=busy;}
     $('bgLayerStudyTitle').textContent='Malansicht · '+(studyIndex<0?'Hintergrund':layer.name);
     for(const button of $('bgLayerControls').querySelectorAll('[data-study-index]')){
       const selected=Number(button.dataset.studyIndex)===studyIndex;
@@ -14476,7 +14494,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
 
   function selectStudyLayer(index){
-    studyIndex=index;studyCompare.checked=false;
+    studyIndex=index;studyCompare.checked=false;scaleHistorySaved=false;
     if(pngMoveMode){const layer=selectedStudyLayer();if(layer)layer.visible=true;showPngRows();}
     syncStudyControls();
     renderPngStack();
@@ -14510,14 +14528,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         layer.visible=visible.checked;renderPngStack();
       });
       const name=document.createElement('button');
-      name.type='button';name.className='secondary bg-layer-name';name.textContent=layer.name;
+      name.type='button';name.className='secondary bg-layer-name';name.textContent=(index+1)+'. '+layer.name;
       name.dataset.studyIndex=String(index);
       name.addEventListener('click',()=>selectStudyLayer(index));
       const remove=document.createElement('button');
       remove.type='button';remove.className='secondary';remove.textContent='×';
       remove.setAttribute('aria-label','Ebene entfernen: '+layer.name);
       remove.addEventListener('click',()=>{
-        pngLayers.splice(index,1);
+        rememberPngScene();pngLayers.splice(index,1);
         if(studyIndex===index)studyIndex=-1;
         else if(studyIndex>index)studyIndex--;
         showPngRows();renderPngStack();
@@ -14538,7 +14556,37 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     say(on?(pngBase?'Hintergrund geladen. Du kannst weitere PNG-Ebenen hinzufügen.':'Zuerst das Hintergrundbild öffnen.'):'Hintergrund antippen, das Motiv umranden oder direkt radieren.');
   }
 
-  async function importPngStackFile(input,isBase){
+  function snapshotPngEntry(entry){
+    return entry&&{...entry,position:{...normalizePosition(entry.position)},transform:{...normalizeTransform(entry.transform)},study:{...entry.study}};
+  }
+  function rememberPngScene(){
+    if(!pngBase)return;
+    pngSceneHistory.push({base:snapshotPngEntry(pngBase),layers:pngLayers.map(snapshotPngEntry),studyIndex});
+    if(pngSceneHistory.length>10)pngSceneHistory.shift();
+    $('bgLayerUndoScene').disabled=false;
+  }
+  function insertionIndex(anchor,where){
+    const index=pngLayers.indexOf(anchor);
+    if(where==='front')return pngLayers.length;
+    if(where==='back'||anchor===pngBase)return 0;
+    return index<0?pngLayers.length:index+(where==='before'?0:1);
+  }
+  function reorderPngLayer(from,to){
+    if(busy||moduleWorkspace||from<0||from>=pngLayers.length||!Number.isInteger(to))return;
+    to=Math.max(0,Math.min(pngLayers.length-1,to));if(from===to)return;
+    const selected=selectedStudyLayer();rememberPngScene();
+    const [entry]=pngLayers.splice(from,1);pngLayers.splice(to,0,entry);
+    studyIndex=pngLayers.indexOf(selected);showPngRows();renderPngStack();
+    say('Ebene auf Stapelplatz '+(to+1)+' von '+pngLayers.length+' gesetzt.');
+  }
+  function replacementPngEntry(previous,entry){
+    const oldGeometry=layerGeometry(previous,pngLayers.indexOf(previous));
+    const fit=Math.min(pngBase.image.width/entry.image.width,pngBase.image.height/entry.image.height);
+    const scale=Math.min(previous.image.width*oldGeometry.scale/entry.image.width,previous.image.height*oldGeometry.scale/entry.image.height)/fit;
+    return {...entry,visible:previous.visible,position:{...normalizePosition(previous.position)},
+      transform:normalizeTransform({...normalizeTransform(previous.transform),scale})};
+  }
+  async function importPngStackFile(input,isBase,intent=null){
     const file=input.files?.[0];
     input.value='';
     if(!file||busy||!pngMode||(!isBase&&!pngBase))return;
@@ -14552,14 +14600,21 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           throw Error('Bitte eine PNG-Datei auswählen.');
       }
       const image=await bridge.decodeImage(url);
-      const entry={name:file.name,image,file,visible:true,study:normalizeStudy(),position:{x:0,y:0}};
+      let entry={name:file.name,image,file,visible:true,study:normalizeStudy(),position:{x:0,y:0},transform:normalizeTransform()};
       if(isBase){
-        pngBase=entry;fit();
+        if(pngBase)rememberPngScene();
+        pngBase=entry;studyIndex=-1;fit();
+      }else if(intent?.kind==='replace'){
+        const index=pngLayers.indexOf(intent.anchor);
+        if(index<0)throw Error('Die zu ersetzende Ebene ist nicht mehr vorhanden.');
+        entry=replacementPngEntry(pngLayers[index],entry);rememberPngScene();pngLayers[index]=entry;studyIndex=index;
       }else{
-        pngLayers.push(entry);
+        const index=insertionIndex(intent?.anchor??selectedStudyLayer(),intent?.where??'after');
+        rememberPngScene();pngLayers.splice(index,0,entry);studyIndex=index;
       }
+      paintSequence.checked=soloLayer.checked=false;studyCompare.checked=false;
       showPngRows();renderPngStack();
-      say(isBase?'Hintergrundbild geladen. Jetzt kannst du PNG-Ebenen hinzufügen.':'Ebene hinzugefügt: '+entry.name);
+      say(isBase?'Hintergrundbild geladen. Jetzt kannst du PNG-Ebenen hinzufügen.':intent?.kind==='replace'?'Ebene ersetzt: '+entry.name:'Motiv eingefügt. Mit Verschieben, Größe und Spiegelung platzieren.');
     }catch(error){
       say('Bild konnte nicht importiert werden. '+error.message);
     }finally{
@@ -14569,8 +14624,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
 
   async function capturePngStack(){
-    const encode=async ({file,data,name,study,visible,position})=>({
-      name,data:data??await bridge.encodeFile(file),study:{...study},visible,position:normalizePosition(position)
+    const encode=async ({file,data,name,study,visible,position,transform})=>({
+      name,data:data??await bridge.encodeFile(file),study:{...study},visible,position:normalizePosition(position),transform:normalizeTransform(transform)
     });
     const [base,...layers]=await Promise.all([pngBase,...pngLayers].map(encode));
     return {version:2,mode:'pngLayers',base,layers,studyIndex,
@@ -14581,12 +14636,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const valid=entry=>typeof entry?.name==='string'&&isImageData(entry.data);
     if(!valid(saved.base)||!Array.isArray(saved.layers)||!saved.layers.every(valid))
       throw Error('Die PNG-Ebenen im Projekt sind ungültig.');
-    const decode=async ({name,data,visible,study,position})=>({
-      name,data,image:await bridge.decodeImage(data),visible:visible!==false,study:normalizeStudy(study),position:normalizePosition(position)
+    const decode=async ({name,data,visible,study,position,transform})=>({
+      name,data,image:await bridge.decodeImage(data),visible:visible!==false,study:normalizeStudy(study),position:normalizePosition(position),transform:normalizeTransform(transform)
     });
     const [base,...layers]=await Promise.all([saved.base,...saved.layers].map(decode));
     if(bridge.background()!==saved)return false;
-    pngBase=base;pngLayers=layers;pngMode=true;pngMoveMode=false;
+    pngBase=base;pngLayers=layers;pngMode=true;pngMoveMode=false;pngSceneHistory.length=0;
     studyIndex=Number.isInteger(saved.studyIndex)&&saved.studyIndex>=0&&saved.studyIndex<layers.length?saved.studyIndex:-1;
     paintSequence.checked=saved.paintSequence===true;
     soloLayer.checked=saved.soloLayer===true;
@@ -14598,6 +14653,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
 
   function ui(){
+    if(pngMode)syncPngPosition();
     $('bgCutoutControls').hidden=pngMode;
     $('bgLayerControls').hidden=!pngMode;
     $('bgLayerEmpty').hidden=!pngMode||!!pngBase;
@@ -15545,7 +15601,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function close(){resetDesignPreview();designSettings=null;clearTaps();clearBrush();resetPlacement();edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;overlay.hidden=true;gestures.clear();draft=null;original=null;preview=null;previewData=null;mask=null;photo=null;points=null;sourceData=photoData=photoFile=null;photoRevision++;
     pngMode=false;pngBase=pngPreview=null;pngLayers=[];
-    studyIndex=-1;pngMoveMode=false;cancelAnimationFrame(pngMoveRaf);pngMoveRaf=0;stage.style.cursor='';paintSequence.checked=soloLayer.checked=false;
+    studyIndex=-1;pngMoveMode=false;pngSceneHistory.length=0;pendingLayerImport=null;scaleHistorySaved=false;cancelAnimationFrame(pngMoveRaf);pngMoveRaf=0;stage.style.cursor='';paintSequence.checked=soloLayer.checked=false;
     hiddenBaseFill.value='transparent';
     showPngRows();
   }
@@ -15554,7 +15610,35 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   $('bgCutoutMode').addEventListener('click',()=>{if(pngMode)setPngMode(false);});
   $('bgLayersMode').addEventListener('click',()=>{if(!pngMode)setPngMode(true);});
   $('bgLayerBaseOpen').addEventListener('click',()=>layerBaseInput.click());
-  $('bgLayerAdd').addEventListener('click',()=>layerInput.click());
+  $('bgLayerAdd').addEventListener('click',()=>{
+    pendingLayerImport={kind:'add',anchor:selectedStudyLayer(),where:$('bgLayerInsertWhere').value};layerInput.click();
+  });
+  $('bgLayerReplace').addEventListener('click',()=>{
+    if(studyIndex<0||busy)return;pendingLayerImport={kind:'replace',anchor:selectedStudyLayer()};layerInput.click();
+  });
+  $('bgLayerBackward').addEventListener('click',()=>reorderPngLayer(studyIndex,studyIndex-1));
+  $('bgLayerForward').addEventListener('click',()=>reorderPngLayer(studyIndex,studyIndex+1));
+  $('bgLayerOrder').addEventListener('change',()=>reorderPngLayer(studyIndex,Number($('bgLayerOrder').value)));
+  $('bgLayerUndoScene').addEventListener('click',()=>{
+    if(busy||moduleWorkspace)return;const saved=pngSceneHistory.pop();if(!saved)return;
+    pngBase=saved.base;pngLayers=saved.layers;studyIndex=saved.studyIndex;pngMoveMode=false;
+    showPngRows();renderPngStack();say('Letzten Aufbau-Schritt rückgängig gemacht.');
+  });
+  const layerScale=$('bgLayerScale');
+  layerScale.addEventListener('input',()=>{
+    const entry=selectedStudyLayer();if(!entry||busy)return;
+    if(!scaleHistorySaved){rememberPngScene();scaleHistorySaved=true;}
+    entry.transform=normalizeTransform({...normalizeTransform(entry.transform),scale:Number(layerScale.value)/100});
+    syncPngPosition();renderPngStack();
+  });
+  layerScale.addEventListener('change',()=>{scaleHistorySaved=false;});
+  for(const [id,key] of [['bgLayerFlipX','flipX'],['bgLayerFlipY','flipY']])$(id).addEventListener('click',()=>{
+    const entry=selectedStudyLayer();if(!entry||busy)return;rememberPngScene();
+    const t=normalizeTransform(entry.transform);entry.transform={...t,[key]:!t[key]};syncPngPosition();renderPngStack();
+  });
+  $('bgLayerResetTransform').addEventListener('click',()=>{
+    const entry=selectedStudyLayer();if(!entry||busy)return;rememberPngScene();entry.transform=normalizeTransform();syncPngPosition();renderPngStack();
+  });
   $('bgLayerFit').addEventListener('click',fit);
   $('bgLayerMove').addEventListener('click',()=>{
     if(!pngBase||busy)return;
@@ -15565,17 +15649,18 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   });
   $('bgLayerResetPosition').addEventListener('click',()=>{
     const layer=selectedStudyLayer();if(!layer||busy)return;
-    layer.position={x:0,y:0};syncPngPosition();renderPngStack();say('Position dieser Ebene zurückgesetzt.');
+    rememberPngScene();layer.position={x:0,y:0};syncPngPosition();renderPngStack();say('Position dieser Ebene zurückgesetzt.');
   });
   for(const [axis,id] of [['x','bgLayerPositionX'],['y','bgLayerPositionY']]){
     $(id).addEventListener('change',()=>{
       const layer=selectedStudyLayer(),value=Number($(id).value);if(!layer||busy||!Number.isFinite(value)){syncPngPosition();return;}
-      layer.position=normalizePosition({...normalizePosition(layer.position),[axis]:value});
+      rememberPngScene();layer.position=normalizePosition({...normalizePosition(layer.position),[axis]:value});
       syncPngPosition();renderPngStack();
     });
   }
   layerBaseInput.addEventListener('change',()=>importPngStackFile(layerBaseInput,true));
-  layerInput.addEventListener('change',()=>importPngStackFile(layerInput,false));
+  layerInput.addEventListener('change',()=>{const intent=pendingLayerImport;pendingLayerImport=null;importPngStackFile(layerInput,false,intent);});
+  layerInput.addEventListener('cancel',()=>{pendingLayerImport=null;});
   $('bgLayerBaseSelect').addEventListener('click',()=>selectStudyLayer(-1));
   baseVisible.addEventListener('change',()=>{
     if(!pngBase||busy||soloLayer.checked)return;
@@ -15689,7 +15774,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     else if(gestures.size===1){viewport();const q=toImage(p);if(pngMode){
       const layer=selectedStudyLayer();
       if(pngMoveMode&&layer){
-        const pos=normalizePosition(layer.position);
+        rememberPngScene();const pos=normalizePosition(layer.position);
         gest={type:'pngLayer',start:p,layer,x:pos.x,y:pos.y,ratio:pngBase.image.width/pngPreview.width,scale:drawScale};
       }else gest={type:$('bgLayerPick').checked?'pngTap':'pan',start:p,panX,panY};
     }else if(bgMoveMode&&kind.value==='photo'&&photo){gest={type:'background',start:p,bgX:bgShiftX,bgY:bgShiftY};}else if(motifMoveMode&&working()){gest={type:'motif',start:p,x:motifX,y:motifY};}else if(brushMode){
@@ -15729,11 +15814,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(!pngBase||q.x<0||q.y<0||q.x>=pngPreview.width||q.y>=pngPreview.height)return;
     const x=q.x*pngBase.image.width/pngPreview.width,y=q.y*pngBase.image.height/pngPreview.height;
     const hit=(entry,isBase)=>{
-      const scale=isBase?1:Math.min(pngBase.image.width/entry.image.width,pngBase.image.height/entry.image.height);
-      const pos=normalizePosition(entry.position);
-      const px=(x-(pngBase.image.width-entry.image.width*scale)/2-pos.x)/scale;
-      const py=(y-(pngBase.image.height-entry.image.height*scale)/2-pos.y)/scale;
-      if(px<0||py<0||px>=entry.image.width||py>=entry.image.height)return false;
+      const g=layerGeometry(entry,isBase?-1:pngLayers.indexOf(entry));
+      const lx=(x-g.x)/g.scale,ly=(y-g.y)/g.scale;
+      if(lx<0||ly<0||lx>=entry.image.width||ly>=entry.image.height)return false;
+      const px=g.flipX?entry.image.width-1-Math.floor(lx):Math.floor(lx),py=g.flipY?entry.image.height-1-Math.floor(ly):Math.floor(ly);
       if(!entry.hitCanvas){entry.hitCanvas=canvas(entry.image.width,entry.image.height);entry.hitCanvas.getContext('2d').drawImage(entry.image,0,0);}
       return entry.hitCanvas.getContext('2d').getImageData(Math.floor(px),Math.floor(py),1,1).data[3]>16;
     };
@@ -15815,7 +15899,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.18_PNG_Ebenen.png':'AtelierAI_5.18_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.19_PNG_Ebenen.png':'AtelierAI_5.19_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
@@ -15860,15 +15944,22 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }catch(error){say('Gestaltung konnte nicht geöffnet werden. '+error.message);}
   }
   function layerGeometry(entry,index){
-    const scale=index<0?1:Math.min(pngBase.image.width/entry.image.width,pngBase.image.height/entry.image.height);
+    const transform=normalizeTransform(entry.transform);
+    const scale=(index<0?1:Math.min(pngBase.image.width/entry.image.width,pngBase.image.height/entry.image.height))*transform.scale;
     const pos=normalizePosition(entry.position);
     return {scale,x:(pngBase.image.width-entry.image.width*scale)/2+pos.x,
-      y:(pngBase.image.height-entry.image.height*scale)/2+pos.y};
+      y:(pngBase.image.height-entry.image.height*scale)/2+pos.y,flipX:transform.flipX,flipY:transform.flipY};
+  }
+  function drawPlacedStudyLayer(ctx,entry,index,w,h,context=false,view=false){
+    const g=layerGeometry(entry,index),rx=w/pngBase.image.width,ry=h/pngBase.image.height;
+    const width=entry.image.width*g.scale,height=entry.image.height*g.scale;
+    ctx.save();ctx.translate((g.x+(g.flipX?width:0))*rx,(g.y+(g.flipY?height:0))*ry);
+    ctx.scale((g.flipX?-1:1)*g.scale*rx,(g.flipY?-1:1)*g.scale*ry);
+    drawStudyLayer(ctx,entry,0,0,entry.image.width,entry.image.height,context,view);ctx.restore();
   }
   function fullStudyLayer(entry,index){
-    const out=canvas(pngBase.image.width,pngBase.image.height),ctx=out.getContext('2d'),g=layerGeometry(entry,index);
-    drawStudyLayer(ctx,entry,g.x,g.y,entry.image.width*g.scale,entry.image.height*g.scale);
-    return out;
+    const out=canvas(pngBase.image.width,pngBase.image.height);
+    drawPlacedStudyLayer(out.getContext('2d'),entry,index,out.width,out.height);return out;
   }
   function moduleContext(index){
     const below=canvas(pngBase.image.width,pngBase.image.height),above=canvas(below.width,below.height);
@@ -15886,10 +15977,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     drawStudyLayer(ctx,entry,0,0,out.width,out.height);
     const original=ctx.getImageData(0,0,out.width,out.height);
     const candidate=canvas(out.width,out.height),cc=candidate.getContext('2d');
-    cc.drawImage(edited,-g.x/g.scale,-g.y/g.scale,edited.width/g.scale,edited.height/g.scale);
+    const sx=g.flipX?-1:1,sy=g.flipY?-1:1;
+    cc.setTransform(sx/g.scale,0,0,sy/g.scale,-(g.x+(g.flipX?out.width*g.scale:0))*sx/g.scale,-(g.y+(g.flipY?out.height*g.scale:0))*sy/g.scale);
+    cc.drawImage(edited,0,0);
     const change=cc.getImageData(0,0,out.width,out.height).data;
     for(let y=0;y<out.height;y++)for(let x=0;x<out.width;x++){
-      const i=(y*out.width+x)*4,fx=(x+.5)*g.scale+g.x,fy=(y+.5)*g.scale+g.y;
+      const i=(y*out.width+x)*4,fx=(g.flipX?out.width-x-.5:x+.5)*g.scale+g.x,fy=(g.flipY?out.height-y-.5:y+.5)*g.scale+g.y;
       if(fx<0||fy<0||fx>=edited.width||fy>=edited.height||!original.data[i+3]||!change[i+3])continue;
       for(let c=0;c<3;c++)original.data[i+c]=change[i+c];
     }
