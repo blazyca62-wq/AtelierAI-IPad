@@ -1,11 +1,20 @@
-NEU IN 5.16 · EBENEN VERSCHIEBEN
+NEU IN 5.17 – EBENEN ALS MALHILFE
+Unter Hintergrund ersetzen → PNG-Ebenen:
+• Ebene über ihren Namen oder durch Antippen eines sichtbaren Motivs wählen. Ziehen bewegt die Ansicht; Verschieben bleibt ein eigener Schalter.
+• Motiv hervorheben: Rest schwarz-weiß oder blass. Nur Vorschau, nicht im PNG oder übernommenen Bild.
+• Vordere Ebenen ausblenden: zeigt Ebenen bis zur Auswahl. Gesamtbild anzeigen schaltet alle Ebenen wieder sichtbar.
+• Verdeckte Verbindungen müssen in den geladenen PNGs enthalten sein; es werden keine Bildteile erfunden.
+• Helligkeit, Wärme und Sättigung je Ebene, mit Vergleich und Zurücksetzen. Diese Änderungen werden übernommen und gespeichert.
+• Einstellungen und Positionen bleiben im Projekt erhalten; Hervorheben und Vergleich sind reine Vorschau.
+
+NEU IN 5.17 · EBENEN VERSCHIEBEN
 PNG-Ebenen öffnen, eine Ebene antippen und „Ebene verschieben: AN“ wählen.
 Mit einem Finger im Bild ziehen; zwei Finger zoomen und verschieben die Ansicht.
 Position X/Y ermöglicht genaue Angaben in Bildpixeln. „Position zurücksetzen“ stellt die Originalposition dieser Ebene wieder her.
 „Übernehmen & zum Projekt“ wählen, danach das Projekt speichern. Die Positionen bleiben beim Öffnen erhalten.
 Ältere JSON-Projekte ohne Positionsangaben starten unverändert bei X=0, Y=0.
 
-NEU IN 5.16 – EINBLENDRICHTUNG PRO TONWERTREGLER
+NEU IN 5.17 – EINBLENDRICHTUNG PRO TONWERTREGLER
 ================================================
 
 Form & Licht → Tonwerte. Unter jedem der drei Regler stellst du die

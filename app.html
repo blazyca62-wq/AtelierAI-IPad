@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.16</title>
+  <title>AtelierAI iPad 5.17</title>
   <style>
     :root{
       --bg:#f2f1ed; --panel:#ffffff; --text:#1f1f1f; --muted:#696969;
@@ -1084,7 +1084,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.16</div>
+    <div class="title">AtelierAI 5.17</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -9888,7 +9888,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
   }
 
-  window.__atelierArtBridge.renderPngStudy=(image,{blur,forms,colors,gray})=>{
+  window.__atelierArtBridge.renderPngStudy=(image,{blur,forms,colors,gray,light=0,warmth=0,saturation=0})=>{
     const longest=Math.max(image.width,image.height);
     const scale=Math.min(1,(blur||forms?960:1700)/longest);
     const work=document.createElement('canvas');
@@ -9900,6 +9900,19 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const pixels=ctx.getImageData(0,0,w,h);
     const span=Math.min(w,h);
     if(forms)blurStudyRgba(pixels.data,w,h,Math.max(1,Math.round(span*[0,.003,.006,.012][forms])),true);
+    if(light||warmth||saturation){
+      const d=pixels.data,sat=1+saturation/100;
+      for(let i=0;i<d.length;i+=4){
+        if(!d[i+3])continue;
+        const lum=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];
+        for(let c=0;c<3;c++){
+          let v=lum+(d[i+c]-lum)*sat;
+          v+=warmth*(c===0?.45:c===2?-.45:0);
+          v=light>=0?v+(255-v)*light/100:v*(1+light/100);
+          d[i+c]=Math.max(0,Math.min(255,v));
+        }
+      }
+    }
     if(gray)grayscalePixels(pixels.data);
     if(forms||colors)reduceStudyColors(pixels.data,colors||[0,40,24,14][forms]);
     if(forms)formsMergeSmallRegions(pixels,w,h,Math.max(4,Math.round(w*h*[0,.000018,.000038,.000085][forms])),true);
@@ -14137,7 +14150,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.16</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.17</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -14163,6 +14176,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
             <option value="transparent">Transparent</option><option value="white">Weiß</option>
           </select></label>
           <ol id="bgLayerList" aria-label="PNG-Ebenen von hinten nach vorne"></ol>
+          <label id="bgFocusRow">Motiv hervorheben <select id="bgLayerFocus"><option value="off">Aus</option><option value="gray">Rest schwarz-weiß</option><option value="pale">Rest blass</option></select></label>
+          <label>Ebene im Bild antippen <input id="bgLayerPick" type="checkbox" checked></label>
+          <div class="bg-choice"><button id="bgHideFront" class="secondary" type="button">Vordere Ebenen ausblenden</button><button id="bgShowAll" class="secondary" type="button">Gesamtbild anzeigen</button></div>
+          <p>Vordere Ebenen ausblenden zeigt die Motive bis zur gewählten Ebene. Verdeckte Teile sind nur sichtbar, wenn sie in der PNG-Ebene enthalten sind. Hervorheben ist eine Vorschau und wird nicht ins Bild übernommen.</p>
           <div id="bgLayerStudy" hidden>
             <strong id="bgLayerStudyTitle">Malansicht</strong>
             <button id="bgLayerMove" class="secondary" type="button" aria-pressed="false">Ebene verschieben: AUS</button>
@@ -14170,6 +14187,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
             <label>Position X <input id="bgLayerPositionX" type="number" step="1" min="-100000" max="100000" value="0" style="width:100px"> px</label>
             <label>Position Y <input id="bgLayerPositionY" type="number" step="1" min="-100000" max="100000" value="0" style="width:100px"> px</label>
             <button id="bgLayerResetPosition" class="secondary" type="button">Position zurücksetzen</button>
+            <details open><summary>Farben dieser Ebene</summary>
+            <label>Helligkeit <input id="bgStudyLight" type="range" min="-100" max="100" value="0"><output id="bgStudyLightVal">0</output></label>
+            <label>Wärme <input id="bgStudyWarmth" type="range" min="-100" max="100" value="0"><output id="bgStudyWarmthVal">0</output></label>
+            <label>Sättigung <input id="bgStudySaturation" type="range" min="-100" max="100" value="0"><output id="bgStudySaturationVal">0</output></label>
+            <label>Farbänderung vergleichen <input id="bgStudyCompare" type="checkbox"></label>
+            <button id="bgStudyResetColor" type="button" class="secondary">Farben zurücksetzen</button>
+            </details>
             <label>Schwarz-Weiß <input id="bgStudyGray" type="checkbox"></label>
             <label>Weichzeichnung <select id="bgStudyBlur">
               <option value="0">Aus</option><option value="1">Leicht</option><option value="2">Mittel</option><option value="3">Stark</option>
@@ -14276,8 +14300,12 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   const paintSequence=$('bgPaintSequence'),baseVisible=$('bgBaseVisible');
   const hiddenBaseFill=$('bgHiddenBaseFill'),soloLayer=$('bgSoloLayer');
-  const studyControls={gray:$('bgStudyGray'),blur:$('bgStudyBlur'),forms:$('bgStudyForms'),colors:$('bgStudyColors')};
+  const focusControl=$('bgLayerFocus'),studyCompare=$('bgStudyCompare');
+  const studyControls={light:$('bgStudyLight'),warmth:$('bgStudyWarmth'),saturation:$('bgStudySaturation'),gray:$('bgStudyGray'),blur:$('bgStudyBlur'),forms:$('bgStudyForms'),colors:$('bgStudyColors')};
   const normalizeStudy=(settings={})=>({
+    light:Math.max(-100,Math.min(100,Number(settings?.light)||0)),
+    warmth:Math.max(-100,Math.min(100,Number(settings?.warmth)||0)),
+    saturation:Math.max(-100,Math.min(100,Number(settings?.saturation)||0)),
     gray:settings?.gray===true,
     blur:[1,2,3].includes(settings?.blur)?settings.blur:0,
     forms:[1,2,3].includes(settings?.forms)?settings.forms:0,
@@ -14312,18 +14340,36 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   let brushMode=null,brushStroke=null,brushCursor=null,brushLayer=null,brushCoverage=null,brushMaskCache=null;
   let brushStrokes=[],brushRevision=0;
 
-  function drawStudyLayer(ctx,entry,x,y,w,h){
-    const {gray,blur,forms,colors}=entry.study;
-    const styled=gray||blur||forms||colors;
-    if(styled&&!entry.studyCanvas)entry.studyCanvas=bridge.renderPngStudy(entry.image,entry.study);
-    // Keep flat color fields when scaling; soften them only when requested.
-    ctx.imageSmoothingEnabled=!(forms||colors)||!!blur;
-    ctx.drawImage(entry.studyCanvas??entry.image,x,y,w,h);
+  function drawStudyLayer(ctx,entry,x,y,w,h,context=false,view=false){
+    const settings={...entry.study};
+    if(studyCompare.checked&&view&&entry===selectedStudyLayer())settings.light=settings.warmth=settings.saturation=0;
+    const styled=Object.values(settings).some(Boolean);
+    const key=JSON.stringify(settings);
+    if(styled&&(!entry.studyCanvas||entry.studyKey!==key)){
+      entry.studyCanvas=bridge.renderPngStudy(entry.image,settings);entry.studyKey=key;entry.focusCanvas=null;
+    }
+    let image=styled?entry.studyCanvas:entry.image;
+    if(context&&focusControl.value!=='off'){
+      const focusKey=key+':'+styled;
+      if(!entry.focusCanvas||entry.focusKey!==focusKey){
+        entry.focusCanvas=bridge.renderPngStudy(image,{gray:true});entry.focusKey=focusKey;
+      }
+      image=entry.focusCanvas;
+    }
+    ctx.save();
+    ctx.imageSmoothingEnabled=!(settings.forms||settings.colors)||!!settings.blur;
+    if(context&&focusControl.value==='pale'){
+      // Whiten only this layer's painted pixels; keep its transparent holes.
+      const pale=canvas(image.width,image.height),pc=pale.getContext('2d');
+      pc.drawImage(image,0,0);pc.globalCompositeOperation='source-atop';pc.fillStyle='rgba(255,255,255,.72)';pc.fillRect(0,0,pale.width,pale.height);
+      ctx.drawImage(pale,x,y,w,h);
+    }else ctx.drawImage(image,x,y,w,h);
+    ctx.restore();
   }
 
   const showPngBase=()=>soloLayer.checked?studyIndex<0:pngBase.visible;
 
-  function composePngLayers(w,h){
+  function composePngLayers(w,h,view=false){
     const result=canvas(w,h),ctx=result.getContext('2d');
     ctx.imageSmoothingQuality='high';
     if(hiddenBaseFill.value==='white'){
@@ -14331,7 +14377,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     if(showPngBase()){
       const pos=normalizePosition(pngBase.position);
-      drawStudyLayer(ctx,pngBase,pos.x*w/pngBase.image.width,pos.y*h/pngBase.image.height,w,h);
+      drawStudyLayer(ctx,pngBase,pos.x*w/pngBase.image.width,pos.y*h/pngBase.image.height,w,h,view&&studyIndex!==-1,view);
     }
     const start=soloLayer.checked?Math.max(0,studyIndex):0;
     const end=soloLayer.checked||paintSequence.checked?studyIndex+1:pngLayers.length;
@@ -14343,7 +14389,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const width=image.width*scale*w/pngBase.image.width;
       const height=image.height*scale*h/pngBase.image.height;
       const pos=normalizePosition(layer.position);
-      drawStudyLayer(ctx,layer,(w-width)/2+pos.x*w/pngBase.image.width,(h-height)/2+pos.y*h/pngBase.image.height,width,height);
+      drawStudyLayer(ctx,layer,(w-width)/2+pos.x*w/pngBase.image.width,(h-height)/2+pos.y*h/pngBase.image.height,width,height,view&&studyIndex!==i,view);
     }
     return result;
   }
@@ -14361,21 +14407,22 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     for(const [key,control] of Object.entries(studyControls)){
       if(control.type==='checkbox')control.checked=layer.study[key];
       else control.value=String(layer.study[key]);
+      const output=$(control.id+'Val');if(output)output.textContent=String(layer.study[key]);
     }
   }
 
   function selectStudyLayer(index){
-    studyIndex=index;
+    studyIndex=index;studyCompare.checked=false;
     if(pngMoveMode){const layer=selectedStudyLayer();if(layer)layer.visible=true;showPngRows();}
     syncStudyControls();
-    if(pngMoveMode||soloLayer.checked||paintSequence.checked)renderPngStack();
+    renderPngStack();
   }
 
   function renderPngStack(){
     if(pngBase){
       const {width,height}=pngBase.image;
       const scale=Math.min(1,1700/Math.max(width,height));
-      pngPreview=composePngLayers(Math.round(width*scale),Math.round(height*scale));
+      pngPreview=composePngLayers(Math.round(width*scale),Math.round(height*scale),true);
     }else{
       pngPreview=null;
     }
@@ -14463,7 +14510,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     });
     const [base,...layers]=await Promise.all([pngBase,...pngLayers].map(encode));
     return {version:2,mode:'pngLayers',base,layers,studyIndex,
-      paintSequence:paintSequence.checked,hiddenBaseFill:hiddenBaseFill.value,soloLayer:soloLayer.checked};
+      paintSequence:paintSequence.checked,hiddenBaseFill:hiddenBaseFill.value,soloLayer:soloLayer.checked,focus:focusControl.value,pick:$('bgLayerPick').checked};
   }
 
   async function restorePngStack(saved){
@@ -14479,6 +14526,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     studyIndex=Number.isInteger(saved.studyIndex)&&saved.studyIndex>=0&&saved.studyIndex<layers.length?saved.studyIndex:-1;
     paintSequence.checked=saved.paintSequence===true;
     soloLayer.checked=saved.soloLayer===true;
+    focusControl.value=['gray','pale'].includes(saved.focus)?saved.focus:'off';
+    $('bgLayerPick').checked=saved.pick!==false;studyCompare.checked=false;
     hiddenBaseFill.value=saved.hiddenBaseFill==='white'?'white':'transparent';
     showPngRows();renderPngStack();
     return true;
@@ -15469,16 +15518,21 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     pngBase.visible=baseVisible.checked;
     renderPngStack();
   });
+  focusControl.addEventListener('change',renderPngStack);
+  studyCompare.addEventListener('change',renderPngStack);
+  $('bgHideFront').addEventListener('click',()=>{soloLayer.checked=false;paintSequence.checked=true;renderPngStack();say('Vordere Ebenen ausgeblendet. Enthaltene Astverbindungen werden sichtbar.');});
+  $('bgShowAll').addEventListener('click',()=>{soloLayer.checked=paintSequence.checked=false;focusControl.value='off';if(pngBase)pngBase.visible=true;for(const layer of pngLayers)layer.visible=true;showPngRows();renderPngStack();});
+  $('bgStudyResetColor').addEventListener('click',()=>{const layer=selectedStudyLayer();if(!layer)return;layer.study.light=layer.study.warmth=layer.study.saturation=0;studyCompare.checked=false;syncStudyControls();renderPngStack();});
   paintSequence.addEventListener('change',renderPngStack);
   soloLayer.addEventListener('change',renderPngStack);
   hiddenBaseFill.addEventListener('change',renderPngStack);
   for(const [key,control] of Object.entries(studyControls)){
-    control.addEventListener('change',()=>{
+    control.addEventListener(control.type==='range'?'input':'change',()=>{
       const layer=selectedStudyLayer();
       if(!layer||busy)return;
       layer.study[key]=control.type==='checkbox'?control.checked:Number(control.value);
-      layer.studyCanvas=null;
-      renderPngStack();
+      layer.studyCanvas=null;studyCompare.checked=false;
+      syncStudyControls();renderPngStack();
     });
   }
   $('bgTap').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='tap';draft=null;ui();render();say('Hintergrund antippen. Mehrere Flächen sind möglich.');});
@@ -15573,7 +15627,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(pngMoveMode&&layer){
         const pos=normalizePosition(layer.position);
         gest={type:'pngLayer',start:p,layer,x:pos.x,y:pos.y,ratio:pngBase.image.width/pngPreview.width,scale:drawScale};
-      }else gest={type:'pan',start:p,panX,panY};
+      }else gest={type:$('bgLayerPick').checked?'pngTap':'pan',start:p,panX,panY};
     }else if(bgMoveMode&&kind.value==='photo'&&photo){gest={type:'background',start:p,bgX:bgShiftX,bgY:bgShiftY};}else if(motifMoveMode&&working()){gest={type:'motif',start:p,x:motifX,y:motifY};}else if(brushMode){
       if(!working()){
         if(brushMode==='restore'||!inImage(q))return;
@@ -15604,11 +15658,27 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       addBrushPoint(brushPoint(p));render();
     }
     else if(gest?.type==='lasso'&&draft){viewport();const q=toImage(p),r=draft[draft.length-1];q.x=Math.max(0,Math.min(preview.width,q.x));q.y=Math.max(0,Math.min(preview.height,q.y));if(Math.hypot(q.x-r.x,q.y-r.y)>=1.4/Math.max(.1,drawScale)){draft.push(q);render();}}
-    else if(gest){const dx=p.x-gest.start.x,dy=p.y-gest.start.y;if(gest.type==='pngLayer'){gest.layer.position=normalizePosition({x:gest.x+dx/Math.max(.001,gest.scale)*gest.ratio,y:gest.y+dy/Math.max(.001,gest.scale)*gest.ratio});queuePngMove();}if(gest.type==='background'){bgShiftX=gest.bgX+dx/Math.max(.001,drawScale);bgShiftY=gest.bgY+dy/Math.max(.001,drawScale);render();}if(gest.type==='motif'){motifX=gest.x+dx/Math.max(.001,drawScale);motifY=gest.y+dy/Math.max(.001,drawScale);render();}if(gest.type==='tap'&&Math.hypot(dx,dy)>8)gest.type='pan';if(gest.type==='pan'){panX=gest.panX+dx;panY=gest.panY+dy;render();}}
+    else if(gest){const dx=p.x-gest.start.x,dy=p.y-gest.start.y;if(gest.type==='pngLayer'){gest.layer.position=normalizePosition({x:gest.x+dx/Math.max(.001,gest.scale)*gest.ratio,y:gest.y+dy/Math.max(.001,gest.scale)*gest.ratio});queuePngMove();}if(gest.type==='background'){bgShiftX=gest.bgX+dx/Math.max(.001,drawScale);bgShiftY=gest.bgY+dy/Math.max(.001,drawScale);render();}if(gest.type==='motif'){motifX=gest.x+dx/Math.max(.001,drawScale);motifY=gest.y+dy/Math.max(.001,drawScale);render();}if((gest.type==='tap'||gest.type==='pngTap')&&Math.hypot(dx,dy)>8)gest.type='pan';if(gest.type==='pan'){panX=gest.panX+dx;panY=gest.panY+dy;render();}}
     e.preventDefault();
   });
+  function pickPngLayer(q){
+    if(!pngBase||q.x<0||q.y<0||q.x>=pngPreview.width||q.y>=pngPreview.height)return;
+    const x=q.x*pngBase.image.width/pngPreview.width,y=q.y*pngBase.image.height/pngPreview.height;
+    const hit=(entry,isBase)=>{
+      const scale=isBase?1:Math.min(pngBase.image.width/entry.image.width,pngBase.image.height/entry.image.height);
+      const pos=normalizePosition(entry.position);
+      const px=(x-(pngBase.image.width-entry.image.width*scale)/2-pos.x)/scale;
+      const py=(y-(pngBase.image.height-entry.image.height*scale)/2-pos.y)/scale;
+      if(px<0||py<0||px>=entry.image.width||py>=entry.image.height)return false;
+      if(!entry.hitCanvas){entry.hitCanvas=canvas(entry.image.width,entry.image.height);entry.hitCanvas.getContext('2d').drawImage(entry.image,0,0);}
+      return entry.hitCanvas.getContext('2d').getImageData(Math.floor(px),Math.floor(py),1,1).data[3]>16;
+    };
+    const end=soloLayer.checked||paintSequence.checked?studyIndex+1:pngLayers.length;
+    for(let i=end-1;i>=0;i--){if(soloLayer.checked&&i!==studyIndex)continue;if((soloLayer.checked||pngLayers[i].visible)&&hit(pngLayers[i],false)){selectStudyLayer(i);return;}}
+    if(showPngBase()&&hit(pngBase,true))selectStudyLayer(-1);
+  }
   function pointerEnd(e){if(!gestures.has(e.pointerId))return;const isLast=gestures.size===1,was=gest?.type,p=point(e);gestures.delete(e.pointerId);
-    if(isLast){if(was==='brush'){viewport();finishBrush(e.type==='pointerup',brushPoint(p));}else if(e.type==='pointerup'&&was==='lasso')lassoEnd();else if(e.type==='pointerup'&&was==='tap'&&tool==='tap'){viewport();selectTap(toImage(p));}draft=null;gest=null;render();}
+    if(isLast){if(e.type==='pointerup'&&was==='pngTap'){viewport();pickPngLayer(toImage(p));}else if(was==='brush'){viewport();finishBrush(e.type==='pointerup',brushPoint(p));}else if(e.type==='pointerup'&&was==='lasso')lassoEnd();else if(e.type==='pointerup'&&was==='tap'&&tool==='tap'){viewport();selectTap(toImage(p));}draft=null;gest=null;render();}
     else if(gestures.size===1){const q=[...gestures.values()][0];gest={type:'pan',start:q,panX,panY};}
     else gest=null;e.preventDefault();
   }
@@ -15681,7 +15751,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.16_PNG_Ebenen.png':'AtelierAI_5.16_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.17_PNG_Ebenen.png':'AtelierAI_5.17_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say('PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
