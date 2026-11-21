@@ -1,3 +1,7 @@
+AtelierAI iPad 5.30 – Palette der Ergänzungen
+
+Nach „Nur Ergänzungen zeigen“ öffnet sich die Farbpalette der Ergänzungen automatisch. Unter „Einstellungen“ führt „Palette der Ergänzungen“ jederzeit wieder dorthin. Farbfeld antippen: Farbe auswählen und Mischrezept anzeigen. Die Abweichung aktualisiert auch diese Palette. „Farbaufbau wieder anzeigen“ stellt die vorherige Palette wieder her.
+
 AtelierAI iPad 5.29 – Pinsel live sichtbar
 
 Farbe, Weichzeichnen, Radieren und Zurückmalen werden während des Strichs angezeigt. Auch beim ersten Aufsetzen wird sofort gemalt. Rückgängig und Zwei-Finger-Zoom bleiben erhalten.

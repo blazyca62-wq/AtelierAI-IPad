@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.29</title>
+  <title>AtelierAI iPad 5.30</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1097,7 +1097,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.29</div>
+    <div class="title">AtelierAI 5.30</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1147,6 +1147,7 @@
       </div>
     <div id="build32Dock" hidden>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="build32Collapse" class="secondary" type="button" aria-expanded="true">Farben einklappen</button><label>Darstellung <select id="build32PaintMode"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Einfache Öl-/Acryl-Mischungen</option></select></label><label id="build32SimpleLimitLabel" hidden>Mischungen <select id="build32SimpleLimit" aria-label="Anzahl einfacher Öl-/Acryl-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><label>Farben <select id="build32Count" aria-label="Anzahl Bildfarben"><option value="8">8</option><option value="16">16</option><option value="32" selected>32</option><option value="48">48</option><option value="64">64</option></select></label><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap" title="Verlauf aus zwei angrenzenden Farben. Der Regler bestimmt die Breite; Mischrezepte bleiben gleich.">Angrenzende Farben verblenden <input id="build32Smooth" aria-label="Breite der Farbübergänge" type="range" min="0" max="20" step="1" value="0" style="width:140px;min-height:32px"><span id="build32SmoothVal">0 %</span></label><button id="build32Add" class="secondary" type="button" aria-pressed="false">Farben zuschalten: Aus</button><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">Original S/W <input id="build32GrayBlend" aria-label="Schwarz-Weiß-Original zur Orientierung einblenden" type="range" min="0" max="100" step="1" value="0" style="width:140px;min-height:32px"><span id="build32GrayBlendVal">0 %</span></label><button id="build32SW" class="secondary" type="button" aria-pressed="false">S/W-Effekt: Aus</button><button id="build32Replace" class="secondary" type="button" aria-pressed="false">Originalfarbe ersetzen</button><button id="build32ResetColor" class="secondary" type="button" disabled>Farbe zurücksetzen</button><button id="build32Solo" class="secondary" type="button" aria-pressed="false">Eine Farbe ansehen</button><button id="build32All" class="secondary" type="button">Alle Farben</button><label>Hintergrund <select id="build32Background" aria-label="Hintergrund der Bildfarben"><option value="auto">Automatisch</option><option value="white">Weiß</option><option value="gray">Grau</option></select></label><select id="build32MixPalette" aria-label="Palette für die Mischung"><option value="watercolor">Eigene Aquarellpalette · Horadam + Akademie</option><option value="artisan" selected>Artisan · Öl</option><option value="system3">Daler-Rowney System3 · Acryl</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select></div>
+      <p id="build32PaletteTitle" class="tiny" role="status" style="margin:8px 0 4px;font-weight:bold">Palette der erkannten Farben</p>
       <div id="build32Pages" aria-label="Farbseiten"></div>
       <div id="build32Palette" aria-label="Erkannte Bildfarben"></div>
       <div id="build32Similar" hidden style="margin:6px 0"></div>
@@ -1252,6 +1253,7 @@
         <p id="build32Status" role="status">Foto öffnen und Farben erkennen lassen.</p>
         <p class="tiny">0: leer · Regler ganz rechts: alle Farben der gewählten Familie; bei „Normal“ das vollständige Bild. Die Farbauswahl berücksichtigt auch kleine, markante Farbbereiche.</p>
         <button id="build32Extras" class="secondary" disabled style="width:100%;margin-bottom:8px">Nur Ergänzungen zeigen</button>
+        <button id="build32ExtrasPalette" type="button" class="secondary" hidden style="width:100%;margin-bottom:8px">Palette der Ergänzungen</button>
         <label for="build32Difference">Abweichung: <span id="build32DifferenceVal">9</span></label>
         <input id="build32Difference" type="range" min="1" max="20" step="1" value="9" style="width:100%;min-height:44px">
         <div class="tiny">Das Bild wird nach dem Loslassen aktualisiert. Der Wert bleibt beim Ansichtswechsel erhalten.</div>
@@ -7065,6 +7067,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   let build32AllPrevious=null,build32PalettePage=0,build32SoloPrevious=null,build32SoloAdditive=false,build32SimilarAnchor=null;
   function showBuild32PalettePage(page){
     const strip=document.getElementById('build32Palette'),total=strip.children.length;
+    syncBuild32PaletteContext();
     build32PalettePage=Math.max(0,Math.min(page,Math.ceil(total/16)-1));
     [...strip.children].forEach((el,i)=>el.hidden=Math.floor(i/16)!==build32PalettePage);
     const pages=document.getElementById('build32Pages');pages.replaceChildren();
@@ -7077,6 +7080,20 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       button.addEventListener('click',()=>showBuild32PalettePage(p));pages.appendChild(button);
     }
   }
+  function syncBuild32PaletteContext(){
+    const extras=build32Extras||!!build32ExtrasBase;
+    const title=document.getElementById('build32PaletteTitle');
+    const count=document.getElementById('build32Palette').children.length;
+    title.textContent=extras?(count?'Palette der Ergänzungen · '+count+' Farben':'Keine Ergänzungen bei dieser Abweichung.'):('Palette der erkannten Farben · '+count+' Farben');
+    document.getElementById('build32Palette').setAttribute('aria-label',extras?'Farben der Ergänzungen':'Erkannte Bildfarben');
+    document.getElementById('build32ExtrasPalette').hidden=!extras;
+  }
+  function openBuild32ExtrasPalette(){
+    setBuild32Collapsed(false);
+    setToolInspectorOpen(true);
+    setInspectorPane('colors');
+  }
+  document.getElementById('build32ExtrasPalette').addEventListener('click',openBuild32ExtrasPalette);
   function build32GridCellAt(ix,iy){
     if(!loaded)return null;
     const {cellX,cellY,firstX,firstY}=gridGeometry(sourceCanvas.width,sourceCanvas.height,gridDensity.value);
@@ -7479,7 +7496,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     document.getElementById('build32ResetColor').disabled=true;
     for(const d of ['light','dark']){document.getElementById('build32'+d).value=0;document.getElementById('build32'+d).max=build32ColorCount();document.getElementById('build32'+d).disabled=true;document.getElementById('build32'+d+'Val').textContent='0 / '+build32ColorCount();}
     document.getElementById('build32Palette').replaceChildren();
-    document.getElementById('build32Pages').replaceChildren();build32PalettePage=0;
+    document.getElementById('build32Pages').replaceChildren();build32PalettePage=0;syncBuild32PaletteContext();
     build32Status.textContent='Foto öffnen und Farben erkennen lassen.';
   }
   function build32PaletteColor(index){
@@ -8318,7 +8335,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     document.getElementById('build32DetailCell').disabled=false;
     renderBuild32PaletteStrip(build32Data.palette);restoreBuild32State(base.state);
   }
-  document.getElementById('build32Extras').addEventListener('click',()=>{forgetBuild32AllPrevious();if(build32Extras)leaveBuild32Extras();else showBuild32Extras();});
+  document.getElementById('build32Extras').addEventListener('click',()=>{forgetBuild32AllPrevious();if(build32Extras)leaveBuild32Extras();else {showBuild32Extras();if(build32Extras)openBuild32ExtrasPalette();}});
   let build32DifferenceTimer=null;
   function syncBuild32DifferenceLabel(){
     document.getElementById('build32DifferenceVal').textContent=Number(document.getElementById('build32Difference').value).toLocaleString('de-DE',{maximumFractionDigits:1});
@@ -14378,7 +14395,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.29</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.30</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -16314,7 +16331,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.29_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.29_Motiv_Transparent.png':'AtelierAI_5.29_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.30_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.30_Motiv_Transparent.png':'AtelierAI_5.30_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
