@@ -1,4 +1,8 @@
-AtelierAI iPad 5.28 – Lasso korrigieren
+AtelierAI iPad 5.29 – Pinsel live sichtbar
+
+Farbe, Weichzeichnen, Radieren und Zurückmalen werden während des Strichs angezeigt. Auch beim ersten Aufsetzen wird sofort gemalt. Rückgängig und Zwei-Finger-Zoom bleiben erhalten.
+
+AtelierAI iPad 5.29 – Lasso korrigieren
 
 Letzten Abschnitt zurück: nimmt einen Zeichenabschnitt oder Korrekturschritt zurück.
 Linienstück korrigieren: Anfang und Ende einer fehlerhaften Strecke auf der Linie antippen. Vom grünen Punkt zum orangefarbenen Ziel neu zeichnen. „Korrektur übernehmen“ verbindet das neue Stück mit der übrigen Kontur. Danach „Auswahl schließen“. Auch bei bereits geschlossenen Lasso-Auswahlen möglich.

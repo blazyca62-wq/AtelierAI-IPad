@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.28</title>
+  <title>AtelierAI iPad 5.29</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1097,7 +1097,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.28</div>
+    <div class="title">AtelierAI 5.29</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -13482,7 +13482,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     retouchStroke={entry:e,before,image:e.image,data:e.data,file:e.file,out,target,coverage,mode,radius,
       strength:Number(by(mode==='paint'?'artRetouchOpacity':'artRetouchStrength').value)/100,
       color:[1,3,5].map(i=>parseInt(by('artRetouchColor').value.slice(i,i+2),16)),soft:Number(by('artRetouchSoft').value)/100,last:retouchPoint(p,e),box:null};
-    e.image=out;invalidateRetouch(e);return true;
+    e.image=out;invalidateRetouch(e);updateRetouch(p);return true;
   }
   function updateRetouch(p){
     const s=retouchStroke;if(!s)return;
@@ -13669,16 +13669,21 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }
       return output;
     }
+    // Keep one display frame pending. Pointer events update the latest image,
+    // but must never postpone its display until the stroke ends.
+    let artFrame=0;
+    function cancelArtFrame(){if(artFrame)cancelAnimationFrame(artFrame);artFrame=0;}
     function render(){
       if(!base||previewOriginal)return;
-      const token=++revision;
-      by('artStatus').textContent='Vorschau wird berechnet …';
-      setTimeout(()=>{
-        if(token!==revision)return;
+      revision++;
+      if(artFrame)return;
+      artFrame=requestAnimationFrame(()=>{
+        artFrame=0;
+        if(!base||previewOriginal||overlay.style.display==='none')return;
         ctx.putImageData(new ImageData(renderArt(),base.width,base.height),0,0);
         window.__atelierArtBridge.layerPreview?.(cv);
         by('artStatus').textContent=targets?'Die Vorschau zeigt Motiv und Hintergrund zusammen.':'Vorschau bereit.';
-      },20);
+      });
     }
     function start(sourceCanvas,onClose=null,matte=null,previous=null,initialTarget=null){
       if(!sourceCanvas?.width||!sourceCanvas?.height)throw Error('Bitte zuerst ein Foto öffnen.');
@@ -13707,7 +13712,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       overlay.style.display='block';previewOriginal=false;fitView();render();
     }
     function finishDesign(applied){
-      finishRetouch(false);setRetouchPicking(false);retouchMode.value='off';
+      finishRetouch(false);cancelArtFrame();setRetouchPicking(false);retouchMode.value='off';
       const onClose=onDesignClose;
       captureTarget();
       const saved=targets?{targets,key:targetKey}:null;
@@ -13746,10 +13751,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     [artSunDirection,artFocusX,artFocusY].forEach(el=>el.addEventListener('input',()=>{resetSnapshot=null;syncArtReset();clearTimeout(timer);timer=setTimeout(render,120);}));
     effects.forEach(([id])=>by('art_'+id).addEventListener('input',()=>{resetSnapshot=null;syncArtReset();by('art_'+id+'_val').textContent=formatArtValue(id,by('art_'+id).value);clearTimeout(timer);timer=setTimeout(render,120);}));
     by('artReset').addEventListener('click',()=>{if(resetSnapshot){setArtValues(resetSnapshot);resetSnapshot=null;}else{resetSnapshot=readArtValues();setArtValues({});}syncArtReset();render();});
-    function originalPreview(on){if(!base)return;previewOriginal=on;revision++;if(on){if(retouchEntry?.retouchOriginal){ctx.clearRect(0,0,cv.width,cv.height);ctx.drawImage(retouchEntry.retouchOriginal,0,0,cv.width,cv.height);}else ctx.putImageData(base,0,0);window.__atelierArtBridge.layerPreview?.(cv);}else render();}
+    function originalPreview(on){if(!base)return;previewOriginal=on;revision++;cancelArtFrame();if(on){if(retouchEntry?.retouchOriginal){ctx.clearRect(0,0,cv.width,cv.height);ctx.drawImage(retouchEntry.retouchOriginal,0,0,cv.width,cv.height);}else ctx.putImageData(base,0,0);window.__atelierArtBridge.layerPreview?.(cv);}else render();}
     by('artBefore').addEventListener('pointerdown',()=>originalPreview(true));['pointerup','pointercancel','pointerleave'].forEach(ev=>by('artBefore').addEventListener(ev,()=>originalPreview(false)));
     async function fileFromCanvas(){
-      clearTimeout(timer);revision++;
+      clearTimeout(timer);revision++;cancelArtFrame();
       if(!targets){
         const full=window.__atelierArtBridge.layerArtOutput();
         return new Promise((resolve,reject)=>full.toBlob(blob=>blob?resolve(blob):reject(Error('PNG konnte nicht erzeugt werden.')),'image/png'));
@@ -14373,7 +14378,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.28</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.29</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -16309,7 +16314,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.28_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.28_Motiv_Transparent.png':'AtelierAI_5.28_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.29_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.29_Motiv_Transparent.png':'AtelierAI_5.29_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
