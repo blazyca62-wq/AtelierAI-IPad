@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.38</title>
+  <title>AtelierAI iPad 5.39</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1106,7 +1106,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.38</div>
+    <div class="title">AtelierAI 5.39</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1171,7 +1171,7 @@
       </details>
       <details id="build32Bases" style="margin:10px 0;padding:8px;border:1px solid #888;border-radius:8px">
         <summary>Grundmischungen vorbereiten · Eigener Mischplan</summary>
-        <p class="tiny">Für alle erkannten Bildfarben: gemeinsame Grundmischungen einmal anrühren, dann Teilportionen mit den angegebenen Zugaben ergänzen.</p>
+        <p class="tiny">Für alle erkannten Bildfarben: Grundmischungen für mindestens drei Bildfarben einmal anrühren, dann Teilportionen mit den angegebenen Zugaben ergänzen.</p>
         <button id="build32BasesCalculate" type="button" class="secondary">Grundmischungen finden</button>
         <p id="build32BasesStatus" class="tiny" role="status">Zuerst Bildfarben erkennen. Dieser Mischplan wird getrennt von der Tubenfarben-Übersicht erstellt.</p>
         <div id="build32BasesResults"></div>
@@ -8118,7 +8118,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           const removed=ids.filter(id=>row.v[id]===v[id]*n).length;
           uses.push({row,n});score+=fraction+removed;
         }
-        if(uses.length>=2&&(!best||score>best.score))best={v,uses,score};
+        if(uses.length>=3&&(!best||score>best.score))best={v,uses,score};
       }
       if(!best)break;
       const base={v:best.v,label:String.fromCharCode(65+bases.length),uses:best.uses};bases.push(base);
@@ -8220,7 +8220,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const singles=[...plan.rows.filter(row=>!row.base).map(row=>row.sample.index),...plan.individual].sort((a,b)=>a-b);
       if(!plan.bases.length){
         const mixed=plan.rows.filter(row=>Object.keys(row.v).length>=2).length;
-        add('p',mixed===0?'Diese Rezepte verwenden jeweils nur eine Tubenfarbe oder Papierweiß. Dafür ist keine gemeinsame Vormischung nötig.': 'Keine ausreichend große gemeinsame Teilmischung gefunden. Eine Basis muss mindestens zwei Tubenfarben und mindestens ein Viertel jeder zugehörigen Mischung umfassen. Hier sind die Einzelrezepte.');
+        add('p',mixed===0?'Diese Rezepte verwenden jeweils nur eine Tubenfarbe oder Papierweiß. Dafür ist keine gemeinsame Vormischung nötig.': 'Keine ausreichend große gemeinsame Teilmischung gefunden. Eine Basis muss für mindestens drei Bildfarben passen, mindestens zwei Tubenfarben enthalten und mindestens ein Viertel jeder zugehörigen Mischung umfassen. Hier sind die Einzelrezepte.');
       }
       if(singles.length){
         const section=add('section','');section.className='tube-recipe-group';add('h3','Einzeln vorbereiten · '+singles.length+' Bildfarben',section);
@@ -14764,7 +14764,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.38</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.39</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -16700,7 +16700,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.38_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.38_Motiv_Transparent.png':'AtelierAI_5.38_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.39_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.39_Motiv_Transparent.png':'AtelierAI_5.39_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }

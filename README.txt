@@ -1,10 +1,14 @@
-AtelierAI iPad 5.38 – Grundmischungen auch bei unterschiedlichen Verhältnissen
+AtelierAI iPad 5.39 – Mischfamilien erst ab drei Bildfarben
+
+Im separaten Bereich „Grundmischungen vorbereiten“ werden nur noch Familien mit mindestens drei Bildfarben vorgeschlagen. Kleinere Gruppen bleiben unter „Einzeln vorbereiten“.
+
+AtelierAI iPad 5.39 – Grundmischungen auch bei unterschiedlichen Verhältnissen
 
 Die separate Suche hat bisher eine zusätzliche Bedingung zur Zahl der Mischschritte verlangt. Dadurch wurden sinnvolle gemeinsame Teilmischungen verworfen, etwa bei zwei Rezepten mit gleichen Zutaten in unterschiedlichen Verhältnissen. Diese Bedingung entfällt in diesem Bereich. Die Zutatenanteile bleiben exakt erhalten; pro Familie müssen mindestens zwei Bildfarben eine gemeinsame Basis aus mindestens zwei Tubenfarben nutzen, die mindestens ein Viertel jeder Mischung ausmacht.
 
 Dezimalanteile wie 0,05 / 0,95 werden jetzt als gleichwertiges ganzzahliges Verhältnis verarbeitet. Bis zu acht Familien möglich. Bestehen alle Rezepte aus einzelnen Tubenfarben, erklärt die Anzeige dies ausdrücklich.
 
-AtelierAI iPad 5.38 – Grundmischungen separat vorbereiten
+AtelierAI iPad 5.39 – Grundmischungen separat vorbereiten
 
 Erkannte Farben → Grundmischungen vorbereiten → Grundmischungen finden. Ein eigener, zunächst geschlossener Bereich neben der bisherigen Tubenfarben-Übersicht. Jeweils nur einer der beiden Bereiche bleibt geöffnet.
 
@@ -14,25 +18,25 @@ Pro Familie: Basisrezept, Vorratsmenge für einen Ansatz je Bildfarbe, große Fa
 
 Farbfeld antippen zeigt die zugehörigen Bildstellen; „Vorherige Bildansicht“ führt zurück. Keine Abhakfunktion. Die bisherige Tubenfarben- und Mischpartnerübersicht bleibt separat bedienbar.
 
-AtelierAI iPad 5.38 – Mischübersicht zum Vorbereiten
+AtelierAI iPad 5.39 – Mischübersicht zum Vorbereiten
 
 Erkannte Farben → Benötigte Tubenfarben → Tubenfarben auflisten. Eine oder mehrere Tubenfarben auswählen. Die Rezepte erscheinen automatisch nach vollständigen Mischpartner-Kombinationen gruppiert. Jedes Rezept steht genau einmal in der Übersicht. Große Farbfelder zeigen die jeweilige Bildfarbe, darunter stehen alle Zutaten und Mengen. Gewählte Tubenfarben sind fett hervorgehoben.
 
 Farbfeld antippen: Nur die zugehörigen Stellen im Bild anzeigen. Weitere Felder wechseln direkt zur nächsten Farbe; „Vorherige Bildansicht“ stellt die Ansicht vor der Farbauswahl wieder her. Die bisherige Partnerliste bleibt zum Eingrenzen erhalten. Keine Abhakfunktion.
 
-AtelierAI iPad 5.38 – Mischpartner einer Tubenfarbe
+AtelierAI iPad 5.39 – Mischpartner einer Tubenfarbe
 
 Eine Tubenfarbe wie Naples Yellow auswählen: Oberhalb der Rezepte erscheinen alle weiteren Tubenfarben, die mit ihr gemischt werden. Jeder Mischpartner zeigt die Anzahl der gemeinsamen Mischungen und die Nummern der Bildfarben. Antippen wählt den Partner dazu und zeigt die gemeinsamen Rezepte mit Mengen. Bei mehreren ausgewählten Farben bezieht sich die Partnerliste auf die aktuell angezeigten Rezepte.
 
-AtelierAI iPad 5.38 – Mehrere Tubenfarben gemeinsam suchen
+AtelierAI iPad 5.39 – Mehrere Tubenfarben gemeinsam suchen
 
 Unter Erkannte Farben → Benötigte Tubenfarben → Tubenfarben auflisten. Zwei, drei oder mehr Tubenfarben antippen. Standardmäßig werden nur Mischungen gezeigt, die alle gewählten Farben enthalten. „Mindestens eine gewählte“ zeigt alle Einsatzstellen der gewählten Farben. Erneutes Antippen wählt eine Tubenfarbe ab; „Auswahl aufheben“ leert die Auswahl. Die gewählten Zutaten sind im Rezept fett hervorgehoben; ihre jeweiligen Mengen stehen bei jeder Bildfarbe.
 
-AtelierAI iPad 5.38 – Benötigte Tubenfarben
+AtelierAI iPad 5.39 – Benötigte Tubenfarben
 
 Farben erkennen → Erkannte Farben → Benötigte Tubenfarben → Tubenfarben auflisten. Eine Tubenfarbe antippen: zugehörige Bildfarben samt Nummer und Rezept erscheinen darunter und werden in der Palette orange umrandet. Gilt für 8/16/32/48/64 Farben, Lasso, Details und Ergänzungen sowie Artisan, System3 und Schmincke. Bei Änderungen neu auflisten.
 
-AtelierAI iPad 5.38 – Farbfläche mit zwei Fingern
+AtelierAI iPad 5.39 – Farbfläche mit zwei Fingern
 
 Farbfeld antippen. Auf der großen Farbfläche einen Finger zum Verschieben verwenden; zwei Finger auseinander- oder zusammenziehen, um die Größe zu ändern. Nach dem Loslassen bleibt die Fläche stehen. Nach einer Zwei-Finger-Geste beide Finger abheben, bevor eine neue Geste beginnt. Der Größenregler bleibt zusätzlich verfügbar.
 
