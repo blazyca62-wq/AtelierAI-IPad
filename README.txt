@@ -1,3 +1,7 @@
+AtelierAI iPad 5.32 – Farbfläche mit zwei Fingern
+
+Farbfeld antippen. Auf der großen Farbfläche einen Finger zum Verschieben verwenden; zwei Finger auseinander- oder zusammenziehen, um die Größe zu ändern. Nach dem Loslassen bleibt die Fläche stehen. Nach einer Zwei-Finger-Geste beide Finger abheben, bevor eine neue Geste beginnt. Der Größenregler bleibt zusätzlich verfügbar.
+
 AtelierAI iPad 5.31 – Große Farbflächen beim Mischen
 
 Zielfarbe, Mischung oder korrigierte Farbe antippen: Ein großes Farbfenster öffnet sich. Mit dem Größenregler vergrößern und am oberen Rand neben die Bildstelle ziehen. Das Bild bleibt unverändert hell und bedienbar. Änderungen der korrigierten Farbe erscheinen auch im großen Fenster. Mit Schließen oder Escape schließen.

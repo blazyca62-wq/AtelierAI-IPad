@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.31</title>
+  <title>AtelierAI iPad 5.32</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1097,7 +1097,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.31</div>
+    <div class="title">AtelierAI 5.32</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -14395,7 +14395,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.31</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.32</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -16331,7 +16331,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.31_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.31_Motiv_Transparent.png':'AtelierAI_5.31_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.32_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.32_Motiv_Transparent.png':'AtelierAI_5.32_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
@@ -16581,9 +16581,9 @@ html.layer-workspace #studioMenu,html.layer-workspace #studioProjects,html.layer
 <style>
 #mixColorLarge {position:fixed;z-index:2147483000;left:16px;top:90px;width:340px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;box-sizing:border-box;background:#f2f1ed;color:#222;border:1px solid #777;border-radius:12px;box-shadow:0 4px 20px #0005;padding:12px}
 #mixColorLarge[hidden]{display:none}
-#mixColorLarge header{display:flex;align-items:center;justify-content:space-between;gap:12px;touch-action:none;cursor:move;margin-bottom:10px}
+#mixColorLarge header{position:static;margin:0 0 10px;width:auto;display:flex;align-items:center;justify-content:space-between;gap:12px;touch-action:none;cursor:move;margin-bottom:10px}
 #mixColorLarge button{min-height:44px;flex-shrink:0}
-#mixColorLargeSurface{padding:22px;background:#808080;border-radius:6px}
+#mixColorLargeSurface{touch-action:none;user-select:none;-webkit-user-select:none;cursor:move;padding:22px;background:#808080;border-radius:6px}
 #mixColorLargePaint{width:100%;aspect-ratio:1;background:#808080}
 #mixColorLarge label{display:flex;align-items:center;gap:10px;margin-top:10px}
 #mixColorLarge input{flex:1;min-width:70px}
@@ -16595,7 +16595,7 @@ html.layer-workspace #studioMenu,html.layer-workspace #studioProjects,html.layer
 <div id="mixColorLargeSurface"><div id="mixColorLargePaint"></div></div>
 <div id="mixColorLargeValue" class="tiny" style="margin-top:8px"></div>
 <label for="mixColorLargeSize">Größe <input id="mixColorLargeSize" type="range" min="180" max="700" value="340" step="10"></label>
-<div class="tiny">Am oberen Rand verschieben · Bild bleibt bedienbar</div>
+<div class="tiny">Ein Finger: verschieben · Zwei Finger: Größe ändern</div>
 </section>
 <script>
 (()=>{
@@ -16623,7 +16623,7 @@ html.layer-workspace #studioMenu,html.layer-workspace #studioProjects,html.layer
     source=el;title.textContent=el.parentElement.firstElementChild.textContent.trim()+' · groß';
     panel.hidden=false;sync();clampPosition();document.getElementById('mixColorLargeClose').focus({preventScroll:true});
   }
-  function close(restore=true){panel.hidden=true;if(restore&&source?.isConnected)source.focus({preventScroll:true});source=null;}
+  function close(restore=true){drag=null;touchGesture=null;waitForRelease=false;panel.hidden=true;if(restore&&source?.isConnected)source.focus({preventScroll:true});source=null;}
   function prepare(){document.querySelectorAll(selector).forEach(el=>{
     el.setAttribute('role','button');el.tabIndex=0;
     el.setAttribute('aria-label',el.parentElement.firstElementChild.textContent.trim()+' vergrößern');
@@ -16637,13 +16637,70 @@ html.layer-workspace #studioMenu,html.layer-workspace #studioProjects,html.layer
   document.getElementById('mixColorLargeClose').addEventListener('click',()=>close());
   size.addEventListener('input',()=>{panel.style.width=size.value+'px';clampPosition();});
   const head=panel.querySelector('header');
-  head.addEventListener('pointerdown',e=>{
-    if(e.target.closest('button'))return;
-    const r=panel.getBoundingClientRect();drag={id:e.pointerId,x:e.clientX-r.left,y:e.clientY-r.top};head.setPointerCapture(e.pointerId);e.preventDefault();
+  // Touch gestures use a fixed start snapshot. After a pinch, remaining fingers
+  // cannot turn into a drag until all fingers have been lifted.
+  let touchGesture=null,waitForRelease=false;
+  function beginTouch(e){
+    e.stopPropagation();
+    if(e.target.closest('button,input,label'))return;
+    e.preventDefault();
+    if(waitForRelease)return;
+    const r=panel.getBoundingClientRect();
+    if(e.touches.length===2){
+      const [a,b]=e.touches, cx=(a.clientX+b.clientX)/2, cy=(a.clientY+b.clientY)/2;
+      touchGesture={type:'pinch',distance:Math.max(1,Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)),width:r.width,left:r.left,top:r.top,cx,cy};
+    }else if(e.touches.length===1){
+      touchGesture={type:'move',x:e.touches[0].clientX,y:e.touches[0].clientY,left:r.left,top:r.top};
+    }else{touchGesture=null;waitForRelease=true;}
+  }
+  function moveTouch(e){
+    e.stopPropagation();
+    if(!touchGesture||waitForRelease)return;
+    e.preventDefault();
+    const g=touchGesture;
+    if(g.type==='pinch'&&e.touches.length===2){
+      const [a,b]=e.touches, distance=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+      const width=Math.max(180,Math.min(700,innerWidth-24,g.width*distance/g.distance));
+      const scale=width/g.width;
+      panel.style.width=width+'px';size.value=String(Math.round(width));
+      panel.style.left=((a.clientX+b.clientX)/2-(g.cx-g.left)*scale)+'px';
+      panel.style.top=((a.clientY+b.clientY)/2-(g.cy-g.top)*scale)+'px';
+      clampPosition();
+    }else if(g.type==='move'&&e.touches.length===1){
+      panel.style.left=(g.left+e.touches[0].clientX-g.x)+'px';
+      panel.style.top=(g.top+e.touches[0].clientY-g.y)+'px';clampPosition();
+    }
+  }
+  function endTouch(e){
+    e.stopPropagation();
+    if(touchGesture)e.preventDefault();
+    touchGesture=null;waitForRelease=e.touches.length>0;
+  }
+  [head,surface].forEach(el=>{
+    el.addEventListener('touchstart',beginTouch,{passive:false});
+    el.addEventListener('touchmove',moveTouch,{passive:false});
+    el.addEventListener('touchend',endTouch,{passive:false});
+    el.addEventListener('touchcancel',endTouch,{passive:false});
   });
-  head.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;panel.style.left=(e.clientX-drag.x)+'px';panel.style.top=(e.clientY-drag.y)+'px';clampPosition();});
-  function end(){drag=null;}
-  head.addEventListener('pointerup',end);head.addEventListener('pointercancel',end);
+  // Mouse and Pencil dragging are separate from touch to avoid duplicate moves.
+  function pointerStart(e){
+    e.stopPropagation();
+    if(e.pointerType==='touch'||e.target.closest('button,input,label'))return;
+    const r=panel.getBoundingClientRect();drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:r.left,top:r.top};
+    e.currentTarget.setPointerCapture(e.pointerId);e.preventDefault();
+  }
+  function pointerMove(e){
+    e.stopPropagation();if(!drag||drag.id!==e.pointerId)return;
+    panel.style.left=(drag.left+e.clientX-drag.x)+'px';
+    panel.style.top=(drag.top+e.clientY-drag.y)+'px';clampPosition();
+  }
+  function endPointer(e){e.stopPropagation();if(drag?.id===e.pointerId)drag=null;}
+  [head,surface].forEach(el=>{
+    el.addEventListener('pointerdown',pointerStart);
+    el.addEventListener('pointermove',pointerMove);
+    el.addEventListener('pointerup',endPointer);el.addEventListener('pointercancel',endPointer);
+    el.addEventListener('lostpointercapture',endPointer);
+  });
   window.addEventListener('resize',()=>{if(!panel.hidden)clampPosition();});
   new MutationObserver(()=>{prepare();sync();}).observe(document.getElementById('mixResults'),{childList:true,subtree:true});
   new MutationObserver(sync).observe(document.getElementById('corrCompare'),{attributes:true,attributeFilter:['style'],subtree:true});
