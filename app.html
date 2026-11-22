@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.37</title>
+  <title>AtelierAI iPad 5.38</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1106,7 +1106,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.37</div>
+    <div class="title">AtelierAI 5.38</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -8087,21 +8087,69 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(document.getElementById(id).open)document.getElementById(other).open=false;
     });
   }
+  function build32SharedBasePlan(samples){
+    const gcd=(a,b)=>b?gcd(b,a%b):a;
+    const rows=samples.map(s=>{
+      const r=s.recipe;
+      if(!r.parts.length||r.parts.some(p=>!Number.isInteger(p)||p<=0))throw new Error('Dieses Rezept enthält keine ganzzahligen Teile. Bitte ein neues Rezept merken.');
+      const d=r.parts.reduce(gcd),v={};
+      r.tubeIds.forEach((id,i)=>{v[id]=(v[id]||0)+r.parts[i]/d;});
+      return {sample:s,v,base:null,n:0};
+    });
+    const candidates=new Map();
+    for(const row of rows){
+      const ids=Object.keys(row.v).sort();
+      for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){
+        for(let a=1;a<=6;a++)for(let b=1;b<=6;b++)if(gcd(a,b)===1){
+          const v={[ids[i]]:a,[ids[j]]:b};candidates.set(JSON.stringify(v),v);
+        }
+      }
+      if(ids.length>=2){const v=Object.fromEntries(ids.map(id=>[id,row.v[id]]));candidates.set(JSON.stringify(v),v);}
+    }
+    const bases=[];
+    while(bases.length<8){
+      let best=null;
+      for(const v of candidates.values()){
+        const ids=Object.keys(v),sum=Object.values(v).reduce((a,b)=>a+b,0),uses=[];let score=0;
+        for(const row of rows.filter(r=>!r.base)){
+          const n=Math.floor(Math.min(...ids.map(id=>(row.v[id]||0)/v[id])));
+          const fraction=n*sum/Object.values(row.v).reduce((a,b)=>a+b,0);
+          if(n<1||fraction<.25)continue;
+          const removed=ids.filter(id=>row.v[id]===v[id]*n).length;
+          uses.push({row,n});score+=fraction+removed;
+        }
+        if(uses.length>=2&&(!best||score>best.score))best={v,uses,score};
+      }
+      if(!best)break;
+      const base={v:best.v,label:String.fromCharCode(65+bases.length),uses:best.uses};bases.push(base);
+      for(const {row,n} of best.uses){row.base=base;row.n=n;}
+    }
+    return {rows,bases};
+  }
+
   function build32ExactBasePlan(recipes,palette,key){
     const samples=[],individual=[];
     recipes.forEach((recipe,index)=>{
-      // Paper white and recipes without a complete positive integer vector
+      // Paper white and recipes without a complete positive ingredient vector
       // remain individual recipes; never invent a shared base for them.
       if(!recipe){individual.push(index);return;}
       const ids=recipe.tubeIds||[],parts=recipe.parts||[],names=recipe.names||[];
       const positive=parts.map((n,j)=>({id:ids[j],name:names[j],n})).filter(x=>x.n>0);
-      if(!positive.length||positive.some(x=>!x.id||!x.name||!Number.isSafeInteger(x.n))||parts.some(n=>!Number.isFinite(n)||n<0)){
+      if(!positive.length||positive.some(x=>!x.id||!x.name||!Number.isFinite(x.n))||parts.some(n=>!Number.isFinite(n)||n<0)){
         individual.push(index);return;
       }
-      const clean={...recipe,tubeIds:positive.map(x=>x.id),names:positive.map(x=>x.name),parts:positive.map(x=>x.n)};
+      // Convert common decimal portions (0.05, 0.2, 0.5, etc.) into an
+      // equivalent whole-number ratio before searching. Do not round recipes.
+      let scale=1;
+      while(scale<1000000&&positive.some(x=>Math.abs(x.n*scale-Math.round(x.n*scale))>1e-8))scale*=10;
+      if(positive.some(x=>Math.abs(x.n*scale-Math.round(x.n*scale))>1e-8||Math.round(x.n*scale)<=0||!Number.isSafeInteger(Math.round(x.n*scale)))){individual.push(index);return;}
+      const gcd=(a,b)=>b?gcd(b,a%b):a;
+      const portions=positive.map(x=>Math.round(x.n*scale));
+      const divisor=portions.reduce(gcd);
+      const clean={...recipe,tubeIds:positive.map(x=>x.id),names:positive.map(x=>x.name),parts:portions.map(n=>n/divisor)};
       samples.push({id:String(index),index,name:'Farbe '+(index+1),key,target:palette[index],amount:1,recipe:clean});
     });
-    const plan=buildPalettePlan(samples);
+    const plan=build32SharedBasePlan(samples);
     return {...plan,individual};
   }
   document.getElementById('build32BasesCalculate').addEventListener('click',async()=>{
@@ -8170,7 +8218,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         }
       }
       const singles=[...plan.rows.filter(row=>!row.base).map(row=>row.sample.index),...plan.individual].sort((a,b)=>a-b);
-      if(!plan.bases.length)add('p','Keine praktische gemeinsame Grundmischung gefunden. Hier sind die Einzelrezepte.');
+      if(!plan.bases.length){
+        const mixed=plan.rows.filter(row=>Object.keys(row.v).length>=2).length;
+        add('p',mixed===0?'Diese Rezepte verwenden jeweils nur eine Tubenfarbe oder Papierweiß. Dafür ist keine gemeinsame Vormischung nötig.': 'Keine ausreichend große gemeinsame Teilmischung gefunden. Eine Basis muss mindestens zwei Tubenfarben und mindestens ein Viertel jeder zugehörigen Mischung umfassen. Hier sind die Einzelrezepte.');
+      }
       if(singles.length){
         const section=add('section','');section.className='tube-recipe-group';add('h3','Einzeln vorbereiten · '+singles.length+' Bildfarben',section);
         const grid=add('div','',section);grid.className='tube-recipe-grid';
@@ -14713,7 +14764,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.37</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.38</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -16649,7 +16700,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.37_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.37_Motiv_Transparent.png':'AtelierAI_5.37_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.38_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.38_Motiv_Transparent.png':'AtelierAI_5.38_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
