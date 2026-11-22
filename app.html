@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.35</title>
+  <title>AtelierAI iPad 5.36</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -270,6 +270,13 @@
     .topbar>button,.topbar>.filelabel{white-space:normal;text-align:center;}
     @media(max-width:1100px){.topbar>button,.topbar>.filelabel{font-size:13px;padding:8px 10px;}}
   #build32Palette .tube-match{outline:3px solid #ffb000;outline-offset:2px;}
+  .tube-recipe-group{margin:16px 0;padding-top:8px;border-top:1px solid #888;}
+  .tube-recipe-group h4{margin:4px 0 10px;font-size:15px;}
+  .tube-recipe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:10px;}
+  .tube-recipe-card{min-width:0;padding:8px;border:1px solid #888;border-radius:8px;}
+  .tube-recipe-swatch{display:block;width:100%;min-height:96px;border:1px solid #888;border-radius:6px;font-size:15px;white-space:normal;}
+  .tube-recipe-swatch[aria-pressed="true"]{outline:3px solid #ffb000;outline-offset:1px;}
+  .tube-recipe-parts{margin-top:10px;font-size:14px;line-height:1.6;overflow-wrap:anywhere;}
   #build32TubesList button[aria-pressed="true"]{outline:3px solid #ffb000;}
 </style>
 </head>
@@ -1099,7 +1106,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.35</div>
+    <div class="title">AtelierAI 5.36</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -7891,6 +7898,18 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     return [...partners].map(([id,indices])=>({id,indices})).sort((a,b)=>b.indices.length-a.indices.length||a.id.localeCompare(b.id,'de'));
   }
+  // Each recipe belongs to one exact partner combination, without duplicates.
+  function build32TubeRecipeGroups(recipes,indices,selected){
+    const groups=new Map();
+    for(const index of indices){
+      const recipe=recipes[index];
+      const ids=[...new Set((recipe.tubeIds||[]).filter((id,j)=>recipe.parts[j]>0&&!selected.has(id)))].sort();
+      const key=JSON.stringify(ids);
+      if(!groups.has(key))groups.set(key,{ids,indices:[]});
+      groups.get(key).indices.push(index);
+    }
+    return [...groups.values()].sort((a,b)=>a.ids.length-b.ids.length||b.indices.length-a.indices.length||JSON.stringify(a.ids).localeCompare(JSON.stringify(b.ids),'de'));
+  }
   function build32TubeMatchIndices(chosen,count,mode){
     if(!chosen.length)return [];
     return Array.from({length:count},(_,i)=>i).filter(i=>mode==='any'
@@ -7969,7 +7988,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           const partners=build32TubePartners(recipes,indices,selected);
           if(!partners.length){const note=document.createElement('p');note.textContent='Keine weiteren Tubenfarben in diesen Rezepten.';partnerBox.appendChild(note);}
           else{
-            const help=document.createElement('p');help.className='tiny';help.textContent='Mischpartner antippen: gemeinsam verwendete Bildfarben und Rezepte anzeigen.';partnerBox.appendChild(help);
+            const help=document.createElement('p');help.className='tiny';help.textContent='Mischpartner antippen, um die Auswahl einzugrenzen. Darunter sind alle Rezepte nach ihren vollständigen Mischpartnern gruppiert.';partnerBox.appendChild(help);
             for(const partner of partners){
               const tube=tubes.get(partner.id);if(!tube)continue;
               const row=document.createElement('div');row.style.cssText='margin:6px 0';
@@ -7988,17 +8007,45 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           :'Eine, zwei, drei oder mehr Tubenfarben antippen. Erneutes Antippen wählt eine Farbe ab.';
         matches.appendChild(heading);
         if(chosen.length&&!indices.length){const empty=document.createElement('p');empty.textContent='Keine Mischung enthält diese Auswahl gemeinsam. Eine Farbe abwählen oder „Mindestens eine gewählte“ wählen.';matches.appendChild(empty);}
-        for(const index of indices){
-          const row=document.createElement('div');row.style.cssText='margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px';
-          const swatch=document.createElement('button');swatch.type='button';swatch.textContent='Farbe '+(index+1);swatch.style.cssText='min-width:100px;min-height:48px;background:'+rgbHex(palette[index])+';color:'+(rgbToLabFast(palette[index])[0]>55?'#111':'#fff');
-          swatch.onclick=()=>{if(!current()){invalidateBuild32Tubes();return;}showBuild32PalettePage(Math.floor(index/16));selectBuild32Color(index);};row.appendChild(swatch);
-          const line=document.createElement('div'),m=recipes[index];line.className='tiny';
-          if(m.names){m.names.forEach((name,j)=>{
-            if(j)line.append(' + ');
-            const part=document.createElement(selected.has(m.tubeIds[j])?'strong':'span');part.textContent=m.parts[j].toLocaleString('de-DE')+' Teile '+name;line.appendChild(part);
-          });}else line.textContent=m.name;
-          if(m.watercolor||(['watercolor','horadam','akademie'].includes(key)&&data.pure))line.append(' · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß');
-          row.appendChild(line);matches.appendChild(row);
+        if(indices.length){
+          const hint=document.createElement('p');hint.className='tiny';hint.textContent='Mischübersicht · Jedes Rezept erscheint einmal. Großes Farbfeld antippen: zugehörige Stellen im Bild zeigen.';matches.appendChild(hint);
+          const back=document.createElement('button');back.type='button';back.className='secondary';back.textContent='Vorherige Bildansicht';
+          back.onclick=()=>{
+            if(!current()){invalidateBuild32Tubes();return;}
+            if(build32SoloPrevious)document.getElementById('build32Solo').click();
+            matches.querySelectorAll('.tube-recipe-swatch').forEach(b=>b.setAttribute('aria-pressed','false'));
+          };matches.appendChild(back);
+        }
+        for(const group of build32TubeRecipeGroups(recipes,indices,selected)){
+          const section=document.createElement('section');section.className='tube-recipe-group';
+          const title=document.createElement('h4');
+          title.textContent=(group.ids.length?'Mit '+group.ids.map(id=>tubes.get(id)?.name||id).join(' + '):'Ohne weitere Mischpartner')+' · '+group.indices.length+' Mischung'+(group.indices.length===1?'':'en');section.appendChild(title);
+          const grid=document.createElement('div');grid.className='tube-recipe-grid';section.appendChild(grid);
+          for(const index of group.indices){
+            const row=document.createElement('div');row.className='tube-recipe-card';
+            const swatch=document.createElement('button');swatch.type='button';swatch.className='tube-recipe-swatch';swatch.textContent='Farbe '+(index+1)+' · Im Bild zeigen';swatch.style.background=rgbHex(palette[index]);swatch.style.color=rgbToLabFast(palette[index])[0]>55?'#111':'#fff';
+            swatch.setAttribute('aria-label','Farbe '+(index+1)+' im Bild zeigen');
+            swatch.onclick=()=>{
+              if(!current()){invalidateBuild32Tubes();return;}
+              showBuild32PalettePage(Math.floor(index/16));
+              if(!build32SoloPrevious){build32SoloPrevious={state:captureBuild32State(),allPrevious:build32AllPrevious};build32AllPrevious=null;}
+              build32SoloAdditive=false;build32SimilarAnchor=index;
+              build32Selection.clear();build32Selection.add(index);build32Selected=index;build32Manual=true;
+              renderBuild32Selection();syncBuild32ReturnButtons();
+              matches.querySelectorAll('.tube-recipe-swatch').forEach(b=>b.setAttribute('aria-pressed',String(b===swatch)));
+            };row.appendChild(swatch);
+            const line=document.createElement('div'),m=recipes[index];line.className='tube-recipe-parts';
+            if(m.names){m.names.forEach((name,j)=>{
+              if(!(m.parts[j]>0))return;
+              const part=document.createElement('div');
+              const text=document.createElement(selected.has((m.tubeIds||[])[j])?'strong':'span');text.textContent=m.parts[j].toLocaleString('de-DE')+' Teil'+(m.parts[j]===1?'':'e')+' '+name;part.appendChild(text);line.appendChild(part);
+            });}else line.textContent=m.name;
+            if(m.watercolor||(['watercolor','horadam','akademie'].includes(key)&&data.pure)){
+              const note=document.createElement('div');note.className='tiny';note.textContent=Math.round(m.coverage*100)+' % Farbauftrag auf Weiß';line.appendChild(note);
+            }
+            row.appendChild(line);grid.appendChild(row);
+          }
+          matches.appendChild(section);
         }
       }
       mode.onchange=renderMatches;
@@ -14547,7 +14594,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.35</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.36</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -16483,7 +16530,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.35_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.35_Motiv_Transparent.png':'AtelierAI_5.35_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.36_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.36_Motiv_Transparent.png':'AtelierAI_5.36_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
