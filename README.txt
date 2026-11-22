@@ -1,3 +1,7 @@
+AtelierAI iPad 5.31 – Große Farbflächen beim Mischen
+
+Zielfarbe, Mischung oder korrigierte Farbe antippen: Ein großes Farbfenster öffnet sich. Mit dem Größenregler vergrößern und am oberen Rand neben die Bildstelle ziehen. Das Bild bleibt unverändert hell und bedienbar. Änderungen der korrigierten Farbe erscheinen auch im großen Fenster. Mit Schließen oder Escape schließen.
+
 AtelierAI iPad 5.30 – Palette der Ergänzungen
 
 Nach „Nur Ergänzungen zeigen“ öffnet sich die Farbpalette der Ergänzungen automatisch. Unter „Einstellungen“ führt „Palette der Ergänzungen“ jederzeit wieder dorthin. Farbfeld antippen: Farbe auswählen und Mischrezept anzeigen. Die Abweichung aktualisiert auch diese Palette. „Farbaufbau wieder anzeigen“ stellt die vorherige Palette wieder her.
