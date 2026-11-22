@@ -1,4 +1,12 @@
-AtelierAI iPad 5.32 – Farbfläche mit zwei Fingern
+AtelierAI iPad 5.34 – Mehrere Tubenfarben gemeinsam suchen
+
+Unter Erkannte Farben → Benötigte Tubenfarben → Tubenfarben auflisten. Zwei, drei oder mehr Tubenfarben antippen. Standardmäßig werden nur Mischungen gezeigt, die alle gewählten Farben enthalten. „Mindestens eine gewählte“ zeigt alle Einsatzstellen der gewählten Farben. Erneutes Antippen wählt eine Tubenfarbe ab; „Auswahl aufheben“ leert die Auswahl. Die gewählten Zutaten sind im Rezept fett hervorgehoben; ihre jeweiligen Mengen stehen bei jeder Bildfarbe.
+
+AtelierAI iPad 5.34 – Benötigte Tubenfarben
+
+Farben erkennen → Erkannte Farben → Benötigte Tubenfarben → Tubenfarben auflisten. Eine Tubenfarbe antippen: zugehörige Bildfarben samt Nummer und Rezept erscheinen darunter und werden in der Palette orange umrandet. Gilt für 8/16/32/48/64 Farben, Lasso, Details und Ergänzungen sowie Artisan, System3 und Schmincke. Bei Änderungen neu auflisten.
+
+AtelierAI iPad 5.34 – Farbfläche mit zwei Fingern
 
 Farbfeld antippen. Auf der großen Farbfläche einen Finger zum Verschieben verwenden; zwei Finger auseinander- oder zusammenziehen, um die Größe zu ändern. Nach dem Loslassen bleibt die Fläche stehen. Nach einer Zwei-Finger-Geste beide Finger abheben, bevor eine neue Geste beginnt. Der Größenregler bleibt zusätzlich verfügbar.
 

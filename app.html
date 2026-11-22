@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.32</title>
+  <title>AtelierAI iPad 5.34</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -269,6 +269,8 @@
     .topbar>button,.topbar>.filelabel{flex:0 0 auto;max-width:100%;}
     .topbar>button,.topbar>.filelabel{white-space:normal;text-align:center;}
     @media(max-width:1100px){.topbar>button,.topbar>.filelabel{font-size:13px;padding:8px 10px;}}
+  #build32Palette .tube-match{outline:3px solid #ffb000;outline-offset:2px;}
+  #build32TubesList button[aria-pressed="true"]{outline:3px solid #ffb000;}
 </style>
 </head>
 <body>
@@ -1097,7 +1099,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.32</div>
+    <div class="title">AtelierAI 5.34</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1150,6 +1152,15 @@
       <p id="build32PaletteTitle" class="tiny" role="status" style="margin:8px 0 4px;font-weight:bold">Palette der erkannten Farben</p>
       <div id="build32Pages" aria-label="Farbseiten"></div>
       <div id="build32Palette" aria-label="Erkannte Bildfarben"></div>
+      <details id="build32Tubes" style="margin:10px 0;padding:8px;border:1px solid #888;border-radius:8px">
+        <summary>Benötigte Tubenfarben · Wo kommt welche Farbe vor?</summary>
+        <p class="tiny">Für die gesamte aktuelle Palette, auch ausgeblendete Farben. Berücksichtigt deine vorhandenen Farben und jeweils das erste Mischrezept.</p>
+        <button id="build32TubesCalculate" type="button" class="secondary">Tubenfarben auflisten</button>
+        <p id="build32TubesStatus" class="tiny" role="status">Zuerst Bildfarben erkennen, dann Tubenfarben auflisten. Mehrere Tubenfarben antippen, um gemeinsame Mischungen zu finden; erneut antippen wählt sie ab.</p>
+        <div id="build32TubesList" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        <div id="build32TubesControls" style="margin:8px 0"></div>
+        <div id="build32TubesMatches"></div>
+      </details>
       <div id="build32Similar" hidden style="margin:6px 0"></div>
       <div id="build32Recipe" role="status">Farbfläche im Bild antippen: Palettenfarbe und Mischung anzeigen. Ein Farbfeld antippen, um die Farbe im Bild auszuwählen.</div><details data-picture-palette="build32MixPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details>
     </div>
@@ -5074,6 +5085,7 @@
     box.appendChild(button);
   }
   function refreshPictureRecipes(){
+    invalidateBuild32Tubes();
     renderPicturePalettePanels();
     if(lastSmartColor||lastAverageColor)showMixes();
     if(build32Data&&build32Selected!==null)updateBuild32Recipe();
@@ -6826,13 +6838,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const remap=new Map(order.map((id,i)=>[id,i]));
     const ranks=raw.map(id=>remap.get(id));
     return {width:data.width,height:data.height,pure:true,palette:order.map(i=>candidates[i].rgb),
-      paintInfo:order.map(i=>({name:candidates[i].name,coverage:candidates[i].coverage,watercolor:data.watercolor,recipe:candidates[i].recipe})),ranks:ranks.buffer};
+      paintInfo:order.map(i=>({tubeIds:candidates[i].tubeIds,names:candidates[i].names,parts:candidates[i].parts,name:candidates[i].name,coverage:candidates[i].coverage,watercolor:data.watercolor,recipe:candidates[i].recipe})),ranks:ranks.buffer};
   }
   function build32PureColors(key){
     const water=['watercolor','horadam','akademie'].includes(key),out=[];
     for(const [name,rgb,brand] of effectivePaletteColors(key)){
       for(const coverage of (water?[1,.8,.6,.4,.25,.12,.05]:[1]))
-        out.push({name:(brand?brand+' · ':'')+name,rgb:water?washRgb(rgb,coverage):rgb.slice(),coverage});
+        out.push({tubeIds:[pictureTubeId(key,[name,rgb,brand])],names:[name+(brand?' ('+brand+')':'')],parts:[1],name:(brand?brand+' · ':'')+name,rgb:water?washRgb(rgb,coverage):rgb.slice(),coverage});
     }
     if(water)out.push({name:'Papierweiß – aussparen',rgb:[255,255,255],coverage:0});
     return out;
@@ -6851,7 +6863,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const entries=[...merged.values()],rgb=entries.length===1?entries[0].c[1].slice():pigmentMix(entries.map(x=>x.c[1]),entries.map(x=>x.part),paletteKey);
       const key=rgb.join(',');if(seen.has(key))return;seen.add(key);
       const recipe=entries.map(x=>(Math.round(x.part*1000)/10).toLocaleString('de-DE')+' % '+x.c[0]).join(' + ');
-      out.push({name:entries.map(x=>x.c[0]).join(' + '),rgb,coverage:1,recipe:entries.length===1?'Reine Tubenfarbe':recipe});
+      out.push({tubeIds:entries.map(x=>pictureTubeId(paletteKey,x.c)),names:entries.map(x=>x.c[0]),parts:entries.map(x=>x.part),name:entries.map(x=>x.c[0]).join(' + '),rgb,coverage:1,recipe:entries.length===1?'Reine Tubenfarbe':recipe});
     };
     // Keep every original tube color available before adding mixtures.
     for(const base of paints)add([base],[1]);
@@ -7128,6 +7140,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function renderBuild32PaletteStrip(palette){
     const strip=document.getElementById('build32Palette');
     if(!strip)return;
+    invalidateBuild32Tubes();
     strip.replaceChildren();
     if(!palette)return;
     palette.forEach((rgb,index)=>{
@@ -7495,6 +7508,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     document.getElementById('build32Replace').textContent='Originalfarbe ersetzen';
     document.getElementById('build32ResetColor').disabled=true;
     for(const d of ['light','dark']){document.getElementById('build32'+d).value=0;document.getElementById('build32'+d).max=build32ColorCount();document.getElementById('build32'+d).disabled=true;document.getElementById('build32'+d+'Val').textContent='0 / '+build32ColorCount();}
+    invalidateBuild32Tubes();
     document.getElementById('build32Palette').replaceChildren();
     document.getElementById('build32Pages').replaceChildren();build32PalettePage=0;syncBuild32PaletteContext();
     build32Status.textContent='Foto öffnen und Farben erkennen lassen.';
@@ -7504,6 +7518,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     return palette&&palette[index]?palette[index]:null;
   }
   function build32UpdatePaletteButton(index){
+    invalidateBuild32Tubes();
     const el=document.getElementById('build32Palette').children[index];
     const palette=build32ActivePalette(),overrides=build32ActiveOverrides();
     if(!el||!palette||!palette[index])return;
@@ -7708,6 +7723,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 
   function acceptBuild32(result,generation){
     if(generation!==build32Generation)return;
+    invalidateBuild32Tubes();
     build32Data={...result,ranks:result.pure?new Uint16Array(result.ranks):new Uint8Array(result.ranks)};
     build32OriginalPalette=result.palette.map(rgb=>[...rgb]);
     build32ColorOverrides.clear();build32ReplaceArmed=false;
@@ -7864,6 +7880,111 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     build32StageView=build32StageView==='before'?'all':'before';renderBuild32Stage();
   });
 
+  // Reverse lookup uses the same first recipe as the individual colour view.
+  function build32TubeMatchIndices(chosen,count,mode){
+    if(!chosen.length)return [];
+    return Array.from({length:count},(_,i)=>i).filter(i=>mode==='any'
+      ?chosen.some(t=>t.indices.includes(i)):chosen.every(t=>t.indices.includes(i)));
+  }
+  let build32TubesRevision=0,build32TubesSnapshot=null;
+  // Drop stale results after palette edits, including edits outside this panel.
+  document.addEventListener('change',()=>{
+    setTimeout(()=>{if(build32TubesSnapshot&&build32TubesSnapshot!==build32TubeSnapshot())invalidateBuild32Tubes();},0);
+  });
+  function invalidateBuild32Tubes(){
+    build32TubesRevision++;build32TubesSnapshot=null;
+    document.getElementById('build32TubesList').replaceChildren();
+    document.getElementById('build32TubesMatches').replaceChildren();
+    document.getElementById('build32TubesControls').replaceChildren();
+    document.getElementById('build32TubesCalculate').disabled=false;
+    document.getElementById('build32TubesStatus').textContent='Tubenfarben für die aktuelle Palette neu auflisten.';
+    document.querySelectorAll('#build32Palette .tube-match').forEach(el=>el.classList.remove('tube-match'));
+  }
+  function build32TubeSnapshot(){
+    const key=document.getElementById('build32MixPalette').value;
+    const data=build32DetailCell||build32Data;
+    return JSON.stringify([key,build32ActivePalette(),data?.pure,data?.paintInfo,effectivePaletteColors(key),picturePalette,localStorage.getItem(MIX_FEEDBACK_KEY)]);
+  }
+  document.getElementById('build32TubesCalculate').addEventListener('click',async()=>{
+    invalidateBuild32Tubes();
+    const palette=build32ActivePalette();
+    const status=document.getElementById('build32TubesStatus'),button=document.getElementById('build32TubesCalculate');
+    if(!palette?.length){status.textContent='Bitte zuerst Bildfarben erkennen.';return;}
+    const revision=build32TubesRevision,key=document.getElementById('build32MixPalette').value;
+    const data=build32DetailCell||build32Data,snapshot=build32TubeSnapshot(),recipes=[],tubes=new Map();
+    button.disabled=true;
+    const current=()=>revision===build32TubesRevision&&snapshot===build32TubeSnapshot();
+    try{
+      for(let index=0;index<palette.length;index++){
+        status.textContent='Mischrezepte berechnen: '+(index+1)+' / '+palette.length+' …';
+        await new Promise(resolve=>setTimeout(resolve,20));
+        if(!current()){if(revision===build32TubesRevision)invalidateBuild32Tubes();return;}
+        const m=data.pure?data.paintInfo?.[index]:chooseMixes(palette[index],key)[0];
+        if(!m)throw Error('missing recipe');
+        // Paper white has no tube. Pure/simple modes carry their original recipe IDs.
+        if(data.pure&&m.coverage!==0&&!m.tubeIds)throw Error('missing tube identity');
+        recipes[index]=m;
+        (m.tubeIds||[]).forEach((id,j)=>{
+          if(!(m.parts[j]>0))return;
+          if(!tubes.has(id)){
+            const paint=effectivePaletteColors(key).find(c=>pictureTubeId(key,c)===id);
+            tubes.set(id,{id,name:m.names[j],rgb:paint?.[1],indices:[]});
+          }
+          const indices=tubes.get(id).indices;if(!indices.includes(index))indices.push(index);
+        });
+      }
+      if(!current()){if(revision===build32TubesRevision)invalidateBuild32Tubes();return;}
+      const list=document.getElementById('build32TubesList'),matches=document.getElementById('build32TubesMatches');
+      const sorted=[...tubes.values()].sort((a,b)=>b.indices.length-a.indices.length||a.name.localeCompare(b.name,'de'));
+      const selected=new Set(),buttons=new Map();
+      const controls=document.getElementById('build32TubesControls');
+      const mode=document.createElement('select');mode.setAttribute('aria-label','Verknüpfung ausgewählter Tubenfarben');
+      for(const [value,label] of [['all','Alle gewählten gemeinsam'],['any','Mindestens eine gewählte']]){
+        const option=document.createElement('option');option.value=value;option.textContent=label;mode.appendChild(option);
+      }
+      mode.value='all';controls.appendChild(mode);
+      const clear=document.createElement('button');clear.type='button';clear.className='secondary';clear.textContent='Auswahl aufheben';controls.appendChild(clear);
+      function renderMatches(){
+        if(!current()){invalidateBuild32Tubes();return;}
+        for(const [id,b] of buttons)b.setAttribute('aria-pressed',String(selected.has(id)));
+        const chosen=sorted.filter(t=>selected.has(t.id));
+        const indices=build32TubeMatchIndices(chosen,palette.length,mode.value);
+        [...document.getElementById('build32Palette').children].forEach((el,i)=>el.classList.toggle('tube-match',indices.includes(i)));
+        matches.replaceChildren();clear.disabled=!chosen.length;
+        const heading=document.createElement('p');
+        heading.textContent=chosen.length
+          ?chosen.map(t=>t.name).join(' + ')+' · '+indices.length+' von '+palette.length+' Bildfarben ('+(mode.value==='all'?'alle gemeinsam':'mindestens eine')+').'
+          :'Eine, zwei, drei oder mehr Tubenfarben antippen. Erneutes Antippen wählt eine Farbe ab.';
+        matches.appendChild(heading);
+        if(chosen.length&&!indices.length){const empty=document.createElement('p');empty.textContent='Keine Mischung enthält diese Auswahl gemeinsam. Eine Farbe abwählen oder „Mindestens eine gewählte“ wählen.';matches.appendChild(empty);}
+        for(const index of indices){
+          const row=document.createElement('div');row.style.cssText='margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px';
+          const swatch=document.createElement('button');swatch.type='button';swatch.textContent='Farbe '+(index+1);swatch.style.cssText='min-width:100px;min-height:48px;background:'+rgbHex(palette[index])+';color:'+(rgbToLabFast(palette[index])[0]>55?'#111':'#fff');
+          swatch.onclick=()=>{if(!current()){invalidateBuild32Tubes();return;}showBuild32PalettePage(Math.floor(index/16));selectBuild32Color(index);};row.appendChild(swatch);
+          const line=document.createElement('div'),m=recipes[index];line.className='tiny';
+          if(m.names){m.names.forEach((name,j)=>{
+            if(j)line.append(' + ');
+            const part=document.createElement(selected.has(m.tubeIds[j])?'strong':'span');part.textContent=m.parts[j].toLocaleString('de-DE')+' Teile '+name;line.appendChild(part);
+          });}else line.textContent=m.name;
+          if(m.watercolor||(['watercolor','horadam','akademie'].includes(key)&&data.pure))line.append(' · '+Math.round(m.coverage*100)+' % Farbauftrag auf Weiß');
+          row.appendChild(line);matches.appendChild(row);
+        }
+      }
+      mode.onchange=renderMatches;
+      clear.onclick=()=>{selected.clear();renderMatches();};
+      for(const tube of sorted){
+        const b=document.createElement('button');b.type='button';b.className='secondary';b.setAttribute('aria-pressed','false');
+        if(tube.rgb){const chip=document.createElement('span');chip.style.cssText='display:inline-block;width:20px;height:20px;border:1px solid #888;vertical-align:middle;margin-right:6px;background:'+rgbHex(tube.rgb);b.appendChild(chip);}
+        b.append(tube.name+' · '+tube.indices.length);list.appendChild(b);buttons.set(tube.id,b);
+        b.onclick=()=>{if(selected.has(tube.id))selected.delete(tube.id);else selected.add(tube.id);renderMatches();};
+      }
+      renderMatches();
+      build32TubesSnapshot=snapshot;
+      status.textContent=tubes.size+' Tubenfarben für '+palette.length+' Bildfarben · '+document.getElementById('build32MixPalette').selectedOptions[0].textContent+'. Mehrere Tubenfarben antippen. Papierweiß zählt nicht als Tubenfarbe.';
+    }catch(e){document.getElementById('build32TubesList').replaceChildren();status.textContent='Rezepte konnten nicht vollständig berechnet werden. Bitte vorhandene Farben prüfen und erneut auflisten.';}
+    finally{if(revision===build32TubesRevision)button.disabled=false;}
+  });
+
   function updateBuild32Recipe(){
     const index=build32Selected,request=++build32MixRequest;
     if(index===null||!build32Data)return;
@@ -8017,7 +8138,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     else [...document.getElementById('build32Palette').children].forEach((el,i)=>el.setAttribute('aria-pressed',String(build32Additive&&build32Selection.has(i))));
   });
-  document.getElementById('build32MixPalette').addEventListener('change',()=>{if(build32IsSimple()&&!['artisan','system3'].includes(document.getElementById('build32MixPalette').value)){for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).value='pure';document.getElementById('build32Analyze').textContent='Ungemischte Farben anzeigen';syncBuild32SimpleLimit();}if(build32IsPure()){document.getElementById('build32Analyze').click();}else updateBuild32Recipe();});
+  document.getElementById('build32MixPalette').addEventListener('change',()=>{invalidateBuild32Tubes();if(build32IsSimple()&&!['artisan','system3'].includes(document.getElementById('build32MixPalette').value)){for(const id of ['build32PaintMode','build32PaintModeSide'])document.getElementById(id).value='pure';document.getElementById('build32Analyze').textContent='Ungemischte Farben anzeigen';syncBuild32SimpleLimit();}if(build32IsPure()){document.getElementById('build32Analyze').click();}else updateBuild32Recipe();});
   document.getElementById('build32Solo').addEventListener('click',()=>{
     if(!build32Data)return;
     if(build32SoloPrevious){
@@ -14395,7 +14516,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.32</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.34</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -16331,7 +16452,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.32_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.32_Motiv_Transparent.png':'AtelierAI_5.32_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.34_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.34_Motiv_Transparent.png':'AtelierAI_5.34_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
