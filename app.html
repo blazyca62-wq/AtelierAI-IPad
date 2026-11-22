@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.36</title>
+  <title>AtelierAI iPad 5.37</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1106,7 +1106,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.36</div>
+    <div class="title">AtelierAI 5.37</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1168,6 +1168,13 @@
         <div id="build32TubesControls" style="margin:8px 0"></div>
         <div id="build32TubesPartners"></div>
         <div id="build32TubesMatches"></div>
+      </details>
+      <details id="build32Bases" style="margin:10px 0;padding:8px;border:1px solid #888;border-radius:8px">
+        <summary>Grundmischungen vorbereiten · Eigener Mischplan</summary>
+        <p class="tiny">Für alle erkannten Bildfarben: gemeinsame Grundmischungen einmal anrühren, dann Teilportionen mit den angegebenen Zugaben ergänzen.</p>
+        <button id="build32BasesCalculate" type="button" class="secondary">Grundmischungen finden</button>
+        <p id="build32BasesStatus" class="tiny" role="status">Zuerst Bildfarben erkennen. Dieser Mischplan wird getrennt von der Tubenfarben-Übersicht erstellt.</p>
+        <div id="build32BasesResults"></div>
       </details>
       <div id="build32Similar" hidden style="margin:6px 0"></div>
       <div id="build32Recipe" role="status">Farbfläche im Bild antippen: Palettenfarbe und Mischung anzeigen. Ein Farbfeld antippen, um die Farbe im Bild auszuwählen.</div><details data-picture-palette="build32MixPalette" style="margin:8px 0;padding:8px;border:1px solid #888;border-radius:8px"></details>
@@ -7920,7 +7927,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   document.addEventListener('change',()=>{
     setTimeout(()=>{if(build32TubesSnapshot&&build32TubesSnapshot!==build32TubeSnapshot())invalidateBuild32Tubes();},0);
   });
-  function invalidateBuild32Tubes(){
+  function invalidateBuild32Tubes(keepBases=false){
+    if(!keepBases)invalidateBuild32Bases();
     build32TubesRevision++;build32TubesSnapshot=null;
     document.getElementById('build32TubesList').replaceChildren();
     document.getElementById('build32TubesMatches').replaceChildren();
@@ -7936,7 +7944,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     return JSON.stringify([key,build32ActivePalette(),data?.pure,data?.paintInfo,effectivePaletteColors(key),picturePalette,localStorage.getItem(MIX_FEEDBACK_KEY)]);
   }
   document.getElementById('build32TubesCalculate').addEventListener('click',async()=>{
-    invalidateBuild32Tubes();
+    invalidateBuild32Tubes(true);
     const palette=build32ActivePalette();
     const status=document.getElementById('build32TubesStatus'),button=document.getElementById('build32TubesCalculate');
     if(!palette?.length){status.textContent='Bitte zuerst Bildfarben erkennen.';return;}
@@ -8061,6 +8069,117 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       status.textContent=tubes.size+' Tubenfarben für '+palette.length+' Bildfarben · '+document.getElementById('build32MixPalette').selectedOptions[0].textContent+'. Mehrere Tubenfarben antippen. Papierweiß zählt nicht als Tubenfarbe.';
     }catch(e){document.getElementById('build32TubesList').replaceChildren();status.textContent='Rezepte konnten nicht vollständig berechnet werden. Bitte vorhandene Farben prüfen und erneut auflisten.';}
     finally{if(revision===build32TubesRevision)button.disabled=false;}
+  });
+
+  // An independent plan derived exactly from the current individual recipes.
+  let build32BasesRevision=0,build32BasesSnapshot=null;
+  function invalidateBuild32Bases(){
+    build32BasesRevision++;build32BasesSnapshot=null;
+    document.getElementById('build32BasesResults').replaceChildren();
+    document.getElementById('build32BasesStatus').textContent='Für die aktuelle Palette „Grundmischungen finden“ antippen.';
+    document.getElementById('build32BasesCalculate').disabled=false;
+  }
+  document.addEventListener('change',()=>setTimeout(()=>{
+    if(build32BasesSnapshot&&build32BasesSnapshot!==build32TubeSnapshot())invalidateBuild32Bases();
+  },0));
+  for(const [id,other] of [['build32Bases','build32Tubes'],['build32Tubes','build32Bases']]){
+    document.getElementById(id).addEventListener('toggle',()=>{
+      if(document.getElementById(id).open)document.getElementById(other).open=false;
+    });
+  }
+  function build32ExactBasePlan(recipes,palette,key){
+    const samples=[],individual=[];
+    recipes.forEach((recipe,index)=>{
+      // Paper white and recipes without a complete positive integer vector
+      // remain individual recipes; never invent a shared base for them.
+      if(!recipe){individual.push(index);return;}
+      const ids=recipe.tubeIds||[],parts=recipe.parts||[],names=recipe.names||[];
+      const positive=parts.map((n,j)=>({id:ids[j],name:names[j],n})).filter(x=>x.n>0);
+      if(!positive.length||positive.some(x=>!x.id||!x.name||!Number.isSafeInteger(x.n))||parts.some(n=>!Number.isFinite(n)||n<0)){
+        individual.push(index);return;
+      }
+      const clean={...recipe,tubeIds:positive.map(x=>x.id),names:positive.map(x=>x.name),parts:positive.map(x=>x.n)};
+      samples.push({id:String(index),index,name:'Farbe '+(index+1),key,target:palette[index],amount:1,recipe:clean});
+    });
+    const plan=buildPalettePlan(samples);
+    return {...plan,individual};
+  }
+  document.getElementById('build32BasesCalculate').addEventListener('click',async()=>{
+    invalidateBuild32Bases();
+    const palette=build32ActivePalette(),data=build32DetailCell||build32Data;
+    const status=document.getElementById('build32BasesStatus'),button=document.getElementById('build32BasesCalculate'),output=document.getElementById('build32BasesResults');
+    if(!palette?.length){status.textContent='Bitte zuerst Bildfarben erkennen.';return;}
+    const revision=build32BasesRevision,snapshot=build32TubeSnapshot(),key=document.getElementById('build32MixPalette').value,recipes=[];
+    const current=()=>revision===build32BasesRevision&&snapshot===build32TubeSnapshot();
+    const guard=()=>{if(current())return true;if(revision===build32BasesRevision)invalidateBuild32Bases();return false;};
+    button.disabled=true;
+    try{
+      for(let index=0;index<palette.length;index++){
+        status.textContent='Grundmischungen prüfen: Rezept '+(index+1)+' / '+palette.length+' …';
+        await new Promise(resolve=>setTimeout(resolve,20));if(!guard())return;
+        const recipe=data.pure?data.paintInfo?.[index]:chooseMixes(palette[index],key)[0];
+        if(!recipe)throw new Error('Ein Mischrezept fehlt. Bitte vorhandene Tubenfarben prüfen.');
+        recipes.push(recipe);
+      }
+      if(!guard())return;
+      const plan=build32ExactBasePlan(recipes,palette,key),names={};
+      for(const recipe of recipes)(recipe.tubeIds||[]).forEach((id,j)=>names[id]=recipe.names?.[j]||id);
+      const add=(tag,text,parent=output)=>{const e=document.createElement(tag);if(text)e.textContent=text;parent.appendChild(e);return e;};
+      const number=n=>n.toLocaleString('de-DE',{maximumFractionDigits:3});
+      const fmt=v=>Object.entries(v).filter(([,n])=>n>0).map(([id,n])=>number(n)+' Teil'+(n===1?'':'e')+' '+(names[id]||id)).join(' + ');
+      const sum=v=>Object.values(v).reduce((a,b)=>a+b,0);
+      const back=add('button','Vorherige Bildansicht');back.type='button';back.className='secondary';back.onclick=()=>{
+        if(!guard())return;
+        if(build32SoloPrevious)document.getElementById('build32Solo').click();
+      };
+      add('p','Gleiche Zutatanteile wie in den Einzelrezepten. Ein Teil ist überall dieselbe kleine Mengeneinheit, z. B. eine gleich große Spatelportion. Die Vorratsmenge reicht für je einen Ansatz aller Farben dieser Familie.');
+      add('p','Jede Basis gründlich mischen. Für jede Bildfarbe eine eigene Teilportion entnehmen und erst diese ergänzen. Farbwirkung zuerst als kleine Probe prüfen.').className='tiny';
+      const colorCard=(index,parent,instruction)=>{
+        const card=add('div','',parent);card.className='tube-recipe-card';
+        const swatch=add('button','Farbe '+(index+1)+' · Im Bild zeigen',card);swatch.type='button';swatch.className='tube-recipe-swatch';swatch.style.background=rgbHex(palette[index]);swatch.style.color=rgbToLabFast(palette[index])[0]>55?'#111':'#fff';
+        swatch.onclick=()=>{
+          if(!guard())return;
+          showBuild32PalettePage(Math.floor(index/16));
+          if(!build32SoloPrevious){build32SoloPrevious={state:captureBuild32State(),allPrevious:build32AllPrevious};build32AllPrevious=null;}
+          build32SoloAdditive=false;build32SimilarAnchor=index;build32Selection.clear();build32Selection.add(index);build32Selected=index;build32Manual=true;
+          renderBuild32Selection();syncBuild32ReturnButtons();
+        };
+        add('p',instruction,card).className='tube-recipe-parts';
+        const m=recipes[index],details=add('details','',card);add('summary','Einzelrezept ansehen',details);
+        add('p',m.names?m.names.map((name,j)=>m.parts[j]>0?number(m.parts[j])+' Teile '+name:'').filter(Boolean).join(' + '):m.name||'Papierweiß',details);
+        if(m.watercolor||(['watercolor','horadam','akademie'].includes(key)&&data.pure)){
+          add('p',Math.round(m.coverage*100)+' % Farbauftrag auf Weiß · kein Wasserverhältnis. Pigmentanteile mischen, anschließend den Farbauftrag auf Papier prüfen.',card).className='tiny';
+        }
+      };
+      for(const base of plan.bases){
+        const section=add('section','');section.className='tube-recipe-group';
+        add('h3','Mischfamilie '+base.label+' · '+base.uses.length+' Bildfarben',section);
+        const stock={};for(const [id,n] of Object.entries(base.v))stock[id]=n*base.uses.reduce((total,use)=>total+use.n,0);
+        add('p','1. Basis '+base.label+' mischen: '+fmt(base.v)+'.',section);
+        const paints=effectivePaletteColors(key),ingredients=Object.keys(base.v).map(id=>paints.find(c=>pictureTubeId(key,c)===id));
+        if(ingredients.every(Boolean)){
+          const rgb=pigmentMix(ingredients.map(c=>c[1]),Object.values(base.v),key);
+          const preview=add('div','Basis '+base.label+' · Vorschau',section);preview.style.cssText='min-height:64px;padding:12px;border:1px solid #888;border-radius:6px;background:'+rgbHex(rgb)+';color:'+(rgbToLabFast(rgb)[0]>55?'#111':'#fff');
+        }
+        add('p','Für alle '+base.uses.length+' Bildfarben vorbereiten: '+fmt(stock)+' = '+number(sum(stock))+' Teile fertige Basis '+base.label+'.',section);
+        add('h4','2. Teilportionen entnehmen und ergänzen',section);
+        const grid=add('div','',section);grid.className='tube-recipe-grid';
+        for(const use of base.uses){
+          const rest=Object.fromEntries(Object.entries(use.row.v).map(([id,n])=>[id,n-(base.v[id]||0)*use.n]));
+          colorCard(use.row.sample.index,grid,number(sum(base.v)*use.n)+' Teile fertige Basis '+base.label+(sum(rest)>0?' + '+fmt(rest):' · direkt verwenden'));
+        }
+      }
+      const singles=[...plan.rows.filter(row=>!row.base).map(row=>row.sample.index),...plan.individual].sort((a,b)=>a-b);
+      if(!plan.bases.length)add('p','Keine praktische gemeinsame Grundmischung gefunden. Hier sind die Einzelrezepte.');
+      if(singles.length){
+        const section=add('section','');section.className='tube-recipe-group';add('h3','Einzeln vorbereiten · '+singles.length+' Bildfarben',section);
+        const grid=add('div','',section);grid.className='tube-recipe-grid';
+        for(const index of singles)colorCard(index,grid,recipes[index].coverage===0?'Papierweiß frei lassen.':'Dieses Rezept einzeln mischen.');
+      }
+      build32BasesSnapshot=snapshot;
+      status.textContent=plan.bases.length+' Grundmischung'+(plan.bases.length===1?'':'en')+' für '+(palette.length-singles.length)+' von '+palette.length+' Bildfarben · '+singles.length+' einzeln vorbereiten.';
+    }catch(e){if(revision===build32BasesRevision){output.replaceChildren();status.textContent='Grundmischungen konnten nicht erstellt werden. '+e.message;}}
+    finally{if(revision===build32BasesRevision)button.disabled=false;}
   });
 
   function updateBuild32Recipe(){
@@ -14594,7 +14713,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.36</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.37</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -16530,7 +16649,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.36_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.36_Motiv_Transparent.png':'AtelierAI_5.36_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.37_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.37_Motiv_Transparent.png':'AtelierAI_5.37_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
