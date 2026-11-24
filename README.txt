@@ -1,3 +1,20 @@
+AtelierAI iPad 5.40 – Prompt-Generator integriert
+
+Vorlage → Prompt-Generator. Funktioniert ohne Foto und ohne KI/Internet.
+Deutsche Auswahlfelder erzeugen einen englischen Prompt samt Negativ-Prompt.
+Porträt, Zebra, Nebelwald, Stillleben und Figurenmalerei als Startvorlagen.
+Groß öffnen bietet mehr Platz; Zurück zum Atelier kehrt zur bisherigen Bildansicht zurück.
+Zum Prompt springt direkt zum bearbeitbaren Text. Auswahländerungen erzeugen die Texte neu.
+Prompt kopieren und Negativ-Prompt kopieren; alternativ Als Text speichern.
+Vorlage merken speichert bis zu 50 Bildideen auf diesem Gerät/in diesem Browser.
+Diese Vorlagen sind getrennt vom Malprojekt und nicht in .atelierprojekt enthalten.
+Freie Ergänzungen werden unverändert angehängt, bitte auf Englisch eingeben.
+Keine automatische Bildbeschreibung oder Bildgenerierung.
+
+Installation wie bisher: ZIP vollständig entpacken und alle Dateien im bisherigen Atelier-Ordner ersetzen bzw. auf GitHub hochladen. In Safari Atelier öffnen und gegebenenfalls „Update bereit“ antippen. Offline-Status prüfen. Die neue Version ist oben als 5.40 erkennbar.
+
+Bisherige Versionshinweise:
+
 AtelierAI iPad 5.39 – Mischfamilien erst ab drei Bildfarben
 
 Im separaten Bereich „Grundmischungen vorbereiten“ werden nur noch Familien mit mindestens drei Bildfarben vorgeschlagen. Kleinere Gruppen bleiben unter „Einzeln vorbereiten“.

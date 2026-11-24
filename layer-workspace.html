@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.39</title>
+  <title>AtelierAI iPad 5.40</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1097,7 +1097,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.39</div>
+    <div class="title">AtelierAI 5.40</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -1145,7 +1145,14 @@
         </div>
         <button id="inspectorClose" class="secondary" type="button">Schließen</button>
       </div>
-    <div id="build32Dock" hidden>
+    
+<section id="promptGeneratorPanel" class="section">
+<h3>Prompt-Generator</h3>
+<p style="font-size:14px;line-height:1.5">Deutsche Auswahl → englischer Prompt. Ohne KI und Internet; freie Ergänzungen bitte auf Englisch.</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"><button id="promptExpand" type="button">Groß öffnen</button><button id="promptJump" class="secondary" type="button">Zum Prompt</button></div>
+<div id="atelierPromptHost"></div>
+</section>
+<div id="build32Dock" hidden>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="build32Collapse" class="secondary" type="button" aria-expanded="true">Farben einklappen</button><label>Darstellung <select id="build32PaintMode"><option value="mixed">Mischfarben</option><option value="pure">Nur ungemischte Farben</option><option value="simple">Einfache Öl-/Acryl-Mischungen</option></select></label><label id="build32SimpleLimitLabel" hidden>Mischungen <select id="build32SimpleLimit" aria-label="Anzahl einfacher Öl-/Acryl-Mischungen"><option value="32">32</option><option value="48">48</option><option value="64" selected>64</option><option value="0">Alle Mischungen</option></select></label><label>Farben <select id="build32Count" aria-label="Anzahl Bildfarben"><option value="8">8</option><option value="16">16</option><option value="32" selected>32</option><option value="48">48</option><option value="64">64</option></select></label><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap" title="Verlauf aus zwei angrenzenden Farben. Der Regler bestimmt die Breite; Mischrezepte bleiben gleich.">Angrenzende Farben verblenden <input id="build32Smooth" aria-label="Breite der Farbübergänge" type="range" min="0" max="20" step="1" value="0" style="width:140px;min-height:32px"><span id="build32SmoothVal">0 %</span></label><button id="build32Add" class="secondary" type="button" aria-pressed="false">Farben zuschalten: Aus</button><label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">Original S/W <input id="build32GrayBlend" aria-label="Schwarz-Weiß-Original zur Orientierung einblenden" type="range" min="0" max="100" step="1" value="0" style="width:140px;min-height:32px"><span id="build32GrayBlendVal">0 %</span></label><button id="build32SW" class="secondary" type="button" aria-pressed="false">S/W-Effekt: Aus</button><button id="build32Replace" class="secondary" type="button" aria-pressed="false">Originalfarbe ersetzen</button><button id="build32ResetColor" class="secondary" type="button" disabled>Farbe zurücksetzen</button><button id="build32Solo" class="secondary" type="button" aria-pressed="false">Eine Farbe ansehen</button><button id="build32All" class="secondary" type="button">Alle Farben</button><label>Hintergrund <select id="build32Background" aria-label="Hintergrund der Bildfarben"><option value="auto">Automatisch</option><option value="white">Weiß</option><option value="gray">Grau</option></select></label><select id="build32MixPalette" aria-label="Palette für die Mischung"><option value="watercolor">Eigene Aquarellpalette · Horadam + Akademie</option><option value="artisan" selected>Artisan · Öl</option><option value="system3">Daler-Rowney System3 · Acryl</option><option value="horadam">Horadam · Aquarell</option><option value="akademie">Akademie · Aquarell</option></select></div>
       <p id="build32PaletteTitle" class="tiny" role="status" style="margin:8px 0 4px;font-weight:bold">Palette der erkannten Farben</p>
       <div id="build32Pages" aria-label="Farbseiten"></div>
@@ -11119,7 +11126,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const opener=document.getElementById('imageFocusBtn');
     const groups=[
       {name:'Vorlage', pages:[
-        ['toolPanel','Bewegen & Zoom'],['gridSavePanel','Raster einrichten']
+        ['toolPanel','Bewegen & Zoom'],['gridSavePanel','Raster einrichten'],['promptGeneratorPanel','Prompt-Generator']
       ], actions:['bgReplaceOpen','fitBtn','visibleCropBtn','gridCellCropBtn','applyAllModulesBtn']},
       {name:'Form & Licht', pages:[
         ['formsPanel','Großformen'],['tonesPanel','Tonwerte'],['sketchPanel','Vorzeichnung']
@@ -13828,6 +13835,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 <script>
 (()=>{
  const guides = [
+   ["Englischen Bild-Prompt zusammenstellen", "Vorlage → Prompt-Generator", "Wähle Motiv, Malweise, Pose, Farben und Licht. Die Auswahl erzeugt einen englischen Prompt und Negativ-Prompt. Eigene Ergänzungen bitte auf Englisch eingeben. „Groß öffnen“ bietet mehr Platz; „Zum Prompt“ springt zur Ausgabe. Der Text ist bearbeitbar. Änderungen an den Auswahlfeldern setzen ihn neu zusammen. „Vorlage merken“ speichert bis zu 50 Vorlagen in diesem Browser, getrennt vom Malprojekt. „Als Text speichern“ exportiert beide Texte. Der Generator arbeitet ohne KI und Internet und analysiert das geladene Bild nicht. „Zurück zum Atelier“ schließt die große Ansicht."],
    ["Transparente PNG-Ebenen zusammensetzen", "Vorlage → Hintergrund ersetzen → PNG-Ebenen", "Öffne zuerst das Hintergrundbild. Füge dann über „PNG-Ebene hinzufügen“ die transparenten Motive von hinten nach vorne ein. Gleich große PNGs behalten ihre Position. Andere Größen werden mittig eingepasst. Zum Verschieben tippe auf den Ebenennamen und schalte „Ebene verschieben“ ein. Bei eingeschaltetem Verschieben zieht ein Finger die Ebene; zwei Finger ändern Größe und Platzierung. Ausgeschaltet zoomen zwei Finger die Ansicht. Position X/Y erlaubt genaue Angaben in Bildpixeln. „Position zurücksetzen“ setzt nur die ausgewählte Ebene zurück. Verschiebungen bleiben beim Speichern und Öffnen des Projekts erhalten. Mit den Häkchen kannst du auch das Hintergrundbild ausblenden. Mit „Nur diese Ebene“ siehst du die angetippte Ebene einzeln. Unter „Untergrund ohne Bild“ wählst du Transparent oder Weiß. Diese Wahl gilt für die Vorschau, die übernommene Malvorlage und den PNG-Export. Tippe auf den Ebenennamen, um ihre Malansicht mit Schwarz-Weiß, Weichzeichnung, Großformen oder Farbreduktion einzustellen. Bei aktiver „Malreihenfolge“ zeigt Atelier die angekreuzten Ebenen bis zur angetippten Ebene. Schalte die Malreihenfolge aus, um wieder alle angekreuzten Ebenen zu sehen. Über „Übernehmen & zum Projekt“ und „Projekt speichern“ sicherst du den gesamten Ebenenstapel."],
    ["Hintergrund ersetzen oder Motiv freistellen", "Vorlage → Hintergrund ersetzen", "Öffne ein Foto. Tippe mit „Hintergrund antippen“ nacheinander auf zusammenhängende Hintergrundflächen. „Ähnlichkeit“ passt die zuletzt angetippte Fläche direkt im Bild an. „Letztes Antippen rückgängig“ nimmt sie zurück. Bei einem unruhigen Hintergrund wähle „Motiv mit Lasso“ und umfahre das Motiv. Du kannst den Pencil absetzen, mit zwei Fingern verschieben oder zoomen und am grünen Linienende weiterzeichnen. Erst „Auswahl schließen“ beendet die Kontur. „Letzten Abschnitt zurück“ nimmt den letzten Strich zurück. Mit „Linienstück korrigieren“ tippst du Anfang und Ende einer falschen Strecke an, zeichnest sie vom grünen Punkt zum orangefarbenen Ziel neu und drückst „Korrektur übernehmen“. Anschließend „Auswahl schließen“. Das geht auch bei einer bereits geschlossenen Auswahl. „Neu beginnen“ verwirft die offene Linie. Eine transparente PNG wird über „Foto öffnen“ bereits freigestellt geladen. Unter „Art“ wählst du „Farbe / Schwarz“, „Transparent – nur Motiv“, „Eigenes Bild“ oder bei einem normalen Foto „Vorhandenen bearbeiten“. Für spätere PNG-Ebenen wähle „Transparent – nur Motiv“ und drücke „Motiv als transparentes PNG speichern“. Das Schachbrett ist nur die Vorschau für Transparenz und wird nicht mitgespeichert."],
    ["Weich radieren und Motivteile zurückmalen", "Hintergrund ersetzen → Radieren und Zurückmalen", "Du kannst sofort auf dem Foto radieren. Stelle die Pinselgröße ein. Eine Radierstärke von 30 % lässt den Hintergrund leicht durchscheinen. Weitere Striche verstärken die Wirkung. „Weiche Pinselkante“ lässt den Strich am Rand auslaufen. Mit „Zurückmalen“ blendest du Stellen wieder ein, die durch Antippen, Lasso oder Radieren ausgeblendet wurden. Bei transparenten PNGs lassen sich die ursprünglich sichtbaren Teile wiederherstellen. „Letzten Pinselstrich rückgängig“ nimmt den letzten Strich zurück. Male mit einem Finger und zoome mit zwei Fingern."],
@@ -13871,6 +13879,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
    ["Gestaltung stilisieren", "Künstlerische Gestaltung", "„Künstlerische Gestaltung“ verwenden, um Posterize, Helligkeit, Sättigung, Warm/Kalt sowie Kontraste und Schattenfarben zu variieren. Erst sanfte Werte, danach stärker verfremden."]
  ];
  const modules = [
+   ["Prompt-Generator", "Offline-Baukasten für englische Bild-Prompts mit deutschen Auswahlfeldern, Kopierfunktion und lokalen Vorlagen. Unter Vorlage erreichbar."],
    ["Farben bearbeiten", "Zentrale Werkstatt für gezielte Farbänderungen, Lasso, Pipette, Farbharmonie und Linienverläufe."],
    ["Lasso", "Zeichnet einen räumlichen Wirkbereich. Ohne Lasso ist das ganze Bild möglich; die Einzelfarben-Auswahl begrenzt zusätzlich nach Farbe."],
    ["Einzelne Farbe · Pipette", "Wählt die AUSGANGSFARBE, die verändert werden darf. Nicht verwechseln mit „Leitfarbe aus dem Bild aufnehmen“."],
@@ -14395,7 +14404,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.39</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.40</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -16331,7 +16340,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.39_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.39_Motiv_Transparent.png':'AtelierAI_5.39_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.40_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.40_Motiv_Transparent.png':'AtelierAI_5.40_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
@@ -16705,6 +16714,112 @@ html.layer-workspace #studioMenu,html.layer-workspace #studioProjects,html.layer
   new MutationObserver(()=>{prepare();sync();}).observe(document.getElementById('mixResults'),{childList:true,subtree:true});
   new MutationObserver(sync).observe(document.getElementById('corrCompare'),{attributes:true,attributeFilter:['style'],subtree:true});
   prepare();
+})();
+</script>
+
+
+<style>
+#atelierPromptDialog{width:min(1280px,96vw);max-width:96vw;height:94dvh;max-height:94dvh;padding:0;border:1px solid #b9cbbf;border-radius:16px;background:#f2f5f2;color:#18352e;overflow:hidden;z-index:60000;box-sizing:border-box}
+#atelierPromptDialog[open]{display:flex;flex-direction:column}
+#atelierPromptDialog::backdrop{background:#101d1bbd}
+#atelierPromptDialog .prompt-modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #b9cbbf;flex-shrink:0}
+#atelierPromptDialog .prompt-modal-head h2{font-size:21px;margin:0}
+#promptModalBody{overflow:auto;padding:16px;flex:1;min-height:0}
+#atelierPromptDialog button{font:inherit;padding:10px 16px;min-height:44px;border:1px solid #b9cbbf;border-radius:9px;background:#fff;color:#18352e}
+</style>
+<dialog id="atelierPromptDialog" aria-labelledby="promptModalTitle"><div class="prompt-modal-head"><h2 id="promptModalTitle">AtelierAI · Prompt-Generator</h2><button id="promptModalClose" type="button">Zurück zum Atelier</button></div><div id="promptModalBody"></div></dialog>
+
+<script>
+(()=>{
+ const host=document.getElementById('atelierPromptHost');
+ const root=host.attachShadow({mode:'open'});
+ root.innerHTML="\u003cstyle>\n:root{color-scheme:light;--ink:#18352e;--muted:#53675f;--paper:#f2f5f2;--line:#cedbd3;--green:#205b46;--accent:#d7ef9c;--white:#fff}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif}button,input,select,textarea{font:inherit}button,select{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #b47116;outline-offset:3px}header{background:#142723;color:#fff;padding:23px max(24px,calc((100vw - 1320px)/2));display:flex;justify-content:space-between;align-items:center;gap:20px}header strong{font:600 26px Georgia,serif}header span{font-size:14px;color:#bad0c4}.brand{display:flex;align-items:center;gap:13px}.mark{display:grid;place-items:center;border:1px solid #749c83;width:42px;height:42px;border-radius:14px;color:var(--accent);font:28px Georgia}main{max-width:1368px;padding:38px 24px 70px;margin:auto}.intro{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:28px}h1{font:400 clamp(30px,3.5vw,44px)/1.15 Georgia,serif;margin:0 0 12px}p{margin:0 0 12px}.intro p{color:var(--muted);max-width:690px}.version{white-space:nowrap;font-size:14px;color:var(--muted)}.layout{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(0,1fr);gap:24px;align-items:start}.panel{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:26px}.output{position:sticky;top:20px;background:#e6eee8}h2{font:400 25px Georgia,serif;margin:0 0 20px}h3{font-size:17px;margin:25px 0 12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.wide{grid-column:1/-1}label{display:block;font-size:14px;font-weight:650;margin-bottom:7px}.hint{font-size:14px;color:var(--muted);font-weight:400;margin:7px 0 0}input,select,textarea{width:100%;border:1px solid #becfc3;border-radius:10px;background:#fff;color:var(--ink);padding:12px;min-width:0}select{appearance:none;padding-right:35px;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23205b46' stroke-width='2' d='m4 6 4 4 4-4'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 12px center}textarea{resize:vertical;line-height:1.65;overflow-wrap:anywhere;white-space:pre-wrap}#prompt{min-height:310px;font-size:18px;background:#fffefb}#negative{min-height:115px}.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}button{border:1px solid #b9cbbf;background:white;color:var(--ink);padding:11px 16px;border-radius:10px;min-height:46px;font-weight:600}.primary{background:var(--green);color:#fff;border-color:var(--green)}.primary:hover{background:#174632}.secondary{background:transparent}.presets{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 25px}.presets button{font-weight:500;font-size:14px;padding:8px 12px;min-height:40px}.presets button:hover{background:#eef6e9}.badge{font-size:13px;border:1px solid #b7cabd;padding:3px 9px;border-radius:20px;color:#3a5d49}details{border-top:1px solid var(--line);padding-top:18px;margin-top:23px}summary{cursor:pointer;font-weight:650;margin-bottom:12px}.check{display:flex;align-items:start;gap:10px;font-weight:400;font-size:15px}.check input{width:20px;height:20px;flex-shrink:0;margin:2px 0;accent-color:var(--green)}.saved{list-style:none;padding:0;margin:14px 0 0}.saved li{display:flex;gap:8px;border-top:1px solid var(--line);padding:12px 0;align-items:center}.saved .load{flex:1;text-align:left;background:transparent;border:0;padding:5px;overflow-wrap:anywhere}.delete{font-size:14px;padding:7px 10px;min-height:38px}.empty{color:var(--muted);font-size:14px}.notice{padding:12px 15px;background:#f6f8ef;border-radius:10px;font-size:14px;color:#4b604f;margin-top:22px}.status{min-height:26px;font-size:14px;color:#244a32;margin-top:10px}footer{font-size:14px;color:var(--muted);margin-top:24px}.counter{font-size:13px;color:var(--muted)}@media(max-width:900px){.layout{grid-template-columns:1fr}.output{position:static}.intro{display:block}.version{display:none}main{padding:28px 16px 50px}.panel{padding:21px}header{padding:18px 20px}header span{display:none}}@media(max-width:480px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}.actions button{flex:1}.panel{padding:19px}#prompt{min-height:340px}}\n\n:host{display:block;container-type:inline-size;color:#18352e;font:16px/1.55 system-ui,-apple-system,sans-serif;--ink:#18352e;--muted:#53675f;--paper:#f2f5f2;--line:#cedbd3;--green:#205b46;--accent:#d7ef9c;--white:#fff;color-scheme:light}\nmain{padding:0;margin:0;max-width:none}.layout{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:16px}.output{position:static}.panel{padding:16px;border-radius:12px}h2{font-size:23px}#prompt{min-height:250px}.notice{margin-top:16px}.grid{grid-template-columns:minmax(0,1fr)!important}\n@container(min-width:480px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}}\n@container(min-width:850px){.layout{grid-template-columns:minmax(0,1.06fr) minmax(0,1fr)!important}.output{position:sticky;top:0}}\n\u003c/style>\u003cmain>\u003cdiv class=\"layout\">\n\u003csection class=\"panel\" aria-labelledby=\"builder-title\">\u003ch2 id=\"builder-title\">Dein Bild gestalten\u003c/h2>\n\u003clabel>Mit einer Bildidee starten\u003c/label>\u003cdiv class=\"presets\" id=\"presets\">\u003cbutton data-preset=\"portrait\">Porträt\u003c/button>\u003cbutton data-preset=\"zebra\">Zebra\u003c/button>\u003cbutton data-preset=\"forest\">Nebelwald\u003c/button>\u003cbutton data-preset=\"still\">Stillleben\u003c/button>\u003cbutton data-preset=\"figure\">Figurenmalerei\u003c/button>\u003c/div>\n\u003cform id=\"builder\">\u003cdiv class=\"grid\" id=\"fields\">\u003c/div>\n\u003cdetails>\u003csummary>Feinabstimmung\u003c/summary>\u003cdiv class=\"grid\" id=\"extra-fields\">\u003c/div>\u003cdiv style=\"margin-top:18px\">\u003clabel class=\"check\">\u003cinput id=\"clean\" type=\"checkbox\" checked>Ohne Schrift, Signatur und Rahmen\u003c/label>\u003c/div>\u003c/details>\n\u003cdiv style=\"margin-top:22px\">\u003clabel for=\"custom\">Eigene Ergänzung\u003c/label>\u003ctextarea id=\"custom\" rows=\"3\" placeholder=\"e.g. a subtle blue shimmer in the shadows\">\u003c/textarea>\u003cp class=\"hint\">Bitte auf Englisch. Freier Text wird unverändert angehängt; die deutschen Auswahlfelder werden ins Englische übertragen.\u003c/p>\u003c/div>\n\u003cdiv class=\"actions\">\u003cbutton type=\"button\" id=\"reset\" class=\"secondary\">Zurücksetzen\u003c/button>\u003cbutton type=\"button\" id=\"download\" class=\"secondary\">Als Text speichern\u003c/button>\u003c/div>\u003c/form>\n\u003cdiv class=\"notice\">Der Generator setzt ausgewählte Bildbausteine zusammen. Er analysiert keine Fotos und verwendet keinen KI-Dienst.\u003c/div>\n\u003c/section>\n\u003cdiv>\n\u003csection class=\"panel output\" aria-labelledby=\"output-title\">\u003cdiv class=\"row\">\u003ch2 id=\"output-title\">Dein englischer Prompt\u003c/h2>\u003cspan class=\"badge\">Live\u003c/span>\u003c/div>\u003clabel for=\"prompt\">Prompt · direkt bearbeitbar\u003c/label>\u003ctextarea id=\"prompt\" spellcheck=\"false\">\u003c/textarea>\u003cdiv class=\"row\" style=\"margin-top:8px\">\u003cspan class=\"counter\" id=\"counter\">\u003c/span>\u003cbutton type=\"button\" id=\"large\" class=\"secondary\">Text vergrößern\u003c/button>\u003c/div>\u003cp class=\"hint\">Änderungen an den Auswahlfeldern erzeugen den Prompt neu.\u003c/p>\u003cdiv class=\"actions\">\u003cbutton type=\"button\" id=\"copy\" class=\"primary\">Prompt kopieren\u003c/button>\u003cbutton type=\"button\" id=\"save\">Vorlage merken\u003c/button>\u003c/div>\n\u003cdetails open>\u003csummary>Negativ-Prompt\u003c/summary>\u003clabel for=\"negative\">Unerwünschte Merkmale · bearbeitbar\u003c/label>\u003ctextarea id=\"negative\" spellcheck=\"false\">\u003c/textarea>\u003cdiv class=\"actions\">\u003cbutton type=\"button\" id=\"copy-negative\">Negativ-Prompt kopieren\u003c/button>\u003c/div>\u003cp class=\"hint\">Für Modelle mit einem Negativ-Prompt-Feld. Die Wirkung hängt vom verwendeten Modell ab.\u003c/p>\u003c/details>\u003cdiv class=\"status\" id=\"status\" role=\"status\" aria-live=\"polite\">\u003c/div>\u003c/section>\n\u003csection class=\"panel\" style=\"margin-top:24px\" aria-labelledby=\"saved-title\">\u003cdiv class=\"row\">\u003ch2 id=\"saved-title\" style=\"margin:0\">Deine Vorlagen\u003c/h2>\u003cspan class=\"counter\" id=\"saved-count\">\u003c/span>\u003c/div>\u003cp class=\"hint\">Auf diesem Gerät und in diesem Browser gespeichert.\u003c/p>\u003cul id=\"saved\" class=\"saved\">\u003c/ul>\u003c/section>\n\u003c/div>\u003c/div>\n\u003c/main>";
+ 
+'use strict';
+const definitions = [
+['subject','Motiv',[
+ ['woman','Erwachsene Frau','an adult woman'],['man','Erwachsener Mann','an adult man'],['couple','Zwei Erwachsene','two adults'],['lion','Löwe','a majestic lion'],['zebra','Zebra','a zebra'],['horse','Pferd','a horse'],['forest','Wald','a quiet forest with tall trees'],['coast','Küste','a rugged coastline'],['mountains','Berglandschaft','a mountain landscape'],['flowers','Blumen','a loose arrangement of flowers'],['still','Stillleben','a still life with pears, a ceramic jug and folded linen']]],
+['style','Darstellung / Malweise',[
+ ['oil','Ölmalerei · natürlich','An expressive representational oil painting of'],['photo','Fotografie · natürlich','A natural photograph of'],['watercolor','Aquarell · transparent','A luminous transparent watercolor painting of'],['impression','Impressionistische Ölmalerei','An impressionist oil painting of'],['cezanne','Cézanne · Farbflächen','A Post-Impressionist oil painting inspired by Paul Cézanne, depicting'],['modigliani','Modigliani · fließende Formen','A modernist oil painting inspired by Amedeo Modigliani, depicting'],['charcoal','Kohlezeichnung','A sensitive charcoal drawing of']]],
+['pose','Pose / Bewegung',[
+ ['none','Keine Vorgabe',''],['relaxed','Entspannt sitzend','seated in a relaxed, unposed posture'],['recline','Liegend · Arme über dem Kopf','reclining diagonally, both arms resting above the head, one knee bent'],['walk','Natürliche Bewegung','moving naturally, captured mid-step'],['turn','Kopf leicht gedreht','with the head gently turned, looking away from the viewer'],['eyes','Augen geschlossen','with closed eyes and a peaceful expression']]],
+['view','Bildausschnitt',[
+ ['medium','Halbfigur / mittlerer Ausschnitt','a medium view'],['close','Nahaufnahme','a close-up composition'],['full','Ganzes Motiv','the entire subject visible with room around it'],['detail','Detail','an intimate detail view'],['wide','Weite Ansicht','a wide environmental view']]],
+['setting','Umgebung',[
+ ['none','Keine Vorgabe',''],['sofa','Rotes Sofa · blaue Kissen','on a deep crimson sofa with dark teal and muted blue cushions, loosely folded ivory fabric nearby'],['black','Schwarzer Hintergrund','emerging from a deep black background'],['mist','Neblige Umgebung','surrounded by soft atmospheric mist'],['nature','Natürliche Umgebung','in a quiet natural setting'],['studio','Schlichtes Atelier','in a simple artist’s studio'],['window','Am Fenster','beside a tall window in a quiet interior']]],
+['light','Licht',[
+ ['soft','Weiches Tageslicht','soft natural daylight and gentle shadows'],['warm','Warmes Seitenlicht','warm side lighting with subtle shadows'],['cool','Kühles Morgenlicht','cool diffused morning light'],['back','Gegenlicht','delicate backlighting and luminous edges'],['dramatic','Kräftiges Hell-Dunkel','dramatic chiaroscuro with carefully preserved shadow detail'],['overcast','Bedeckter Himmel','soft overcast light with restrained contrast']]],
+['palette','Farbwelt',[
+ ['natural','Natürliche Farben','a balanced natural color palette'],['earth','Warme Erdfarben','warm ochre, terracotta, burnt sienna and muted earth colors'],['teal','Ocker · Rot · Petrol','golden ochre and warm peach contrasted with burgundy and deep teal'],['blue','Natürlich · bläulicher Schimmer','natural colors with a subtle blue shimmer in the shadows'],['muted','Gedämpft · harmonisch','a harmonious palette of muted colors with subtle warm-cool contrasts'],['green','Grün · Blau · Nebelgrau','muted olive greens, blue-gray shadows and pale silver mist'],['mono','Schwarz-Weiß','a monochrome palette with carefully separated tonal values']]],
+['format','Bildformat',[
+ ['portrait','Hochformat','vertical composition'],['landscape','Querformat','horizontal composition'],['square','Quadratisch','square composition']]]
+];
+const extras=[
+['texture','Oberfläche',[
+ ['subtle','Dezente Pinselspuren','subtle visible brushwork'],['impasto','Kräftiger Farbauftrag','rich impasto and visible oil paint texture'],['wash','Fließende Aquarell-Lasuren','flowing transparent washes, soft edges and subtle paper texture'],['smooth','Weiche Übergänge','soft transitions and finely blended tonal values'],['none','Keine Vorgabe','']]],
+['composition','Bildaufbau',[
+ ['flow','Natürlich · ausgewogen','a balanced composition with natural flowing shapes'],['diagonal','Diagonale','a strong diagonal composition'],['offcenter','Außerhalb der Mitte','an off-center subject with generous negative space'],['layers','Räumliche Tiefe','clear foreground, middle ground and background with atmospheric depth']]],
+['mood','Stimmung',[
+ ['calm','Ruhig','a quiet, contemplative mood'],['intimate','Vertraut','an intimate, serene atmosphere'],['alive','Lebendig','a lively and spontaneous atmosphere'],['mysterious','Geheimnisvoll','a mysterious, atmospheric mood'],['none','Keine Vorgabe','']]],
+['clothing','Kleidung · bei Personen',[
+ ['none','Keine Vorgabe',''],['linen','Schlichte Leinenkleidung','wearing simple linen clothing'],['dress','Fließendes Kleid','wearing a flowing dress'],['nude','Künstlerischer Akt · Erwachsene','an adult fine-art nude study']]]
+];
+const defaults={subject:'woman',style:'oil',pose:'turn',view:'medium',setting:'window',light:'soft',palette:'natural',format:'portrait',texture:'subtle',composition:'flow',mood:'calm',clothing:'none',custom:'',clean:true};
+const presets={
+ portrait:{...defaults},
+ zebra:{...defaults,subject:'zebra',pose:'walk',view:'medium',setting:'black',light:'warm',palette:'blue',composition:'diagonal',mood:'alive'},
+ forest:{...defaults,subject:'forest',pose:'none',view:'wide',setting:'mist',light:'cool',palette:'green',composition:'layers',style:'watercolor',texture:'wash'},
+ still:{...defaults,subject:'still',pose:'none',setting:'studio',style:'cezanne',palette:'earth',format:'landscape',texture:'impasto'},
+ figure:{...defaults,pose:'recline',view:'full',setting:'sofa',style:'modigliani',light:'warm',palette:'teal',format:'landscape',texture:'impasto',composition:'diagonal',mood:'intimate',clothing:'nude'}
+};
+const allDefs=[...definitions,...extras],$=id=>root.getElementById(id);
+for(const [target,defs] of [['fields',definitions],['extra-fields',extras]]){
+ for(const [key,label,options] of defs){const wrapper=document.createElement('div'),lab=document.createElement('label'),select=document.createElement('select');lab.htmlFor=key;lab.textContent=label;select.id=key;for(const [id,name] of options){const opt=document.createElement('option');opt.value=id;opt.textContent=name;select.append(opt)}wrapper.append(lab,select);$(target).append(wrapper)}
+}
+const isPerson=()=>['woman','man','couple'].includes($('subject').value);
+const isAnimal=()=>['lion','zebra','horse'].includes($('subject').value);
+function state(){return Object.fromEntries([...allDefs.map(([id])=>[id,$(id).value]),['custom',$('custom').value],['clean',$('clean').checked]])}
+function wording(id){const def=allDefs.find(d=>d[0]===id);return def[2].find(v=>v[0]===$(id).value)?.[2]||''}
+function labelFor(id){const def=allDefs.find(d=>d[0]===id);return def[2].find(v=>v[0]===$(id).value)?.[1]||''}
+function updateConditions(){const person=isPerson(),animal=isAnimal();$('pose').disabled=!person&&!animal;for(const opt of $('pose').options){opt.disabled=animal&&['relaxed','recline'].includes(opt.value)}if(animal&&['relaxed','recline'].includes($('pose').value))$('pose').value='none';$('clothing').disabled=!person;$('texture').disabled=$('style').value==='photo'}
+function generate(){updateConditions();const bits=[wording('style')+' '+wording('subject')];if(isPerson()||isAnimal())bits.push(wording('pose'));if(isPerson())bits.push(wording('clothing'));bits.push(wording('view'),wording('setting'),wording('light'),wording('palette'),wording('composition'),wording('mood'));
+ if($('style').value!=='photo')bits.push(wording('texture'));if($('style').value==='modigliani')bits.push('elongated proportions, graceful dark contours and simplified sculptural forms');if($('style').value==='cezanne')bits.push('structured color planes, warm-cool color relationships and expressive constructive brushstrokes');bits.push(wording('format'));if($('clean').checked)bits.push('no text, no signature, no frame');
+ $('prompt').value=bits.filter(Boolean).join(', ')+'.'+($('custom').value.trim()?'\n\n'+$('custom').value.trim():'');
+ const neg=['blurry','low quality','compression artifacts'];if(isPerson()||isAnimal())neg.push('distorted anatomy','extra limbs','duplicate body parts');if($('style').value==='photo')neg.push('illustration','painting','plastic skin','excessive retouching');else neg.push('3D render','plastic texture');if($('clean').checked)neg.push('text','watermark','signature','frame');$('negative').value=neg.join(', ');count();persistDraft()
+}
+function count(){$('counter').textContent=$('prompt').value.length+' Zeichen'}
+let storageOK=true;function store(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch{storageOK=false;return false}}
+function read(key,fallback){try{return JSON.parse(localStorage.getItem(key))??fallback}catch{storageOK=false;return fallback}}
+function persistDraft(){store('atelierai-prompt-draft-v1',{settings:state(),prompt:$('prompt').value,negative:$('negative').value})}
+function apply(values){for(const [key] of allDefs){if(allDefs.find(d=>d[0]===key)[2].some(o=>o[0]===values[key]))$(key).value=values[key]}$('custom').value=typeof values.custom==='string'?values.custom:'';$('clean').checked=values.clean!==false;generate()}
+function status(text){$('status').textContent=text}
+async function copy(id){const field=$(id);let ok=false;try{await navigator.clipboard.writeText(field.value);ok=true}catch{field.focus();field.select();field.setSelectionRange(0,field.value.length);try{ok=document.execCommand('copy')}catch{}}status(ok?'Kopiert. Du kannst den Text jetzt einfügen.':'Text ist markiert. Bitte „Kopieren“ im Auswahlmenü antippen. Willst du beide Prompts als Datei, nutze „Als Text speichern“.')}
+let saved=read('atelierai-prompt-saved-v1',[]);if(!Array.isArray(saved))saved=[];saved=saved.filter(x=>x&&typeof x.name==='string'&&typeof x.prompt==='string'&&typeof x.negative==='string'&&x.settings&&typeof x.settings==='object').slice(0,50);
+function renderSaved(){$('saved').replaceChildren();$('saved-count').textContent=saved.length+' / 50';if(!saved.length){const li=document.createElement('li');li.className='empty';li.textContent='Hier erscheinen deine gemerkten Bildideen.';$('saved').append(li);return}saved.forEach((item,index)=>{const li=document.createElement('li'),load=document.createElement('button'),del=document.createElement('button');load.className='load';load.textContent=item.name;load.onclick=()=>{apply({...defaults,...item.settings});$('prompt').value=item.prompt;$('negative').value=item.negative;count();persistDraft();status('Vorlage geladen.');$('prompt').focus({preventScroll:true})};del.textContent='Löschen';del.className='delete';del.setAttribute('aria-label',item.name+' löschen');del.onclick=()=>{const next=saved.filter((_,i)=>i!==index);if(store('atelierai-prompt-saved-v1',next)){saved=next;renderSaved();status('Vorlage gelöscht.')}else status('Der Browser erlaubt gerade kein Speichern.')};li.append(load,del);$('saved').append(li)})}
+$('builder').addEventListener('submit',e=>e.preventDefault());$('builder').addEventListener('input',generate);$('builder').addEventListener('change',generate);
+$('presets').addEventListener('click',e=>{const key=e.target.dataset.preset;if(presets[key]){apply(presets[key]);status('Bildidee geladen.')}});
+$('prompt').addEventListener('input',()=>{count();persistDraft()});$('negative').addEventListener('input',persistDraft);
+$('copy').onclick=()=>copy('prompt');$('copy-negative').onclick=()=>copy('negative');
+$('large').onclick=()=>{const enlarged=$('prompt').style.fontSize==='22px';$('prompt').style.fontSize=enlarged?'18px':'22px';$('prompt').style.minHeight=enlarged?'310px':'470px';$('large').textContent=enlarged?'Text vergrößern':'Text verkleinern';$('large').setAttribute('aria-pressed',String(!enlarged))};
+$('reset').onclick=()=>{apply(defaults);status('Auswahl zurückgesetzt.')};
+$('save').onclick=()=>{if(saved.length>=50){status('50 Vorlagen gespeichert. Lösche eine Vorlage, um Platz zu schaffen.');return}const name=window.prompt('Name für diese Vorlage:',labelFor('subject')+' · '+labelFor('style'));if(!name?.trim())return;const next=[{name:name.trim().slice(0,120),settings:state(),prompt:$('prompt').value,negative:$('negative').value},...saved];if(store('atelierai-prompt-saved-v1',next)){saved=next;renderSaved();status('Vorlage auf diesem Gerät gespeichert.')}else status('Speichern ist im Browser nicht verfügbar. Nutze „Als Text speichern“.')};
+$('download').onclick=()=>{const text='PROMPT\n\n'+$('prompt').value+'\n\nNEGATIVE PROMPT\n\n'+$('negative').value;const url=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='PromptAtelier_Prompt.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);status('Textdatei zum Speichern bereitgestellt.')};
+const draft=read('atelierai-prompt-draft-v1',null);apply({...defaults,...(draft?.settings||{})});if(typeof draft?.prompt==='string')$('prompt').value=draft.prompt;if(typeof draft?.negative==='string')$('negative').value=draft.negative;count();persistDraft();renderSaved();if(!storageOK)status('Lokales Speichern ist in diesem Browser nicht verfügbar. Du kannst die Prompts als Textdatei sichern.');
+
+ const home=document.getElementById('promptGeneratorPanel');
+ const dialog=document.getElementById('atelierPromptDialog');
+ const opener=document.getElementById('promptExpand');
+ opener.addEventListener('click',()=>{
+   document.getElementById('promptModalBody').append(host);
+   dialog.showModal();
+ });
+ function restore(){home.append(host);opener.focus({preventScroll:true});}
+ dialog.addEventListener('close',restore);
+ document.getElementById('promptModalClose').addEventListener('click',()=>dialog.close());
+ document.getElementById('promptJump').addEventListener('click',()=>{
+   root.getElementById('prompt').scrollIntoView({block:'center'});
+   root.getElementById('prompt').focus({preventScroll:true});
+ });
 })();
 </script>
 
