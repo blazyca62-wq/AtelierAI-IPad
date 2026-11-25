@@ -1,3 +1,15 @@
+AtelierAI iPad 5.42 – Magnetischer Auswahlpinsel
+
+Werkzeuge → Hintergrund ersetzen → Motiv ausmalen +.
+Innerhalb des Motivs malen: Grün zeigt die Auswahl. Die Füllung bleibt im Pinselkreis und stoppt an Farbgrenzen.
+Pinselgröße unten einstellen. Kanten-Toleranz wirkt auf neue Striche: kleiner für vorsichtige Auswahl, größer bei Schatten/Farbverläufen.
+„Auswahl entfernen −“ korrigiert übermalte Stellen. „Letzten Pinselstrich rückgängig“ nimmt den letzten Schritt zurück.
+„Maske grün anzeigen“ ausschalten, um die Transparenz zu prüfen.
+Anschließend „Motiv als transparentes PNG speichern“.
+Zwei Finger zoomen/verschieben; ein begonnener Strich wird beim Wechsel zu zwei Fingern verworfen.
+Auswahl bleibt beim Projekt speichern/öffnen bearbeitbar. Bestehende Lasso-, Radier- und Antippwerkzeuge bleiben verfügbar.
+Die Auswahl nutzt lokale Farb- und Kantenanalyse ohne Modell oder Internet. Ähnliche Farben beiderseits einer Grenze sind nicht zuverlässig automatisch trennbar; dort kleineren Pinsel oder Lasso/Radierer nutzen.
+
 AtelierAI iPad 5.41 – Feinere Hintergrundauswahl
 
 Ähnlichkeit reicht jetzt bis 0 und ist in 0,5-Schritten einstellbar.

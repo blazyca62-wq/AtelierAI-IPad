@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.41</title>
+  <title>AtelierAI iPad 5.42</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1097,7 +1097,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.41</div>
+    <div class="title">AtelierAI 5.42</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -14404,7 +14404,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.41</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.42</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -14494,7 +14494,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           <button id="bgLayerFit" class="secondary" type="button" disabled>Bild einpassen</button>
         </div>
         <div id="bgCutoutControls">
-        <strong>1 · Hintergrund auswählen</strong>
+        <strong>1 · Motiv auswählen</strong>
+        <div class="bg-choice" role="group" aria-label="Magnetische Auswahl">
+          <button id="bgMagnetAdd" type="button" class="secondary" aria-pressed="false">Motiv ausmalen +</button>
+          <button id="bgMagnetRemove" type="button" class="secondary" aria-pressed="false">Auswahl entfernen −</button>
+        </div>
+        <label>Kanten-Toleranz <input id="bgMagnetTolerance" type="range" min="0" max="100" value="28"><output id="bgMagnetToleranceVal">28</output></label>
+        <label>Maske grün anzeigen <input id="bgMaskView" type="checkbox"></label>
+        <p>Grob innerhalb des Motivs malen. Der Pinsel füllt ähnliche, verbundene Farben bis zu Bildkanten innerhalb seines Kreises. Pinselgröße unten einstellen. Kleinere Toleranz stoppt früher. Grün bleibt erhalten. Bei ähnlichen Motiv- und Hintergrundfarben kleiner malen oder manuell nachbessern. Zwei Finger zoomen und verschieben.</p>
         <div class="bg-choice"><button id="bgTap" class="secondary" type="button">Hintergrund antippen</button><button id="bgLasso" class="secondary" type="button">Motiv mit Lasso</button></div>
         <p>Einfacher Hintergrund: eine oder mehrere Flächen antippen. Bei komplexem Hintergrund: „Motiv mit Lasso“ wählen und mit dem Pencil oder einem Finger umranden. Absetzen ist möglich: mit zwei Fingern zoomen oder verschieben, dann am Linienende weiterzeichnen. Erst „Auswahl schließen“ beendet die Kontur; alles außerhalb wird ersetzt.</p>
         <button id="bgUndoTap" class="secondary" type="button" disabled>Letztes Antippen rückgängig</button>
@@ -14628,7 +14635,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   const selectedStudyLayer=()=>studyIndex<0?pngBase:pngLayers[studyIndex];
   const savedControls=[
     'bgKind','bgColor','bgTolerance','bgClean','bgFeather','bgIntegrate','bgLightMix','bgColorMix',
-    'bgBackdropLight','bgBackdropColor','bgBrushSize','bgEraseStrength','bgBrushSoftness'
+    'bgBackdropLight','bgBackdropColor','bgBrushSize','bgEraseStrength','bgBrushSoftness','bgMagnetTolerance'
   ];
   const isImageData=value=>typeof value==='string'&&/^data:(?:image\/[a-z0-9.+-]+|application\/octet-stream)?;base64,/i.test(value);
   const integrate=$('bgIntegrate'),lightMix=$('bgLightMix'),colorMix=$('bgColorMix');
@@ -14993,9 +15000,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     if(draft?.length&&!pngMode)for(const id of ['bgApply','bgSave','bgDesign','bgDesignBackdrop'])$(id).disabled=true;
     $('bgUndoStroke').disabled=busy||!!brushStroke||brushStrokes.length===0;
     $('bgBrushSizeVal').textContent=brushSize.value+' px';
+    $('bgMagnetToleranceVal').textContent=$('bgMagnetTolerance').value;
+    for(const [id,mode] of [['bgMagnetAdd','magnetAdd'],['bgMagnetRemove','magnetRemove']]){
+      const active=brushMode===mode;$(id).setAttribute('aria-pressed',String(active));$(id).classList.toggle('secondary',!active);$(id).classList.toggle('active',active);
+    }
     for(const slider of [eraseStrength,brushSoftness]){
       $(slider.id+'Val').textContent=slider.value+' %';
-      slider.disabled=brushMode==='restore';
+      slider.disabled=brushMode==='restore'||brushMode==='magnetAdd'||brushMode==='magnetRemove';
     }
     for(const [id,mode] of [['bgErase','erase'],['bgRestore','restore']]){
       const button=$(id),active=brushMode===mode;
@@ -15080,7 +15091,66 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     edgeMaskCache=result;
     return result;
   }
+  // Edge-aware, bounded region growth. Every dab is connected to its seed;
+  // it cannot select a similarly colored but disconnected part of the image.
+  function magneticDab(data,w,h,p,radius,tolerance){
+    const sx=Math.floor(p.x),sy=Math.floor(p.y);
+    if(sx<0||sy<0||sx>=w||sy>=h)return null;
+    const x=Math.max(0,Math.floor(sx-radius)),y=Math.max(0,Math.floor(sy-radius));
+    const rw=Math.min(w,Math.ceil(sx+radius+1))-x,rh=Math.min(h,Math.ceil(sy+radius+1))-y;
+    const visited=new Uint8Array(rw*rh),alpha=new Uint8ClampedArray(rw*rh),queue=new Int32Array(rw*rh);
+    const seed=(sy*w+sx)*4,limit=8+tolerance*.8,edgeLimit=8+tolerance*.45;
+    if(data[seed+3]<16)return null;
+    const distance=(a,b)=>Math.sqrt((2*(data[a]-data[b])**2+4*(data[a+1]-data[b+1])**2+(data[a+2]-data[b+2])**2)/7);
+    let head=0,tail=1;queue[0]=(sy-y)*rw+sx-x;visited[queue[0]]=1;
+    while(head<tail){
+      const i=queue[head++],lx=i%rw,ly=Math.floor(i/rw),px=x+lx,py=y+ly,a=(py*w+px)*4;
+      alpha[i]=255;
+      for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]){
+        const nx=lx+dx,ny=ly+dy;
+        if(nx<0||ny<0||nx>=rw||ny>=rh)continue;
+        const j=ny*rw+nx;
+        if(visited[j]||((x+nx)-sx)**2+((y+ny)-sy)**2>radius*radius)continue;
+        const b=((y+ny)*w+x+nx)*4;
+        // Failed edge transitions remain available from another neighbor.
+        if(data[b+3]<16||distance(b,seed)>limit||distance(a,b)>edgeLimit)continue;
+        visited[j]=1;queue[tail++]=j;
+      }
+    }
+    return {x,y,width:rw,height:rh,alpha};
+  }
+  let magneticRasters=new WeakMap();
+  function rasterMagneticStroke(stroke){
+    if(!stroke.points.length)return null;
+    const radius=Math.max(1,stroke.radius),pts=stroke.points;
+    let entry=magneticRasters.get(stroke);
+    if(!entry){entry={stamp:canvas(1,1),x:0,y:0,count:0,empty:true};magneticRasters.set(stroke,entry);}
+    // Process new segments only; keep the raster outside serialized projects.
+    for(let i=entry.count;i<pts.length;i++){
+      const b=pts[i],a=i?pts[i-1]:b,distance=Math.hypot(b.x-a.x,b.y-a.y);
+      const steps=Math.max(1,Math.ceil(distance/Math.max(1,radius*.35)));
+      for(let s=1;s<=steps;s++){
+        const dab=magneticDab(previewData.data,preview.width,preview.height,
+          {x:a.x+(b.x-a.x)*s/steps,y:a.y+(b.y-a.y)*s/steps},radius,stroke.magneticTolerance??28);
+        if(!dab)continue;
+        const x=entry.empty?dab.x:Math.min(entry.x,dab.x),y=entry.empty?dab.y:Math.min(entry.y,dab.y);
+        const right=entry.empty?dab.x+dab.width:Math.max(entry.x+entry.stamp.width,dab.x+dab.width);
+        const bottom=entry.empty?dab.y+dab.height:Math.max(entry.y+entry.stamp.height,dab.y+dab.height);
+        if(entry.empty||x!==entry.x||y!==entry.y||right-x!==entry.stamp.width||bottom-y!==entry.stamp.height){
+          const expanded=canvas(right-x,bottom-y);
+          if(!entry.empty)expanded.getContext('2d').drawImage(entry.stamp,entry.x-x,entry.y-y);
+          entry.stamp=expanded;entry.x=x;entry.y=y;entry.empty=false;
+        }
+        const tile=canvas(dab.width,dab.height),ctx=tile.getContext('2d'),im=ctx.createImageData(dab.width,dab.height);
+        for(let j=0;j<dab.alpha.length;j++){const k=j*4;im.data[k]=im.data[k+1]=im.data[k+2]=255;im.data[k+3]=dab.alpha[j];}
+        ctx.putImageData(im,0,0);entry.stamp.getContext('2d').drawImage(tile,dab.x-entry.x,dab.y-entry.y);
+      }
+    }
+    entry.count=pts.length;
+    return entry.empty?null:entry;
+  }
   function rasterBrushStroke(stroke){
+    if(stroke.magnetic)return rasterMagneticStroke(stroke);
     const {points,radius,softness}=stroke;
     if(!points.length)return null;
     let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
@@ -15141,7 +15211,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function clearBrush(){
     brushMode=brushStroke=brushLayer=brushCoverage=brushCursor=brushMaskCache=null;
-    brushStrokes=[];
+    brushStrokes=[];magneticRasters=new WeakMap();
+    $('bgMaskView').checked=false;
     brushRevision++;
   }
   function setBrushMode(mode){
@@ -15665,10 +15736,17 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       screenCtx.fillStyle=transparencyPattern||'#f2f2f2';
       screenCtx.fillRect(drawX,drawY,v.scene.width*drawScale,v.scene.height*drawScale);
     }
+    const maskView=$('bgMaskView').checked&&!$('bgOriginal').checked;
     let active=v.scene;
-    try{if(!pngMode&&working()&&!$('bgOriginal').checked&&(kind.value!=='photo'||photo))active=composedPreview();}catch(_e){}
+    try{if(!pngMode&&working()&&!maskView&&!$('bgOriginal').checked&&(kind.value!=='photo'||photo))active=composedPreview();}catch(_e){}
     screenCtx.imageSmoothingEnabled=true;screenCtx.imageSmoothingQuality='high';screenCtx.drawImage(active,drawX,drawY,v.scene.width*drawScale,v.scene.height*drawScale);
     if(pngMode)return;
+    if(maskView&&working()){
+      const tint=canvas(preview.width,preview.height),tc=tint.getContext('2d');
+      tc.drawImage(preview,0,0);tc.globalCompositeOperation='source-in';tc.fillStyle='#24e890';tc.fillRect(0,0,tint.width,tint.height);
+      tc.globalCompositeOperation='destination-out';tc.drawImage(edgeMask(),0,0);
+      screenCtx.save();screenCtx.globalAlpha=.48;screenCtx.drawImage(tint,drawX,drawY,preview.width*drawScale,preview.height*drawScale);screenCtx.restore();
+    }
     if(draft?.length){screenCtx.save();screenCtx.beginPath();draft.forEach((p,i)=>{const x=drawX+p.x*drawScale,y=drawY+p.y*drawScale;i?screenCtx.lineTo(x,y):screenCtx.moveTo(x,y);});screenCtx.setLineDash([5,5]);screenCtx.strokeStyle='#000';screenCtx.lineWidth=5;screenCtx.stroke();screenCtx.strokeStyle='#fff';screenCtx.lineWidth=2;screenCtx.stroke();screenCtx.restore();}
     if(lassoPatch?.phase==='draw'){
       screenCtx.save();screenCtx.beginPath();lassoPatch.tail.forEach((p,i)=>{const x=drawX+p.x*drawScale,y=drawY+p.y*drawScale;i?screenCtx.lineTo(x,y):screenCtx.moveTo(x,y);});screenCtx.setLineDash([5,5]);screenCtx.strokeStyle='#fff';screenCtx.lineWidth=2;screenCtx.stroke();
@@ -15894,15 +15972,19 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     resetLassoEditing();lassoUsesPen=false;
     original=image;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
     kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='70';lightMix.value=colorMix.value=backdropLight.value=backdropColor.value='0';$('bgBackdropGroup').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
-    resetDesignPreview();designSettings=null;resetOpacity();clearTaps();clearBrush();brushSize.value='24';eraseStrength.value='100';brushSoftness.value='35';$('bgBrushPanel').open=true;resetPlacement();$('bgMotifPlacement').open=false;
+    resetDesignPreview();designSettings=null;resetOpacity();clearTaps();clearBrush();brushSize.value='24';eraseStrength.value='100';brushSoftness.value='35';$('bgMagnetTolerance').value='28';$('bgBrushPanel').open=true;resetPlacement();$('bgMotifPlacement').open=false;
     sourceData=photoFile=photoData=null;
     delete $('bgFileName').dataset.name;
     photoRevision++;
     mask=importedAlphaMask();
     if(mask)selection='alpha';
   }
-  function restoredMask(type,path){
-    if(type==='manual')return canvas(preview.width,preview.height);
+  function restoredMask(type,path,strokes=[]){
+    if(type==='manual'){
+      const result=canvas(preview.width,preview.height);
+      if(strokes[0]?.startHidden){const c=result.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,result.width,result.height);}
+      return result;
+    }
     if(type==='alpha')return importedAlphaMask();
     if(type==='lasso'&&path?.length>=5)return lassoMask(path);
     return null;
@@ -15944,7 +16026,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     brushStrokes=saved.brushStrokes;
     if(selection==='tap'){
       if(!saved.taps.length||!saved.tapBase)throw Error('Die Auswahl im Projekt ist unvollständig.');
-      tapBase={...saved.tapBase,mask:restoredMask(saved.tapBase.selection,saved.tapBase.points)};
+      tapBase={...saved.tapBase,mask:restoredMask(saved.tapBase.selection,saved.tapBase.points,saved.tapBase.brushStrokes)};
       const size=preview.width*preview.height;
       tapPrefix=new Uint8Array(size);
       for(const tap of saved.taps){
@@ -15954,7 +16036,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       }
       refreshTapMask();
     }else{
-      mask=restoredMask(selection,points);
+      mask=restoredMask(selection,points,brushStrokes);
     }
     if(!working())throw Error('Die Auswahl im Projekt konnte nicht gelesen werden.');
     rebuildBrush();
@@ -16109,6 +16191,19 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(brushMode)say(mode==='erase'?'Mit einem Finger über die zu entfernende Stelle malen.':'Über ausgeblendete Stellen malen, um das Original dort wieder sichtbar zu machen.');
     });
   }
+  for(const [id,mode] of [['bgMagnetAdd','magnetAdd'],['bgMagnetRemove','magnetRemove']]){
+    $(id).addEventListener('click',()=>{
+      if(!preview||busy||brushStroke)return;
+      if(selection==='alpha'){say('Bei einem bereits transparenten PNG bitte Radieren oder Zurückmalen verwenden.');return;}
+      if(draft?.length){say('Bitte zuerst die offene Lasso-Auswahl schließen oder neu beginnen.');return;}
+      motifMoveMode=bgMoveMode=false;resetPlacement();$('bgOriginal').checked=false;
+      setBrushMode(mode);$('bgMaskView').checked=true;$('bgBrushPanel').open=true;
+      if(Number(brushSize.value)<40)brushSize.value='80';
+      ui();render();say(mode==='magnetAdd'?'Innerhalb des Motivs malen. Grün markiert die behaltenen Stellen.':'Innerhalb der unerwünschten Auswahl malen. Der Pinsel entfernt verbundene ähnliche Farben.');
+    });
+  }
+  $('bgMaskView').addEventListener('change',render);
+  $('bgMagnetTolerance').addEventListener('input',()=>{ui();});
   for(const slider of [brushSize,eraseStrength,brushSoftness])slider.addEventListener('input',()=>{ui();render();});
   $('bgUndoStroke').addEventListener('click',()=>{
     if(busy||brushStroke||!brushStrokes.length)return;
@@ -16214,16 +16309,20 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         gest={type:'pngLayer',start:p,layer,x:pos.x,y:pos.y,ratio:pngBase.image.width/pngPreview.width,scale:drawScale};
       }else gest={type:$('bgLayerPick').checked?'pngTap':'pan',start:p,panX,panY};
     }else if(bgMoveMode&&kind.value==='photo'&&photo){gest={type:'background',start:p,bgX:bgShiftX,bgY:bgShiftY};}else if(motifMoveMode&&working()){gest={type:'motif',start:p,x:motifX,y:motifY};}else if(brushMode){
+      const magnetic=brushMode==='magnetAdd'||brushMode==='magnetRemove';
+      const startHidden=!working()&&brushMode==='magnetAdd';
       if(!working()){
-        if(brushMode==='restore'||!inImage(q))return;
+        if(brushMode==='restore'||brushMode==='magnetRemove'||!inImage(q)){gest=null;return;}
         selection='manual';
         mask=canvas(preview.width,preview.height);
+        if(startHidden){const c=mask.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,mask.width,mask.height);kind.value='transparent';}
       }
       gest={type:'brush',start:p};brushCursor=p;
-      const erasing=brushMode==='erase';
-      brushStroke={mode:brushMode,radius:Number(brushSize.value)/2,
-        strength:erasing?Number(eraseStrength.value)/100:1,
-        softness:erasing?Number(brushSoftness.value)/100:0,points:[]};
+      const erasing=brushMode==='erase'||brushMode==='magnetRemove';
+      brushStroke={mode:erasing?'erase':'restore',magnetic,startHidden,magneticTolerance:Number($('bgMagnetTolerance').value),radius:Number(brushSize.value)/2,
+        strength:magnetic?1:erasing?Number(eraseStrength.value)/100:1,
+        softness:magnetic?0:erasing?Number(brushSoftness.value)/100:0,points:[]};
+      if(magnetic)addBrushPoint(brushPoint(p));
       ui();render();
     }else if(tool==='lasso'&&lassoPatch&&lassoPatch.phase!=='draw'){gest={type:'lassoPick',start:p};
     }else if(tool==='lasso'&&e.pointerType==='touch'&&lassoUsesPen){gest={type:'pan',start:p,panX,panY};
@@ -16349,7 +16448,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.41_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.41_Motiv_Transparent.png':'AtelierAI_5.41_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.42_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.42_Motiv_Transparent.png':'AtelierAI_5.42_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
