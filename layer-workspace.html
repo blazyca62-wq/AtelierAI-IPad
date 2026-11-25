@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.40</title>
+  <title>AtelierAI iPad 5.41</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1097,7 +1097,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.40</div>
+    <div class="title">AtelierAI 5.41</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -13837,7 +13837,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
  const guides = [
    ["Englischen Bild-Prompt zusammenstellen", "Vorlage → Prompt-Generator", "Wähle Motiv, Malweise, Pose, Farben und Licht. Die Auswahl erzeugt einen englischen Prompt und Negativ-Prompt. Eigene Ergänzungen bitte auf Englisch eingeben. „Groß öffnen“ bietet mehr Platz; „Zum Prompt“ springt zur Ausgabe. Der Text ist bearbeitbar. Änderungen an den Auswahlfeldern setzen ihn neu zusammen. „Vorlage merken“ speichert bis zu 50 Vorlagen in diesem Browser, getrennt vom Malprojekt. „Als Text speichern“ exportiert beide Texte. Der Generator arbeitet ohne KI und Internet und analysiert das geladene Bild nicht. „Zurück zum Atelier“ schließt die große Ansicht."],
    ["Transparente PNG-Ebenen zusammensetzen", "Vorlage → Hintergrund ersetzen → PNG-Ebenen", "Öffne zuerst das Hintergrundbild. Füge dann über „PNG-Ebene hinzufügen“ die transparenten Motive von hinten nach vorne ein. Gleich große PNGs behalten ihre Position. Andere Größen werden mittig eingepasst. Zum Verschieben tippe auf den Ebenennamen und schalte „Ebene verschieben“ ein. Bei eingeschaltetem Verschieben zieht ein Finger die Ebene; zwei Finger ändern Größe und Platzierung. Ausgeschaltet zoomen zwei Finger die Ansicht. Position X/Y erlaubt genaue Angaben in Bildpixeln. „Position zurücksetzen“ setzt nur die ausgewählte Ebene zurück. Verschiebungen bleiben beim Speichern und Öffnen des Projekts erhalten. Mit den Häkchen kannst du auch das Hintergrundbild ausblenden. Mit „Nur diese Ebene“ siehst du die angetippte Ebene einzeln. Unter „Untergrund ohne Bild“ wählst du Transparent oder Weiß. Diese Wahl gilt für die Vorschau, die übernommene Malvorlage und den PNG-Export. Tippe auf den Ebenennamen, um ihre Malansicht mit Schwarz-Weiß, Weichzeichnung, Großformen oder Farbreduktion einzustellen. Bei aktiver „Malreihenfolge“ zeigt Atelier die angekreuzten Ebenen bis zur angetippten Ebene. Schalte die Malreihenfolge aus, um wieder alle angekreuzten Ebenen zu sehen. Über „Übernehmen & zum Projekt“ und „Projekt speichern“ sicherst du den gesamten Ebenenstapel."],
-   ["Hintergrund ersetzen oder Motiv freistellen", "Vorlage → Hintergrund ersetzen", "Öffne ein Foto. Tippe mit „Hintergrund antippen“ nacheinander auf zusammenhängende Hintergrundflächen. „Ähnlichkeit“ passt die zuletzt angetippte Fläche direkt im Bild an. „Letztes Antippen rückgängig“ nimmt sie zurück. Bei einem unruhigen Hintergrund wähle „Motiv mit Lasso“ und umfahre das Motiv. Du kannst den Pencil absetzen, mit zwei Fingern verschieben oder zoomen und am grünen Linienende weiterzeichnen. Erst „Auswahl schließen“ beendet die Kontur. „Letzten Abschnitt zurück“ nimmt den letzten Strich zurück. Mit „Linienstück korrigieren“ tippst du Anfang und Ende einer falschen Strecke an, zeichnest sie vom grünen Punkt zum orangefarbenen Ziel neu und drückst „Korrektur übernehmen“. Anschließend „Auswahl schließen“. Das geht auch bei einer bereits geschlossenen Auswahl. „Neu beginnen“ verwirft die offene Linie. Eine transparente PNG wird über „Foto öffnen“ bereits freigestellt geladen. Unter „Art“ wählst du „Farbe / Schwarz“, „Transparent – nur Motiv“, „Eigenes Bild“ oder bei einem normalen Foto „Vorhandenen bearbeiten“. Für spätere PNG-Ebenen wähle „Transparent – nur Motiv“ und drücke „Motiv als transparentes PNG speichern“. Das Schachbrett ist nur die Vorschau für Transparenz und wird nicht mitgespeichert."],
+   ["Hintergrund ersetzen oder Motiv freistellen", "Vorlage → Hintergrund ersetzen", "Öffne ein Foto. Tippe mit „Hintergrund antippen“ nacheinander auf zusammenhängende Hintergrundflächen. „Ähnlichkeit“ passt alle angetippten Flächen direkt im Bild an; kleine Werte entfernen weniger. „Letztes Antippen rückgängig“ nimmt sie zurück. Bei einem unruhigen Hintergrund wähle „Motiv mit Lasso“ und umfahre das Motiv. Du kannst den Pencil absetzen, mit zwei Fingern verschieben oder zoomen und am grünen Linienende weiterzeichnen. Erst „Auswahl schließen“ beendet die Kontur. „Letzten Abschnitt zurück“ nimmt den letzten Strich zurück. Mit „Linienstück korrigieren“ tippst du Anfang und Ende einer falschen Strecke an, zeichnest sie vom grünen Punkt zum orangefarbenen Ziel neu und drückst „Korrektur übernehmen“. Anschließend „Auswahl schließen“. Das geht auch bei einer bereits geschlossenen Auswahl. „Neu beginnen“ verwirft die offene Linie. Eine transparente PNG wird über „Foto öffnen“ bereits freigestellt geladen. Unter „Art“ wählst du „Farbe / Schwarz“, „Transparent – nur Motiv“, „Eigenes Bild“ oder bei einem normalen Foto „Vorhandenen bearbeiten“. Für spätere PNG-Ebenen wähle „Transparent – nur Motiv“ und drücke „Motiv als transparentes PNG speichern“. Das Schachbrett ist nur die Vorschau für Transparenz und wird nicht mitgespeichert."],
    ["Weich radieren und Motivteile zurückmalen", "Hintergrund ersetzen → Radieren und Zurückmalen", "Du kannst sofort auf dem Foto radieren. Stelle die Pinselgröße ein. Eine Radierstärke von 30 % lässt den Hintergrund leicht durchscheinen. Weitere Striche verstärken die Wirkung. „Weiche Pinselkante“ lässt den Strich am Rand auslaufen. Mit „Zurückmalen“ blendest du Stellen wieder ein, die durch Antippen, Lasso oder Radieren ausgeblendet wurden. Bei transparenten PNGs lassen sich die ursprünglich sichtbaren Teile wiederherstellen. „Letzten Pinselstrich rückgängig“ nimmt den letzten Strich zurück. Male mit einem Finger und zoome mit zwei Fingern."],
    ["Farbsäume und Kanten nachbessern", "Hintergrund ersetzen", "„Rand bereinigen“ schneidet alte Hintergrundfarbe am Motivrand ab. Verringere den Wert, wenn feine Details verloren gehen. „Kante glätten“ mildert Treppchen. „Weiche Kante“ bestimmt den Übergang entlang der Freistellung. Für einzelne Stellen gibt es den Radierpinsel mit „Weiche Pinselkante“. Nutze „Original vergleichen“ zur Kontrolle oder „Auswahl zurücksetzen“ für eine neue Freistellung."],
    ["Motiv oder Hintergrund verschieben und skalieren", "Hintergrund ersetzen → Motiv platzieren", "Nach dem Freistellen kannst du „Motivgröße“ ändern und mit „Motiv verschieben“ das Motiv mit einem Finger ziehen. „Motiv-Deckkraft“ steuert, wie stark der Hintergrund durch das Motiv scheint. „Platzierung zurücksetzen“ stellt die ursprüngliche Platzierung wieder her. Bei „Eigenes Bild“ regelst du die Hintergrundgröße separat. Schalte „Hintergrund verschieben“ ein, um das Bild zu ziehen. „Hintergrund zentrieren“ setzt den Ausschnitt zurück. Zwei Finger bewegen die gesamte Ansicht. Bei „Vorhandenen bearbeiten“ wird die frei gewordene Motivfläche mit Farben aus der Umgebung gefüllt."],
@@ -14404,7 +14404,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.40</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.41</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -14510,7 +14510,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
           <button id="bgUndoStroke" class="secondary" type="button" disabled>Letzten Pinselstrich rückgängig</button>
           <p>Du kannst direkt radieren oder eine Auswahl nachbessern. Mit einem Finger malen, mit zwei Fingern zoomen und verschieben.</p>
         </details>
-        <label id="bgToleranceRow">Ähnlichkeit <input id="bgTolerance" type="range" min="5" max="100" step="1" value="30"><output id="bgToleranceVal">30</output></label>
+        <label id="bgToleranceRow">Ähnlichkeit <input id="bgTolerance" type="range" min="0" max="100" step="0.5" value="15"><output id="bgToleranceVal">15</output></label>
         <p id="bgToleranceHelp">Ähnlichkeit einstellen oder nach dem Antippen anpassen.</p>
         <button id="bgFit" class="secondary" type="button">Bild einpassen</button>
         <strong>2 · Hintergrund wählen</strong>
@@ -14975,7 +14975,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     $('bgToleranceRow').hidden=tool!=='tap';
     $('bgToleranceHelp').hidden=tool!=='tap';
     $('bgToleranceHelp').textContent=tapHistory.length
-      ?'Ändert die zuletzt angetippte Fläche direkt im Bild.'
+      ?'Wirkt auf alle angetippten Flächen. Kleiner: weniger entfernen. 0: nur exakt gleiche Farben.'
       :'Ähnlichkeit einstellen oder nach dem Antippen anpassen.';
     $('bgColorRow').hidden=kind.value!=='color';$('bgPhotoRow').hidden=kind.value!=='photo';$('bgFileName').hidden=kind.value!=='photo';
     const preCut=selection==='alpha';
@@ -15708,10 +15708,15 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     let head=0,tail=1;
     queue[0]=tap.index;visited[tap.index]=1;
     const seed=tap.index*4,r=d[seed],g=d[seed+1],b=d[seed+2];
-    const limit=(5+tap.tolerance*1.12)**2*3;
+    // No minimum offset: very small values must select very close colors only.
+    // Separate brightness from chroma so blue-gray backdrops do not consume skin.
+    const limit=(Math.max(0,tap.tolerance)*.75)**2;
     while(head<tail){
       const pos=queue[head++],z=pos*4,dr=d[z]-r,dg=d[z+1]-g,db=d[z+2]-b;
-      if(dr*dr+dg*dg+db*db>limit)continue;
+      const dy=.299*dr+.587*dg+.114*db;
+      const cb=-.168736*dr-.331264*dg+.5*db;
+      const cr=.5*dr-.418688*dg-.081312*db;
+      if(.25*dy*dy+4*(cb*cb+cr*cr)>limit)continue;
       target[pos]=1;
       const x=pos%w;
       if(x>0&&!visited[pos-1]){visited[pos-1]=1;queue[tail++]=pos-1;}
@@ -15733,7 +15738,11 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   function updatePendingTolerance(){
     if(!tolerancePending)return;
     tolerancePending=false;
-    if(tapHistory.length)refreshTapMask();
+    if(tapHistory.length){
+      tapPrefix.fill(0);
+      for(let i=0;i<tapHistory.length-1;i++)floodInto(tapHistory[i],tapPrefix);
+      refreshTapMask();
+    }
   }
   function finishTolerance(){
     clearTimeout(toleranceTimer);
@@ -15755,7 +15764,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     points=null;selection='tap';
     $('bgOriginal').checked=false;
     refreshTapMask();ui();render();
-    say('Hintergrund ausgewählt. Mit „Ähnlichkeit“ passt du die letzte Fläche an.');
+    say('Hintergrund ausgewählt. Mit „Ähnlichkeit“ passt du alle angetippten Flächen an.');
   }
   function undoTap(){
     if(busy||brushStroke||tapHistory.length===0)return;
@@ -16146,8 +16155,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   tol.addEventListener('input',()=>{
     $('bgToleranceVal').textContent=tol.value;
     const last=tapHistory.at(-1);
-    if(!last||last.tolerance===Number(tol.value))return;
-    last.tolerance=Number(tol.value);
+    if(!last||tapHistory.every(tap=>tap.tolerance===Number(tol.value)))return;
+    for(const tap of tapHistory)tap.tolerance=Number(tol.value);
     tolerancePending=true;
     toleranceMoving=true;
     $('bgOriginal').checked=false;
@@ -16340,7 +16349,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.40_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.40_Motiv_Transparent.png':'AtelierAI_5.40_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.41_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.41_Motiv_Transparent.png':'AtelierAI_5.41_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }

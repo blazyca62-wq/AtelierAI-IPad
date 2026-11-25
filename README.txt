@@ -1,4 +1,15 @@
-AtelierAI iPad 5.40 – Prompt-Generator integriert
+AtelierAI iPad 5.41 – Feinere Hintergrundauswahl
+
+Ähnlichkeit reicht jetzt bis 0 und ist in 0,5-Schritten einstellbar.
+Kleine Werte entfernen deutlich weniger. Die Auswahl unterscheidet Farbton
+und Helligkeit, um etwa blauen Hintergrund besser von Haut zu trennen.
+Der Regler berechnet alle angetippten Hintergrundflächen neu; alte Punkte
+bleiben beim Herunterregeln nicht mehr mit hoher Toleranz erhalten.
+Bei farbgleichen Motiv- und Hintergrundstellen bleiben Lasso und Zurückmalen
+für die genaue Abgrenzung nötig. Bereits exportierte PNGs werden nicht repariert.
+Für eine neue Freistellung bitte wieder das Originalfoto verwenden.
+
+AtelierAI iPad 5.41 – Prompt-Generator integriert
 
 Vorlage → Prompt-Generator. Funktioniert ohne Foto und ohne KI/Internet.
 Deutsche Auswahlfelder erzeugen einen englischen Prompt samt Negativ-Prompt.
@@ -11,7 +22,7 @@ Diese Vorlagen sind getrennt vom Malprojekt und nicht in .atelierprojekt enthalt
 Freie Ergänzungen werden unverändert angehängt, bitte auf Englisch eingeben.
 Keine automatische Bildbeschreibung oder Bildgenerierung.
 
-Installation wie bisher: ZIP vollständig entpacken und alle Dateien im bisherigen Atelier-Ordner ersetzen bzw. auf GitHub hochladen. In Safari Atelier öffnen und gegebenenfalls „Update bereit“ antippen. Offline-Status prüfen. Die neue Version ist oben als 5.40 erkennbar.
+Installation wie bisher: ZIP vollständig entpacken und alle Dateien im bisherigen Atelier-Ordner ersetzen bzw. auf GitHub hochladen. In Safari Atelier öffnen und gegebenenfalls „Update bereit“ antippen. Offline-Status prüfen. Die neue Version ist oben als 5.41 erkennbar.
 
 Bisherige Versionshinweise:
 
@@ -327,7 +338,7 @@ Unter „Hintergrund ersetzen → Radieren und Zurückmalen“ findest du zwei R
 
 NEU IN 4.86 – LIVE-ÄHNLICHKEIT UND ZURÜCKMALEN
 
-Nach dem Antippen einer Hintergrundfläche kannst du mit „Ähnlichkeit“ genau diese Fläche live vergrößern oder verkleinern. Frühere Flächen behalten ihre eigene Einstellung. „Letztes Antippen rückgängig“ entfernt die zuletzt gewählte Fläche.
+Mit „Ähnlichkeit“ kannst du alle angetippten Hintergrundflächen gemeinsam neu berechnen. Kleinere Werte stellen zuvor entfernte Bereiche wieder her. „Letztes Antippen rückgängig“ entfernt die zuletzt gewählte Fläche.
 
 Unter „Radieren und Zurückmalen“ blendet der Pinsel „Zurückmalen“ das Original an übermalten Stellen wieder ein. Das gilt für die Auswahl per Antippen, per Lasso und für Radierstriche. Bei bereits transparenten PNG-Dateien sind die ursprünglich sichtbaren Bildteile wiederherstellbar. Die Vorschau und der Export verwenden dieselben Korrekturen.
 
