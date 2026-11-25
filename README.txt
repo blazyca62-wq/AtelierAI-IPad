@@ -1,3 +1,14 @@
+AtelierAI iPad 5.43 – Magnet-Lasso
+
+Werkzeuge → Hintergrund ersetzen → Magnet-Lasso.
+Pencil nahe am Motivrand führen: eine Kantenanalyse und lokale Pfadsuche ziehen die Linie zur Bildkante.
+Absetzen ist möglich; mit zwei Fingern zoomen/verschieben, danach am Linienende weiterzeichnen.
+Suchradius kleiner einstellen, wenn Nachbarkanten angezogen werden. Anziehung abschwächen oder „An Bildkanten anziehen“ vorübergehend ausschalten, um schwierige Stellen von Hand zu zeichnen.
+„Letzten Abschnitt zurück“ entfernt den letzten gezeichneten Abschnitt. „Linienstück korrigieren“ ersetzt einen fehlerhaften Teil.
+Kontur bis zum weißen Startpunkt zurückführen; „Auswahl schließen“ schließt die Auswahl und zeigt den transparenten Hintergrund.
+Danach transparentes PNG speichern oder zum Projekt übernehmen.
+Das Magnet-Lasso nutzt Bildkanten ohne KI-Modell oder Internet. Bei schwachen oder mehrdeutigen Konturen ist manuelle Führung weiterhin notwendig.
+
 AtelierAI iPad 5.42 – Magnetischer Auswahlpinsel
 
 Werkzeuge → Hintergrund ersetzen → Motiv ausmalen +.

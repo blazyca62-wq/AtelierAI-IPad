@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.42</title>
+  <title>AtelierAI iPad 5.43</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1097,7 +1097,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.42</div>
+    <div class="title">AtelierAI 5.43</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -14404,7 +14404,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.42</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.43</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -14495,6 +14495,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         </div>
         <div id="bgCutoutControls">
         <strong>1 · Motiv auswählen</strong>
+        <button id="bgMagneticLasso" class="secondary" type="button" aria-pressed="false">Magnet-Lasso</button>
+        <details id="bgMagneticOptions" hidden open>
+          <summary>Magnet-Lasso einstellen</summary>
+          <label>An Bildkanten anziehen <input id="bgLassoMagnet" type="checkbox" checked></label>
+          <label>Suchradius <input id="bgLassoRadius" type="range" min="3" max="30" value="12"><output id="bgLassoRadiusVal">12 px</output></label>
+          <label>Anziehung <input id="bgLassoAttraction" type="range" min="0" max="100" value="75"><output id="bgLassoAttractionVal">75 %</output></label>
+          <p>Den Pencil nahe der gewünschten Kontur führen. Die Linie sucht Bildkanten im Suchradius. Bei einer falschen Kante: letzten Abschnitt zurücknehmen, kleinerer Suchradius oder Anziehung kurz ausschalten. Absetzen und mit zwei Fingern weiterzoomen ist möglich. Zum Schließen zum Start zurückkehren und „Auswahl schließen“ tippen.</p>
+        </details>
         <div class="bg-choice" role="group" aria-label="Magnetische Auswahl">
           <button id="bgMagnetAdd" type="button" class="secondary" aria-pressed="false">Motiv ausmalen +</button>
           <button id="bgMagnetRemove" type="button" class="secondary" aria-pressed="false">Auswahl entfernen −</button>
@@ -14635,7 +14643,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   const selectedStudyLayer=()=>studyIndex<0?pngBase:pngLayers[studyIndex];
   const savedControls=[
     'bgKind','bgColor','bgTolerance','bgClean','bgFeather','bgIntegrate','bgLightMix','bgColorMix',
-    'bgBackdropLight','bgBackdropColor','bgBrushSize','bgEraseStrength','bgBrushSoftness','bgMagnetTolerance'
+    'bgBackdropLight','bgBackdropColor','bgBrushSize','bgEraseStrength','bgBrushSoftness','bgMagnetTolerance','bgLassoRadius','bgLassoAttraction'
   ];
   const isImageData=value=>typeof value==='string'&&/^data:(?:image\/[a-z0-9.+-]+|application\/octet-stream)?;base64,/i.test(value);
   const integrate=$('bgIntegrate'),lightMix=$('bgLightMix'),colorMix=$('bgColorMix');
@@ -14979,6 +14987,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       return;
     }
     for(const [id,value] of [['bgTap','tap'],['bgLasso','lasso']]){$(id).classList.toggle('active',tool===value);$(id).classList.toggle('secondary',tool!==value);$(id).setAttribute('aria-pressed',String(tool===value));}
+    $('bgMagneticOptions').hidden=tool!=='lasso'||!!brushMode;
+    const magnetic=tool==='lasso'&&$('bgLassoMagnet').checked&&!brushMode;
+    $('bgMagneticLasso').classList.toggle('secondary',!magnetic);
+    $('bgMagneticLasso').classList.toggle('active',magnetic);
+    $('bgMagneticLasso').setAttribute('aria-pressed',String(magnetic));
+    if(magnetic){$('bgLasso').classList.remove('active');$('bgLasso').classList.add('secondary');$('bgLasso').setAttribute('aria-pressed','false');}
+    $('bgLassoRadiusVal').textContent=$('bgLassoRadius').value+' px';
+    $('bgLassoAttractionVal').textContent=$('bgLassoAttraction').value+' %';
     $('bgToleranceRow').hidden=tool!=='tap';
     $('bgToleranceHelp').hidden=tool!=='tap';
     $('bgToleranceHelp').textContent=tapHistory.length
@@ -15933,9 +15949,98 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     $('bgLassoRestart').disabled=navigating;
     if(draft?.length)for(const id of ['bgApply','bgSave','bgDesign','bgDesignBackdrop'])$(id).disabled=true;
   }
-  function appendLassoPoint(p){
+  // Live-wire paths use an image-derived edge field, bounded by the user's
+  // search radius. The original image is never resampled or repainted.
+  function buildLassoEdges(data,w,h){
+    const n=w*h,luma=new Float32Array(n),blur=new Float32Array(n),edge=new Float32Array(n);
+    for(let i=0;i<n;i++)luma[i]=.299*data[i*4]+.587*data[i*4+1]+.114*data[i*4+2];
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      let sum=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)sum+=luma[Math.max(0,Math.min(h-1,y+dy))*w+Math.max(0,Math.min(w-1,x+dx))]*(dx?1:2)*(dy?1:2);
+      blur[y*w+x]=sum/16;
+    }
+    for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+      const i=y*w+x;
+      const gx=-blur[i-w-1]+blur[i-w+1]-2*blur[i-1]+2*blur[i+1]-blur[i+w-1]+blur[i+w+1];
+      const gy=-blur[i-w-1]-2*blur[i-w]-blur[i-w+1]+blur[i+w-1]+2*blur[i+w]+blur[i+w+1];
+      // Include chromatic boundaries even when their luminance is similar.
+      let chroma=0;
+      for(let c=0;c<3;c++){const dx=data[(i+1)*4+c]-data[(i-1)*4+c],dy=data[(i+w)*4+c]-data[(i-w)*4+c];chroma+=dx*dx+dy*dy;}
+      edge[i]=Math.min(255,Math.sqrt(gx*gx+gy*gy)/4+Math.sqrt(chroma/3)*.3);
+    }
+    return edge;
+  }
+  function snapLassoEdge(field,w,h,q,radius,strength){
+    const cx=Math.max(0,Math.min(w-1,Math.round(q.x))),cy=Math.max(0,Math.min(h-1,Math.round(q.y)));
+    let best={x:cx,y:cy},score=field[cy*w+cx],peak=0;
+    for(let y=Math.max(0,cy-radius);y<=Math.min(h-1,cy+radius);y++)for(let x=Math.max(0,cx-radius);x<=Math.min(w-1,cx+radius);x++){
+      const d=Math.hypot(x-cx,y-cy);if(d>radius)continue;
+      const e=field[y*w+x];peak=Math.max(peak,e);
+      const s=e-(d/Math.max(1,radius))*(14+(1-strength)*100);
+      if(s>score){score=s;best={x,y};}
+    }
+    return peak>=7?best:{x:cx,y:cy};
+  }
+  function magneticLassoPath(field,w,h,a,guide,radius,strength){
+    if(strength<=0)return [{...guide}];
+    radius=Math.max(1,Math.round(radius));
+    const b=snapLassoEdge(field,w,h,guide,radius,strength);
+    const ax=Math.max(0,Math.min(w-1,Math.round(a.x))),ay=Math.max(0,Math.min(h-1,Math.round(a.y)));
+    if(ax===b.x&&ay===b.y)return [];
+    const x0=Math.max(0,Math.min(ax,b.x)-radius),y0=Math.max(0,Math.min(ay,b.y)-radius);
+    const x1=Math.min(w-1,Math.max(ax,b.x)+radius),y1=Math.min(h-1,Math.max(ay,b.y)+radius);
+    const rw=x1-x0+1,rh=y1-y0+1,n=rw*rh;
+    // Defensive bound for very large pointer jumps; normal input is subdivided.
+    if(n>120000)return [b];
+    const start=(ay-y0)*rw+ax-x0,target=(b.y-y0)*rw+b.x-x0;
+    const dist=new Float32Array(n).fill(Infinity),prev=new Int32Array(n).fill(-1),done=new Uint8Array(n),heap=[];
+    const push=(i,cost)=>{let k=heap.length;heap.push({i,cost});while(k){const p=(k-1)>>1;if(heap[p].cost<=cost)break;heap[k]=heap[p];k=p;}heap[k]={i,cost};};
+    const pop=()=>{const top=heap[0],last=heap.pop();if(heap.length){let k=0;while(k*2+1<heap.length){let c=k*2+1;if(c+1<heap.length&&heap[c+1].cost<heap[c].cost)c++;if(heap[c].cost>=last.cost)break;heap[k]=heap[c];k=c;}heap[k]=last;}return top;};
+    const vx=guide.x-a.x,vy=guide.y-a.y,len2=vx*vx+vy*vy||1;
+    dist[start]=0;push(start,0);
+    while(heap.length){
+      const item=pop(),i=item.i;if(done[i])continue;done[i]=1;if(i===target)break;
+      const x=i%rw,y=Math.floor(i/rw);
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+        if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;
+        if(nx<0||ny<0||nx>=rw||ny>=rh)continue;
+        const j=ny*rw+nx;if(done[j])continue;
+        const px=x0+nx,py=y0+ny,t=Math.max(0,Math.min(1,((px-a.x)*vx+(py-a.y)*vy)/len2));
+        const deviation=Math.hypot(px-a.x-vx*t,py-a.y-vy*t);
+        if(deviation>radius+2&&j!==target)continue;
+        const e=Math.min(1,(field[(y0+y)*w+x0+x]+field[py*w+px])/90);
+        const cost=dist[i]+(dx&&dy?Math.SQRT2:1)*(1+strength*10*(1-e)**2+.8*(deviation/radius)**2);
+        if(cost<dist[j]){dist[j]=cost;prev[j]=i;push(j,cost);}
+      }
+    }
+    if(prev[target]<0)return [b];
+    const path=[];let i=target;
+    while(i!==start&&i>=0){path.push({x:x0+i%rw,y:y0+Math.floor(i/rw)});i=prev[i];}
+    return path.reverse();
+  }
+  let lassoEdgeField=null,lastMagneticTime=0;
+  function magneticEnabled(){return $('bgLassoMagnet').checked&&tool==='lasso';}
+  function appendMagneticLasso(q){
+    if(!lassoEdgeField)lassoEdgeField=buildLassoEdges(previewData.data,preview.width,preview.height);
+    const radius=Math.max(2,Math.min(60,Math.round(Number($('bgLassoRadius').value)/Math.max(.1,drawScale))));
+    const strength=Number($('bgLassoAttraction').value)/100;
+    if(!draft?.length){draft=[snapLassoEdge(lassoEdgeField,preview.width,preview.height,q,radius,strength)];return;}
+    const a={...draft.at(-1)},length=Math.hypot(q.x-a.x,q.y-a.y);
+    if(length*drawScale<2)return;
+    const steps=Math.max(1,Math.ceil(length/Math.max(6,24/Math.max(.1,drawScale))));
+    for(let s=1;s<=steps;s++){
+      const guide={x:a.x+(q.x-a.x)*s/steps,y:a.y+(q.y-a.y)*s/steps};
+      const path=magneticLassoPath(lassoEdgeField,preview.width,preview.height,draft.at(-1),guide,radius,strength);
+      draft.push(...path);
+    }
+  }
+
+  function appendLassoPoint(p,force=false){
     viewport();const q=toImage(p);
     q.x=Math.max(0,Math.min(preview.width,q.x));q.y=Math.max(0,Math.min(preview.height,q.y));
+    if(magneticEnabled()&&Number($('bgLassoAttraction').value)>0){
+      const now=performance.now();if(!force&&draft?.length&&now-lastMagneticTime<30)return;
+      lastMagneticTime=now;appendMagneticLasso(q);return;
+    }
     const last=draft?.at(-1);
     if(!last||Math.hypot(q.x-last.x,q.y-last.y)>=1.4/Math.max(.1,drawScale)){
       (draft??=[]).push(q);
@@ -15948,9 +16053,16 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       rememberLasso();draft.push(...copyLasso(lassoPatch.tail));lassoPatch=null;
       ui();render();say('Linienstück korrigiert. Kontur prüfen oder weiterzeichnen, dann „Auswahl schließen“.');return;
     }
-    const a=draft;if(!a||a.length<3){say('Bitte das Motiv weiter umranden und dann „Auswahl schließen“ drücken.');render();return;}
+    let a=draft;if(!a||a.length<3){say('Bitte das Motiv weiter umranden und dann „Auswahl schließen“ drücken.');render();return;}
+    if(magneticEnabled()&&Number($('bgLassoAttraction').value)>0){
+      const first=a[0],last=a.at(-1);viewport();
+      if(Math.hypot(first.x-last.x,first.y-last.y)*drawScale>Math.max(60,Number($('bgLassoRadius').value)*3)){
+        say('Bitte die Kontur näher zum weißen Startpunkt zurückführen. Danach „Auswahl schließen“.');return;
+      }
+      rememberLasso();appendMagneticLasso(first);a=draft;
+    }
     let area=0;for(let i=0;i<a.length;i++){const p=a[i],q=a[(i+1)%a.length];area+=p.x*q.y-q.x*p.y;}if(Math.abs(area)<40){say('Lasso zu klein. Bitte das Motiv umranden.');render();return;}
-    draft=null;resetLassoEditing();clearTaps();if(selection!=='manual')clearBrush();edgeMaskCache=null;points=a;selection='lasso';mask=lassoMask(points);ui();render();say('Motiv ausgewählt. Den Bereich außerhalb des Lassos kannst du als Hintergrund bearbeiten.');
+    draft=null;resetLassoEditing();clearTaps();if(selection!=='manual')clearBrush();edgeMaskCache=null;points=a;selection='lasso';mask=lassoMask(points);$('bgOriginal').checked=false;if(magneticEnabled())kind.value='transparent';ui();render();say('Motiv ausgewählt. Den Bereich außerhalb des Lassos kannst du als Hintergrund bearbeiten.');
   }
   function importedAlphaMask(){
     const data=previewData.data;
@@ -15969,7 +16081,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     return result;
   }
   function resetWorkspace(image){
-    resetLassoEditing();lassoUsesPen=false;
+    resetLassoEditing();lassoUsesPen=false;lassoEdgeField=null;lastMagneticTime=0;
+    $('bgLassoMagnet').checked=true;$('bgLassoRadius').value='12';$('bgLassoAttraction').value='75';
     original=image;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
     kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='70';lightMix.value=colorMix.value=backdropLight.value=backdropColor.value='0';$('bgBackdropGroup').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
     resetDesignPreview();designSettings=null;resetOpacity();clearTaps();clearBrush();brushSize.value='24';eraseStrength.value='100';brushSoftness.value='35';$('bgMagnetTolerance').value='28';$('bgBrushPanel').open=true;resetPlacement();$('bgMotifPlacement').open=false;
@@ -15995,7 +16108,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       photoName:photoFile?.name??$('bgFileName').dataset.name??'',
       selection,points,tool,brushStrokes,taps:tapHistory,
       tapBase:tapBase&&{selection:tapBase.selection,points:tapBase.points,brushStrokes:tapBase.brushStrokes},
-      controls:savedControls.map(id=>$(id).value),smooth:smooth.checked,
+      controls:savedControls.map(id=>$(id).value),smooth:smooth.checked,magneticLasso:$('bgLassoMagnet').checked,
       bgShiftX,bgShiftY,bgZoom,motifX,motifY,motifScale,motifOpacity,designSettings
     }));
     const [source,backdrop]=await Promise.all([
@@ -16014,7 +16127,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     savedControls.forEach((id,index)=>{
       if(typeof saved.controls[index]==='string')$(id).value=saved.controls[index];
     });
-    smooth.checked=saved.smooth;
+    smooth.checked=saved.smooth;$('bgLassoMagnet').checked=saved.magneticLasso===true;
     ({bgShiftX,bgShiftY,bgZoom,motifX,motifY,motifScale,motifOpacity}=saved);
     $('bgPhotoZoom').value=String(Math.round(bgZoom*100));
     $('bgMotifScale').value=String(Math.round(motifScale*100));
@@ -16173,7 +16286,13 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     });
   }
   $('bgTap').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='tap';draft=null;resetLassoEditing();ui();render();say('Hintergrund antippen. Mehrere Flächen sind möglich.');});
-  $('bgLasso').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='lasso';draft=null;resetLassoEditing();lassoUsesPen=false;ui();render();say('Motiv mit Pencil oder Finger umranden. Absetzen, mit zwei Fingern verschieben und weiterzeichnen. Zum Abschluss „Auswahl schließen“.');});
+  $('bgLasso').addEventListener('click',()=>{finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;tool='lasso';$('bgLassoMagnet').checked=false;draft=null;resetLassoEditing();lassoUsesPen=false;ui();render();say('Motiv mit Pencil oder Finger umranden. Absetzen, mit zwei Fingern verschieben und weiterzeichnen. Zum Abschluss „Auswahl schließen“.');});
+  $('bgMagneticLasso').addEventListener('click',()=>{
+    if(busy||!preview)return;finishBrush(false);setBrushMode(null);motifMoveMode=bgMoveMode=false;
+    tool='lasso';$('bgLassoMagnet').checked=true;$('bgOriginal').checked=true;$('bgMaskView').checked=false;
+    lastMagneticTime=0;ui();render();say('Pencil nahe am Motivrand führen. Die Linie folgt Bildkanten. Absetzen und Zwei-Finger-Zoom sind möglich.');
+  });
+  for(const id of ['bgLassoMagnet','bgLassoRadius','bgLassoAttraction'])$(id).addEventListener('input',()=>{lastMagneticTime=0;ui();render();});
   $('bgLassoFinish').addEventListener('click',lassoEnd);
   $('bgLassoUndo').addEventListener('click',undoLasso);
   $('bgLassoCorrect').addEventListener('click',beginLassoCorrection);
@@ -16329,7 +16448,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }else if(tool==='lasso'&&inImage(q)){
       if(e.pointerType==='pen')lassoUsesPen=true;
       if(!draft?.length)resetLassoEditing();
-      const draftLength=draft?.length||0,historyLength=lassoHistory.length;rememberLasso();appendLassoPoint(p);
+      const draftLength=draft?.length||0,historyLength=lassoHistory.length;rememberLasso();appendLassoPoint(p,true);
       gest={type:'lasso',id:e.pointerId,draftLength,historyLength};
       render();
     }else gest={type:'tap',pos:p,start:p,panX,panY};}syncLassoActions();e.preventDefault();
@@ -16371,7 +16490,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function pointerEnd(e){if(!gestures.has(e.pointerId))return;const isLast=gestures.size===1,was=gest?.type,p=point(e);gestures.delete(e.pointerId);
     if(isLast){if(e.type==='pointerup'&&was==='pngTap'){viewport();pickPngLayer(toImage(p));}else if(was==='brush'){viewport();finishBrush(e.type==='pointerup',brushPoint(p));}else if(was==='lassoPick'){if(e.type==='pointerup'&&Math.hypot(p.x-gest.start.x,p.y-gest.start.y)<12)chooseLassoCorrection(p);
-    }else if(was==='lasso'){if(e.type==='pointerup')appendLassoPoint(p);say('Kontur bleibt offen. Mit zwei Fingern verschieben oder zoomen, am Linienende weiterzeichnen. Zum Abschluss „Auswahl schließen“.');}else if(e.type==='pointerup'&&was==='tap'&&tool==='tap'){viewport();selectTap(toImage(p));}gest=null;ui();render();}
+    }else if(was==='lasso'){if(e.type==='pointerup')appendLassoPoint(p,true);say('Kontur bleibt offen. Mit zwei Fingern verschieben oder zoomen, am Linienende weiterzeichnen. Zum Abschluss „Auswahl schließen“.');}else if(e.type==='pointerup'&&was==='tap'&&tool==='tap'){viewport();selectTap(toImage(p));}gest=null;ui();render();}
     else if(gestures.size===1){
       const q=[...gestures.values()][0],layer=selectedStudyLayer();
       if(pngMode&&pngMoveMode&&layer){viewport();const pos=normalizePosition(layer.position);gest={type:'pngLayer',start:q,layer,x:pos.x,y:pos.y,ratio:pngBase.image.width/pngPreview.width,scale:drawScale};}
@@ -16448,7 +16567,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.42_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.42_Motiv_Transparent.png':'AtelierAI_5.42_Hintergrund.png';link.click();
+        link.href=url;link.download=pngMode?'AtelierAI_5.43_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.43_Motiv_Transparent.png':'AtelierAI_5.43_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
