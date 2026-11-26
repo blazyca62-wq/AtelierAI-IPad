@@ -1,4 +1,8 @@
-AtelierAI iPad 5.45 – Motiv behalten und Hintergrund füllen
+AtelierAI iPad 5.46 – Motiv direkt in die Ebenen
+
+Nach dem Freistellen „Motiv direkt als Ebene übernehmen“ antippen. Das Motiv wird ohne Dateiumweg als transparente Ebene eingefügt. Wenn noch kein Ebenenstapel vorhanden ist, wird der Hintergrund mit der gewählten Farbfüllung in der ausgeschnittenen Stelle angelegt. Bei vorhandenem Ebenenstapel wird das Motiv oben hinzugefügt; bestehende Ebenen bleiben erhalten. Gleiche Bildmaße behalten die Originalposition, andere Maße werden wie beim PNG-Import eingepasst. Die neue Ebene wird ausgewählt. Zum Sichern „Übernehmen & zum Projekt“ und „Projekt speichern“ nutzen.
+
+AtelierAI iPad 5.46 – Motiv behalten und Hintergrund füllen
 
 1. Motiv mit normalem oder magnetischem Lasso auswählen und Auswahl schließen.
 2. Ausgewähltes Motiv als PNG speichern. Die transparente PNG behält Originalgröße und Position, auch wenn Auswahl umkehren bereits eingeschaltet ist.
@@ -7,11 +11,11 @@ AtelierAI iPad 5.45 – Motiv behalten und Hintergrund füllen
 5. PNG speichern speichert den Hintergrund mit gefüllter Stelle. Übernehmen & zum Projekt erhält die bearbeitbare Auswahl inklusive Umkehrung im Projekt.
 6. Später die gespeicherte Motiv-PNG unter PNG-Ebenen hinzufügen. Bei gleich großem Hintergrund bleibt die Originalposition erhalten.
 
-AtelierAI iPad 5.45 – Magnet-Lasso korrigieren
+AtelierAI iPad 5.46 – Magnet-Lasso korrigieren
 
 Lasso korrigieren steht direkt unter Magnet-Lasso. Anfang und Ende der fehlerhaften Strecke antippen, dann neu zeichnen und Korrektur übernehmen. Während des Nachzeichnens ist die magnetische Anziehung aus. Korrektur mit Pencil oder Finger möglich; Zwei-Finger-Zoom bleibt verfügbar. Anschließend Auswahl schließen.
 
-AtelierAI iPad 5.45 – Magnet-Lasso
+AtelierAI iPad 5.46 – Magnet-Lasso
 
 Werkzeuge → Hintergrund ersetzen → Magnet-Lasso.
 Pencil nahe am Motivrand führen: eine Kantenanalyse und lokale Pfadsuche ziehen die Linie zur Bildkante.

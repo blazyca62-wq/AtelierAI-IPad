@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.45</title>
+  <title>AtelierAI iPad 5.46</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1106,7 +1106,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.45</div>
+    <div class="title">AtelierAI 5.46</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -14773,7 +14773,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.45</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.46</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -14899,6 +14899,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         <label id="bgToleranceRow">Ähnlichkeit <input id="bgTolerance" type="range" min="0" max="100" step="0.5" value="15"><output id="bgToleranceVal">15</output></label>
         <p id="bgToleranceHelp">Ähnlichkeit einstellen oder nach dem Antippen anpassen.</p>
         <button id="bgFit" class="secondary" type="button">Bild einpassen</button>
+        <button id="bgMotifToLayers" type="button" disabled>Motiv direkt als Ebene übernehmen</button>
+        <p>Öffnet die PNG-Ebenen mit dem Motiv als eigener Ebene. Ohne vorhandenen Ebenenstapel wird der Hintergrund mit der gewählten Farbfüllung an der ausgeschnittenen Stelle angelegt. Vorhandene Ebenen bleiben erhalten.</p>
         <button id="bgSaveMotif" class="secondary" type="button" disabled>Ausgewähltes Motiv als PNG speichern</button>
         <label><span>Auswahl umkehren · Motiv entfernen</span><input id="bgInvertSelection" type="checkbox" style="width:22px;height:22px"></label>
         <p>Speichere zuerst das ausgewählte Motiv als transparente PNG. Schalte danach „Auswahl umkehren“ ein: Der übrige Hintergrund bleibt erhalten. Unter „Art → Farbe / Schwarz“ wählst du die Füllfarbe für die ausgeschnittene Stelle. Die Motiv-PNG behält Bildgröße und Position für das spätere Einfügen als Ebene.</p>
@@ -15341,6 +15343,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     $('bgCutoutControls').hidden=pngMode;
     $('bgInvertSelection').disabled=busy||pngMode||!working()||selection==='alpha'||!!draft?.length;
     $('bgSaveMotif').disabled=busy||pngMode||!working()||selection==='alpha'||!!draft?.length||!!brushStroke;
+    $('bgMotifToLayers').disabled=$('bgSaveMotif').disabled;
     $('bgLayerControls').hidden=!pngMode;
     $('bgLayerEmpty').hidden=!pngMode||!!pngBase;
     for(const id of ['bgLayerStudy','bgPaintSequenceRow','bgSoloLayerRow','bgLayerBaseRow','bgLayerFileName','bgHiddenBaseFillRow'])$(id).hidden=!pngBase;
@@ -16963,6 +16966,40 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       ctx.globalCompositeOperation='source-over';return out;
     }finally{$('bgInvertSelection').checked=inverted;}
   }
+  function exportFilledCutoutBackground(){
+    updatePendingTolerance();
+    const inverted=$('bgInvertSelection').checked;
+    try{
+      $('bgInvertSelection').checked=true;
+      const out=canvas(original.width,original.height),ctx=out.getContext('2d');
+      const fill=canvas(out.width,out.height),fc=fill.getContext('2d');
+      fc.fillStyle=color.value;fc.fillRect(0,0,fill.width,fill.height);
+      fc.globalCompositeOperation='destination-in';fc.drawImage(maskFor(out.width,out.height),0,0);
+      ctx.drawImage(original,0,0);ctx.drawImage(fill,0,0);return out;
+    }finally{$('bgInvertSelection').checked=inverted;}
+  }
+  async function takeMotifToLayers(){
+    if(busy||pngMode||!working()||selection==='alpha'||draft?.length||brushStroke)return;
+    busy=true;ui();say('Motiv wird als eigene Ebene übernommen …');
+    try{
+      const motif=exportSelectedMotif();
+      const backdrop=pngBase?null:exportFilledCutoutBackground();
+      const [motifData,backdropData]=await Promise.all([
+        bridge.encodeCanvas(motif),backdrop?bridge.encodeCanvas(backdrop):Promise.resolve(null)
+      ]);
+      const makeEntry=(name,image,data)=>({name,image,data,visible:true,
+        study:normalizeStudy(),position:{x:0,y:0},transform:normalizeTransform(),harmony:normalizeHarmony()});
+      const entry=makeEntry('Freigestelltes Motiv '+(pngLayers.length+1),motif,motifData);
+      if(pngBase)rememberPngScene();
+      else pngBase=makeEntry('Hintergrund mit Farbfüllung',backdrop,backdropData);
+      pngLayers.push(entry);studyIndex=pngLayers.length-1;
+      paintSequence.checked=soloLayer.checked=false;
+      studyCompare.checked=harmonyCompare.checked=false;
+      showPngRows();renderPngStack();setPngMode(true);
+      say('Motiv als eigene Ebene übernommen. Über das Häkchen kannst du es ausblenden und den Hintergrund sehen. „Übernehmen & zum Projekt“ sichert den Ebenenaufbau.');
+    }catch(error){say('Motiv konnte nicht als Ebene übernommen werden. '+error.message);}
+    finally{busy=false;ui();render();}
+  }
   async function save(apply,motifOnly=false){
     if(busy||brushStroke||(pngMode?!pngBase:!working()))return;
     busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
@@ -16976,7 +17013,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=motifOnly?'AtelierAI_5.45_Ausgewaehltes_Motiv.png':pngMode?'AtelierAI_5.45_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.45_Motiv_Transparent.png':'AtelierAI_5.45_Hintergrund.png';link.click();
+        link.href=url;link.download=motifOnly?'AtelierAI_5.46_Ausgewaehltes_Motiv.png':pngMode?'AtelierAI_5.46_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.46_Motiv_Transparent.png':'AtelierAI_5.46_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(motifOnly?'Ausgewähltes Motiv als transparente PNG in Originalgröße und Originalposition gespeichert.':!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
@@ -17143,6 +17180,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     resetDesignPreview();ui();render();
     say($('bgInvertSelection').checked?'Motiv entfernt. Unter „Farbe“ die Füllfarbe für die ausgeschnittene Stelle wählen.':'Normale Auswahl: Das Motiv bleibt erhalten.');
   });
+  $('bgMotifToLayers').addEventListener('click',takeMotifToLayers);
   $('bgSaveMotif').addEventListener('click',()=>save(false,true));
   $('bgSave').addEventListener('click',()=>save(false));$('bgApply').addEventListener('click',()=>save(true));
   window.addEventListener('resize',()=>{if(!overlay.hidden)render();});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden)cancel();});
