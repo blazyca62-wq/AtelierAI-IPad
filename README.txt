@@ -1,4 +1,17 @@
-AtelierAI iPad 5.43 – Magnet-Lasso
+AtelierAI iPad 5.45 – Motiv behalten und Hintergrund füllen
+
+1. Motiv mit normalem oder magnetischem Lasso auswählen und Auswahl schließen.
+2. Ausgewähltes Motiv als PNG speichern. Die transparente PNG behält Originalgröße und Position, auch wenn Auswahl umkehren bereits eingeschaltet ist.
+3. Auswahl umkehren · Motiv entfernen einschalten. Der Hintergrund bleibt erhalten, die ausgeschnittene Stelle erhält die gewählte Farbe.
+4. Art: Farbe / Schwarz, Farbe wählen. Für scharfe Kanten: Weiche Kante 0 px, Kante glätten aus, Rand bereinigen 0 px.
+5. PNG speichern speichert den Hintergrund mit gefüllter Stelle. Übernehmen & zum Projekt erhält die bearbeitbare Auswahl inklusive Umkehrung im Projekt.
+6. Später die gespeicherte Motiv-PNG unter PNG-Ebenen hinzufügen. Bei gleich großem Hintergrund bleibt die Originalposition erhalten.
+
+AtelierAI iPad 5.45 – Magnet-Lasso korrigieren
+
+Lasso korrigieren steht direkt unter Magnet-Lasso. Anfang und Ende der fehlerhaften Strecke antippen, dann neu zeichnen und Korrektur übernehmen. Während des Nachzeichnens ist die magnetische Anziehung aus. Korrektur mit Pencil oder Finger möglich; Zwei-Finger-Zoom bleibt verfügbar. Anschließend Auswahl schließen.
+
+AtelierAI iPad 5.45 – Magnet-Lasso
 
 Werkzeuge → Hintergrund ersetzen → Magnet-Lasso.
 Pencil nahe am Motivrand führen: eine Kantenanalyse und lokale Pfadsuche ziehen die Linie zur Bildkante.

@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.43</title>
+  <title>AtelierAI iPad 5.45</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1097,7 +1097,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.43</div>
+    <div class="title">AtelierAI 5.45</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -14404,7 +14404,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.43</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.45</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -14496,6 +14496,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         <div id="bgCutoutControls">
         <strong>1 · Motiv auswählen</strong>
         <button id="bgMagneticLasso" class="secondary" type="button" aria-pressed="false">Magnet-Lasso</button>
+        <div class="bg-choice"><button id="bgLassoCorrectSide" class="secondary" type="button" disabled>Lasso korrigieren</button><button id="bgLassoFinishSide" type="button" disabled>Auswahl schließen</button></div>
+        <p id="bgLassoCorrectionHelp" hidden>Anfang und Ende der falschen Strecke auf der Linie antippen. Dann vom grünen Punkt zum orangefarbenen Ziel neu zeichnen. Während der Korrektur ist die magnetische Anziehung aus.</p>
         <details id="bgMagneticOptions" hidden open>
           <summary>Magnet-Lasso einstellen</summary>
           <label>An Bildkanten anziehen <input id="bgLassoMagnet" type="checkbox" checked></label>
@@ -14528,7 +14530,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         <label id="bgToleranceRow">Ähnlichkeit <input id="bgTolerance" type="range" min="0" max="100" step="0.5" value="15"><output id="bgToleranceVal">15</output></label>
         <p id="bgToleranceHelp">Ähnlichkeit einstellen oder nach dem Antippen anpassen.</p>
         <button id="bgFit" class="secondary" type="button">Bild einpassen</button>
-        <strong>2 · Hintergrund wählen</strong>
+        <button id="bgSaveMotif" class="secondary" type="button" disabled>Ausgewähltes Motiv als PNG speichern</button>
+        <label><span>Auswahl umkehren · Motiv entfernen</span><input id="bgInvertSelection" type="checkbox" style="width:22px;height:22px"></label>
+        <p>Speichere zuerst das ausgewählte Motiv als transparente PNG. Schalte danach „Auswahl umkehren“ ein: Der übrige Hintergrund bleibt erhalten. Unter „Art → Farbe / Schwarz“ wählst du die Füllfarbe für die ausgeschnittene Stelle. Die Motiv-PNG behält Bildgröße und Position für das spätere Einfügen als Ebene.</p>
+        <strong>2 · Hintergrund / Füllung wählen</strong>
         <label>Art <select id="bgKind"><option value="color" selected>Farbe / Schwarz</option><option value="transparent">Transparent – nur Motiv</option><option value="photo">Eigenes Bild</option><option value="original">Vorhandenen bearbeiten</option></select></label>
         <p id="bgTransparentHelp" hidden>Das Schachbrett zeigt durchsichtige Bereiche. „Motiv als transparentes PNG speichern“ speichert nur das freigestellte Motiv für spätere PNG-Ebenen.</p>
         <label id="bgColorRow">Farbe <input id="bgColor" type="color" value="#000000" aria-label="Hintergrundfarbe"></label>
@@ -14658,6 +14663,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   let lassoUsesPen=false,lassoHistory=[],lassoPatch=null;
   let busy=false,zoom=1,panX=0,panY=0,gest=null,gestures=new Map(),fitScale=1,drawScale=1,drawX=0,drawY=0,raf=0;
   let edgeMaskCache=null,previewMatte=null,compositeCache=null,motifTintCache=null;
+  let invertedMaskCache=null;
   const say=t=>{status.textContent=t;};
   const working=()=>selection!=='none'&&!!mask;
   const tapHistory=[];
@@ -14964,6 +14970,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     syncLassoActions();
     if(pngMode)syncPngPosition();
     $('bgCutoutControls').hidden=pngMode;
+    $('bgInvertSelection').disabled=busy||pngMode||!working()||selection==='alpha'||!!draft?.length;
+    $('bgSaveMotif').disabled=busy||pngMode||!working()||selection==='alpha'||!!draft?.length||!!brushStroke;
     $('bgLayerControls').hidden=!pngMode;
     $('bgLayerEmpty').hidden=!pngMode||!!pngBase;
     for(const id of ['bgLayerStudy','bgPaintSequenceRow','bgSoloLayerRow','bgLayerBaseRow','bgLayerFileName','bgHiddenBaseFillRow'])$(id).hidden=!pngBase;
@@ -15278,7 +15286,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     brushMaskCache={base,revision:brushRevision,canvas:result};
     return result;
   }
-  function edgeMask(){
+  function baseEdgeMask(){
     const base=cleanEdgeMask();
     if(selection!=='alpha')return maskWithBrush(base);
     const erasing=maskWithBrush(null);
@@ -15287,6 +15295,17 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     ctx.drawImage(base,0,0);
     ctx.drawImage(erasing,0,0);
     return result;
+  }
+
+  function edgeMask(){
+    const source=baseEdgeMask();
+    if(!source||!$('bgInvertSelection').checked)return source;
+    if(invertedMaskCache?.source===source)return invertedMaskCache.canvas;
+    const result=canvas(source.width,source.height),ctx=result.getContext('2d');
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,result.width,result.height);
+    ctx.globalCompositeOperation='destination-out';ctx.drawImage(source,0,0);
+    ctx.globalCompositeOperation='source-over';
+    invertedMaskCache={source,canvas:result};return result;
   }
 
   function maskFor(w,h){
@@ -15299,7 +15318,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       return m;
     };
     const m=canvas(w,h),mc=m.getContext('2d',{willReadFrequently:true});
-    mc.imageSmoothingEnabled=true;mc.imageSmoothingQuality='high';mc.drawImage(src,0,0,w,h);
+    mc.imageSmoothingEnabled=smooth.checked||softness>0;mc.imageSmoothingQuality='high';mc.drawImage(src,0,0,w,h);
     if(radius<=0)return remember(m);
     // Explicit separable alpha blur: Safari canvas filter support is inconsistent.
     // Gaussian approximation using a bounded triangular kernel, alpha only.
@@ -15624,7 +15643,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
 
   function layerSettings(compare){
-    return [mask,brushRevision,clean.value,smooth.checked,feather.value,kind.value,color.value,photo,bgShiftX,bgShiftY,bgZoom,integrate.value,lightMix.value,colorMix.value,backdropLight.value,backdropColor.value,compare];
+    return [$('bgInvertSelection').checked,mask,brushRevision,clean.value,smooth.checked,feather.value,kind.value,color.value,photo,bgShiftX,bgShiftY,bgZoom,integrate.value,lightMix.value,colorMix.value,backdropLight.value,backdropColor.value,compare];
   }
   function prepareLayers(base,w,h,compare,placing,lightingPosition){
     const amount=compare||kind.value==='transparent'?0:Number(integrate.value)/100;
@@ -15728,7 +15747,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const moving=sliderMoving||gest?.type==='motif'||gest?.type==='background'||gest?.type==='brush';
     const hasDesign=!compare&&window.__atelierArtBridge?.hasLayerDesign?.(designSettings);
     const fast=toleranceMoving||gest?.type==='brush'||!!(moving&&hasDesign);
-    const settings=[...layerSettings(compare),motifX,motifY,motifScale,motifOpacity,lighting?.x,lighting?.y,lighting?.scale,designSettings,fast];
+    const settings=[$('bgInvertSelection').checked,...layerSettings(compare),motifX,motifY,motifScale,motifOpacity,lighting?.x,lighting?.y,lighting?.scale,designSettings,fast];
     if(!compositeCache||settings.some((value,i)=>value!==compositeCache.settings[i])){
       const base=fast?interactivePreview():preview;
       const composite=compose(base,base.width,base.height,compare);
@@ -15786,7 +15805,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     $('bgMotifScale').value='100';
   }
   function resetOpacity(){motifOpacity=1;$('bgMotifOpacity').value='100';}
-  function clear(){resetLassoEditing();resetOpacity();clearTaps();clearBrush();resetPlacement();$('bgMotifPlacement').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;selection='none';mask=null;points=null;draft=null;gest=null;ui();render();say('Auswahl gelöscht. Das Originalbild bleibt unverändert.');}
+  function clear(){$('bgInvertSelection').checked=false;invertedMaskCache=null;resetLassoEditing();resetOpacity();clearTaps();clearBrush();resetPlacement();$('bgMotifPlacement').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;selection='none';mask=null;points=null;draft=null;gest=null;ui();render();say('Auswahl gelöscht. Das Originalbild bleibt unverändert.');}
   function clearTaps(){
     tapHistory.length=0;
     tapBase=tapPrefix=tapSearch=null;
@@ -15909,6 +15928,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     // remains valid until the user explicitly closes the corrected selection.
     if(!draft?.length)draft=[...copyLasso(points),{...points[0]}];
     lassoPatch={phase:'start'};
+    $('bgOriginal').checked=true;
     ui();render();say('Korrektur: Anfang der fehlerhaften Linie antippen, dann deren Ende. Mit zwei Fingern kannst du weiter zoomen und verschieben.');
   }
   function chooseLassoCorrection(p){
@@ -15934,7 +15954,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const tail=[b.point,...draft.slice(Math.floor(b.index)+1)];
       draft=[...draft.slice(0,Math.floor(a.index)+1),a.point];
       lassoPatch={phase:'draw',tail,startLength:draft.length,target:b.point};
-      say('Fehlerhaftes Linienstück entfernt. Vom grünen Punkt zum orangefarbenen Ziel neu zeichnen, dann „Korrektur übernehmen“.');
+      say('Fehlerhaftes Linienstück entfernt. Vom grünen Punkt zum orangefarbenen Ziel ohne magnetische Anziehung neu zeichnen, dann „Korrektur übernehmen“.');
     }
     ui();render();
   }
@@ -15947,6 +15967,10 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     $('bgLassoUndo').disabled=navigating||!lassoHistory.length;
     $('bgLassoCorrect').disabled=navigating||!!lassoPatch||!(draft?.length>=2||points?.length&&selection==='lasso');
     $('bgLassoRestart').disabled=navigating;
+    $('bgLassoCorrectSide').disabled=!active||$('bgLassoCorrect').disabled;
+    $('bgLassoFinishSide').disabled=!active||$('bgLassoFinish').disabled;
+    $('bgLassoFinishSide').textContent=$('bgLassoFinish').textContent;
+    $('bgLassoCorrectionHelp').hidden=!lassoPatch;
     if(draft?.length)for(const id of ['bgApply','bgSave','bgDesign','bgDesignBackdrop'])$(id).disabled=true;
   }
   // Live-wire paths use an image-derived edge field, bounded by the user's
@@ -16018,7 +16042,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     return path.reverse();
   }
   let lassoEdgeField=null,lastMagneticTime=0;
-  function magneticEnabled(){return $('bgLassoMagnet').checked&&tool==='lasso';}
+  function magneticEnabled(){return $('bgLassoMagnet').checked&&tool==='lasso'&&lassoPatch?.phase!=='draw';}
   function appendMagneticLasso(q){
     if(!lassoEdgeField)lassoEdgeField=buildLassoEdges(previewData.data,preview.width,preview.height);
     const radius=Math.max(2,Math.min(60,Math.round(Number($('bgLassoRadius').value)/Math.max(.1,drawScale))));
@@ -16051,7 +16075,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(lassoPatch.phase!=='draw'){say('Bitte Anfang und Ende der Korrektur auf der Linie wählen.');return;}
       if(!draft||draft.length<=lassoPatch.startLength){say('Bitte zuerst das entfernte Linienstück neu zeichnen.');return;}
       rememberLasso();draft.push(...copyLasso(lassoPatch.tail));lassoPatch=null;
-      ui();render();say('Linienstück korrigiert. Kontur prüfen oder weiterzeichnen, dann „Auswahl schließen“.');return;
+      ui();render();say('Linienstück korrigiert. Die magnetische Anziehung ist wieder wie eingestellt aktiv. Kontur prüfen, dann „Auswahl schließen“.');return;
     }
     let a=draft;if(!a||a.length<3){say('Bitte das Motiv weiter umranden und dann „Auswahl schließen“ drücken.');render();return;}
     if(magneticEnabled()&&Number($('bgLassoAttraction').value)>0){
@@ -16082,6 +16106,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   }
   function resetWorkspace(image){
     resetLassoEditing();lassoUsesPen=false;lassoEdgeField=null;lastMagneticTime=0;
+    $('bgInvertSelection').checked=false;invertedMaskCache=null;
     $('bgLassoMagnet').checked=true;$('bgLassoRadius').value='12';$('bgLassoAttraction').value='75';
     original=image;const maxDimension=1700,k=Math.min(1,maxDimension/Math.max(original.width,original.height));preview=canvas(Math.round(original.width*k),Math.round(original.height*k));const pc=preview.getContext('2d',{willReadFrequently:true});pc.drawImage(original,0,0,preview.width,preview.height);previewData=pc.getImageData(0,0,preview.width,preview.height);
     kind.value='color';color.value='#000000';tol.value='30';clean.value='2';smooth.checked=true;feather.value='1';integrate.value='70';lightMix.value=colorMix.value=backdropLight.value=backdropColor.value='0';$('bgBackdropGroup').open=false;edgeMaskCache=previewMatte=compositeCache=motifTintCache=null;$('bgOriginal').checked=$('bgCompare').checked=false;photoInput.value='';$('bgFileName').textContent='Kein Hintergrundbild ausgewählt.';photo=null;bgShiftX=bgShiftY=0;bgZoom=1;bgMoveMode=false;$('bgPhotoZoom').value='100';tool='tap';selection='none';mask=null;points=null;draft=null;gest=null;gestures.clear();busy=false;zoom=1;panX=panY=0;
@@ -16106,7 +16131,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     // Snapshot the editable settings before encoding images asynchronously.
     const settings=JSON.parse(JSON.stringify({
       photoName:photoFile?.name??$('bgFileName').dataset.name??'',
-      selection,points,tool,brushStrokes,taps:tapHistory,
+      selection,points,tool,brushStrokes,taps:tapHistory,invertedSelection:$('bgInvertSelection').checked,
       tapBase:tapBase&&{selection:tapBase.selection,points:tapBase.points,brushStrokes:tapBase.brushStrokes},
       controls:savedControls.map(id=>$(id).value),smooth:smooth.checked,magneticLasso:$('bgLassoMagnet').checked,
       bgShiftX,bgShiftY,bgZoom,motifX,motifY,motifScale,motifOpacity,designSettings
@@ -16127,6 +16152,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     savedControls.forEach((id,index)=>{
       if(typeof saved.controls[index]==='string')$(id).value=saved.controls[index];
     });
+    $('bgInvertSelection').checked=saved.invertedSelection===true;
     smooth.checked=saved.smooth;$('bgLassoMagnet').checked=saved.magneticLasso===true;
     ({bgShiftX,bgShiftY,bgZoom,motifX,motifY,motifScale,motifOpacity}=saved);
     $('bgPhotoZoom').value=String(Math.round(bgZoom*100));
@@ -16296,6 +16322,8 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   $('bgLassoFinish').addEventListener('click',lassoEnd);
   $('bgLassoUndo').addEventListener('click',undoLasso);
   $('bgLassoCorrect').addEventListener('click',beginLassoCorrection);
+  $('bgLassoCorrectSide').addEventListener('click',beginLassoCorrection);
+  $('bgLassoFinishSide').addEventListener('click',lassoEnd);
   $('bgLassoRestart').addEventListener('click',()=>{if(gestures.size)return;draft=null;resetLassoEditing();ui();render();say('Offene Kontur verworfen. Das Motiv neu umranden.');});
   // The floating controls must not start a drawing or capture a pointer.
   $('bgLassoActions').addEventListener('pointerdown',e=>e.stopPropagation());
@@ -16444,7 +16472,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       if(magnetic)addBrushPoint(brushPoint(p));
       ui();render();
     }else if(tool==='lasso'&&lassoPatch&&lassoPatch.phase!=='draw'){gest={type:'lassoPick',start:p};
-    }else if(tool==='lasso'&&e.pointerType==='touch'&&lassoUsesPen){gest={type:'pan',start:p,panX,panY};
+    }else if(tool==='lasso'&&e.pointerType==='touch'&&lassoUsesPen&&lassoPatch?.phase!=='draw'){gest={type:'pan',start:p,panX,panY};
     }else if(tool==='lasso'&&inImage(q)){
       if(e.pointerType==='pen')lassoUsesPen=true;
       if(!draft?.length)resetLassoEditing();
@@ -16541,7 +16569,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     const bridge=window.__atelierArtBridge;
     if(!bridge?.hasLayerDesign?.(designSettings))return composite;
     const {width:w,height:h}=composite;
-    const key=[mask,selection,brushRevision,clean.value,smooth.checked,feather.value,w,h,motifX,motifY,motifScale,motifOpacity];
+    const key=[$('bgInvertSelection').checked,mask,selection,brushRevision,clean.value,smooth.checked,feather.value,w,h,motifX,motifY,motifScale,motifOpacity];
     if(!designMaskCache||key.some((value,i)=>value!==designMaskCache.key[i])){
       designMaskCache={key,canvas:designMatte(w,h)};
     }
@@ -16554,11 +16582,23 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     return bridge.applyLayerDesign(composite,designMaskCache.canvas,correction);
   }
-  async function save(apply){
+  function exportSelectedMotif(){
+    updatePendingTolerance();
+    const inverted=$('bgInvertSelection').checked;
+    try{
+      $('bgInvertSelection').checked=false;
+      const out=canvas(original.width,original.height),ctx=out.getContext('2d');
+      ctx.drawImage(original,0,0);
+      ctx.globalCompositeOperation='destination-out';
+      ctx.drawImage(maskFor(out.width,out.height),0,0);
+      ctx.globalCompositeOperation='source-over';return out;
+    }finally{$('bgInvertSelection').checked=inverted;}
+  }
+  async function save(apply,motifOnly=false){
     if(busy||brushStroke||(pngMode?!pngBase:!working()))return;
     busy=true;ui();say('Bild wird in Originalauflösung erstellt …');
     try{
-      const composite=pngMode?composePngLayers(pngBase.image.width,pngBase.image.height):exportCanvas();
+      const composite=motifOnly?exportSelectedMotif():pngMode?composePngLayers(pngBase.image.width,pngBase.image.height):exportCanvas();
       const blobJob=blobOf(composite);
       if(apply){
         const [blob,background]=await Promise.all([blobJob,pngMode?capturePngStack():captureBackground()]);
@@ -16567,9 +16607,9 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=pngMode?'AtelierAI_5.43_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.43_Motiv_Transparent.png':'AtelierAI_5.43_Hintergrund.png';link.click();
+        link.href=url;link.download=motifOnly?'AtelierAI_5.45_Ausgewaehltes_Motiv.png':pngMode?'AtelierAI_5.45_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.45_Motiv_Transparent.png':'AtelierAI_5.45_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
-        say(!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
+        say(motifOnly?'Ausgewähltes Motiv als transparente PNG in Originalgröße und Originalposition gespeichert.':!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
     }catch(error){
       say('Fehler: '+error.message);
@@ -16721,6 +16761,20 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
   const motifDesign=$('bgDesign'),backdropDesign=$('bgDesignBackdrop');
   motifDesign.addEventListener('click',()=>openLayerDesign(motifDesign,'motif'));
   backdropDesign.addEventListener('click',()=>openLayerDesign(backdropDesign,'backdrop'));
+  $('bgInvertSelection').addEventListener('change',()=>{
+    if(busy||!working()||draft?.length||selection==='alpha')return;
+    finishBrush(false);setBrushMode(null);resetPlacement();resetOpacity();
+    // Keep the retained image pixels neutral when filling the removed subject.
+    if($('bgInvertSelection').checked){
+      kind.value='color';integrate.value='0';lightMix.value=colorMix.value='0';
+      $('bgOriginal').checked=$('bgCompare').checked=$('bgMaskView').checked=false;
+    }
+    invertedMaskCache=previewMatte=compositeCache=motifTintCache=null;
+    motifBoundsCache=originalFillCache=placementCache=null;
+    resetDesignPreview();ui();render();
+    say($('bgInvertSelection').checked?'Motiv entfernt. Unter „Farbe“ die Füllfarbe für die ausgeschnittene Stelle wählen.':'Normale Auswahl: Das Motiv bleibt erhalten.');
+  });
+  $('bgSaveMotif').addEventListener('click',()=>save(false,true));
   $('bgSave').addEventListener('click',()=>save(false));$('bgApply').addEventListener('click',()=>save(true));
   window.addEventListener('resize',()=>{if(!overlay.hidden)render();});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden)cancel();});
 })();
