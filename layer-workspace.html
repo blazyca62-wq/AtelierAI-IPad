@@ -10,7 +10,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>AtelierAI iPad 5.48</title>
+  <title>AtelierAI iPad 5.49</title>
   <script>
   window.__atelierLayerWorkspace=window.parent!==window && location.hash.startsWith('#atelier-layer-');
   if(window.__atelierLayerWorkspace){
@@ -1097,7 +1097,7 @@
 </script>
 <div class="app">
   <div class="topbar">
-    <div class="title">AtelierAI 5.48</div>
+    <div class="title">AtelierAI 5.49</div>
     <button id="offlineInfo" class="secondary" type="button" style="font-size:13px;padding:8px" aria-live="polite">Offline: wird geprüft …</button>
     <button id="offlineUpdate" class="secondary" type="button" hidden>Update bereit</button>
     <label class="filelabel">Foto öffnen<input id="fileInput" type="file" accept="image/*"></label>
@@ -14404,7 +14404,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
 </style>
 <div id="bgEditorOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="bgEditorHeading">
   <div id="bgEditorBox">
-    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.48</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
+    <div id="bgEditorHead"><strong id="bgEditorHeading">Hintergrund ersetzen · AtelierAI 5.49</strong><div class="bg-head-actions"><button id="bgClose" class="secondary" type="button">Abbrechen</button><button id="bgApply" type="button" disabled>Übernehmen &amp; zum Projekt</button></div></div>
     <div id="bgEditorWork">
       <div id="bgStage" aria-label="Bildvorschau"><canvas id="bgPreview"></canvas><div id="bgLassoActions" hidden><button id="bgLassoFinish" type="button">Auswahl schließen</button><button id="bgLassoUndo" class="secondary" type="button">Letzten Abschnitt zurück</button><button id="bgLassoCorrect" class="secondary" type="button">Linienstück korrigieren</button><button id="bgLassoRestart" class="secondary" type="button">Neu beginnen</button></div><p id="bgLayerEmpty" hidden>Wähle zuerst ein Hintergrundbild.</p></div>
       <div id="bgSide">
@@ -15790,7 +15790,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       tc.globalCompositeOperation='destination-out';tc.drawImage(edgeMask(),0,0);
       screenCtx.save();screenCtx.globalAlpha=.48;screenCtx.drawImage(tint,drawX,drawY,preview.width*drawScale,preview.height*drawScale);screenCtx.restore();
     }
-    if(tool==='lasso'&&selection==='lasso'&&!pngMode&&!brushMode){for(const contour of [...lassoParts,...(lassoAdding&&points?[points]:[])]){screenCtx.save();screenCtx.beginPath();contour.forEach((p,i)=>{const x=drawX+p.x*drawScale,y=drawY+p.y*drawScale;i?screenCtx.lineTo(x,y):screenCtx.moveTo(x,y);});screenCtx.closePath();screenCtx.setLineDash([5,5]);screenCtx.strokeStyle='#4de09c';screenCtx.lineWidth=2;screenCtx.stroke();screenCtx.restore();}}
+    if(tool==='lasso'&&selection==='lasso'&&!pngMode&&!brushMode&&(lassoAdding||!!draft?.length||!!lassoPatch)){for(const contour of [...lassoParts,...(lassoAdding&&points?[points]:[])]){screenCtx.save();screenCtx.beginPath();contour.forEach((p,i)=>{const x=drawX+p.x*drawScale,y=drawY+p.y*drawScale;i?screenCtx.lineTo(x,y):screenCtx.moveTo(x,y);});screenCtx.closePath();screenCtx.setLineDash([5,5]);screenCtx.strokeStyle='#4de09c';screenCtx.lineWidth=2;screenCtx.stroke();screenCtx.restore();}}
     if(draft?.length){screenCtx.save();screenCtx.beginPath();draft.forEach((p,i)=>{const x=drawX+p.x*drawScale,y=drawY+p.y*drawScale;i?screenCtx.lineTo(x,y):screenCtx.moveTo(x,y);});screenCtx.setLineDash([5,5]);screenCtx.strokeStyle='#000';screenCtx.lineWidth=5;screenCtx.stroke();screenCtx.strokeStyle='#fff';screenCtx.lineWidth=2;screenCtx.stroke();screenCtx.restore();}
     if(lassoPatch?.phase==='draw'){
       screenCtx.save();screenCtx.beginPath();lassoPatch.tail.forEach((p,i)=>{const x=drawX+p.x*drawScale,y=drawY+p.y*drawScale;i?screenCtx.lineTo(x,y):screenCtx.moveTo(x,y);});screenCtx.setLineDash([5,5]);screenCtx.strokeStyle='#fff';screenCtx.lineWidth=2;screenCtx.stroke();
@@ -15798,7 +15798,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
     }
     if(lassoPatch?.phase==='end'){const p=lassoPatch.start.point;screenCtx.save();screenCtx.beginPath();screenCtx.arc(drawX+p.x*drawScale,drawY+p.y*drawScale,7,0,Math.PI*2);screenCtx.fillStyle='#ffad42';screenCtx.fill();screenCtx.restore();}
     if(draft?.length){screenCtx.save();for(const [p,c] of [[draft[0],'#fff'],[draft.at(-1),'#4de09c']]){screenCtx.beginPath();screenCtx.arc(drawX+p.x*drawScale,drawY+p.y*drawScale,5,0,Math.PI*2);screenCtx.fillStyle=c;screenCtx.fill();screenCtx.strokeStyle='#111';screenCtx.lineWidth=2;screenCtx.stroke();}screenCtx.restore();}
-    if(points&&selection==='lasso'&&tool==='lasso'&&!draft&&!motifMoveMode&&!motifChanged()&&!brushMode){screenCtx.save();screenCtx.beginPath();points.forEach((p,i)=>{const x=drawX+p.x*drawScale,y=drawY+p.y*drawScale;i?screenCtx.lineTo(x,y):screenCtx.moveTo(x,y);});screenCtx.closePath();screenCtx.setLineDash([5,5]);screenCtx.strokeStyle='#fff';screenCtx.lineWidth=2;screenCtx.stroke();screenCtx.restore();}
+    if(points&&selection==='lasso'&&tool==='lasso'&&!!lassoPatch&&!draft&&!motifMoveMode&&!motifChanged()&&!brushMode){screenCtx.save();screenCtx.beginPath();points.forEach((p,i)=>{const x=drawX+p.x*drawScale,y=drawY+p.y*drawScale;i?screenCtx.lineTo(x,y):screenCtx.moveTo(x,y);});screenCtx.closePath();screenCtx.setLineDash([5,5]);screenCtx.strokeStyle='#fff';screenCtx.lineWidth=2;screenCtx.stroke();screenCtx.restore();}
     if(brushCursor&&brushMode){
       const radius=(brushStroke?.radius??Number(brushSize.value)/2)*motifScale*drawScale;
       screenCtx.save();
@@ -16626,7 +16626,14 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
       const out=canvas(original.width,original.height),ctx=out.getContext('2d');
       const fill=canvas(out.width,out.height),fc=fill.getContext('2d');
       fc.fillStyle=color.value;fc.fillRect(0,0,fill.width,fill.height);
-      fc.globalCompositeOperation='destination-in';fc.drawImage(maskFor(out.width,out.height),0,0);
+      // Keep original pixels beneath the translucent motif fringe. Applying
+      // the same soft edge to the fill and motif would expose a colored outline.
+      const matte=maskFor(out.width,out.height),mc=matte.getContext('2d');
+      const alpha=mc.getImageData(0,0,matte.width,matte.height);
+      for(let i=3;i<alpha.data.length;i+=4)alpha.data[i]=alpha.data[i]===255?255:0;
+      const interior=canvas(matte.width,matte.height);
+      interior.getContext('2d').putImageData(alpha,0,0);
+      fc.globalCompositeOperation='destination-in';fc.drawImage(interior,0,0);
       ctx.drawImage(original,0,0);ctx.drawImage(fill,0,0);return out;
     }finally{$('bgInvertSelection').checked=inverted;}
   }
@@ -16673,7 +16680,7 @@ const mixes=correctionRecipeHint?correctionMixes(target,correctionRecipeHint,pal
         bridge.openProjectMenu();
       }else{
         const url=URL.createObjectURL(await blobJob),link=document.createElement('a');
-        link.href=url;link.download=motifOnly?'AtelierAI_5.48_Ausgewaehltes_Motiv.png':pngMode?'AtelierAI_5.48_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.48_Motiv_Transparent.png':'AtelierAI_5.48_Hintergrund.png';link.click();
+        link.href=url;link.download=motifOnly?'AtelierAI_5.49_Ausgewaehltes_Motiv.png':pngMode?'AtelierAI_5.49_PNG_Ebenen.png':kind.value==='transparent'?'AtelierAI_5.49_Motiv_Transparent.png':'AtelierAI_5.49_Hintergrund.png';link.click();
         setTimeout(()=>URL.revokeObjectURL(url),4000);
         say(motifOnly?'Ausgewähltes Motiv als transparente PNG in Originalgröße und Originalposition gespeichert.':!pngMode&&kind.value==='transparent'?'Motiv mit transparentem Hintergrund als PNG gespeichert. Später unter PNG-Ebenen einfügen.':'PNG gespeichert. Das Originalbild in AtelierAI bleibt unverändert.');
       }
